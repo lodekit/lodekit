@@ -1,1 +1,47 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Lodekit</title></head><body></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lodekit</title>
+  <link rel="stylesheet" href="/_lodekit/design-system.css">
+</head>
+<body>
+  <main class="lk-container">
+    <div class="lk-row" style="justify-content: space-between; margin-bottom: 24px;">
+      <h1 class="lk-h1">Lodekit</h1>
+      <span class="lk-muted" id="count"></span>
+    </div>
+    <div id="apps" class="lk-grid"></div>
+    <div id="empty" class="lk-card" style="display:none;">
+      <p class="lk-muted">No tools yet. Ask Claude to build a tool with Lodekit.</p>
+    </div>
+  </main>
+  <script>
+    async function render() {
+      const apps = await (await fetch("/api/apps")).json();
+      const grid = document.getElementById("apps");
+      const empty = document.getElementById("empty");
+      document.getElementById("count").textContent =
+        apps.length + (apps.length === 1 ? " tool" : " tools");
+      grid.innerHTML = "";
+      empty.style.display = apps.length ? "none" : "block";
+      for (const a of apps) {
+        const link = document.createElement("a");
+        link.className = "lk-cardlink";
+        link.href = "/" + a.slug;
+        link.innerHTML =
+          '<div class="lk-card">' +
+          '<div style="font-size:28px">' + (a.icon || "📦") + "</div>" +
+          '<div style="font-weight:600;margin-top:8px">' + a.name + "</div>" +
+          '<div class="lk-muted" style="font-size:13px">' + (a.description || "") + "</div>" +
+          "</div>";
+        grid.appendChild(link);
+      }
+    }
+    render();
+    const es = new EventSource("/api/events");
+    es.addEventListener("apps-changed", render);
+  </script>
+</body>
+</html>
