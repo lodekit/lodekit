@@ -49,3 +49,7 @@ The POC is buildless, which rules out the real component ecosystem. The intended
 - **Runtime auto-install** — Lodekit checks for / installs Node and other runtime deps.
 - **Image/file app icons** — beyond emoji in `lodekit.json`.
 - **Monorepo init** — `lodekit init` to set up a pre-existing Lodekit-apps git monorepo.
+- **Harden app/dashboard rendering** — the POC builds DOM via `innerHTML` with
+  app-controlled strings (manifest name/description, expense notes). Acceptable for a
+  single-user local tool, but switch to `textContent`/safe DOM (or sanitize) before any
+  multi-user or shared exposure.
