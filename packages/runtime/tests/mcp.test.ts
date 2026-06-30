@@ -5,7 +5,7 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { start } from "../src/server.js";
 import { loadConfig } from "../src/config.js";
-import { scaffold, listApps, inspectDb } from "../mcp/index.js";
+import { scaffold, listApps, inspectDb } from "../../mcp/client.js";
 
 let root: string, server: Server, base: string;
 beforeEach(async () => {
