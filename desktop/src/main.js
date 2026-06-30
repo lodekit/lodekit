@@ -36,6 +36,7 @@ function waitForServer(retries = 50) {
         }
       );
       req.on("error", () => {
+        req.destroy();
         if (left <= 0) return reject(new Error("runtime did not become ready"));
         setTimeout(() => attempt(left - 1), 200);
       });
@@ -52,7 +53,10 @@ async function createWindow() {
 
 app.whenReady().then(() => {
   startRuntime();
-  createWindow();
+  createWindow().catch((err) => {
+    console.error("Runtime did not become ready:", err.message);
+    app.quit();
+  });
 });
 
 app.on("window-all-closed", () => {
