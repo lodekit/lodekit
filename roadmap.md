@@ -67,7 +67,18 @@ above; the remainder:
   runtime↔MCP test that boots the real server and drives the MCP helpers) currently live in
   `packages/runtime/tests/` because that package already has the heavy deps. As thorough
   integration coverage grows, give it a dedicated location/package instead of lodging it in
-  whichever unit owns the deps.
+  whichever unit owns the deps. When built, import `@lodekit/mcp` via its package specifier
+  (give `packages/mcp` an `exports`/`main` + declare it a devDependency) instead of the current
+  relative reach-in `packages/runtime/tests/mcp.test.ts` → `../../mcp/client.js`, which bypasses
+  the package boundary.
+- **Desktop spawn cross-platform + child-tree kill** — `desktop/src/main.js` does
+  `spawn("pnpm", …)` (needs `pnpm.cmd`/`shell:true` on Windows) and `runtime.kill()` SIGTERMs
+  `pnpm`, which may not propagate to the `tsx` grandchild (possible orphaned node). Both belong
+  with the deferred Electron-packaging work.
+- **Fill in `CLAUDE.md` Architecture / Build & Test** — both sections are still `TODO`. Now that
+  the monorepo structure exists, document it, plus the one rough edge: a clean `pnpm install`
+  auto-builds `better-sqlite3` (via root `pnpm.onlyBuiltDependencies`), and switching Node
+  versions requires `pnpm rebuild better-sqlite3` (ABI mismatch otherwise).
 
 ## Other deferred items
 - **MCP uses deprecated `server.tool`** — `mcp/index.ts` registers tools via the
