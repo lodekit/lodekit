@@ -46,6 +46,11 @@ The POC is buildless, which rules out the real component ecosystem. The intended
   but SSE integration tests must tear down client connections before `server.close()`,
   and a multi-instance setup would need per-instance registries.
 
+- **No browser-level test coverage** — every test (incl. `e2e.test.ts`) drives the
+  HTTP/SDK layer with `fetch`, never a real browser. This let a browser-only bug ship: at
+  a no-trailing-slash app URL (`/<slug>`), the relative `<script src="app.js">` resolved
+  to `/app.js` (404), so apps loaded inert. Fixed via a `/<slug>` → `/<slug>/` redirect in
+  `appHost.ts`; add a headless-browser smoke test so the asset-loading path is covered.
 - **Electron shell + autostart** — clickable desktop app; Lodekit runs at login.
 - **True `lodekit.local` / port-free access** — mDNS/Bonjour or a local reverse proxy,
   instead of `lodekit.localhost:7777`.

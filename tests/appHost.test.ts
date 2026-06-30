@@ -33,6 +33,17 @@ describe("appHost", () => {
     expect(html).toContain("<body>hi</body>");
   });
 
+  it("redirects /<slug> to /<slug>/ so relative asset URLs resolve under the app", async () => {
+    const res = await fetch(base + "/demo", { redirect: "manual" });
+    expect(res.status).toBe(301);
+    expect(res.headers.get("location")).toBe("/demo/");
+  });
+
+  it("serves index.html at the trailing-slash app root", async () => {
+    const html = await (await fetch(base + "/demo/")).text();
+    expect(html).toContain("<body>hi</body>");
+  });
+
   it("serves other app files without injection", async () => {
     const js = await (await fetch(base + "/demo/app.js")).text();
     expect(js).toBe("console.log(1)");

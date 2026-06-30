@@ -15,6 +15,13 @@ export function appHost(appsDir: string): RequestHandler {
     const appDir = path.resolve(appsDir, slug);
     if (!fs.existsSync(path.join(appDir, "lodekit.json"))) return next();
 
+    // Redirect /<slug> -> /<slug>/ so the app's relative asset URLs (e.g. app.js)
+    // resolve under the app rather than the server root.
+    if (segments.length === 1 && !req.path.endsWith("/")) {
+      res.redirect(301, req.path + "/");
+      return;
+    }
+
     let decoded: string;
     try {
       decoded = decodeURIComponent(req.path);
