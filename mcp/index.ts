@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -59,7 +60,7 @@ server.tool("lodekit_inspect_db", { slug: z.string() }, async ({ slug }) =>
 );
 
 // Only connect stdio when run directly (not when imported by tests).
-if (process.argv[1] && process.argv[1].endsWith("index.ts")) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const transport = new StdioServerTransport();
   await server.connect(transport);
 }
