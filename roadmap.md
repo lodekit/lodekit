@@ -35,6 +35,9 @@ The POC is buildless, which rules out the real component ecosystem. The intended
 - Decide: build-on-change → serve static output, vs. Vite dev-server/HMR per app.
 
 ## Other deferred items
+- **MCP uses deprecated `server.tool`** — `mcp/index.ts` registers tools via the
+  SDK's `server.tool()`, deprecated in `@modelcontextprotocol/sdk` 1.12 in favor of
+  `registerTool`. Works fine; migrate when convenient.
 - **SSE client registry is a process singleton** — `src/sse.ts` keeps one module-level
   `clients` Set shared across all server instances. Fine for the single-process server,
   but SSE integration tests must tear down client connections before `server.close()`,
