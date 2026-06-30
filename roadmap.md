@@ -35,6 +35,10 @@ The POC is buildless, which rules out the real component ecosystem. The intended
 - Decide: build-on-change → serve static output, vs. Vite dev-server/HMR per app.
 
 ## Other deferred items
+- **SSE client registry is a process singleton** — `src/sse.ts` keeps one module-level
+  `clients` Set shared across all server instances. Fine for the single-process server,
+  but SSE integration tests must tear down client connections before `server.close()`,
+  and a multi-instance setup would need per-instance registries.
 
 - **Electron shell + autostart** — clickable desktop app; Lodekit runs at login.
 - **True `lodekit.local` / port-free access** — mDNS/Bonjour or a local reverse proxy,
