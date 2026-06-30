@@ -2,15 +2,18 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Server } from "node:http";
 import { start } from "../src/server.js";
 import { loadConfig } from "../src/config.js";
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
 
 let root: string, server: Server, base: string;
 beforeEach(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-"));
   // copy the committed demo app into the temp root's apps dir
-  const src = path.join(process.cwd(), "apps", "expense-tracker");
+  const src = path.join(__dirname, "../../../apps/expense-tracker");
   const dst = path.join(root, "apps", "expense-tracker");
   fs.mkdirSync(dst, { recursive: true });
   for (const f of fs.readdirSync(src)) fs.copyFileSync(path.join(src, f), path.join(dst, f));
