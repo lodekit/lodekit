@@ -53,16 +53,28 @@ export function apiRouter(cfg: Config): express.Router {
   });
 
   r.get("/apps/:slug/db/schema", withDb, (req: DbRequest, res) => {
-    res.json({ schema: dbsvc.schema(req.db!) });
+    try {
+      res.json({ schema: dbsvc.schema(req.db!) });
+    } catch (e) {
+      res.status(400).json({ error: String(e) });
+    }
   });
 
   r.get("/apps/:slug/store/:key", withDb, (req: DbRequest, res) => {
-    res.json({ value: dbsvc.storeGet(req.db!, req.params.key) });
+    try {
+      res.json({ value: dbsvc.storeGet(req.db!, req.params.key) });
+    } catch (e) {
+      res.status(400).json({ error: String(e) });
+    }
   });
 
   r.put("/apps/:slug/store/:key", withDb, (req: DbRequest, res) => {
-    dbsvc.storeSet(req.db!, req.params.key, req.body.value);
-    res.json({ ok: true });
+    try {
+      dbsvc.storeSet(req.db!, req.params.key, req.body.value);
+      res.json({ ok: true });
+    } catch (e) {
+      res.status(400).json({ error: String(e) });
+    }
   });
 
   r.get("/events", (_req, res) => {
