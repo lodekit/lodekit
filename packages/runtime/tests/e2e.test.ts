@@ -13,7 +13,7 @@ let root: string, server: Server, base: string;
 beforeEach(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-"));
   // copy the committed demo app into the temp root's apps dir
-  const src = path.join(__dirname, "../../../apps/expense-tracker");
+  const src = path.join(__dirname, "../../../examples/apps/expense-tracker");
   const dst = path.join(root, "apps", "expense-tracker");
   fs.mkdirSync(dst, { recursive: true });
   for (const f of fs.readdirSync(src)) fs.copyFileSync(path.join(src, f), path.join(dst, f));
