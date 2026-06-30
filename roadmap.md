@@ -49,6 +49,11 @@ above; the remainder:
   else **offer to download a Node version installed local to Lodekit only** — never
   touching the user's system Node or PATH. Pairs with "Runtime auto-install" below, and
   resolves the `better-sqlite3` ABI-rebuild / pnpm-hoist concern in its packaged context.
+  NOTE: `desktop/.npmrc`'s `node-linker=hoisted` only satisfies Forge's config check at
+  `electron-forge start` (CWD=desktop); a workspace-root `pnpm install` ignores it, so the
+  real layout stays isolated. Before adding `electron-forge make`/`package`, move
+  `node-linker=hoisted` to a **workspace-root `.npmrc`** (which changes every package's
+  node_modules layout — re-verify all packages under it).
 - **Dev/default path-mode switch** — replace the `LODEKIT_ROOT=./examples` dev stopgap
   with first-class modes: a `dev` mode using the factored example apps + fixtures, and a
   `default` mode using the app's own configured paths (`~/Documents/Lodekit`). First
