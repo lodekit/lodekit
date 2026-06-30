@@ -97,4 +97,8 @@ above; the remainder:
 - **Harden app/dashboard rendering** — the POC builds DOM via `innerHTML` with
   app-controlled strings (manifest name/description, expense notes). Acceptable for a
   single-user local tool, but switch to `textContent`/safe DOM (or sanitize) before any
-  multi-user or shared exposure.
+  multi-user or shared exposure. Concrete gap flagged by the security scanner:
+  `examples/apps/expense-tracker/app.js` interpolates `category`/`note` straight into a
+  table via `innerHTML` with no escaping, whereas `examples/apps/habit-tracker/app.js`
+  already has an `escapeHtml` helper — give expense-tracker the same treatment (or rebuild
+  rows with `createElement` + `textContent`).
