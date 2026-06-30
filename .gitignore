@@ -4,3 +4,9 @@ node_modules/
 *.log
 
 .superpowers/
+.DS_Store
+data/
+examples/data/
+desktop/out/
+desktop/.vite/
+pnpm-debug.log*
