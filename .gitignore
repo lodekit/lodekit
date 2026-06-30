@@ -10,3 +10,5 @@ examples/data/
 desktop/out/
 desktop/.vite/
 pnpm-debug.log*
+web/dist/
+web/.astro/
