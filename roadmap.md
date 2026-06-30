@@ -1,7 +1,8 @@
 # Lodekit Roadmap
 
 Deferred work and known gaps. Parked items from the POC design
-(`docs/specs/2026-06-30-lodekit-poc-design.md`).
+(`docs/specs/2026-06-30-lodekit-poc-design.md`) and the monorepo migration
+(`docs/specs/2026-06-30-monorepo-migration-design.md`).
 
 ## Guiding principle
 
@@ -33,6 +34,30 @@ The POC is buildless, which rules out the real component ecosystem. The intended
   (disposable, regenerable, outside the backup tree). Dashboard shows
   `building… → ready` over SSE.
 - Decide: build-on-change → serve static output, vs. Vite dev-server/HMR per app.
+
+## Parked from the monorepo migration
+
+Foundation items deferred by `docs/specs/2026-06-30-monorepo-migration-design.md` (§7).
+The Vite toolchain, `@lodekit/ui`, and `@lodekit/sdk` are tracked under "Next major step"
+above; the remainder:
+
+- **Starlight docs** — add Astro's Starlight docs framework inside `web/`, sharing the
+  landing site's tooling and deploy. The landing placeholder shipped by the migration is
+  the seed.
+- **Electron packaging + Lodekit-local Node** — turn the dev shell into a distributable
+  app (Forge packaging, code-signing) and implement the Node strategy: find system Node,
+  else **offer to download a Node version installed local to Lodekit only** — never
+  touching the user's system Node or PATH. Pairs with "Runtime auto-install" below, and
+  resolves the `better-sqlite3` ABI-rebuild / pnpm-hoist concern in its packaged context.
+- **Dev/default path-mode switch** — replace the `LODEKIT_ROOT=./examples` dev stopgap
+  with first-class modes: a `dev` mode using the factored example apps + fixtures, and a
+  `default` mode using the app's own configured paths (`~/Documents/Lodekit`). First
+  refactor after the foundation lands.
+- **Turborepo** — adopt the task-runner/cache layer once the Vite build graph exists and
+  CI times justify it; purely additive on top of pnpm workspaces, no restructure.
+- **OSS hygiene** — LICENSE, public README, CONTRIBUTING, CODE_OF_CONDUCT, `.github/`
+  templates; reserve/publish under the secured `@lodekit/*` npm scope.
+- **`web/` deploy** — deploy the Astro site to `lodekit.com` (domain secured).
 
 ## Other deferred items
 - **MCP uses deprecated `server.tool`** — `mcp/index.ts` registers tools via the
