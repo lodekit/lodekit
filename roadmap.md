@@ -58,6 +58,11 @@ above; the remainder:
 - **OSS hygiene** — LICENSE, public README, CONTRIBUTING, CODE_OF_CONDUCT, `.github/`
   templates; reserve/publish under the secured `@lodekit/*` npm scope.
 - **`web/` deploy** — deploy the Astro site to `lodekit.com` (domain secured).
+- **Dedicated integration-test home** — cross-package integration tests (e.g. the
+  runtime↔MCP test that boots the real server and drives the MCP helpers) currently live in
+  `packages/runtime/tests/` because that package already has the heavy deps. As thorough
+  integration coverage grows, give it a dedicated location/package instead of lodging it in
+  whichever unit owns the deps.
 
 ## Other deferred items
 - **MCP uses deprecated `server.tool`** — `mcp/index.ts` registers tools via the
