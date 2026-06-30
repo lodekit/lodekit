@@ -15,7 +15,13 @@ export function appHost(appsDir: string): RequestHandler {
     const appDir = path.resolve(appsDir, slug);
     if (!fs.existsSync(path.join(appDir, "lodekit.json"))) return next();
 
-    const decoded = decodeURIComponent(req.path);
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(req.path);
+    } catch (e) {
+      if (e instanceof URIError) { res.status(400).end(); return; }
+      throw e;
+    }
     const decodedSegments = decoded.split("/").filter(Boolean);
     const rest = decodedSegments.slice(1).join("/") || "index.html";
     const filePath = path.resolve(appDir, rest);

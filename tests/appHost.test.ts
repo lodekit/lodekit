@@ -45,4 +45,8 @@ describe("appHost", () => {
   it("blocks path traversal", async () => {
     expect((await fetch(base + "/demo/..%2f..%2fpackage.json")).status).toBe(403);
   });
+
+  it("returns 400 for a malformed percent-encoding instead of crashing", async () => {
+    expect((await fetch(base + "/demo/%zz")).status).toBe(400);
+  });
 });
