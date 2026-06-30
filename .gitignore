@@ -3,3 +3,4 @@ claude.md
 node_modules/
 *.log
 
+.superpowers/
