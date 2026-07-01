@@ -20,19 +20,20 @@ function copyDir(src: string, dst: string) {
   }
 }
 
+// Poll the app endpoint until it serves built output. Deterministic — unlike
+// subscribing to the SSE `ready` event, which start()'s buildAll can broadcast
+// before a listener attaches (the event is then missed and the wait hangs).
+// The building page has no hashed assets; the built page references /assets/;
+// a failed build serves the "Build failed" page.
 async function waitReady(base: string, slug: string, timeoutMs: number) {
-  const res = await fetch(base + "/api/events");
-  const reader = res.body!.getReader();
-  const dec = new TextDecoder();
-  let buf = "";
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value);
-    if (buf.includes("event: ready") && buf.includes(`"slug":"${slug}"`)) break;
+    const body = await (await fetch(base + "/" + slug + "/")).text();
+    if (body.includes("/assets/")) return;
+    if (body.includes("Build failed")) throw new Error(`build failed for ${slug}: ${body.slice(0, 300)}`);
+    await new Promise((r) => setTimeout(r, 100));
   }
-  await reader.cancel();
+  throw new Error(`timed out waiting for ${slug} to build`);
 }
 
 beforeEach(async () => {
