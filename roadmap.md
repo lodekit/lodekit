@@ -15,6 +15,14 @@ run.
 
 ## Next major step: Lodekit-owned shared build toolchain
 
+**Slice 1 shipped (2026-07-01)** — `docs/specs/2026-07-01-build-pipeline-and-sdk-design.md` /
+`docs/plans/2026-07-01-build-pipeline-and-sdk.md`: the Vite build pipeline (runtime `build.ts`, driven
+via the Vite JS API), the bundled React/TS app contract (`manifest.json` + `src/`, served from
+`cacheDir` with `building… → ready` over SSE), and a minimal typed `@lodekit/sdk` (`db` + `store`).
+Decided along the way: **build-on-change → serve static output** (not a per-app Vite dev-server/HMR).
+The bullets below that remain unbuilt (`@lodekit/ui`, TanStack, internal Node runtime) get their own
+slices.
+
 The POC is buildless, which rules out the real component ecosystem. The intended v2:
 
 - Lodekit ships **Vite + React + TypeScript + Tailwind** in its own `node_modules` (in the
@@ -34,6 +42,21 @@ The POC is buildless, which rules out the real component ecosystem. The intended
   (disposable, regenerable, outside the backup tree). Dashboard shows
   `building… → ready` over SSE.
 - Decide: build-on-change → serve static output, vs. Vite dev-server/HMR per app.
+
+### Deferred from the build-pipeline slice (spec §11)
+
+Big-picture context that shaped the slice-1 SDK design but was explicitly **not** built or stubbed:
+
+- **tRPC + Zod** — reconsider as the SDK↔runtime transport/validation layer once an app-facing
+  *procedure* surface (integrations, jobs) exists to make end-to-end typing pay off.
+- **Per-app type-checking** — gate builds (or surface warnings) via `tsc`; the slice transpiles
+  without type-checking, so app source (which has no `node_modules`/tsconfig) gets no type feedback yet.
+- **Persistence, per-app (inside the data folder):** blob storage, real encrypted secrets,
+  cache with TTLs, schemas/migrations, and data initialization/fixtures.
+- **Integrations** — gateways, outbound connections, rate limiting.
+- **Workflows** — job queue, durable execution, scheduler/poller.
+- **Settings** — apps register settings surfaced and editable in the dashboard.
+- **Business-logic structure** — app-folder conventions that keep app logic from sprawling.
 
 ## Parked from the monorepo migration
 
