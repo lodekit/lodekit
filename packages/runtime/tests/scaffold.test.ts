@@ -21,22 +21,24 @@ beforeEach(() => {
 afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
 describe("scaffoldApp", () => {
-  it("creates manifest + stub files and returns the app url", () => {
+  it("creates the bundled contract and returns the app url", () => {
     const out = scaffoldApp(cfg, { slug: "notes", name: "Notes", description: "Jot things" });
     const d = path.join(cfg.appsDir, "notes");
     expect(out.url).toBe("http://lodekit.localhost:7777/notes");
+    expect(out.files).toEqual(["manifest.json", "index.html", "src/main.tsx", "src/App.tsx", "src/index.css"]);
     const manifest = JSON.parse(fs.readFileSync(path.join(d, "manifest.json"), "utf8"));
     expect(manifest).toMatchObject({ name: "Notes", slug: "notes", icon: "📦", description: "Jot things" });
-    expect(fs.existsSync(path.join(d, "index.html"))).toBe(true);
-    expect(fs.readFileSync(path.join(d, "index.html"), "utf8")).toContain("Notes");
-    expect(fs.existsSync(path.join(d, "app.js"))).toBe(true);
+    expect(fs.readFileSync(path.join(d, "index.html"), "utf8")).toContain('src="/src/main.tsx"');
+    expect(fs.readFileSync(path.join(d, "src", "main.tsx"), "utf8")).toContain("createRoot");
+    expect(fs.readFileSync(path.join(d, "src", "App.tsx"), "utf8")).toContain('from "@lodekit/sdk"');
+    expect(fs.readFileSync(path.join(d, "src", "index.css"), "utf8")).toContain("tailwindcss");
   });
 
-  it("does not overwrite an existing index.html", () => {
-    const d = path.join(cfg.appsDir, "keep");
-    fs.mkdirSync(d, { recursive: true });
-    fs.writeFileSync(path.join(d, "index.html"), "ORIGINAL");
+  it("does not overwrite an existing App.tsx", () => {
+    const src = path.join(cfg.appsDir, "keep", "src");
+    fs.mkdirSync(src, { recursive: true });
+    fs.writeFileSync(path.join(src, "App.tsx"), "ORIGINAL");
     scaffoldApp(cfg, { slug: "keep", name: "Keep" });
-    expect(fs.readFileSync(path.join(d, "index.html"), "utf8")).toBe("ORIGINAL");
+    expect(fs.readFileSync(path.join(src, "App.tsx"), "utf8")).toBe("ORIGINAL");
   });
 });
