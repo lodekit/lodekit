@@ -17,6 +17,7 @@ beforeEach(async () => {
   fs.writeFileSync(path.join(appDir, "app.js"), "console.log(1)");
   const cfg: Config = {
     root, appsDir: path.join(root, "apps"), dataDir: path.join(root, "data"),
+    cacheDir: path.join(root, ".cache"),
     port: 0, baseUrl: "http://lodekit.localhost:0",
   };
   await new Promise<void>((r) => { server = createServer(cfg).listen(0, () => r()); });

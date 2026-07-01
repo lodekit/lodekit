@@ -13,6 +13,7 @@ beforeEach(() => {
     root,
     appsDir: path.join(root, "apps"),
     dataDir: path.join(root, "data"),
+    cacheDir: path.join(root, ".cache"),
     port: 7777,
     baseUrl: "http://lodekit.localhost:7777",
   };
