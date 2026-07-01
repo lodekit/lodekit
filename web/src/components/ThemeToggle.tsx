@@ -14,11 +14,20 @@ export function ThemeToggle() {
     const next = !dark;
     setDark(next);
     document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("theme", next ? "dark" : "light");
+    try {
+      localStorage.setItem("theme", next ? "dark" : "light");
+    } catch {
+      // Storage unavailable (e.g. private mode) — theme still toggles in-page.
+    }
   }
 
   return (
-    <Button variant="outline" size="icon" onClick={toggle} aria-label="Toggle theme">
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={toggle}
+      aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
+    >
       {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </Button>
   );

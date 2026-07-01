@@ -14,7 +14,12 @@ import "../styles/globals.css";
     <title>Lodekit — Coming soon</title>
     <script is:inline>
       // No-flash theme: set the .dark class before first paint.
-      const stored = localStorage.getItem("theme");
+      let stored;
+      try {
+        stored = localStorage.getItem("theme");
+      } catch {
+        stored = null;
+      }
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       const dark = stored ? stored === "dark" : prefersDark;
       document.documentElement.classList.toggle("dark", dark);
