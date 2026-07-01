@@ -1,0 +1,26 @@
+---
+import "../styles/globals.css";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Lodekit — build small local apps on a unified stack. Coming soon."
+    />
+    <title>Lodekit — Coming soon</title>
+    <script is:inline>
+      // No-flash theme: set the .dark class before first paint.
+      const stored = localStorage.getItem("theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const dark = stored ? stored === "dark" : prefersDark;
+      document.documentElement.classList.toggle("dark", dark);
+    </script>
+  </head>
+  <body class="min-h-screen bg-background text-foreground antialiased">
+    <slot />
+  </body>
+</html>
