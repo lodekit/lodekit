@@ -55,7 +55,7 @@ beforeEach(async () => {
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
   await waitReady(base, "expense-tracker", 40000);
   await waitReady(base, "habit-tracker", 40000);
-});
+}, 90000); // hook builds two real example apps via Vite; well above vitest's 10s default
 afterEach(() => {
   server.close();
   fs.rmSync(root, { recursive: true, force: true });
