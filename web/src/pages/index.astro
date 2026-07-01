@@ -2,6 +2,7 @@
 import Base from "../layouts/Base.astro";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const tagline = "Build small local apps on a unified stack — no build tooling to manage.";
 // TODO(confirm): repo is not public yet / no git remote configured. Update this
@@ -11,6 +12,9 @@ const githubUrl = "https://github.com/lodekit/lodekit";
 
 <Base>
   <main class="relative flex min-h-screen flex-col items-center justify-center gap-8 px-6 text-center">
+    <div class="absolute right-4 top-4">
+      <ThemeToggle client:load />
+    </div>
     <section class="flex flex-col items-center gap-4">
       <span
         class="rounded-full border border-border px-3 py-1 text-xs font-medium uppercase tracking-widest text-muted-foreground"
