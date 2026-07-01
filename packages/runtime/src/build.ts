@@ -37,12 +37,12 @@ function appOutDir(cfg: Config, slug: string): string {
 }
 
 export async function buildApp(cfg: Config, slug: string): Promise<BuildState> {
-  // Resolve symlinks (e.g. macOS os.tmpdir()'s /var -> /private/var) so Vite's
-  // root and the on-disk app files agree on a canonical path; otherwise Rollup's
-  // relative-path computation for emitted HTML can produce paths that escape outDir.
-  const appDir = fs.realpathSync(path.join(cfg.appsDir, slug));
   setState(slug, { status: "building" });
   try {
+    // Resolve symlinks (e.g. macOS os.tmpdir()'s /var -> /private/var) so Vite's
+    // root and the on-disk app files agree on a canonical path; otherwise Rollup's
+    // relative-path computation for emitted HTML can produce paths that escape outDir.
+    const appDir = fs.realpathSync(path.join(cfg.appsDir, slug));
     await build({
       root: appDir,
       logLevel: "silent",
