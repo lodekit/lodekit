@@ -34,6 +34,11 @@ describe("@lodekit/sdk db", () => {
     fetchMock.mockResolvedValue({ ok: false, statusText: "Bad Request", json: async () => ({ error: "no such table" }) });
     await expect(db.query("SELECT * FROM nope")).rejects.toThrow("no such table");
   });
+
+  it("throws statusText when a non-ok response body isn't JSON", async () => {
+    fetchMock.mockResolvedValue({ ok: false, statusText: "Internal Server Error", json: async () => { throw new Error("not json"); } });
+    await expect(db.query("SELECT 1")).rejects.toThrow("Internal Server Error");
+  });
 });
 
 describe("@lodekit/sdk store", () => {

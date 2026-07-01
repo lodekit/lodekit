@@ -42,6 +42,10 @@ beforeEach(async () => {
     path.join(__dirname, "../../../examples/apps/expense-tracker"),
     path.join(root, "apps", "expense-tracker")
   );
+  copyDir(
+    path.join(__dirname, "../../../examples/apps/habit-tracker"),
+    path.join(root, "apps", "habit-tracker")
+  );
   process.env.LODEKIT_ROOT = root;
   process.env.LODEKIT_CACHE_DIR = cache;
   process.env.LODEKIT_PORT = "0";
@@ -50,6 +54,7 @@ beforeEach(async () => {
   const addr = server.address();
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
   await waitReady(base, "expense-tracker", 40000);
+  await waitReady(base, "habit-tracker", 40000);
 });
 afterEach(() => {
   server.close();
@@ -85,5 +90,13 @@ describe("expense tracker e2e (bundled)", () => {
       body: JSON.stringify({ sql: "SELECT SUM(amount) AS total FROM expenses" }),
     })).json();
     expect(q.rows[0].total).toBe(12.5);
+  }, 45000);
+
+  it("serves the bundled habit-tracker index.html and a hashed asset", async () => {
+    const html = await (await fetch(base + "/habit-tracker/")).text();
+    expect(html).toContain("<div id=\"root\">");
+    const asset = html.match(/\/assets\/[\w.-]+\.js/);
+    expect(asset).toBeTruthy();
+    expect((await fetch(base + "/habit-tracker" + asset![0])).status).toBe(200);
   }, 45000);
 });

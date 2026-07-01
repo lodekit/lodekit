@@ -14,9 +14,17 @@ async function jpost<T>(path: string, body: unknown): Promise<T> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error ?? res.statusText);
-  return data as T;
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const data = await res.json();
+      if (data?.error) message = data.error;
+    } catch {
+      // non-JSON error body — keep statusText
+    }
+    throw new Error(message);
+  }
+  return (await res.json()) as T;
 }
 
 export const db = {

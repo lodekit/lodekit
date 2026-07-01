@@ -57,6 +57,10 @@ Big-picture context that shaped the slice-1 SDK design but was explicitly **not*
 - **Workflows** — job queue, durable execution, scheduler/poller.
 - **Settings** — apps register settings surfaced and editable in the dashboard.
 - **Business-logic structure** — app-folder conventions that keep app logic from sprawling.
+- **Stale build-cache GC** — apps removed while the runtime is down leave orphaned `cacheDir/<slug>/`
+  output (`dropBuild` only runs on a live `unlinkDir`; startup `buildAll` only builds existing apps and
+  never prunes). Harmless (nothing serves them — no manifest) but the disposable cache accumulates; a
+  startup prune of cacheDir entries with no matching app would close it.
 
 ## Parked from the monorepo migration
 
