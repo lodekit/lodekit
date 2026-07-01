@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import os from "node:os";
 import path from "node:path";
 import { loadConfig } from "../src/config.js";
 
@@ -6,6 +7,7 @@ describe("loadConfig", () => {
   beforeEach(() => {
     delete process.env.LODEKIT_ROOT;
     delete process.env.LODEKIT_PORT;
+    delete process.env.LODEKIT_CACHE_DIR;
   });
 
   it("derives apps/data dirs and base url from root + port", () => {
@@ -21,5 +23,19 @@ describe("loadConfig", () => {
   it("defaults port to 7777", () => {
     process.env.LODEKIT_ROOT = "/tmp/lodekit-test";
     expect(loadConfig().port).toBe(7777);
+  });
+
+  it("uses LODEKIT_CACHE_DIR when set, resolved to an absolute path", () => {
+    process.env.LODEKIT_ROOT = "/tmp/lodekit-test";
+    process.env.LODEKIT_CACHE_DIR = "/tmp/lodekit-cache";
+    expect(loadConfig().cacheDir).toBe("/tmp/lodekit-cache");
+  });
+
+  it("defaults cacheDir under the home cache dir, outside the root", () => {
+    process.env.LODEKIT_ROOT = "/tmp/lodekit-test";
+    delete process.env.LODEKIT_CACHE_DIR;
+    const cfg = loadConfig();
+    expect(cfg.cacheDir).toBe(path.join(os.homedir(), ".cache", "lodekit"));
+    expect(cfg.cacheDir.startsWith(cfg.root)).toBe(false);
   });
 });

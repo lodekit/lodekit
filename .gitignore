@@ -7,6 +7,7 @@ node_modules/
 .DS_Store
 data/
 examples/data/
+.cache/
 desktop/out/
 desktop/.vite/
 pnpm-debug.log*
