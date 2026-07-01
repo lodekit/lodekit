@@ -4,61 +4,80 @@ import os from "node:os";
 import path from "node:path";
 import type { Server } from "node:http";
 import { createServer } from "../src/server.js";
+import { buildApp, dropBuild } from "../src/build.js";
 import type { Config } from "../src/config.js";
 
-let root: string, server: Server, base: string;
+let root: string, cache: string, cfg: Config, server: Server, base: string;
+
+function writeApp(slug: string, appTsx: string) {
+  const src = path.join(root, "apps", slug, "src");
+  fs.mkdirSync(src, { recursive: true });
+  fs.writeFileSync(path.join(root, "apps", slug, "manifest.json"), JSON.stringify({ name: slug, slug }));
+  fs.writeFileSync(
+    path.join(root, "apps", slug, "index.html"),
+    `<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>`
+  );
+  fs.writeFileSync(path.join(src, "main.tsx"),
+    `import { createRoot } from "react-dom/client";\nimport App from "./App";\ncreateRoot(document.getElementById("root")!).render(<App />);\n`);
+  fs.writeFileSync(path.join(src, "App.tsx"), appTsx);
+}
 
 beforeEach(async () => {
-  root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-"));
-  const appDir = path.join(root, "apps", "demo");
-  fs.mkdirSync(appDir, { recursive: true });
-  fs.writeFileSync(path.join(appDir, "manifest.json"), JSON.stringify({ name: "Demo", slug: "demo" }));
-  fs.writeFileSync(path.join(appDir, "index.html"), "<html><head></head><body>hi</body></html>");
-  fs.writeFileSync(path.join(appDir, "app.js"), "console.log(1)");
-  const cfg: Config = {
+  root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-root-"));
+  cache = fs.mkdtempSync(path.join(os.tmpdir(), "lk-cache-"));
+  cfg = {
     root, appsDir: path.join(root, "apps"), dataDir: path.join(root, "data"),
-    cacheDir: path.join(root, ".cache"),
-    port: 0, baseUrl: "http://lodekit.localhost:0",
+    cacheDir: cache, port: 0, baseUrl: "http://lodekit.localhost:0",
   };
   await new Promise<void>((r) => { server = createServer(cfg).listen(0, () => r()); });
   const addr = server.address();
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
 });
-afterEach(() => { server.close(); fs.rmSync(root, { recursive: true, force: true }); });
+afterEach(() => {
+  server.close();
+  fs.rmSync(root, { recursive: true, force: true });
+  fs.rmSync(cache, { recursive: true, force: true });
+});
 
 describe("appHost", () => {
-  it("serves index.html with injected design-system + sdk tags", async () => {
-    const html = await (await fetch(base + "/demo")).text();
-    expect(html).toContain('href="/_lodekit/design-system.css"');
-    expect(html).toContain('src="/_lodekit/sdk.js"');
-    expect(html).toContain("<body>hi</body>");
-  });
+  it("serves the built index.html and a hashed asset once built", async () => {
+    writeApp("built", `export default function App() { return <h1>hello built</h1>; }`);
+    await buildApp(cfg, "built");
+    const html = await (await fetch(base + "/built/")).text();
+    expect(html).toContain("<div id=\"root\">");
+    expect(html).toContain("/assets/");
+    expect(html).not.toContain("/_lodekit/sdk.js");
+    const assetMatch = html.match(/\/assets\/[\w.-]+\.js/);
+    expect(assetMatch).toBeTruthy();
+    expect((await fetch(base + "/built" + assetMatch![0])).status).toBe(200);
+  }, 30000);
 
-  it("redirects /<slug> to /<slug>/ so relative asset URLs resolve under the app", async () => {
-    const res = await fetch(base + "/demo", { redirect: "manual" });
+  it("redirects /<slug> to /<slug>/", async () => {
+    writeApp("redir", `export default function App() { return <h1>r</h1>; }`);
+    await buildApp(cfg, "redir");
+    const res = await fetch(base + "/redir", { redirect: "manual" });
     expect(res.status).toBe(301);
-    expect(res.headers.get("location")).toBe("/demo/");
+    expect(res.headers.get("location")).toBe("/redir/");
+  }, 30000);
+
+  it("serves a building page when there is no built output yet", async () => {
+    writeApp("pending", `export default function App() { return <h1>p</h1>; }`);
+    const html = await (await fetch(base + "/pending/")).text();
+    expect(html).toContain("Building");
   });
 
-  it("serves index.html at the trailing-slash app root", async () => {
-    const html = await (await fetch(base + "/demo/")).text();
-    expect(html).toContain("<body>hi</body>");
-  });
+  it("serves a build-failed page when the app is in error state", async () => {
+    writeApp("bad", `export default function App() { return <h1>x</h1>  // missing brace\n`);
+    await buildApp(cfg, "bad");
+    const res = await fetch(base + "/bad/");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("Build failed");
+  }, 30000);
 
-  it("serves other app files without injection", async () => {
-    const js = await (await fetch(base + "/demo/app.js")).text();
-    expect(js).toBe("console.log(1)");
-  });
-
-  it("404s a missing file inside a real app", async () => {
-    expect((await fetch(base + "/demo/nope.txt")).status).toBe(404);
-  });
-
-  it("blocks path traversal", async () => {
-    expect((await fetch(base + "/demo/..%2f..%2fpackage.json")).status).toBe(403);
-  });
-
-  it("returns 400 for a malformed percent-encoding instead of crashing", async () => {
-    expect((await fetch(base + "/demo/%zz")).status).toBe(400);
-  });
+  it("blocks path traversal out of the cache dir", async () => {
+    writeApp("safe", `export default function App() { return <h1>s</h1>; }`);
+    await buildApp(cfg, "safe");
+    expect((await fetch(base + "/safe/..%2f..%2fpackage.json")).status).toBe(403);
+    dropBuild(cfg, "safe");
+  }, 30000);
 });

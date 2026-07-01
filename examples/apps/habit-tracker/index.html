@@ -6,20 +6,7 @@
   <title>Habit Tracker</title>
 </head>
 <body>
-  <main class="lk-container">
-    <h1 class="lk-h1">Habit Tracker</h1>
-    <p class="lk-muted"><strong id="summary">—</strong></p>
-
-    <div class="lk-card" style="margin: 20px 0;">
-      <div class="lk-row" style="flex-wrap: wrap;">
-        <input id="icon" class="lk-input" style="max-width:64px" placeholder="🎯" maxlength="2">
-        <input id="name" class="lk-input" style="flex:1; min-width:160px" placeholder="New habit (e.g. Meditate)">
-        <button id="add" class="lk-btn">Add</button>
-      </div>
-    </div>
-
-    <div id="list" class="lk-grid"></div>
-  </main>
-  <script src="app.js"></script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

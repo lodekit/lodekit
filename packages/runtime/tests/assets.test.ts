@@ -26,9 +26,4 @@ describe("static assets", () => {
     expect(r.status).toBe(200);
     expect((await r.text())).toContain(".lk-container");
   });
-  it("serves the sdk and exposes window.lodekit", async () => {
-    const js = await (await fetch(base + "/_lodekit/sdk.js")).text();
-    expect(js).toContain("window.lodekit");
-    expect(js).toContain("/api/apps/");
-  });
 });
