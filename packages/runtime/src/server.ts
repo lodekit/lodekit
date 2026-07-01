@@ -21,10 +21,11 @@ export function createServer(cfg: Config): express.Express {
 
 export function start(cfg: Config): Server {
   const app = createServer(cfg);
-  startWatcher(cfg);
+  const watcher = startWatcher(cfg);
   const server = app.listen(cfg.port, () => {
     console.log(`Lodekit running at ${cfg.baseUrl}`);
   });
+  server.on("close", () => { void watcher.close(); });
   void buildAll(cfg);
   return server;
 }
