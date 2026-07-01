@@ -36,7 +36,8 @@ function appOutDir(cfg: Config, slug: string): string {
   return path.join(cfg.cacheDir, slug);
 }
 
-export async function buildApp(cfg: Config, slug: string): Promise<BuildState> {
+// Runs one Vite build for a slug. Never throws — build failures become error state.
+async function runBuild(cfg: Config, slug: string): Promise<BuildState> {
   setState(slug, { status: "building" });
   try {
     // Resolve symlinks (e.g. macOS os.tmpdir()'s /var -> /private/var) so Vite's
@@ -63,6 +64,19 @@ export async function buildApp(cfg: Config, slug: string): Promise<BuildState> {
   return states.get(slug)!;
 }
 
+const chains = new Map<string, Promise<BuildState>>();
+
+// Serialize builds per slug so concurrent triggers never run two Vite builds against the
+// same outDir (emptyOutDir would race). A trigger during an in-flight build chains a single
+// rebuild after it settles. runBuild never rejects, so the chain never rejects.
+export function buildApp(cfg: Config, slug: string): Promise<BuildState> {
+  const prev = chains.get(slug) ?? Promise.resolve(undefined as unknown as BuildState);
+  const next = prev.then(() => runBuild(cfg, slug));
+  chains.set(slug, next);
+  void next.finally(() => { if (chains.get(slug) === next) chains.delete(slug); });
+  return next;
+}
+
 export async function buildAll(cfg: Config): Promise<void> {
   for (const app of scanApps(cfg.appsDir)) {
     await buildApp(cfg, app.slug);
@@ -71,5 +85,6 @@ export async function buildAll(cfg: Config): Promise<void> {
 
 export function dropBuild(cfg: Config, slug: string): void {
   states.delete(slug);
+  chains.delete(slug);
   fs.rmSync(appOutDir(cfg, slug), { recursive: true, force: true });
 }

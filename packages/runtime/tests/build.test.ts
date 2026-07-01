@@ -65,4 +65,14 @@ describe("buildApp", () => {
     if (state.status === "error") expect(state.message.length).toBeGreaterThan(0);
     expect(getBuildState("broken")?.status).toBe("error");
   }, 30000);
+
+  it("serializes concurrent builds of the same slug without racing the outDir", async () => {
+    writeApp("concurrent", `import { db } from "@lodekit/sdk";\nexport default function App() { return <h1>c {typeof db}</h1>; }\n`);
+    const [a, b] = await Promise.all([buildApp(cfg, "concurrent"), buildApp(cfg, "concurrent")]);
+    expect(a.status).toBe("ready");
+    expect(b.status).toBe("ready");
+    const outDir = path.join(cache, "concurrent");
+    expect(fs.existsSync(path.join(outDir, "index.html"))).toBe(true);
+    expect(fs.readdirSync(path.join(outDir, "assets")).some((f) => /\.js$/.test(f))).toBe(true);
+  }, 30000);
 });

@@ -10,7 +10,7 @@ const page = (title: string, body: string, sse: boolean) => `<!doctype html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title>
 <style>body{font-family:ui-sans-serif,system-ui,sans-serif;max-width:640px;margin:15vh auto;padding:0 24px;color:#0a0a0a}.muted{color:#6b7280}pre{white-space:pre-wrap;background:#f4f4f5;padding:16px;border-radius:10px;overflow:auto}</style>
 </head>
-<body>${body}${sse ? `<script>new EventSource("/api/events").addEventListener("ready",(e)=>{try{if(JSON.parse(e.data).slug===${JSON.stringify(title)})location.reload()}catch{}})</script>` : ""}</body>
+<body>${body}${sse ? `<script>const es=new EventSource("/api/events");const r=(e)=>{try{if(JSON.parse(e.data).slug===${JSON.stringify(title)})location.reload()}catch{}};es.addEventListener("ready",r);es.addEventListener("error",r);</script>` : ""}</body>
 </html>
 `;
 
