@@ -11,8 +11,11 @@ describe("dashboard html", () => {
     expect(html).toContain("/_lodekit/design-system.css");
     expect(html).toContain("/api/apps");
   });
-  it("subscribes to live updates and has an empty state", () => {
+  it("subscribes to live updates, build state, and has an empty state", () => {
     expect(html).toContain("/api/events");
     expect(html).toContain("Ask Claude to build a tool with Lodekit");
+    expect(html).toContain("building");
+    expect(html).toContain("ready");
+    expect(html).toContain("error");
   });
 });

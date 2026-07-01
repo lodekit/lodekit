@@ -35,13 +35,33 @@
           '<div style="font-size:28px">' + (a.icon || "📦") + "</div>" +
           '<div style="font-weight:600;margin-top:8px">' + a.name + "</div>" +
           '<div class="lk-muted" style="font-size:13px">' + (a.description || "") + "</div>" +
+          '<div class="lk-muted" style="font-size:12px" id="status-' + a.slug + '">' + statusText(a.slug) + "</div>" +
           "</div>";
         grid.appendChild(link);
       }
     }
+    const states = {};
+    function statusText(slug) {
+      const s = states[slug];
+      if (!s) return "";
+      if (s.status === "building") return "building…";
+      if (s.status === "ready") return "ready";
+      return "error: " + (s.message || "");
+    }
+    function applyState(slug) {
+      const el = document.getElementById("status-" + slug);
+      if (el) el.textContent = statusText(slug);
+    }
     render();
     const es = new EventSource("/api/events");
     es.addEventListener("apps-changed", render);
+    for (const ev of ["building", "ready", "error"]) {
+      es.addEventListener(ev, (e) => {
+        const d = JSON.parse(e.data);
+        states[d.slug] = { status: ev, message: d.message };
+        applyState(d.slug);
+      });
+    }
   </script>
 </body>
 </html>
