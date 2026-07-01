@@ -20,20 +20,23 @@ function copyDir(src: string, dst: string) {
   }
 }
 
-// Poll the app endpoint until it serves built output. Deterministic — unlike
-// subscribing to the SSE `ready` event, which start()'s buildAll can broadcast
-// before a listener attaches (the event is then missed and the wait hangs).
-// The building page has no hashed assets; the built page references /assets/;
-// a failed build serves the "Build failed" page.
+// Poll the app endpoint until it serves built output (the built page references
+// /assets/; the building page does not). Deterministic — unlike subscribing to the
+// SSE `ready` event, which start()'s buildAll can broadcast before a listener
+// attaches (the event is then missed and the wait hangs). A transient "Build failed"
+// is tolerated and re-polled: build state is a process-global map, so a prior test's
+// in-flight build against its since-removed temp dir can briefly leave this slug in
+// error before the correct build supersedes it. A genuine failure persists to the
+// deadline, where we surface the last page for diagnosis.
 async function waitReady(base: string, slug: string, timeoutMs: number) {
   const deadline = Date.now() + timeoutMs;
+  let last = "";
   while (Date.now() < deadline) {
-    const body = await (await fetch(base + "/" + slug + "/")).text();
-    if (body.includes("/assets/")) return;
-    if (body.includes("Build failed")) throw new Error(`build failed for ${slug}: ${body.slice(0, 300)}`);
+    last = await (await fetch(base + "/" + slug + "/")).text();
+    if (last.includes("/assets/")) return;
     await new Promise((r) => setTimeout(r, 100));
   }
-  throw new Error(`timed out waiting for ${slug} to build`);
+  throw new Error(`timed out waiting for ${slug} to build; last page: ${last.slice(0, 300)}`);
 }
 
 beforeEach(async () => {
