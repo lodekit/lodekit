@@ -19,7 +19,7 @@ export function scanApps(appsDir: string): AppManifest[] {
   const apps: AppManifest[] = [];
   for (const entry of fs.readdirSync(appsDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
-    const manifestPath = path.join(appsDir, entry.name, "lodekit.json");
+    const manifestPath = path.join(appsDir, entry.name, "manifest.json");
     if (!fs.existsSync(manifestPath)) continue;
     try {
       const m = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as AppManifest;

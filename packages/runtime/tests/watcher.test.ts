@@ -40,7 +40,7 @@ describe("watcher", () => {
 
     const appDir = path.join(root, "apps", "live");
     fs.mkdirSync(appDir, { recursive: true });
-    fs.writeFileSync(path.join(appDir, "lodekit.json"), JSON.stringify({ name: "Live", slug: "live" }));
+    fs.writeFileSync(path.join(appDir, "manifest.json"), JSON.stringify({ name: "Live", slug: "live" }));
 
     await pump;
     reader.cancel();

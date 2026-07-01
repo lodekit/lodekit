@@ -13,7 +13,7 @@ export function appHost(appsDir: string): RequestHandler {
     const slug = segments[0];
     if (!slug || !isValidSlug(slug)) return next();
     const appDir = path.resolve(appsDir, slug);
-    if (!fs.existsSync(path.join(appDir, "lodekit.json"))) return next();
+    if (!fs.existsSync(path.join(appDir, "manifest.json"))) return next();
 
     // Redirect /<slug> -> /<slug>/ so the app's relative asset URLs (e.g. app.js)
     // resolve under the app rather than the server root.

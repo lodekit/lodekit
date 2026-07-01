@@ -12,7 +12,7 @@ beforeEach(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-"));
   const appDir = path.join(root, "apps", "demo");
   fs.mkdirSync(appDir, { recursive: true });
-  fs.writeFileSync(path.join(appDir, "lodekit.json"), JSON.stringify({ name: "Demo", slug: "demo" }));
+  fs.writeFileSync(path.join(appDir, "manifest.json"), JSON.stringify({ name: "Demo", slug: "demo" }));
   fs.writeFileSync(path.join(appDir, "index.html"), "<html><head></head><body>hi</body></html>");
   fs.writeFileSync(path.join(appDir, "app.js"), "console.log(1)");
   const cfg: Config = {

@@ -25,7 +25,7 @@ describe("scaffoldApp", () => {
     const out = scaffoldApp(cfg, { slug: "notes", name: "Notes", description: "Jot things" });
     const d = path.join(cfg.appsDir, "notes");
     expect(out.url).toBe("http://lodekit.localhost:7777/notes");
-    const manifest = JSON.parse(fs.readFileSync(path.join(d, "lodekit.json"), "utf8"));
+    const manifest = JSON.parse(fs.readFileSync(path.join(d, "manifest.json"), "utf8"));
     expect(manifest).toMatchObject({ name: "Notes", slug: "notes", icon: "📦", description: "Jot things" });
     expect(fs.existsSync(path.join(d, "index.html"))).toBe(true);
     expect(fs.readFileSync(path.join(d, "index.html"), "utf8")).toContain("Notes");

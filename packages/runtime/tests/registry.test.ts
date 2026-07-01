@@ -11,7 +11,7 @@ afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); });
 function writeApp(slug: string, manifest: object) {
   const d = path.join(dir, slug);
   fs.mkdirSync(d, { recursive: true });
-  fs.writeFileSync(path.join(d, "lodekit.json"), JSON.stringify(manifest));
+  fs.writeFileSync(path.join(d, "manifest.json"), JSON.stringify(manifest));
 }
 
 describe("scanApps", () => {
@@ -35,7 +35,7 @@ describe("scanApps", () => {
   it("skips malformed manifests", () => {
     const d = path.join(dir, "broken");
     fs.mkdirSync(d);
-    fs.writeFileSync(path.join(d, "lodekit.json"), "{not json");
+    fs.writeFileSync(path.join(d, "manifest.json"), "{not json");
     expect(scanApps(dir)).toEqual([]);
   });
 });

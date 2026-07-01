@@ -39,7 +39,7 @@ export function scaffoldApp(cfg: Config, input: ScaffoldInput) {
     icon: input.icon ?? "📦",
     description: input.description ?? "",
   };
-  fs.writeFileSync(path.join(appDir, "lodekit.json"), JSON.stringify(manifest, null, 2) + "\n");
+  fs.writeFileSync(path.join(appDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
   const indexPath = path.join(appDir, "index.html");
   if (!fs.existsSync(indexPath)) fs.writeFileSync(indexPath, stubHtml(manifest.name));
   const jsPath = path.join(appDir, "app.js");
@@ -48,6 +48,6 @@ export function scaffoldApp(cfg: Config, input: ScaffoldInput) {
     slug: input.slug,
     appDir,
     url: `${cfg.baseUrl}/${input.slug}`,
-    files: ["lodekit.json", "index.html", "app.js"],
+    files: ["manifest.json", "index.html", "app.js"],
   };
 }
