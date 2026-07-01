@@ -1,10 +1,33 @@
 ---
 import Base from "../layouts/Base.astro";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+const tagline = "Build small local apps on a unified stack — no build tooling to manage.";
+// TODO(confirm): repo is not public yet / no git remote configured. Update this
+// URL to the real repository before launch.
+const githubUrl = "https://github.com/lodekit/lodekit";
 ---
 
 <Base>
-  <main class="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
-    <h1 class="text-5xl font-semibold tracking-tight">Lodekit</h1>
-    <p class="text-muted-foreground">Coming soon.</p>
+  <main class="relative flex min-h-screen flex-col items-center justify-center gap-8 px-6 text-center">
+    <section class="flex flex-col items-center gap-4">
+      <span
+        class="rounded-full border border-border px-3 py-1 text-xs font-medium uppercase tracking-widest text-muted-foreground"
+      >
+        Coming soon
+      </span>
+      <h1 class="text-5xl font-semibold tracking-tight sm:text-6xl">Lodekit</h1>
+      <p class="max-w-md text-balance text-lg text-muted-foreground">{tagline}</p>
+    </section>
+
+    <form class="flex w-full max-w-sm items-center gap-2" aria-label="Get notified (coming soon)">
+      <Input type="email" placeholder="you@example.com" aria-label="Email address" disabled />
+      <Button type="submit" disabled>Notify me</Button>
+    </form>
+
+    <footer class="text-sm text-muted-foreground">
+      <a class="underline underline-offset-4 hover:text-foreground" href={githubUrl}>GitHub</a>
+    </footer>
   </main>
 </Base>
