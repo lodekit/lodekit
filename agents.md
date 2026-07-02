@@ -76,7 +76,14 @@ Simplicity never means cutting safety.
 
 ## Conventions
 
-- **Branching:** Trunk-based — commit directly to `master`. No feature branches.
-- **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
-- **Docs:** Specs live in `docs/specs/`. Plans live in `docs/plans/`.
 - **Roadmap:** `roadmap.md` is the roadmap file — it tracks deferred work and known gaps. Add parked items there.
+- **Docs:** Specs live in `docs/specs/`. Plans live in `docs/plans/`.
+- **Branching:** Trunk-based — commit directly to `master`. No feature branches.
+- **Linear history:** `master` must stay a single linear line — **no merge commits**.
+  - Integrate any diverged work by rebasing, not merging: `git pull --rebase` (set once with
+    `git config pull.rebase true`) and `git merge --ff-only` (never a plain `git merge`). 
+  - If you're on a worktree/side branch, `git rebase master` before folding it in.
+  - To flatten an accidental merge, tag a backup first (`git tag backup/<desc> master`) then
+    `git rebase <fork-point>` — it drops merge commits and replays the rest linearly.
+  - Regenerate `pnpm-lock.yaml` conflicts with `pnpm install --lockfile-only` rather than hand-merging.
+- **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
