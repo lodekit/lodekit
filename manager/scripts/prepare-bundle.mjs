@@ -11,6 +11,9 @@ import { fileURLToPath } from "node:url";
 // The one place the Lodekit-local Node version is pinned (spec §3).
 const NODE_VERSION = "24.12.0";
 const NODE_DIST = `node-v${NODE_VERSION}-darwin-arm64`;
+// sha256 of the tarball above, pinned with the version (verified against
+// nodejs.org's SHASUMS256.txt when the pin was set).
+const NODE_SHA256 = "319f221adc5e44ff0ed57e8a441b2284f02b8dc6fc87b8eb92a6a93643fd8080";
 
 const managerDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(managerDir, "..");
@@ -45,15 +48,8 @@ async function fetchNode() {
     if (!res.ok) throw new Error(`Node download failed: HTTP ${res.status}`);
     fs.writeFileSync(tarball, Buffer.from(await res.arrayBuffer()));
   }
-  const shasums = await (
-    await fetch(`https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt`)
-  ).text();
-  const expected = shasums
-    .split("\n")
-    .find((l) => l.trim().endsWith(`${NODE_DIST}.tar.gz`))
-    ?.split(/\s+/)[0];
   const actual = crypto.createHash("sha256").update(fs.readFileSync(tarball)).digest("hex");
-  if (!expected || actual !== expected) {
+  if (actual !== NODE_SHA256) {
     fs.rmSync(tarball, { force: true });
     throw new Error("Node tarball checksum mismatch — deleted; re-run to re-download.");
   }
