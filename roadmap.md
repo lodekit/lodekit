@@ -101,11 +101,11 @@ above; the remainder:
   slice: `docs/specs/2026-07-02-manager-v0.1-design.md` (everything bundled in the .app at
   v0.1, incl. a pinned Lodekit-local Node — never the system's; pre-1.0 northstar: thin
   manager downloading managed platform artifacts — see "Other deferred items").
-  NOTE: `desktop/.npmrc`'s `node-linker=hoisted` only satisfies Forge's config check at
-  `electron-forge start` (CWD=desktop); a workspace-root `pnpm install` ignores it, so the
-  real layout stays isolated. Before adding `electron-forge make`/`package`, move
-  `node-linker=hoisted` to a **workspace-root `.npmrc`** (which changes every package's
-  node_modules layout — re-verify all packages under it).
+  NOTE (resolved by the slice): no workspace-root `node-linker=hoisted` was needed. The
+  packaged manager bundles no node_modules at all (zero prod deps; the platform ships via
+  `extraResource`), and Forge's pnpm-incompatible walks are skipped in `forge.config.js`
+  (`rebuildConfig: { onlyModules: [] }`, `prune: false`, `node_modules` in `ignore`).
+  `manager/.npmrc` keeps `node-linker=hoisted` only for Forge's dev-start config check.
 - **Dev/default path-mode switch** — **specced (2026-07-02)** into the manager slice
   (`docs/specs/2026-07-02-manager-v0.1-design.md` §7): modes live in how the manager
   launches the runtime (packaged = default paths, repo = `examples/`); the runtime is

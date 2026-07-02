@@ -23,9 +23,12 @@ member (so the buildless sample apps never get a `node_modules`). Structure and 
   helpers live in `client.ts`; the MCP-SDK wiring in `index.ts`.
 - **`packages/skill`** (`@lodekit/skill`) — the Claude skill (content only).
 - **`web`** (`@lodekit/web`) — Astro landing site (Starlight docs deferred).
-- **`manager`** (`@lodekit/manager`) — Electron Forge shell that **spawns the runtime as a
-  child Node process** (so `better-sqlite3` loads outside Electron — no ABI rebuild) and opens
-  a window at the dashboard.
+- **`manager`** (`@lodekit/manager`) — the menubar app that ships and supervises the
+  platform. Packaged (`make`): an ad-hoc-signed arm64 `Lodekit.app` bundling a pinned
+  Lodekit-local Node + the platform payload (runtime/mcp/skill via `pnpm deploy`) in
+  `Resources/`, spawning the runtime as a single direct child Node process (so
+  `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
+  app supervising the workspace runtime against `examples/` on the system Node.
 - **`examples/`** — buildless sample apps as a self-contained Lodekit root, used in dev via
   `LODEKIT_ROOT=./examples`.
 
@@ -46,8 +49,12 @@ Package manager is **pnpm** (workspaces). From the repo root:
 - `pnpm test` — runs `pnpm -r test`; today only `@lodekit/runtime` has a suite (vitest, incl.
   the runtime↔MCP integration test). Per-package: `pnpm --filter @lodekit/runtime test`.
 - `pnpm --filter @lodekit/web dev` | `build` — the Astro site.
-- `pnpm --filter @lodekit/manager start` — the Electron shell (needs system Node + pnpm on
-  PATH; spawns the runtime child against `examples/`).
+- `pnpm --filter @lodekit/manager start` — the menubar manager in dev mode (system Node;
+  supervises the runtime against `examples/`).
+- `pnpm --filter @lodekit/manager make` — package `Lodekit.app` (runs
+  `scripts/prepare-bundle.mjs` first: pnpm-deploys the platform payload and downloads the
+  pinned Node — the version is pinned there, and the bundle must be built on that same
+  Node version for the `better-sqlite3` ABI to match).
 
 Runtime and MCP are **buildless** — `tsx`, no build step.
 

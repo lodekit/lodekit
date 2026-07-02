@@ -1,0 +1,26 @@
+# Packaged-app smoke checklist (spec §11)
+
+Run on a clean macOS account **without** system Node or pnpm (`node -v` and `pnpm -v` both
+fail). Build the artifact first: `pnpm --filter @lodekit/manager make`.
+
+1. [ ] Install: unzip, move `Lodekit.app` to `/Applications`, right-click → Open.
+2. [ ] "⬡" appears in the menu bar; no dock icon; menu reads "Lodekit — starting…" then
+       "Lodekit — running".
+3. [ ] First run: `~/Documents/Lodekit/apps` + `data` were created; the dashboard opened
+       in the browser by itself (empty app grid).
+4. [ ] An app builds and serves: copy `examples/apps/habit-tracker` into
+       `~/Documents/Lodekit/apps/`, watch the dashboard go `building… → ready`, open the
+       app, interact with it.
+5. [ ] MCP: paste the README snippet into an agent's MCP config; the agent lists Lodekit
+       tools and can call them. (Headless check:
+       `echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' | <command + args from the README snippet>`
+       prints an `initialize` result.)
+6. [ ] Stop/Start from the menu works; "Open Logs" shows `manager.log` + `runtime.log`.
+7. [ ] Error surfacing: with Lodekit stopped, occupy the port (`python3 -m http.server
+       7777` or a dev runtime), then Start → menu shows "Lodekit — error" with the
+       port-in-use message; free the port, Restart → running.
+8. [ ] "Start at Login": toggle on, log out/in, Lodekit is running.
+9. [ ] Quit: `pgrep -f "Resources/platform/runtime"` prints nothing (no orphan).
+10. [ ] Crash cleanup: `kill -9 <manager pid>` while running (find it via Activity
+        Monitor), relaunch Lodekit.app — it terminates the stale runtime (pid file) and
+        reaches "running".
