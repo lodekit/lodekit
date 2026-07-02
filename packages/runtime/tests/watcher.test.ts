@@ -41,11 +41,10 @@ beforeEach(async () => {
   process.env.LODEKIT_ROOT = root;
   process.env.LODEKIT_CACHE_DIR = cache;
   process.env.LODEKIT_PORT = "0";
-  server = start(loadConfig());
-  await new Promise<void>((r) => server.once("listening", () => r()));
+  server = await start(loadConfig());
   const addr = server.address();
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
-});
+}, 60000);
 afterEach(() => {
   server.close();
   fs.rmSync(root, { recursive: true, force: true });

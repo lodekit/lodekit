@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import type { Server } from "node:http";
 import { buildDashboard } from "../src/build.js";
+import { createServer } from "../src/server.js";
 import type { Config } from "../src/config.js";
 
 let root: string, cache: string, cfg: Config;
@@ -35,4 +37,39 @@ describe("buildDashboard", () => {
     expect(assets.some((f) => f.endsWith(".js"))).toBe(true);
     expect(assets.some((f) => f.endsWith(".css"))).toBe(true);
   }, 60000);
+});
+
+describe("dashboard serving", () => {
+  let server: Server, base: string;
+
+  async function boot() {
+    await new Promise<void>((resolve) => {
+      server = createServer(cfg).listen(0, () => resolve());
+    });
+    const addr = server.address();
+    base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
+  }
+  afterEach(() => server?.close());
+
+  it("serves the built dashboard at / and its assets under /_dashboard/", async () => {
+    await buildDashboard(cfg);
+    await boot();
+    const home = await fetch(base + "/");
+    expect(home.status).toBe(200);
+    const html = await home.text();
+    expect(html).toContain('<div id="root">');
+    const assetPath = html.match(/\/_dashboard\/assets\/[^"]+\.js/)?.[0];
+    expect(assetPath).toBeTruthy();
+    const asset = await fetch(base + assetPath!);
+    expect(asset.status).toBe(200);
+  }, 60000);
+
+  it("serves a fallback page at / when the dashboard output is missing", async () => {
+    await boot(); // no buildDashboard — cache is empty
+    const res = await fetch(base + "/");
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain("Lodekit");
+    expect(html).toContain("dashboard");
+  });
 });
