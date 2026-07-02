@@ -1,22 +1,26 @@
 # Lodekit
 
-Lodekit is a single, local, self-hosted runtime on which a person — working with an AI coding agent — builds and runs their own personal web tools. This glossary fixes the ubiquitous language of that domain: where a term has a canonical form, prefer it and avoid the listed alternatives.
+Lodekit is a product with which a person — working with an AI agent in whatever form they use it: a desktop app, an IDE, a terminal — builds and runs their own personal web apps, locally on their machine. This glossary fixes the ubiquitous language of that domain: where a term has a canonical form, prefer it and avoid the listed alternatives.
 
 ## Language
 
-### Product & distribution
+### Product & platform
 
 **Lodekit**:
-The product: one long-running local process that hosts, builds, and serves a person's tools, along with the dashboard, per-app API, and storage. One shared instance, never one per app.
-_Avoid_: the server, the platform, the site
+The product — the complete experience, from the landing site and docs to the platform running on the person's machine. One shared instance per machine, never one per app.
+_Avoid_: the server, the platform (that's the installed subset), the site
+
+**Platform**:
+The shippable collection installed on the person's machine: runtime, SDK, UI library, dashboard, and manager. What downloading Lodekit puts on disk.
+_Avoid_: the product (that's Lodekit, which is more), the install, the stack (the stack is how app code is written)
 
 **Runtime**:
-The single Node process that _is_ Lodekit — it hosts, builds, watches, and serves apps, the dashboard, and the API. Referred to in code as `@lodekit/runtime`.
+The single Node process at the heart of the platform — it hosts, builds, watches, and serves apps, the dashboard, and the API. Referred to in code as `@lodekit/runtime`.
 _Avoid_: server, backend, daemon
 
-**Desktop app**:
-The downloadable application (`@lodekit/desktop`) and the canonical way Lodekit is installed: it provisions Node, runs the runtime as a child process, registers the MCP server, and opens the dashboard.
-_Avoid_: the installer, the shell, the Electron app (implementation detail)
+**Manager**:
+The thin menubar app (`@lodekit/desktop`) that ships and supervises the platform: it provisions Node, runs the runtime as a child process, registers the MCP server, and offers status indication, "open dashboard", and quit from the menu bar. It has no product UI of its own — everything it shows is the dashboard, opened in the browser.
+_Avoid_: desktop app, shell, controller, tray app, the Electron app (implementation detail)
 
 **Dashboard**:
 Lodekit's built-in web UI: every app with its live build state and health, plus each app's settings, raw data, and scheduled jobs.
@@ -33,7 +37,7 @@ _Avoid_: wiki, manual
 ### Agent surface
 
 **Agent**:
-The AI coding assistant the person builds through. Lodekit is agent-agnostic: any agent that can load the skill and speak MCP can drive it.
+The AI assistant the person builds through, in whatever form they use it — a desktop app (Claude, Codex), an IDE, or a terminal coding agent. Lodekit is agent-agnostic: any agent that can load the skill and speak MCP can drive it.
 _Avoid_: Claude (as the generic word), LLM, assistant, AI
 
 **MCP server**:
@@ -47,8 +51,8 @@ _Avoid_: the prompt, system prompt, docs (docs are human-facing)
 ### Apps
 
 **App**:
-A self-contained personal web tool that runs on Lodekit. The canonical domain and code word for the thing a person builds. (End users see these called _Tools_ — see Flagged ambiguities.)
-_Avoid_: project, site, plugin, widget
+A self-contained personal web app that runs on Lodekit. The canonical word — in code, docs, and marketing alike — for the thing a person builds.
+_Avoid_: tool, project, site, plugin, widget
 
 **Slug**:
 An app's URL-safe identity (`^[a-z0-9-]+$`). It equals the app's folder name and is simultaneously its URL path and its data namespace.
@@ -65,6 +69,18 @@ _Avoid_: template, boilerplate, scaffold (scaffold is the act, not the shape)
 **Scaffold**:
 To generate a new app's starter files conforming to the app contract.
 _Avoid_: create, init, bootstrap, generate
+
+### SDK concepts
+
+Capabilities the SDK offers to apps, provided by the runtime through the scoped API. These names are normative end to end: the same word appears in marketing copy, docs, the dashboard, and the SDK's API surface. The exact SDK surface closes in its slice-spec; the concepts below are the current set.
+
+**Database**:
+An app's per-app SQL database, reached through the SDK (`db.query` / `db.exec`). One per slug, living in the data tree.
+_Avoid_: store (the store is the KV; the two differ), sql
+
+**Store**:
+An app's per-app key–value store of JSON values, reached through the SDK (`store.get` / `store.set`). Distinct from the Cache and from Settings — see Flagged ambiguities.
+_Avoid_: cache, settings, kv, preferences
 
 **Settings**:
 Configuration an app declares so the person can view and edit it in the dashboard; the app reads it through the SDK. Distinct from the Store — see Flagged ambiguities.
@@ -96,22 +112,14 @@ _Avoid_: the project, the data
 Regenerable built output, kept outside the Lodekit root and never backed up. Deleting it costs only a rebuild.
 _Avoid_: build dir, dist, output, storage
 
-**Store**:
-An app's per-app key–value store of JSON values, reached through the SDK (`store.get` / `store.set`). Distinct from the Cache and from Settings — see Flagged ambiguities.
-_Avoid_: cache, settings, kv, preferences
-
-**Database**:
-An app's per-app SQL database, reached through the SDK (`db.query` / `db.exec`). One per slug, living in the data tree.
-_Avoid_: store (the store is the KV; the two differ), sql
-
 ### Building & serving
 
 **Bundled**:
-The current app contract: app source is compiled into static output that Lodekit serves. The person still never runs a build themselves.
+The app contract's build model: app source is compiled into static output that Lodekit serves. The person never runs a build themselves.
 _Avoid_: compiled, production build
 
 **Buildless**:
-Code that ships as raw source and runs with no build step — true of the runtime and the SDK. (Apps were once buildless too; that contract is retired — see Flagged ambiguities.)
+Code that ships as raw source and runs with no build step — true of the runtime and the SDK, never of apps.
 _Avoid_: no-build, raw
 
 **Build state**:
@@ -127,11 +135,11 @@ The prescribed way app code is written: React + TypeScript + Tailwind through th
 _Avoid_: framework, template, best practices
 
 **SDK**:
-The typed client (`@lodekit/sdk`) an app imports to reach its own scoped API — currently `db` and `store`. Replaces the old injected `window.lodekit` global.
+The typed client (`@lodekit/sdk`) an app imports to reach its own scoped API — the sole gateway to the SDK concepts above. Replaces the old injected `window.lodekit` global.
 _Avoid_: client library, api wrapper, window.lodekit
 
 **UI library**:
-The themed component library (`@lodekit/ui`) — shadcn components carrying one shared theme — that every app imports, so all tools look like one product.
+The themed component library (`@lodekit/ui`) — shadcn components carrying one shared theme — that every app imports, so all apps look like one product.
 _Avoid_: design system, component kit, shadcn (the upstream, not the package)
 
 **Scoped API**:
@@ -140,19 +148,18 @@ _Avoid_: the endpoints, the REST API
 
 ## Relationships
 
-- The **Desktop app** installs and supervises the **Runtime**. The runtime has two doors: the **MCP server** (the agent's) and the **Dashboard** (the person's).
-- An agent builds an **App** by loading the **Skill**, driving Lodekit through the **MCP server**, and writing code on the **Stack** — the **SDK** and **UI library** on the **shared toolchain**, conforming to the **App contract**.
+- The **Manager** installs and supervises the **Runtime**. The runtime has two doors: the **MCP server** (the agent's) and the **Dashboard** (the person's).
+- The person builds **Apps** using an **Agent**: the agent loads the **Skill**, drives Lodekit through the **MCP server**, and writes code on the **Stack** — the **SDK** and **UI library** on the **shared toolchain**, conforming to the **App contract**.
 - An **App** is identified by its **Slug**; that same slug is its URL path and its data namespace.
+- An app reaches every SDK concept (**Database**, **Store**, **Settings**, **Jobs**) only through the **SDK**, which calls the **Scoped API**; the **Runtime** provides them.
 - An app's source lives in the **Apps tree**, its built output in the **Cache**, and its persistent state (**Database** + **Store**) in the **Data tree**.
 - The **Backup tree** = apps tree + data tree. The **Cache** is deliberately outside it.
-- An **App** reaches its **Database** and **Store** only through the **SDK**, which calls the **Scoped API**.
 - **Settings** and **Jobs** are declared by an app and surfaced to the person in the **Dashboard**.
 
 ## Flagged ambiguities
 
-- **App vs Tool** — the same thing. _App_ is canonical in the domain and code; _Tool_ is the word shown to end users ("build a tool with Lodekit"). Use _App_ everywhere except human-facing copy.
+- **Lodekit vs Platform** — Lodekit is the whole product experience; the platform is its installed subset (runtime, SDK, UI library, dashboard, manager). "Download Lodekit" installs the platform.
 - **Store vs Cache** — both sound like "somewhere things are kept," but they are opposites in durability. The **Store** is per-app durable KV state (backed up, in the data tree); the **Cache** is disposable build output (never backed up). Never call the store a cache.
 - **Store vs Settings** — both hold small per-app values. **Settings** are declared by the app and edited by the person in the dashboard (the person's knobs); the **Store** is written by app code at runtime (the app's own memory). An app reads both, but only settings are meant for human hands.
 - **Docs vs Skill** — both teach how to use Lodekit, to different readers. **Docs** are the public site for people; the **Skill** is the instruction pack for agents. Content may overlap; the audiences never do.
-- **Buildless: runtime/SDK vs the retired app contract** — _buildless_ now means only the runtime and the SDK (raw source, no build). Apps used to be buildless too (the POC contract); that is retired in favor of the **Bundled** contract. Don't describe an app as buildless.
 - **Skill** — `@lodekit/skill` is the Lodekit skill package (content an agent loads to use Lodekit), not to be confused with agent skills in general.

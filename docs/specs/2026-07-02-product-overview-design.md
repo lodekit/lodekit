@@ -10,16 +10,19 @@ redefining them.
 
 ## 1. Product statement & the loop
 
-Lodekit is a single, local, self-hosted runtime on which a person — working with an AI coding
-agent — builds and runs their own personal web tools. It is agent-agnostic: any agent that can
-load the skill and speak MCP can drive it.
+Lodekit is a product with which a person — working with an AI agent in whatever form they use
+it: a desktop app, an IDE, a terminal — builds and runs their own personal web apps, locally
+on their machine. It is agent-agnostic: any agent that can load the skill and speak MCP can
+drive it. The **platform** is the installed subset: runtime, SDK, UI library, dashboard, and
+manager (§2.1–2.9); the landing site, docs, skill, and MCP server complete the product around
+it.
 
 The product is one loop, and every component exists to serve a step of it:
 
-1. **Install.** The person downloads the **desktop app** — the canonical distribution. It
-   provisions Node, starts the **runtime**, registers the **MCP server**, and opens the
-   **dashboard**.
-2. **Build.** The person asks their **agent** for a tool. The agent loads the **skill**,
+1. **Install.** The person downloads Lodekit — the **manager**, the canonical distribution.
+   It provisions Node, starts the **runtime**, registers the **MCP server**, and sits in the
+   menu bar with status and a door to the **dashboard**.
+2. **Build.** The person asks their **agent** for an app. The agent loads the **skill**,
    drives Lodekit through the **MCP server** (scaffold, inspect, open), and writes app code on
    the **stack**: React + TypeScript on the shared toolchain, importing the **SDK** for data
    and the **UI library** for consistent design, conforming to the **app contract**.
@@ -46,7 +49,7 @@ from the cache, the dashboard, the API). Buildless — runs from source via `tsx
 
 - **Boundary:** everything server-side is the runtime. No second process, no per-app servers.
 - **Contract:** HTTP is the only way in — the SDK, the MCP server, the dashboard, and the
-  desktop app all reach it over HTTP (+ SSE). Nothing imports runtime internals.
+  manager all reach it over HTTP (+ SSE). Nothing imports runtime internals.
 - **Today:** host + build + watch + scoped API (`db`, `store`) + SSE + dashboard serving all
   shipped. Settings, jobs, secrets, blobs, and the dev/default path-mode switch are not built.
 
@@ -76,7 +79,7 @@ jobs/secrets/blobs) lands as an SDK surface backed by a scoped-API endpoint.
 
 The themed component library: shadcn components carrying one shared theme, resolved into apps
 via the same alias mechanism as `react` and the SDK. One theme imported everywhere is what
-makes ten agent-built tools look like one product instead of ten codepens.
+makes ten agent-built apps look like one product instead of ten codepens.
 
 - **Contract:** apps import components (`import { Button } from "@lodekit/ui"`); the skill
   mandates using it; the dashboard uses the same theme so Lodekit itself looks like its apps.
@@ -135,23 +138,25 @@ Lodekit's built-in web UI, served by the runtime. The person's window into their
 - **Today:** grid + build state over SSE shipped. Detail view, settings editor, data explorer
   unbuilt.
 
-### 2.9 Desktop app (`@lodekit/desktop`) — dev shell today, THE download at v1
+### 2.9 Manager (`@lodekit/desktop`) — dev shell today, THE download at v1
 
-The canonical distribution. An Electron shell that: provisions Node (find system Node, else
+The canonical distribution: a thin menubar app. It provisions Node (find system Node, else
 download one local to Lodekit — never touching the user's system), spawns the runtime as a
 child Node process (keeping `better-sqlite3` off Electron's ABI), supervises its lifecycle
 (start/stop, autostart at login, clean child-tree shutdown), registers the MCP server with
-the person's agent(s), and opens a window on the dashboard.
+the person's agent(s), and offers status indication, "open dashboard" (in the browser), and
+quit from the menu bar.
 
-- **Contract:** the desktop app owns install/lifecycle and nothing else — it contains no
-  product logic; everything it shows is the dashboard.
-- **Today:** dev shell only (requires system Node + pnpm, spawn not cross-platform, no
-  packaging/signing/updates). v1 is the packaged, signed, installable app.
+- **Contract:** the manager owns install/lifecycle and nothing else — it has no product UI of
+  its own; everything it shows is the dashboard.
+- **Today:** dev shell only (requires system Node + pnpm, spawn not cross-platform, opens an
+  Electron window instead of sitting in the menu bar, no packaging/signing/updates). v1 is
+  the packaged, signed, installable menubar app.
 
 ### 2.10 Landing site (`web`, `@lodekit/web`) — placeholder, v1-deploy
 
-The public marketing site at lodekit.com (domain secured). Sells the loop in end-user
-language ("build your own tools" — _tools_, not _apps_, per `context.md`), links the download
+The public marketing site at lodekit.com (domain secured). Sells the loop ("build your own
+apps" — _app_ is the one word, from marketing to SDK, per `context.md`), links the download
 and the docs.
 
 - **Today:** Astro placeholder, undeployed. v1 is a real page + deploy.
@@ -160,7 +165,7 @@ and the docs.
 
 The public documentation site for people, living alongside the landing site (Starlight inside
 `web`, sharing its tooling and deploy). v1 is deliberately small: install, build your first
-tool (through your agent), concepts (the loop, the backup tree, the dashboard), and per-agent
+app (through your agent), concepts (the loop, the backup tree, the dashboard), and per-agent
 MCP/skill setup guides. Agent-facing depth stays in the skill.
 
 ### 2.12 Jobs — designed-in, post-v1
@@ -180,10 +185,10 @@ these without amending this spec first.
 1. **One shared instance.** One runtime hosts every app. Never one process per app.
 2. **The person never builds.** No dev servers, no terminal commands, no per-app
    dependencies. Lodekit drives the build chain programmatically (Vite JS API), and the
-   desktop app provisions Node itself.
+   manager provisions Node itself.
 3. **The backup tree is sacred.** Apps tree + data tree hold everything worth keeping; both
    stay dependency-free and human-readable. The cache is disposable and lives outside.
-4. **HTTP is the runtime's only door.** SDK, MCP server, dashboard, and desktop app all
+4. **HTTP is the runtime's only door.** SDK, MCP server, dashboard, and manager all
    speak HTTP(+SSE) to the runtime. No cross-package imports of runtime internals.
 5. **The SDK is the only app-facing surface.** New capabilities reach apps as typed SDK
    methods backed by scoped-API endpoints — never as globals, and never scoped wider than the
@@ -197,7 +202,8 @@ these without amending this spec first.
    not a down runtime. Trust-boundary validation (slug pattern, path containment) holds at
    every surface.
 9. **One language.** `context.md` is normative: canonical terms in code, specs, docs, and
-   skill; _Tool_ only in end-user copy.
+   skill — one word per concept from marketing copy down to SDK API names (_app_, _job_,
+   _store_ — never _tool_, _cron_, _cache_ for those concepts).
 
 ## 4. The v1 line
 
@@ -215,16 +221,16 @@ v1 is the first version a stranger can download and complete the loop with, unas
 | MCP server | Contract-aligned tools incl. build-state/error inspection; `registerTool` migration | Data/introspection tools beyond the building loop |
 | Skill | Full agent-neutral rewrite against v1 stack | Jobs guidance, advanced patterns |
 | Dashboard | Grid + build state (shipped) + app detail: health, settings editor, data explorer | Jobs panel, secrets UI, log viewer |
-| Desktop app | Packaged/signed installer, Node provisioning, runtime lifecycle + autostart, MCP registration, dashboard window | Auto-update channel, tray niceties |
+| Manager | Packaged/signed menubar app, Node provisioning, runtime lifecycle + autostart, MCP registration, status + open-dashboard + quit | Auto-update channel, richer menu niceties |
 | Landing site | Real page deployed to lodekit.com | — |
-| Docs | Starlight: install, first tool, concepts, per-agent setup | Full reference, cookbook |
+| Docs | Starlight: install, first app, concepts, per-agent setup | Full reference, cookbook |
 | Jobs | — (component designed, contract sketched in its own spec) | Scheduler + server-side contract + dashboard panel as v1.x headline |
 
 ### 4.2 Derivation order
 
 Each line becomes its own slice-spec → plan → build cycle; the order minimizes rework
 (everything the skill teaches must exist before the skill is rewritten; everything the
-desktop app ships must work before it's packaged):
+manager ships must work before it's packaged):
 
 1. **`@lodekit/ui`** — theme + core components + alias into the toolchain + dashboard
    adoption.
@@ -234,7 +240,7 @@ desktop app ships must work before it's packaged):
    endpoints from 1–2).
 4. **MCP + skill v1** — contract-aligned tools, build-state feedback loop, full skill
    rewrite. (Depends on 1–3 being true so the skill teaches reality.)
-5. **Desktop v1** — packaging, Node provisioning, lifecycle, MCP registration, path-mode
+5. **Manager v1** — packaging, Node provisioning, lifecycle, MCP registration, path-mode
    switch.
 6. **Web v1** — landing page + minimal docs, deployed.
 7. **(post-v1) Jobs** — server-side contract + scheduler + dashboard panel.
@@ -250,19 +256,19 @@ Unsettled points slice-spec sessions must resolve (or escalate) rather than assu
 1. **Jobs timing & contract** *(assumed post-v1 in this draft — confirm)*: does v1 really
    ship without automation, and when jobs come, what is the server-side app-code shape
    (module in the app folder? sandboxing? SDK access from job context)?
-2. **MCP registration mechanics** — "the desktop app registers the MCP server" differs per
+2. **MCP registration mechanics** — "the manager registers the MCP server" differs per
    agent (config file locations, formats). Which agents get first-class automatic
    registration vs. a copy-paste snippet in docs?
 3. **Skill distribution** — how does a non-Claude agent actually load `@lodekit/skill`?
-   (Served by the runtime over HTTP? Installed to known per-agent locations by the desktop
-   app? Both?)
+   (Served by the runtime over HTTP? Installed to known per-agent locations by the manager?
+   Both?)
 4. **Settings shape** — declared in the manifest vs. a separate file vs. registered via SDK
    at runtime; typing and validation story.
 5. **Data explorer write access** — read-only browsing vs. letting the person edit rows/keys
    (data-loss guardrails if writable).
 6. **Node provisioning default** — prefer system Node when compatible, or always use the
    Lodekit-local Node for reproducibility?
-7. **Update story** — is auto-update in scope for the desktop app shortly after v1, and what
+7. **Update story** — is auto-update in scope for the manager shortly after v1, and what
    updates with it (runtime? toolchain? UI theme — which changes how existing apps look)?
 8. **Secrets before integrations?** — apps calling external APIs need secrets earlier than
    the integrations subsystem; does a minimal secrets surface deserve a v1.x fast-track?
