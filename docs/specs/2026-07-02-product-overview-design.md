@@ -10,9 +10,17 @@ redefining them.
 
 ## 1. Product statement & the loop
 
-Lodekit is a product with which a person — working with an AI agent in whatever form they use
-it: a desktop app, an IDE, a terminal — builds and runs their own personal web apps, locally
-on their machine. It is agent-agnostic: any agent that can load the skill and speak MCP can
+**Cloud batteries, locally, easily.**
+
+Everything your apps need from a cloud, on the one computer you already own. Lodekit is a
+home for the software you have your agent build: a real database, durable storage, scheduled
+jobs, an always-on runtime — installed as one thing, wrapped in guardrails that keep
+agent-written code safe. No accounts, no subscriptions, nobody else's computer. Your apps and
+your data are files in a folder you own — back it up and it's yours forever.
+
+In the language of `context.md`: a person — working with an AI agent in whatever form they
+use it: a desktop app, an IDE, a terminal — builds and runs their own personal web apps on
+Lodekit, locally. It is agent-agnostic: any agent that can load the skill and speak MCP can
 drive it. The **platform** is the installed subset: runtime, SDK, UI library, dashboard, and
 manager (§2.1–2.9); the landing site, docs, skill, and MCP server complete the product around
 it.
@@ -27,7 +35,7 @@ The product is one loop, and every component exists to serve a step of it:
    the **stack**: React + TypeScript on the shared toolchain, importing the **SDK** for data
    and the **UI library** for consistent design, conforming to the **app contract**.
 3. **Run.** The runtime watches the apps tree, builds changed apps through the shared
-   toolchain, and serves them. The person uses their tools in the browser.
+   toolchain, and serves them. The person uses their apps in the browser.
 4. **Observe.** The person checks the **dashboard**: every app's build state and health, its
    **settings**, its raw **data** (database + store), and — once shipped — its **jobs**.
 5. **Learn.** The **landing site** sells the loop to newcomers; the **docs** teach people how
@@ -155,9 +163,9 @@ quit from the menu bar.
 
 ### 2.10 Landing site (`web`, `@lodekit/web`) — placeholder, v1-deploy
 
-The public marketing site at lodekit.com (domain secured). Sells the loop ("build your own
-apps" — _app_ is the one word, from marketing to SDK, per `context.md`), links the download
-and the docs.
+The public marketing site at lodekit.com (domain secured). Sells the product statement (§1 —
+"cloud batteries, locally, easily", in its exact words; _app_ is the one word from marketing
+to SDK, per `context.md`), links the download and the docs.
 
 - **Today:** Astro placeholder, undeployed. v1 is a real page + deploy.
 
