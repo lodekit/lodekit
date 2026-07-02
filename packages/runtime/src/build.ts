@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import { build } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
@@ -17,6 +18,34 @@ const pkgDir = (id: string) => path.dirname(require.resolve(`${id}/package.json`
 const uiDir = pkgDir("@lodekit/ui");
 const uiRequire = createRequire(path.join(uiDir, "package.json"));
 const lucideDir = path.dirname(uiRequire.resolve("lucide-react/package.json"));
+
+const DASHBOARD_ROOT = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "dashboard"
+);
+
+function viteOptions(rootDir: string, outDir: string, base = "/") {
+  return {
+    // Resolve symlinks (e.g. macOS os.tmpdir()'s /var -> /private/var) so Vite's
+    // root and the on-disk app files agree on a canonical path; otherwise Rollup's
+    // relative-path computation for emitted HTML can produce paths that escape outDir.
+    root: fs.realpathSync(rootDir),
+    base,
+    logLevel: "silent" as const,
+    plugins: [react(), tailwind()],
+    resolve: {
+      alias: {
+        react: pkgDir("react"),
+        "react-dom": pkgDir("react-dom"),
+        "@lodekit/sdk": pkgDir("@lodekit/sdk"),
+        "@lodekit/ui": uiDir,
+        "lucide-react": lucideDir,
+      },
+    },
+    build: { outDir, emptyOutDir: true },
+  };
+}
 
 export type BuildState =
   | { status: "building" }
@@ -45,25 +74,7 @@ function appOutDir(cfg: Config, slug: string): string {
 async function runBuild(cfg: Config, slug: string): Promise<BuildState> {
   setState(slug, { status: "building" });
   try {
-    // Resolve symlinks (e.g. macOS os.tmpdir()'s /var -> /private/var) so Vite's
-    // root and the on-disk app files agree on a canonical path; otherwise Rollup's
-    // relative-path computation for emitted HTML can produce paths that escape outDir.
-    const appDir = fs.realpathSync(path.join(cfg.appsDir, slug));
-    await build({
-      root: appDir,
-      logLevel: "silent",
-      plugins: [react(), tailwind()],
-      resolve: {
-        alias: {
-          react: pkgDir("react"),
-          "react-dom": pkgDir("react-dom"),
-          "@lodekit/sdk": pkgDir("@lodekit/sdk"),
-          "@lodekit/ui": uiDir,
-          "lucide-react": lucideDir,
-        },
-      },
-      build: { outDir: appOutDir(cfg, slug), emptyOutDir: true },
-    });
+    await build(viteOptions(path.join(cfg.appsDir, slug), appOutDir(cfg, slug)));
     setState(slug, { status: "ready" });
   } catch (e) {
     setState(slug, { status: "error", message: e instanceof Error ? e.message : String(e) });
@@ -94,4 +105,24 @@ export function dropBuild(cfg: Config, slug: string): void {
   states.delete(slug);
   chains.delete(slug);
   fs.rmSync(appOutDir(cfg, slug), { recursive: true, force: true });
+}
+
+export type DashboardState = { status: "ready" } | { status: "error"; message: string };
+
+let dashboardState: DashboardState | undefined;
+
+export function getDashboardState(): DashboardState | undefined {
+  return dashboardState;
+}
+
+// Builds Lodekit's own dashboard through the same pipeline apps use. `_dashboard` sits
+// outside the slug grammar, so it can never collide with an app's cache entry or URL.
+export async function buildDashboard(cfg: Config): Promise<DashboardState> {
+  try {
+    await build(viteOptions(DASHBOARD_ROOT, path.join(cfg.cacheDir, "_dashboard"), "/_dashboard/"));
+    dashboardState = { status: "ready" };
+  } catch (e) {
+    dashboardState = { status: "error", message: e instanceof Error ? e.message : String(e) };
+  }
+  return dashboardState;
 }
