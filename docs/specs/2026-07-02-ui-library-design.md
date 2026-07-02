@@ -27,7 +27,11 @@ looks like its apps (cohesion invariant 7).
 
 ### Out of scope (deferred)
 
-- Charts, data-table, rich-text, media components (umbrella §4.1, later 0.x).
+- Heavy-dependency shadcn components — chart (recharts), calendar/date-picker
+  (react-day-picker + date-fns), carousel (embla), form (react-hook-form + zod). Each
+  deserves its own deliberate arrival (charts with a dataviz story, form with a validation
+  story) later in 0.x, consistent with umbrella §4.1. Rich-text and media components
+  likewise.
 - A person-facing dark/light toggle (system preference only for now).
 - The skill rewrite that mandates the UI library (slice 3).
 - A bespoke Lodekit visual identity — v0.1 ships shadcn's stock look on a neutral base;
@@ -54,12 +58,32 @@ packages/ui/
   the real dependencies (`radix-ui` primitives, `class-variance-authority`, `clsx`,
   `tailwind-merge`, `lucide-react`) are declared on `@lodekit/ui` and resolve through its
   own `node_modules` when Vite bundles the aliased source.
-- **Core set (v0.1):** Button, Badge, Card, Separator, Skeleton, Tabs, Table, Dialog,
-  DropdownMenu, Tooltip, Input, Textarea, Label, Select, Checkbox, Switch — the umbrella's
-  "layout, forms, button, table, dialog…" made concrete. All re-exported from the barrel;
-  apps never deep-import component files.
+- **Primitives: Radix, deliberately.** Stock shadcn builds on Radix, which is what the
+  shadcn CLI generates and what agents' training data overwhelmingly assumes — zero
+  translation work, maximum agent familiarity. Radix's maintenance has slowed while Base UI
+  (ex-Radix + MUI people) gathers momentum, but Radix is stable, and the barrel insulates
+  the bet: apps import `Button` from `@lodekit/ui`, never a primitive, so a later Radix →
+  Base UI migration is an internal per-component change in `packages/ui` that touches no
+  app. Revisit if/when upstream shadcn migrates.
+- **Core set (v0.1) — every shadcn component that rides on the base dependencies** (Radix
+  primitives, cva, clsx/tailwind-merge, or a small single-purpose lib), so agents reaching
+  for any common shadcn name find it. Concretely: Accordion, Alert, AlertDialog,
+  AspectRatio, Avatar, Badge, Breadcrumb, Button, Card, Checkbox, Collapsible, Command
+  (cmdk), ContextMenu, Dialog, Drawer (vaul), DropdownMenu, HoverCard, Input, InputOTP
+  (input-otp), Label, Menubar, NavigationMenu, Pagination, Popover, Progress, RadioGroup,
+  Resizable (react-resizable-panels), ScrollArea, Select, Separator, Sheet, Sidebar,
+  Skeleton, Slider, Sonner (sonner), Switch, Table, Tabs, Textarea, Toggle, ToggleGroup,
+  Tooltip. The parenthesized small libs are acceptable one-time additions to the shared
+  install; the heavy-dependency components are deferred (§1). Upstream's data-table,
+  combobox, and date-picker are composition *patterns* (TanStack Table; Popover + Command;
+  Calendar + Popover), not components — they belong to the skill, not the package. All
+  components re-export from the barrel; apps never deep-import component files.
 - **Icons:** apps import icons from `lucide-react` directly (aliased, §4). Not re-exported
   through the barrel — lucide names collide with component names (`Table`, `Badge`).
+  Additional icon libraries later are additive: one more alias + one shared-install
+  dependency each, no Lodekit icon abstraction to outgrow. Lucide itself stays a permanent
+  base dependency either way — the vendored components use it internally (Select's
+  chevron, Dialog's ×).
 
 ## 3. Theme (`theme.css`)
 
@@ -174,9 +198,11 @@ The starter emitted by `scaffold.ts` demonstrates the stack it should teach:
 - Dashboard startup-build freshness skip (mtime/hash) if the ~1s cost starts to matter.
 - Watch dashboard source in dev for rebuild-on-change, if restart friction grows.
 
-## 11. Open assumptions (decided in-session, flag on review)
+## 11. Assumptions (decided in-session, confirmed on review)
 
-Brainstormed autonomously; these picks follow the umbrella spec but weren't confirmed:
+Brainstormed autonomously, then reviewed 2026-07-02: confirmed as listed, with the core
+set expanded to all base-dependency shadcn components and the Radix-vs-Base-UI rationale
+recorded (§2):
 
 1. **Dashboard as a runtime-built React app** (over: vanilla page sharing only theme CSS —
    drifts; committed prebuilt output — build artifacts in git). Dogfoods the toolchain and
