@@ -18,6 +18,11 @@ tasks, an always-on runtime — installed as one thing, wrapped in guardrails th
 agent-written code safe. No accounts, no subscriptions, nobody else's computer. Your apps and
 your data are files in a folder you own — back it up and it's yours forever.
 
+Positioning behind the statement: written for **non-devs and tinkerers**; positioned
+**against the cloud** (keep the batteries, drop the accounts, subscriptions, and
+someone-else's-computer); **local is the point** — ownership — not merely the means; the
+robustness claimed is all three of durable, reliable, and safe.
+
 In the language of `context.md`: a person — working with an AI agent in whatever form they
 use it: a desktop app, an IDE, a terminal — builds and runs their own personal web apps on
 Lodekit, locally. It is agent-agnostic: any agent that can load the skill and speak MCP can
