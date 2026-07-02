@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { db } from "@lodekit/sdk";
+import { Badge, Button, Card, CardContent, Input } from "@lodekit/ui";
 
 interface Habit { id: number; name: string; icon: string; created_at: string }
 interface Checkin { habit_id: number; day: string }
@@ -60,15 +61,15 @@ export default function App() {
   return (
     <main className="mx-auto max-w-2xl p-8">
       <h1 className="text-2xl font-semibold">Habit Tracker</h1>
-      <p className="text-gray-500">
+      <p className="text-muted-foreground">
         <strong>{habits.length ? `${doneToday} of ${habits.length} done today` : "No habits yet"}</strong>
       </p>
       <div className="my-5 flex flex-wrap gap-2">
-        <input className="w-16 rounded border border-gray-300 px-2 py-1" placeholder="🎯" maxLength={2}
+        <Input className="w-16" placeholder="🎯" maxLength={2}
           value={icon} onChange={(e) => setIcon(e.target.value)} />
-        <input className="min-w-40 flex-1 rounded border border-gray-300 px-2 py-1" placeholder="New habit (e.g. Meditate)"
+        <Input className="min-w-40 flex-1" placeholder="New habit (e.g. Meditate)"
           value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
-        <button className="rounded bg-zinc-900 px-4 py-1 text-white" onClick={add}>Add</button>
+        <Button onClick={add}>Add</Button>
       </div>
       <div className="grid gap-3">
         {habits.map((h) => {
@@ -76,17 +77,22 @@ export default function App() {
           const done = days.includes(today());
           const s = streak(days);
           return (
-            <div key={h.id} className="flex items-center justify-between rounded border border-gray-200 p-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{h.icon || "✅"}</span>
-                <div>
-                  <div><strong>{h.name}</strong></div>
-                  <div className="text-gray-500">{s > 0 ? `🔥 ${s} ${s === 1 ? "day" : "days"}` : "No streak yet"}</div>
+            <Card key={h.id}>
+              <CardContent className="flex items-center justify-between p-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{h.icon || "✅"}</span>
+                  <div>
+                    <div><strong>{h.name}</strong></div>
+                    <div className="text-muted-foreground">
+                      {s > 0 ? <Badge variant="secondary">🔥 {s} {s === 1 ? "day" : "days"}</Badge> : "No streak yet"}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <button className={`rounded bg-zinc-900 px-4 py-1 text-white ${done ? "opacity-60" : ""}`}
-                onClick={() => toggle(h.id, done)}>{done ? "Undo" : "Done"}</button>
-            </div>
+                <Button variant={done ? "secondary" : "default"} onClick={() => toggle(h.id, done)}>
+                  {done ? "Undo" : "Done"}
+                </Button>
+              </CardContent>
+            </Card>
           );
         })}
       </div>
