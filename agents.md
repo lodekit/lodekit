@@ -29,8 +29,8 @@ member (so the buildless sample apps never get a `node_modules`). Structure and 
 - **`examples/`** — buildless sample apps as a self-contained Lodekit root, used in dev via
   `LODEKIT_ROOT=./examples`.
 
-Deferred subsystems (designed-in, not built): `@lodekit/sdk`, `@lodekit/ui`, the Vite build
-toolchain, Starlight, and Electron packaging. See `roadmap.md`.
+Deferred subsystems (designed-in, not built): Starlight and Electron packaging. See
+`roadmap.md`.
 
 ## Build & Test
 

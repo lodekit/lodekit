@@ -174,8 +174,10 @@ The starter emitted by `scaffold.ts` demonstrates the stack it should teach:
 ## 8. Testing (minimum, per guardrails)
 
 - **Build integration** (`build.test.ts`): a fixture app importing a component from
-  `@lodekit/ui`, an icon from `lucide-react`, and `theme.css` reaches `ready`; the built
-  CSS contains a theme token (e.g. `--primary`), proving `@source` scanning worked.
+  `@lodekit/ui`, an icon from `lucide-react`, and `theme.css` reaches `ready`; the test
+  asserts the built CSS contains both a theme token (e.g. `--primary`, proving `theme.css`
+  was bundled) and a component-internal utility class (e.g. `inline-flex`, proving `@source`
+  scanning generated classes from the vendored component source).
 - **Dashboard** (`dashboard.test.ts`): after startup, `/` serves the built dashboard HTML
   and its `/_dashboard/` assets resolve; the build-failure fallback path renders instead
   of crashing.

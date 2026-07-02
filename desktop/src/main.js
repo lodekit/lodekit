@@ -25,7 +25,7 @@ function startRuntime() {
   });
 }
 
-function waitForServer(retries = 50) {
+function waitForServer(retries = 300) {
   return new Promise((resolve, reject) => {
     const attempt = (left) => {
       const req = http.get(

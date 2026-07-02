@@ -107,5 +107,7 @@ describe("buildApp", () => {
     expect(cssFile).toBeTruthy();
     const css = fs.readFileSync(path.join(cache, "themed", "assets", cssFile!), "utf8");
     expect(css).toContain("--primary");
+    // inline-flex comes from Button's classes in @lodekit/ui source — proves @source scanning worked
+    expect(css).toContain("inline-flex");
   }, 60000);
 });
