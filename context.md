@@ -19,7 +19,7 @@ The single Node process at the heart of the platform — it hosts, builds, watch
 _Avoid_: server, backend, daemon
 
 **Manager**:
-The thin menubar app (`@lodekit/desktop`) that ships and supervises the platform: it provisions a Lodekit-local Node (pinned version, never the system's), runs the runtime as a child process, and offers status indication, "open dashboard", and quit from the menu bar. It has no product UI of its own — everything it shows is the dashboard, opened in the browser.
+The thin menubar app (`@lodekit/manager`) that ships and supervises the platform: it provisions a Lodekit-local Node (pinned version, never the system's), runs the runtime as a child process, and offers status indication, "open dashboard", and quit from the menu bar. It has no product UI of its own — everything it shows is the dashboard, opened in the browser.
 _Avoid_: desktop app, shell, controller, tray app, the Electron app (implementation detail)
 
 **Dashboard**:

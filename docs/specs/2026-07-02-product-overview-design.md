@@ -174,12 +174,13 @@ Lodekit's built-in web UI, served by the runtime. The person's window into their
 - **Contract:** driven entirely by the runtime's HTTP + SSE surfaces; themed with
   `@lodekit/ui` so the product and its apps share one design.
 
-### 2.9 Manager (`@lodekit/desktop`) — dev shell today, THE download at v0.1
+### 2.9 Manager (`@lodekit/manager`) — dev shell today, THE download at v0.1
 
 The canonical distribution: a thin menubar app. It provisions a **Lodekit-local Node** —
-always its own download, pinned to the version Lodekit is tested against, never the system
-Node (so Lodekit controls Node and dependency versioning end to end, and never touches the
-user's system or PATH). It spawns the runtime as a child Node process (keeping
+always its own copy (bundled inside the app at v0.1; the pre-1.0 northstar is a thin
+manager that downloads and manages versioned platform artifacts), pinned to the version
+Lodekit is tested against, never the system Node (so Lodekit controls Node and dependency
+versioning end to end, and never touches the user's system or PATH). It spawns the runtime as a child Node process (keeping
 `better-sqlite3` off Electron's ABI), supervises its lifecycle (start/stop, autostart at
 login, clean child-tree shutdown), and offers status indication, "open dashboard" (in the
 browser), and quit from the menu bar.
@@ -190,7 +191,9 @@ browser), and quit from the menu bar.
   until the docs ship); automated registration belongs to the future FTUX/onboarding work.
 - **Today:** dev shell only (requires system Node + pnpm, spawn not cross-platform, opens an
   Electron window instead of sitting in the menu bar, no packaging/signing/updates). v0.1 is
-  the packaged, signed, installable menubar app.
+  the packaged, installable menubar app (macOS, ad-hoc signed for the assisted alpha;
+  Developer ID signing/notarization later in 0.x). Slice-spec:
+  `2026-07-02-manager-v0.1-design.md`.
 
 ### 2.10 Landing site (`web`, `@lodekit/web`) — placeholder, ships later in 0.x
 
@@ -274,7 +277,7 @@ knowledge, not to fix a concrete v1.0 target.
 | MCP server | Contract-aligned driving tools incl. build-state/error inspection; read-only service tools; `registerTool` migration | Write access behind designed guardrails; service tools tracking the catalog |
 | Skill | Full agent-neutral rewrite against the v0.1 stack; manual linking | Guidance per new service; automated distribution (FTUX) |
 | Dashboard | Grid + build state (shipped), restyled with `@lodekit/ui` | App detail/health, data explorer, per-service panels (settings, tasks, secrets) |
-| Manager | Packaged/signed menubar app, Lodekit-local Node (pinned), runtime lifecycle + autostart, status + open-dashboard + quit; manual MCP registration via docs | FTUX/onboarding (auto MCP registration, skill linking), auto-update |
+| Manager | Packaged menubar app (macOS, ad-hoc signed), bundled Lodekit-local Node (pinned), runtime lifecycle + autostart, status + open-dashboard + quit; manual MCP registration via docs | FTUX/onboarding (auto MCP registration, skill linking), auto-update + managed platform artifacts, Developer ID signing, Windows/Linux |
 | Landing site | — | Real page deployed to lodekit.com, with the unassisted-loop push |
 | Docs | — (assisted alpha: setup snippets live with the skill/readme) | Starlight: install, first app, concepts, per-agent setup; full reference |
 | Tasks | — (recorded as a future service, §2.12; no spec yet) | Holistic design: queueing, scheduling, hooks, signals |

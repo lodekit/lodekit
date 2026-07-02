@@ -97,20 +97,19 @@ above; the remainder:
 - **Starlight docs** — add Astro's Starlight docs framework inside `web/`, sharing the
   landing site's tooling and deploy. The landing placeholder shipped by the migration is
   the seed.
-- **Electron packaging + Lodekit-local Node** — turn the dev shell into a distributable
-  app (Forge packaging, code-signing) and implement the Node strategy: find system Node,
-  else **offer to download a Node version installed local to Lodekit only** — never
-  touching the user's system Node or PATH. Pairs with "Runtime auto-install" below, and
-  resolves the `better-sqlite3` ABI-rebuild / pnpm-hoist concern in its packaged context.
+- **Electron packaging + Lodekit-local Node** — **specced (2026-07-02)** as the manager
+  slice: `docs/specs/2026-07-02-manager-v0.1-design.md` (everything bundled in the .app at
+  v0.1, incl. a pinned Lodekit-local Node — never the system's; pre-1.0 northstar: thin
+  manager downloading managed platform artifacts — see "Other deferred items").
   NOTE: `desktop/.npmrc`'s `node-linker=hoisted` only satisfies Forge's config check at
   `electron-forge start` (CWD=desktop); a workspace-root `pnpm install` ignores it, so the
   real layout stays isolated. Before adding `electron-forge make`/`package`, move
   `node-linker=hoisted` to a **workspace-root `.npmrc`** (which changes every package's
   node_modules layout — re-verify all packages under it).
-- **Dev/default path-mode switch** — replace the `LODEKIT_ROOT=./examples` dev stopgap
-  with first-class modes: a `dev` mode using the factored example apps + fixtures, and a
-  `default` mode using the app's own configured paths (`~/Documents/Lodekit`). First
-  refactor after the foundation lands.
+- **Dev/default path-mode switch** — **specced (2026-07-02)** into the manager slice
+  (`docs/specs/2026-07-02-manager-v0.1-design.md` §7): modes live in how the manager
+  launches the runtime (packaged = default paths, repo = `examples/`); the runtime is
+  already env-driven.
 - **Turborepo** — adopt the task-runner/cache layer once the Vite build graph exists and
   CI times justify it; purely additive on top of pnpm workspaces, no restructure.
 - **OSS hygiene** — LICENSE, public README, CONTRIBUTING, CODE_OF_CONDUCT, `.github/`
@@ -124,10 +123,10 @@ above; the remainder:
   (give `packages/mcp` an `exports`/`main` + declare it a devDependency) instead of the current
   relative reach-in `packages/runtime/tests/mcp.test.ts` → `../../mcp/client.js`, which bypasses
   the package boundary.
-- **Desktop spawn cross-platform + child-tree kill** — `desktop/src/main.js` does
-  `spawn("pnpm", …)` (needs `pnpm.cmd`/`shell:true` on Windows) and `runtime.kill()` SIGTERMs
-  `pnpm`, which may not propagate to the `tsx` grandchild (possible orphaned node). Both belong
-  with the deferred Electron-packaging work.
+- **Desktop spawn cross-platform + child-tree kill** — the macOS half (single direct child,
+  exact kill semantics, stale-PID cleanup) is absorbed by the manager slice
+  (`docs/specs/2026-07-02-manager-v0.1-design.md` §5). The Windows spawn quirks
+  (`pnpm.cmd`/`shell:true`) stay parked with Windows support.
 - **Fill in `CLAUDE.md` Architecture / Build & Test** — both sections are still `TODO`. Now that
   the monorepo structure exists, document it, plus the one rough edge: a clean `pnpm install`
   auto-builds `better-sqlite3` (via root `pnpm.onlyBuiltDependencies`), and switching Node
@@ -151,7 +150,17 @@ above; the remainder:
   a no-trailing-slash app URL (`/<slug>`), the relative `<script src="app.js">` resolved
   to `/app.js` (404), so apps loaded inert. Fixed via a `/<slug>` → `/<slug>/` redirect in
   `appHost.ts`; add a headless-browser smoke test so the asset-loading path is covered.
-- **Electron shell + autostart** — clickable desktop app; Lodekit runs at login.
+- **Electron shell + autostart** — **specced (2026-07-02)** into the manager slice
+  (`docs/specs/2026-07-02-manager-v0.1-design.md`): menubar app with Start at Login.
+- **Managed platform artifacts (manager northstar)** — before 1.0, evolve the manager from
+  everything-bundled to a thin supervisor that downloads, verifies, and manages versioned
+  platform artifacts (Node + payload) under Application Support — platform updates
+  independent of the shell, side-by-side versions, rollback. The invariant across every
+  step: Lodekit manages its own dependencies, encapsulated, never touching the person's
+  system. Pairs with auto-update.
+- **Developer ID signing + notarization** — v0.1 ships ad-hoc signed (assisted alpha,
+  right-click → Open); needed before any public download. The packaging pipeline keeps it
+  as a config toggle (manager slice-spec §9).
 - **True `lodekit.local` / port-free access** — mDNS/Bonjour or a local reverse proxy,
   instead of `lodekit.localhost:7777`.
 - **Blob storage** — per-app `data/<slug>/blobs/` for images/files, exposed via the SDK
