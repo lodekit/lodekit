@@ -138,7 +138,7 @@ no import-time dependency on the runtime, so it stays startable even when the ru
   for app + dashboard). *Service* tools give the agent guarded access to an app's services
   on the person's behalf — "show me all the recipes in my recipe app" reads the app's data
   through MCP. **Read-only at v0.1** (scoped to one app's services, same slug namespacing as
-  the SDK); write access comes later, once its guardrails are designed (§5.1).
+  the SDK); write access comes later, once its guardrails are designed (roadmap: Security).
 - **Today:** basic driving tools shipped against the old contract-era expectations. Needed:
   alignment with the bundled contract, build-state/error inspection (the agent's feedback
   loop for "did my edit build?"), service tools, and migration off the deprecated
@@ -299,11 +299,8 @@ here.
 
 ## 5. Open questions
 
-Unsettled points slice-spec sessions must resolve (or escalate) rather than assume:
-
-1. **MCP write-access guardrails.** When service tools grow writes: person confirmation per
-   write? per-app allowlist? And the door itself — a localhost HTTP port is reachable by any
-   local process (and DNS-rebinding pages), so writes likely arrive together with a local
-   auth token on the runtime.
-2. **Relational-store's return.** What the schemas/migrations story must look like for the
-   database service to re-enter the catalog.
+None currently. The last two were resolved into `roadmap.md`: MCP write-access guardrails
+and local door hardening live under its **Security** section (to be designed together as one
+body of work, deferred); relational-store's return (the schemas/migrations story) is its own
+roadmap entry, iterated after v0.1 ships. New unsettled points raised by slice-spec sessions
+land here.

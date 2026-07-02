@@ -2,7 +2,37 @@
 
 Deferred work and known gaps. Parked items from the POC design
 (`docs/specs/2026-06-30-lodekit-poc-design.md`) and the monorepo migration
-(`docs/specs/2026-06-30-monorepo-migration-design.md`).
+(`docs/specs/2026-06-30-monorepo-migration-design.md`). Sequencing and the component map now
+live in the umbrella spec (`docs/specs/2026-07-02-product-overview-design.md`, §4).
+
+## Security
+
+Deferred as a body of work; design it together rather than piecemeal (umbrella spec §5
+pointed here):
+
+- **MCP write-access guardrails** — service tools are read-only at v0.1. Before writes:
+  person confirmation per write? per-app allowlist? What counts as destructive?
+- **Local door hardening** — the runtime's localhost HTTP port is reachable by any local
+  process and, via DNS-rebinding pages, potentially by the browser. Likely a local auth
+  token on the runtime, arriving together with MCP writes.
+- **Harden app/dashboard rendering** — the POC builds DOM via `innerHTML` with
+  app-controlled strings (manifest name/description, expense notes). Acceptable for a
+  single-user local tool, but switch to `textContent`/safe DOM (or sanitize) before any
+  multi-user or shared exposure. Concrete gap flagged by the security scanner:
+  `examples/apps/expense-tracker/app.js` interpolates `category`/`note` straight into a
+  table via `innerHTML` with no escaping, whereas `examples/apps/habit-tracker/app.js`
+  already has an `escapeHtml` helper — give expense-tracker the same treatment (or rebuild
+  rows with `createElement` + `textContent`).
+- **Real secrets storage** — back the `lodekit.secrets.get()` stub with actual encrypted
+  storage + a UI to manage secrets (the secret-store service; design with the lens of
+  powering integrations).
+
+## Relational-store's return
+
+The database service (per-app SQL) is **parked** by the v0.1 storage iteration — kv-store is
+the sole storage service through early 0.x. Iterate after v0.1 ships: define the
+schemas/migrations story (plus data initialization/fixtures) that lets relational-store
+re-enter the service catalog.
 
 ## Guiding principle
 
@@ -54,7 +84,8 @@ Big-picture context that shaped the slice-1 SDK design but was explicitly **not*
 - **Persistence, per-app (inside the data folder):** blob storage, real encrypted secrets,
   cache with TTLs, schemas/migrations, and data initialization/fixtures.
 - **Integrations** — gateways, outbound connections, rate limiting.
-- **Workflows** — job queue, durable execution, scheduler/poller.
+- **Tasks** — task-queue/task-schedule, durable execution, hooks, signals; design
+  holistically (umbrella spec §2.12).
 - **Settings** — apps register settings surfaced and editable in the dashboard.
 - **Business-logic structure** — app-folder conventions that keep app logic from sprawling.
 - **Stale build-cache GC** — apps removed while the runtime is down leave orphaned `cacheDir/<slug>/`
@@ -124,8 +155,6 @@ above; the remainder:
 - **Electron shell + autostart** — clickable desktop app; Lodekit runs at login.
 - **True `lodekit.local` / port-free access** — mDNS/Bonjour or a local reverse proxy,
   instead of `lodekit.localhost:7777`.
-- **Real secrets storage** — back the `lodekit.secrets.get()` stub with actual encrypted
-  storage + a UI to manage secrets.
 - **Blob storage** — per-app `data/<slug>/blobs/` for images/files, exposed via the SDK
   and easily browsable in Finder.
 - **Multi-page apps + client-side routing** — expand the app contract beyond
@@ -134,11 +163,3 @@ above; the remainder:
 - **Runtime auto-install** — Lodekit checks for / installs Node and other runtime deps.
 - **Image/file app icons** — beyond emoji in `lodekit.json`.
 - **Monorepo init** — `lodekit init` to set up a pre-existing Lodekit-apps git monorepo.
-- **Harden app/dashboard rendering** — the POC builds DOM via `innerHTML` with
-  app-controlled strings (manifest name/description, expense notes). Acceptable for a
-  single-user local tool, but switch to `textContent`/safe DOM (or sanitize) before any
-  multi-user or shared exposure. Concrete gap flagged by the security scanner:
-  `examples/apps/expense-tracker/app.js` interpolates `category`/`note` straight into a
-  table via `innerHTML` with no escaping, whereas `examples/apps/habit-tracker/app.js`
-  already has an `escapeHtml` helper — give expense-tracker the same treatment (or rebuild
-  rows with `createElement` + `textContent`).
