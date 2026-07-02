@@ -36,18 +36,26 @@ createRoot(document.getElementById("root")!).render(
 `;
 
 const appTsx = (name: string) => `import { db, store } from "@lodekit/sdk";
+import { Button, Card, CardContent, CardHeader, CardTitle } from "@lodekit/ui";
 
 export default function App() {
   return (
     <main className="mx-auto max-w-2xl p-8">
-      <h1 className="text-2xl font-semibold">${name}</h1>
-      <p className="text-gray-500">Edit src/App.tsx to build this tool.</p>
+      <Card>
+        <CardHeader>
+          <CardTitle>${name}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="text-muted-foreground">Edit src/App.tsx to build this app.</p>
+          <Button>Get started</Button>
+        </CardContent>
+      </Card>
     </main>
   );
 }
 `;
 
-const indexCss = `@import "tailwindcss";
+const indexCss = `@import "@lodekit/ui/theme.css";
 `;
 
 function writeIfAbsent(filePath: string, contents: string): void {

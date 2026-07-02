@@ -31,7 +31,8 @@ describe("scaffoldApp", () => {
     expect(fs.readFileSync(path.join(d, "index.html"), "utf8")).toContain('src="/src/main.tsx"');
     expect(fs.readFileSync(path.join(d, "src", "main.tsx"), "utf8")).toContain("createRoot");
     expect(fs.readFileSync(path.join(d, "src", "App.tsx"), "utf8")).toContain('from "@lodekit/sdk"');
-    expect(fs.readFileSync(path.join(d, "src", "index.css"), "utf8")).toContain("tailwindcss");
+    expect(fs.readFileSync(path.join(d, "src", "App.tsx"), "utf8")).toContain('from "@lodekit/ui"');
+    expect(fs.readFileSync(path.join(d, "src", "index.css"), "utf8")).toContain('@import "@lodekit/ui/theme.css"');
   });
 
   it("does not overwrite an existing App.tsx", () => {
