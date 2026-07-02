@@ -1,6 +1,8 @@
 # agents
 
-lodekit is a <TODO>. See `readme.md` and `docs/specs/` for detail.
+lodekit is a local, self-hosted runtime on which a person — working with an AI coding
+agent — builds and runs their own personal web tools. See `docs/specs/` for detail.
+`context.md` fixes the domain language — use its canonical terms in code, docs, and specs.
 
 Behavioral guardrails for development workflow.
 Standard workflow uses the Superpowers skills.
