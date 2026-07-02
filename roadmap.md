@@ -15,14 +15,9 @@ pointed here):
 - **Local door hardening** — the runtime's localhost HTTP port is reachable by any local
   process and, via DNS-rebinding pages, potentially by the browser. Likely a local auth
   token on the runtime, arriving together with MCP writes.
-- **Harden app/dashboard rendering** — the POC builds DOM via `innerHTML` with
-  app-controlled strings (manifest name/description, expense notes). Acceptable for a
-  single-user local tool, but switch to `textContent`/safe DOM (or sanitize) before any
-  multi-user or shared exposure. Concrete gap flagged by the security scanner:
-  `examples/apps/expense-tracker/app.js` interpolates `category`/`note` straight into a
-  table via `innerHTML` with no escaping, whereas `examples/apps/habit-tracker/app.js`
-  already has an `escapeHtml` helper — give expense-tracker the same treatment (or rebuild
-  rows with `createElement` + `textContent`).
+- **Harden app/dashboard rendering** — the dashboard is React now (escapes by default;
+  resolved by the @lodekit/ui slice). Remaining: apps are user-trusted local code, but
+  before any multi-user or shared exposure, audit app-side rendering guidance in the skill.
 - **Real secrets storage** — back the `lodekit.secrets.get()` stub with actual encrypted
   storage + a UI to manage secrets (the secret-store service; design with the lens of
   powering integrations).
@@ -139,6 +134,10 @@ above; the remainder:
   versions requires `pnpm rebuild better-sqlite3` (ABI mismatch otherwise).
 
 ## Other deferred items
+- **Dashboard startup-build freshness skip** — `buildDashboard` runs on every start
+  (~1s). Skip via mtime/hash comparison if startup cost starts to matter.
+- **Watch dashboard source in dev** — dashboard source isn't watched; runtime restart
+  rebuilds it. Add rebuild-on-change if restart friction grows.
 - **MCP uses deprecated `server.tool`** — `mcp/index.ts` registers tools via the
   SDK's `server.tool()`, deprecated in `@modelcontextprotocol/sdk` 1.12 in favor of
   `registerTool`. Works fine; migrate when convenient.
