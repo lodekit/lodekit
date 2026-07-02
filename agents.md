@@ -83,6 +83,9 @@ Simplicity never means cutting safety.
   - Integrate any diverged work by rebasing, not merging: `git pull --rebase` (set once with
     `git config pull.rebase true`) and `git merge --ff-only` (never a plain `git merge`). 
   - If you're on a worktree/side branch, `git rebase master` before folding it in.
+  - **Folding in is the person's call.** When work happens on a worktree/side branch, finish
+    it and leave it on the branch — never fold into `master` unattended. The person reviews
+    (and may follow up on the branch) before deciding when to integrate.
   - To flatten an accidental merge, tag a backup first (`git tag backup/<desc> master`) then
     `git rebase <fork-point>` — it drops merge commits and replays the rest linearly.
   - Regenerate `pnpm-lock.yaml` conflicts with `pnpm install --lockfile-only` rather than hand-merging.
