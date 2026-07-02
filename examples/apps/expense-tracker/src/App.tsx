@@ -1,5 +1,20 @@
 import { useEffect, useState } from "react";
 import { db, store } from "@lodekit/sdk";
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@lodekit/ui";
 
 interface Expense {
   id: number;
@@ -48,31 +63,46 @@ export default function App() {
   return (
     <main className="mx-auto max-w-2xl p-8">
       <h1 className="text-2xl font-semibold">Expense Tracker</h1>
-      <p className="text-gray-500">
+      <p className="text-muted-foreground">
         Total: <strong>{currency} {total.toFixed(2)}</strong>
       </p>
       <div className="my-5 flex flex-wrap gap-2">
-        <input className="w-28 rounded border border-gray-300 px-2 py-1" type="number" step="0.01"
+        <Input className="w-28" type="number" step="0.01"
           placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
-        <select className="rounded border border-gray-300 px-2 py-1" value={category}
-          onChange={(e) => setCategory(e.target.value)}>
-          {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-        </select>
-        <input className="min-w-36 flex-1 rounded border border-gray-300 px-2 py-1"
+        <Select value={category} onValueChange={setCategory}>
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORIES.map((c) => (
+              <SelectItem key={c} value={c}>{c}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input className="min-w-36 flex-1"
           placeholder="Note" value={note} onChange={(e) => setNote(e.target.value)} />
-        <button className="rounded bg-zinc-900 px-4 py-1 text-white" onClick={add}>Add</button>
+        <Button onClick={add}>Add</Button>
       </div>
-      <table className="w-full text-left text-sm">
-        <thead><tr className="text-gray-500"><th>Date</th><th>Category</th><th>Note</th><th>Amount</th></tr></thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Category</TableHead>
+            <TableHead>Note</TableHead>
+            <TableHead>Amount</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.map((r) => (
-            <tr key={r.id} className="border-t border-gray-100">
-              <td>{r.created_at}</td><td>{r.category}</td><td>{r.note}</td>
-              <td>{currency} {r.amount.toFixed(2)}</td>
-            </tr>
+            <TableRow key={r.id}>
+              <TableCell>{r.created_at}</TableCell>
+              <TableCell>{r.category}</TableCell>
+              <TableCell>{r.note}</TableCell>
+              <TableCell>{currency} {r.amount.toFixed(2)}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </main>
   );
 }
