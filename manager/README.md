@@ -14,6 +14,9 @@ person's system (no system Node, no PATH). Spec:
 - `pnpm --filter @lodekit/manager make` — build the payload + fetch the pinned Node
   (`scripts/prepare-bundle.mjs`, one-place version pin), then package the ad-hoc-signed
   arm64 `Lodekit.app` (zip under `out/make/`).
+- **Gotcha:** always run `pnpm install` from the repo root, never from `manager/` — this
+  package's `.npmrc` (`node-linker=hoisted`, required by Forge's dev-start check) would
+  otherwise rewrite the whole workspace's node_modules layout and break runtime builds.
 
 ## Installing the alpha (assisted)
 

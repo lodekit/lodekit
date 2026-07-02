@@ -43,6 +43,10 @@ Package manager is **pnpm** (workspaces). From the repo root:
   native module via the root `pnpm.onlyBuiltDependencies` allowlist (pnpm v10 gates install
   scripts). **Gotcha:** switching Node versions causes a `better-sqlite3` ABI mismatch
   (`NODE_MODULE_VERSION`) — fix with `pnpm rebuild better-sqlite3`.
+  **Second gotcha:** never run `pnpm install` with CWD inside `manager/` — its `.npmrc`
+  (`node-linker=hoisted`, needed only for Forge's dev-start check) would rewrite the whole
+  workspace to hoisted layout and silently break runtime Vite/Tailwind builds. Install from
+  the repo root; recover with a root-level node_modules wipe + `pnpm install`.
 - `pnpm dev` — run the runtime against the example apps
   (`LODEKIT_ROOT=$(pwd)/examples pnpm --filter @lodekit/runtime start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
