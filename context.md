@@ -19,11 +19,11 @@ The single Node process at the heart of the platform — it hosts, builds, watch
 _Avoid_: server, backend, daemon
 
 **Manager**:
-The thin menubar app (`@lodekit/desktop`) that ships and supervises the platform: it provisions Node, runs the runtime as a child process, registers the MCP server, and offers status indication, "open dashboard", and quit from the menu bar. It has no product UI of its own — everything it shows is the dashboard, opened in the browser.
+The thin menubar app (`@lodekit/desktop`) that ships and supervises the platform: it provisions a Lodekit-local Node (pinned version, never the system's), runs the runtime as a child process, and offers status indication, "open dashboard", and quit from the menu bar. It has no product UI of its own — everything it shows is the dashboard, opened in the browser.
 _Avoid_: desktop app, shell, controller, tray app, the Electron app (implementation detail)
 
 **Dashboard**:
-Lodekit's built-in web UI: every app with its live build state and health, plus each app's settings, raw data, and scheduled jobs.
+Lodekit's built-in web UI: every app with its live build state and health, plus each app's settings, raw data, and scheduled tasks.
 _Avoid_: home page, admin, console
 
 **Landing site**:
@@ -41,7 +41,7 @@ The AI assistant the person builds through, in whatever form they use it — a d
 _Avoid_: Claude (as the generic word), LLM, assistant, AI
 
 **MCP server**:
-The agent-facing surface (`@lodekit/mcp`) through which an agent drives Lodekit — scaffold, list, open, inspect. Reaches the runtime over HTTP only.
+The agent-facing surface (`@lodekit/mcp`) through which an agent drives Lodekit — scaffold, list, open, inspect — and, with guardrails, reads and writes an app's services on the person's behalf ("show me all my recipes"). Reaches the runtime over HTTP only.
 _Avoid_: the integration, the bridge
 
 **Skill**:
@@ -70,9 +70,17 @@ _Avoid_: template, boilerplate, scaffold (scaffold is the act, not the shape)
 To generate a new app's starter files conforming to the app contract.
 _Avoid_: create, init, bootstrap, generate
 
-### SDK concepts
+### Services
 
-Capabilities the SDK offers to apps, provided by the runtime through the scoped API. These names are normative end to end: the same word appears in marketing copy, docs, the dashboard, and the SDK's API surface. The exact SDK surface closes in its slice-spec; the concepts below are the current set.
+**Service**:
+One cloud battery — a capability the runtime provides to apps: storage, secrets, tasks, settings. Every service is provided by the runtime and reached by apps only through the SDK. Service names are normative end to end: the same word appears in marketing copy, docs, the dashboard, and the SDK's API surface.
+_Avoid_: capability, feature, component (components are UI), battery (marketing metaphor, not the domain word)
+
+**Service catalog**:
+The full set of services Lodekit offers, named AWS-style: relational-store (the Database), kv-store (the Store), file-store (blobs), secret-store, task-queue and task-schedule (Tasks), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
+_Avoid_: the SDK (the SDK is the layer into the catalog, not the catalog), feature list
+
+The shipped and near-term services:
 
 **Database**:
 An app's per-app SQL database, reached through the SDK (`db.query` / `db.exec`). One per slug, living in the data tree.
@@ -86,9 +94,9 @@ _Avoid_: cache, settings, kv, preferences
 Configuration an app declares so the person can view and edit it in the dashboard; the app reads it through the SDK. Distinct from the Store — see Flagged ambiguities.
 _Avoid_: preferences, config, options
 
-**Job**:
-Background work an app registers for the runtime to run on the app's behalf; a **scheduled job** is one triggered on a time schedule. Jobs are listed with their schedule and last-run state in the dashboard.
-_Avoid_: cron, task, worker, workflow
+**Task**:
+Background work an app hands to the runtime to run on the app's behalf — queued (task-queue) or triggered on a time schedule (task-schedule; a **scheduled task**). Tasks are listed with their schedule and last-run state in the dashboard. A future service, to be designed holistically (queueing, scheduling, hooks, signals).
+_Avoid_: job, cron, worker, workflow
 
 ### Storage & filesystem
 
@@ -135,7 +143,7 @@ The prescribed way app code is written: React + TypeScript + Tailwind through th
 _Avoid_: framework, template, best practices
 
 **SDK**:
-The typed client (`@lodekit/sdk`) an app imports to reach its own scoped API — the sole gateway to the SDK concepts above. Replaces the old injected `window.lodekit` global.
+The typed client (`@lodekit/sdk`) an app imports to reach its own scoped API — the layer into the service catalog. Replaces the old injected `window.lodekit` global.
 _Avoid_: client library, api wrapper, window.lodekit
 
 **UI library**:
@@ -151,10 +159,11 @@ _Avoid_: the endpoints, the REST API
 - The **Manager** installs and supervises the **Runtime**. The runtime has two doors: the **MCP server** (the agent's) and the **Dashboard** (the person's).
 - The person builds **Apps** using an **Agent**: the agent loads the **Skill**, drives Lodekit through the **MCP server**, and writes code on the **Stack** — the **SDK** and **UI library** on the **shared toolchain**, conforming to the **App contract**.
 - An **App** is identified by its **Slug**; that same slug is its URL path and its data namespace.
-- An app reaches every SDK concept (**Database**, **Store**, **Settings**, **Jobs**) only through the **SDK**, which calls the **Scoped API**; the **Runtime** provides them.
+- Every **Service** in the **Service catalog** is provided by the **Runtime**; an app reaches its services (**Database**, **Store**, **Settings**, **Tasks**) only through the **SDK**, which calls the **Scoped API**.
 - An app's source lives in the **Apps tree**, its built output in the **Cache**, and its persistent state (**Database** + **Store**) in the **Data tree**.
 - The **Backup tree** = apps tree + data tree. The **Cache** is deliberately outside it.
-- **Settings** and **Jobs** are declared by an app and surfaced to the person in the **Dashboard**.
+- **Settings** and **Tasks** are declared by an app and surfaced to the person in the **Dashboard**.
+- The **MCP server** may read and write an app's services on the person's behalf, with guardrails.
 
 ## Flagged ambiguities
 
