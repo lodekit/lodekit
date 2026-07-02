@@ -9,10 +9,6 @@ importers:
   .: {}
 
   manager:
-    dependencies:
-      '@lodekit/runtime':
-        specifier: workspace:*
-        version: link:../packages/runtime
     devDependencies:
       '@electron-forge/cli':
         specifier: ^7.6.0
