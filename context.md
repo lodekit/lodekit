@@ -41,7 +41,7 @@ The AI assistant the person builds through, in whatever form they use it — a d
 _Avoid_: Claude (as the generic word), LLM, assistant, AI
 
 **MCP server**:
-The agent-facing surface (`@lodekit/mcp`) through which an agent drives Lodekit — scaffold, list, open, inspect — and, with guardrails, reads and writes an app's services on the person's behalf ("show me all my recipes"). Reaches the runtime over HTTP only.
+The agent-facing surface (`@lodekit/mcp`) through which an agent drives Lodekit — scaffold, list, open, inspect — and reads an app's services on the person's behalf ("show me all my recipes"). Read-only for now; writes come later, behind designed guardrails. Reaches the runtime over HTTP only.
 _Avoid_: the integration, the bridge
 
 **Skill**:
@@ -77,18 +77,18 @@ One cloud battery — a capability the runtime provides to apps: storage, secret
 _Avoid_: capability, feature, component (components are UI), battery (marketing metaphor, not the domain word)
 
 **Service catalog**:
-The full set of services Lodekit offers, named AWS-style: relational-store (the Database), kv-store (the Store), file-store (blobs), secret-store, task-queue and task-schedule (Tasks), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
+The full set of services Lodekit offers, named AWS-style: kv-store (the Store), relational-store (the Database, currently parked), file-store (blobs), secret-store, task-queue and task-schedule (Tasks), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
 _Avoid_: the SDK (the SDK is the layer into the catalog, not the catalog), feature list
 
 The shipped and near-term services:
 
-**Database**:
-An app's per-app SQL database, reached through the SDK (`db.query` / `db.exec`). One per slug, living in the data tree.
-_Avoid_: store (the store is the KV; the two differ), sql
-
 **Store**:
-An app's per-app key–value store of JSON values, reached through the SDK (`store.get` / `store.set`). Distinct from the Cache and from Settings — see Flagged ambiguities.
+An app's per-app key–value store of JSON values, reached through the SDK. The sole storage service through early 0.x; its second iteration (name, API, ergonomics) is a v0.1 slice. Distinct from the Cache and from Settings — see Flagged ambiguities.
 _Avoid_: cache, settings, kv, preferences
+
+**Database**:
+An app's per-app SQL database (relational-store). **Parked**: retired in the v0.1 storage iteration; returns to the catalog once a schemas/migrations story exists.
+_Avoid_: store (the store is the KV; the two differ), sql
 
 **Settings**:
 Configuration an app declares so the person can view and edit it in the dashboard; the app reads it through the SDK. Distinct from the Store — see Flagged ambiguities.
@@ -163,7 +163,7 @@ _Avoid_: the endpoints, the REST API
 - An app's source lives in the **Apps tree**, its built output in the **Cache**, and its persistent state (**Database** + **Store**) in the **Data tree**.
 - The **Backup tree** = apps tree + data tree. The **Cache** is deliberately outside it.
 - **Settings** and **Tasks** are declared by an app and surfaced to the person in the **Dashboard**.
-- The **MCP server** may read and write an app's services on the person's behalf, with guardrails.
+- The **MCP server** may read an app's services on the person's behalf (writes later, behind designed guardrails).
 
 ## Flagged ambiguities
 

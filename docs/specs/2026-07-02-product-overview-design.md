@@ -71,8 +71,8 @@ persistence in the data tree where applicable:
 
 | Service | Domain word | Status |
 | --- | --- | --- |
-| relational-store | Database (SQLite via `better-sqlite3`) | Shipped |
-| kv-store | Store (per-app KV of JSON values) | Shipped |
+| kv-store | Store (per-app KV of JSON values) | Shipped; second iteration (name, API, ergonomics) in v0.1 |
+| relational-store | Database (SQLite via `better-sqlite3`) | Shipped in the POC; **parked** in the v0.1 storage iteration — returns once a schemas/migrations story exists |
 | file-store | Blobs (files/images per app) | Future |
 | secret-store | Secrets (encrypted; designed with the lens of powering integrations) | Future |
 | task-queue / task-schedule | Tasks (queued + scheduled background work) | Future (§2.12) |
@@ -82,9 +82,12 @@ persistence in the data tree where applicable:
   SDK, and scoped to the app's slug. Backup tree = apps tree + data tree; the cache lives
   outside it and is disposable.
 - **Contract:** service names are normative end to end (marketing → docs → dashboard → SDK
-  API). Each service closes its terminology and surface in its own slice-spec.
-- **Today:** relational-store + kv-store shipped. Also designed-in, not built:
-  schemas/migrations, cache-with-TTL, data fixtures.
+  API). Each service closes its own naming and surface in its slice-spec — including
+  revisiting today's `db`/`store` handles in the storage iteration.
+- **In code:** each service becomes a module under `packages/runtime/src/services/`, mounted
+  on the scoped API, with a matching SDK surface. The convention lands with the v0.1 storage
+  iteration (today `db.ts` holds both shipped services); no preemptive restructure before
+  then.
 
 ### 2.3 SDK (`@lodekit/sdk`) — shipped minimal
 
@@ -95,7 +98,9 @@ lands as an SDK surface backed by a scoped-API endpoint.
 
 - **Today:** `db.query`/`db.exec`, `store.get`/`store.set`. Transport stays a hand-written
   HTTP facade (tRPC/Zod reconsideration is parked until a procedure surface exists to
-  justify it). SDK-facing names for each service close in the SDK slice-spec.
+  justify it). The v0.1 storage iteration retires the `db` surface (relational-store parked)
+  and re-derives the KV surface's name, API, and ergonomics; every later service closes its
+  SDK-facing names the same way, in its own slice-spec.
 
 ### 2.4 UI library (`@lodekit/ui`) — unbuilt, v0.1-required
 
@@ -130,10 +135,10 @@ no import-time dependency on the runtime, so it stays startable even when the ru
 
 - **Contract:** two kinds of tools. *Driving* tools mirror what a building agent needs:
   scaffold, list apps, inspect an app (manifest, build state, last build error), open (URLs
-  for app + dashboard). *Service* tools give the agent guarded read/write access to an app's
-  services on the person's behalf — "show me all the recipes in my recipe app" reads the
-  app's database through MCP. Guardrails apply (scoped to one app's services, same slug
-  namespacing as the SDK; their exact shape is open question §5.1).
+  for app + dashboard). *Service* tools give the agent guarded access to an app's services
+  on the person's behalf — "show me all the recipes in my recipe app" reads the app's data
+  through MCP. **Read-only at v0.1** (scoped to one app's services, same slug namespacing as
+  the SDK); write access comes later, once its guardrails are designed (§5.1).
 - **Today:** basic driving tools shipped against the old contract-era expectations. Needed:
   alignment with the bundled contract, build-state/error inspection (the agent's feedback
   loop for "did my edit build?"), service tools, and migration off the deprecated
@@ -176,27 +181,28 @@ browser), and quit from the menu bar.
 
 - **Contract:** the manager owns install/lifecycle and nothing else — it has no product UI of
   its own; everything it shows is the dashboard.
-- **MCP registration:** manual at v0.1 (docs provide the config snippet per agent);
-  automated registration belongs to the future FTUX/onboarding work.
+- **MCP registration:** manual at v0.1 (per-agent config snippets live with the skill/readme
+  until the docs ship); automated registration belongs to the future FTUX/onboarding work.
 - **Today:** dev shell only (requires system Node + pnpm, spawn not cross-platform, opens an
   Electron window instead of sitting in the menu bar, no packaging/signing/updates). v0.1 is
   the packaged, signed, installable menubar app.
 
-### 2.10 Landing site (`web`, `@lodekit/web`) — placeholder, v0.1-deploy
+### 2.10 Landing site (`web`, `@lodekit/web`) — placeholder, ships later in 0.x
 
 The public marketing site at lodekit.com (domain secured). Sells the product statement (§1 —
 "cloud batteries, locally, easily", in its exact words; _app_ is the one word from marketing
 to SDK, per `context.md`), links the download and the docs.
 
-- **Today:** Astro placeholder, undeployed. v0.1 is a real page + deploy.
+- **Today:** Astro placeholder, undeployed. Ships after v0.1, with the push toward the
+  unassisted loop (the assisted alpha doesn't need it).
 
-### 2.11 Docs — unbuilt, v0.1-minimal
+### 2.11 Docs — unbuilt, ships later in 0.x
 
 The public documentation site for people, living alongside the landing site (Starlight inside
-`web`, sharing its tooling and deploy). v0.1 is deliberately small: install, build your first
-app (through your agent), concepts (the loop, the backup tree, the dashboard), and per-agent
-MCP/skill setup guides (the manual registration/linking snippets). Agent-facing depth stays
-in the skill.
+`web`, sharing its tooling and deploy). The first cut is deliberately small: install, build
+your first app (through your agent), concepts (the loop, the backup tree, the dashboard), and
+per-agent MCP/skill setup guides (the manual registration/linking snippets, which live with
+the skill/readme until then). Agent-facing depth stays in the skill.
 
 ### 2.12 Tasks — a future service, noted here, not yet specced
 
@@ -243,8 +249,9 @@ these without amending this spec first.
 
 ## 4. The v0.1 line (alpha)
 
-The next milestone is **v0.1 — entering alpha**: the first version a stranger can download
-and complete the loop with, unassisted. It is deliberately not a stability promise:
+The next milestone is **v0.1 — entering alpha**: a version where a person can complete the
+loop **assisted** (we help them install, register the MCP manually, link the skill). The
+unassisted-stranger bar comes later in 0.x. v0.1 is deliberately not a stability promise:
 throughout 0.x the service catalog and components keep growing and the contracts (app
 contract, SDK surface, service shapes) are expected to change heavily. v1.0 comes only when
 those contracts stabilize; this spec's job is to organize the domains early with big-picture
@@ -254,48 +261,49 @@ knowledge, not to fix a concrete v1.0 target.
 
 | Component | In v0.1 | Later in 0.x |
 | --- | --- | --- |
-| Runtime | Current core + dev/default path modes | One service at a time from the catalog; migrations; cache GC |
-| Service catalog | relational-store + kv-store (shipped) | file-store, secret-store, task-queue/task-schedule, settings — each its own slice-spec |
-| SDK | `db`, `store` | One typed surface per new service; tRPC/Zod transport revisit |
+| Runtime | Current core + dev/default path modes + `services/` module convention | One service at a time from the catalog; migrations; cache GC |
+| Service catalog | kv-store second iteration (name, API, ergonomics revisited); relational-store parked | file-store, secret-store, task-queue/task-schedule, settings; relational-store's return — each its own slice-spec |
+| SDK | The re-derived KV surface (`db` retired with relational-store) | One typed surface per new service; tRPC/Zod transport revisit |
 | UI library | Themed shadcn core set (layout, forms, button, table, dialog…) via alias | Charts, data-table, rich-text, media components |
 | Stack / contract | Bundled contract + UI-library import | Settings declaration, server-side task code, multi-page routing, type-check gating, logic-folder conventions |
-| MCP server | Contract-aligned driving tools incl. build-state/error inspection; service tools over shipped services (scope to confirm, §5.1); `registerTool` migration | Service tools tracking the catalog as it grows |
+| MCP server | Contract-aligned driving tools incl. build-state/error inspection; read-only service tools; `registerTool` migration | Write access behind designed guardrails; service tools tracking the catalog |
 | Skill | Full agent-neutral rewrite against the v0.1 stack; manual linking | Guidance per new service; automated distribution (FTUX) |
 | Dashboard | Grid + build state (shipped), restyled with `@lodekit/ui` | App detail/health, data explorer, per-service panels (settings, tasks, secrets) |
 | Manager | Packaged/signed menubar app, Lodekit-local Node (pinned), runtime lifecycle + autostart, status + open-dashboard + quit; manual MCP registration via docs | FTUX/onboarding (auto MCP registration, skill linking), auto-update |
-| Landing site | Real page deployed to lodekit.com | — |
-| Docs | Starlight: install, first app, concepts, per-agent manual setup | Full reference, cookbook |
+| Landing site | — | Real page deployed to lodekit.com, with the unassisted-loop push |
+| Docs | — (assisted alpha: setup snippets live with the skill/readme) | Starlight: install, first app, concepts, per-agent setup; full reference |
 | Tasks | — (recorded as a future service, §2.12; no spec yet) | Holistic design: queueing, scheduling, hooks, signals |
 
 ### 4.2 Derivation order
 
-Each line becomes its own slice-spec → plan → build cycle; the order minimizes rework
-(everything the skill teaches must exist before the skill is rewritten; everything the
-manager ships must work before it's packaged):
+Four slices; each becomes its own slice-spec → plan → build cycle. The order minimizes
+rework — everything the skill teaches must exist before the skill is rewritten; the manager
+packages last, once what it ships works:
 
 1. **`@lodekit/ui`** — theme + core components + alias into the toolchain + dashboard
    restyle.
-2. **MCP + skill v0.1** — contract-aligned driving tools, build-state feedback loop, service
-   tools (if confirmed for v0.1), full skill rewrite. (Depends on 1 so the skill teaches
+2. **Storage iteration (kv-store v2)** — revisit name/API/ergonomics, park relational-store,
+   migrate the example apps, introduce `services/` in the runtime, matching SDK surface.
+   (1 and 2 are independent — order between them is convenience.)
+3. **MCP + skill v0.1** — contract-aligned driving tools, build-state feedback loop,
+   read-only service tools, full skill rewrite. (Depends on 1–2 so the skill teaches
    reality.)
-3. **Manager v0.1** — packaging, Lodekit-local Node, lifecycle, path-mode switch, manual-
-   registration docs snippets.
-4. **Web v0.1** — landing page + minimal docs, deployed.
+4. **Manager v0.1** — packaging, Lodekit-local Node, lifecycle, path-mode switch,
+   manual-registration snippets.
 
 After v0.1, the 0.x series proceeds service by service from the catalog (§2.2), each with
-its own slice-spec. Roadmap hygiene items (cache GC, browser-level smoke test, rendering
-hardening, OSS hygiene) attach to whichever slice touches their surface; `roadmap.md`
-remains the ledger for anything not scheduled here.
+its own slice-spec, plus the web/docs push toward the unassisted loop. Roadmap hygiene items
+(cache GC, browser-level smoke test, rendering hardening, OSS hygiene) attach to whichever
+slice touches their surface; `roadmap.md` remains the ledger for anything not scheduled
+here.
 
 ## 5. Open questions
 
 Unsettled points slice-spec sessions must resolve (or escalate) rather than assume:
 
-1. **MCP service tools — guardrails and timing.** What guards agent read/write access to an
-   app's services (read-only by default? person confirmation for writes/destructive SQL?
-   per-app allowlist?), and do service tools make v0.1 or follow right after?
-2. **What marks 0.x → 1.0.** Which contracts must be stable (app contract, SDK surface,
-   backup-tree layout?) and for how long, before Lodekit calls itself v1.0.
-3. **Service naming closure.** The catalog names services AWS-style (kv-store,
-   relational-store); the SDK exposes friendlier handles (`db`, `store`). Which style faces
-   the person in the dashboard and marketing? Closes in the SDK slice-spec.
+1. **MCP write-access guardrails.** When service tools grow writes: person confirmation per
+   write? per-app allowlist? And the door itself — a localhost HTTP port is reachable by any
+   local process (and DNS-rebinding pages), so writes likely arrive together with a local
+   auth token on the runtime.
+2. **Relational-store's return.** What the schemas/migrations story must look like for the
+   database service to re-enter the catalog.
