@@ -45,6 +45,9 @@ importers:
       '@lodekit/sdk':
         specifier: workspace:*
         version: link:../sdk
+      '@lodekit/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@tailwindcss/vite':
         specifier: ^4.0.0
         version: 4.3.2(vite@6.4.3(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.48.0)(tsx@4.22.4))

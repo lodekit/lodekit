@@ -36,6 +36,28 @@ function writeApp(slug: string, appTsx: string) {
   fs.writeFileSync(path.join(dir, "App.tsx"), appTsx);
 }
 
+function writeUiApp(slug: string) {
+  const dir = path.join(root, "apps", slug, "src");
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(root, "apps", slug, "manifest.json"),
+    JSON.stringify({ name: slug, slug })
+  );
+  fs.writeFileSync(
+    path.join(root, "apps", slug, "index.html"),
+    `<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>`
+  );
+  fs.writeFileSync(path.join(dir, "index.css"), `@import "@lodekit/ui/theme.css";\n`);
+  fs.writeFileSync(
+    path.join(dir, "main.tsx"),
+    `import { createRoot } from "react-dom/client";\nimport "./index.css";\nimport App from "./App";\ncreateRoot(document.getElementById("root")!).render(<App />);\n`
+  );
+  fs.writeFileSync(
+    path.join(dir, "App.tsx"),
+    `import { Button, Card, CardContent } from "@lodekit/ui";\nimport { Plus } from "lucide-react";\nexport default function App() {\n  return <Card><CardContent><Button><Plus /> Add</Button></CardContent></Card>;\n}\n`
+  );
+}
+
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-root-"));
   cache = fs.mkdtempSync(path.join(os.tmpdir(), "lk-cache-"));
@@ -75,4 +97,15 @@ describe("buildApp", () => {
     expect(fs.existsSync(path.join(outDir, "index.html"))).toBe(true);
     expect(fs.readdirSync(path.join(outDir, "assets")).some((f) => /\.js$/.test(f))).toBe(true);
   }, 30000);
+
+  it("builds an app importing @lodekit/ui, lucide-react, and the theme", async () => {
+    writeUiApp("themed");
+    const state = await buildApp(cfg, "themed");
+    expect(state).toEqual({ status: "ready" });
+    const assets = fs.readdirSync(path.join(cache, "themed", "assets"));
+    const cssFile = assets.find((f) => f.endsWith(".css"));
+    expect(cssFile).toBeTruthy();
+    const css = fs.readFileSync(path.join(cache, "themed", "assets", cssFile!), "utf8");
+    expect(css).toContain("--primary");
+  }, 60000);
 });
