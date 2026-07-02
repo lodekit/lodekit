@@ -8,7 +8,7 @@ importers:
 
   .: {}
 
-  desktop:
+  manager:
     dependencies:
       '@lodekit/runtime':
         specifier: workspace:*

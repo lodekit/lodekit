@@ -10,7 +10,7 @@ For trivial tasks, use judgment.
 
 ## Architecture
 
-pnpm-workspace monorepo. Members: `packages/*`, `web`, `desktop`. `examples/` is **not** a
+pnpm-workspace monorepo. Members: `packages/*`, `web`, `manager`. `examples/` is **not** a
 member (so the buildless sample apps never get a `node_modules`). Structure and rationale:
 `docs/specs/2026-06-30-monorepo-migration-design.md`.
 
@@ -23,7 +23,7 @@ member (so the buildless sample apps never get a `node_modules`). Structure and 
   helpers live in `client.ts`; the MCP-SDK wiring in `index.ts`.
 - **`packages/skill`** (`@lodekit/skill`) — the Claude skill (content only).
 - **`web`** (`@lodekit/web`) — Astro landing site (Starlight docs deferred).
-- **`desktop`** (`@lodekit/desktop`) — Electron Forge shell that **spawns the runtime as a
+- **`manager`** (`@lodekit/manager`) — Electron Forge shell that **spawns the runtime as a
   child Node process** (so `better-sqlite3` loads outside Electron — no ABI rebuild) and opens
   a window at the dashboard.
 - **`examples/`** — buildless sample apps as a self-contained Lodekit root, used in dev via
@@ -46,7 +46,7 @@ Package manager is **pnpm** (workspaces). From the repo root:
 - `pnpm test` — runs `pnpm -r test`; today only `@lodekit/runtime` has a suite (vitest, incl.
   the runtime↔MCP integration test). Per-package: `pnpm --filter @lodekit/runtime test`.
 - `pnpm --filter @lodekit/web dev` | `build` — the Astro site.
-- `pnpm --filter @lodekit/desktop start` — the Electron shell (needs system Node + pnpm on
+- `pnpm --filter @lodekit/manager start` — the Electron shell (needs system Node + pnpm on
   PATH; spawns the runtime child against `examples/`).
 
 Runtime and MCP are **buildless** — `tsx`, no build step.

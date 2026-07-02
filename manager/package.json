@@ -1,5 +1,5 @@
 {
-  "name": "@lodekit/desktop",
+  "name": "@lodekit/manager",
   "version": "0.0.1",
   "private": true,
   "main": "src/main.js",
