@@ -21,6 +21,12 @@ pointed here):
 - **Real secrets storage** — back the `lodekit.secrets.get()` stub with actual encrypted
   storage + a UI to manage secrets (the secret-store service; design with the lens of
   powering integrations).
+- **Slug-existence check** — the kv router (and the scoped events endpoint) materialize
+  `data/<slug>/db.sqlite` for any well-formed slug without checking the app registry —
+  inherited from the old `withDb`; tighten with this body of work.
+- **400-vs-500 split** — the kv router's `handle()` maps every thrown error to 400
+  (spec-mandated "never crash"); split `KvError` → 400 / unexpected → 500 once
+  observability/security work lands.
 
 ## Relational-store's return
 
@@ -132,6 +138,8 @@ above; the remainder:
   versions requires `pnpm rebuild better-sqlite3` (ABI mismatch otherwise).
 
 ## Other deferred items
+- **v0.1 skill rewrite scope** — must cover the `kv` surface, the collection/`_seq:<name>`
+  convention, and the new MCP kv tools (`lodekit_kv_list`/`lodekit_kv_get`).
 - **Internal scheduler vs the Tasks service** — packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.
 - **Dashboard startup-build freshness skip** — `buildDashboard` runs on every start
   (~1s). Skip via mtime/hash comparison if startup cost starts to matter.

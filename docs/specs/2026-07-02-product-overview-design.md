@@ -87,12 +87,11 @@ persistence in the data tree where applicable:
   SDK, and scoped to the app's slug. Backup tree = apps tree + data tree; the cache lives
   outside it and is disposable.
 - **Contract:** service names are normative end to end (marketing → docs → dashboard → SDK
-  API). Each service closes its own naming and surface in its slice-spec — including
-  revisiting today's `db`/`store` handles in the storage iteration.
+  API). Each service closes its own naming and surface in its slice-spec — the storage
+  iteration closed the old `db`/`store` handles as `kv`.
 - **In code:** each service becomes a module under `packages/runtime/src/services/`, mounted
-  on the scoped API, with a matching SDK surface. The convention lands with the v0.1 storage
-  iteration (today `db.ts` holds both shipped services); no preemptive restructure before
-  then.
+  on the scoped API, with a matching SDK surface. The convention landed with kv-store v2 —
+  `services/kv-store.ts`, `db.ts` reduced to connection management.
 
 ### 2.3 SDK (`@lodekit/sdk`) — shipped minimal
 

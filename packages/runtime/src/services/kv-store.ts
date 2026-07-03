@@ -16,7 +16,12 @@ export interface Entry {
 }
 
 /** Validation/semantic error — mapped to HTTP 400 by the router. */
-export class KvError extends Error {}
+export class KvError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "KvError";
+  }
+}
 
 interface Row { key: string; value: string; created_at: number; updated_at: number; expires_at: number | null }
 
@@ -56,10 +61,15 @@ export function ensureSchema(db: Database.Database): void {
     (db.prepare("PRAGMA table_info(_lodekit_store)").all() as { name: string }[]).map((c) => c.name)
   );
   const missing = ["created_at", "updated_at", "expires_at"].filter((c) => !cols.has(c));
-  for (const col of missing) db.exec(`ALTER TABLE _lodekit_store ADD COLUMN ${col} INTEGER`);
-  if (missing.includes("created_at")) {
-    db.prepare("UPDATE _lodekit_store SET created_at = ?, updated_at = ? WHERE created_at IS NULL")
-      .run(Date.now(), Date.now());
+  if (missing.length > 0) {
+    const migrate = db.transaction(() => {
+      for (const col of missing) db.exec(`ALTER TABLE _lodekit_store ADD COLUMN ${col} INTEGER`);
+      if (missing.includes("created_at")) {
+        db.prepare("UPDATE _lodekit_store SET created_at = ?, updated_at = ? WHERE created_at IS NULL")
+          .run(Date.now(), Date.now());
+      }
+    });
+    migrate();
   }
   db.exec(
     "CREATE INDEX IF NOT EXISTS idx_store_expires ON _lodekit_store(expires_at) WHERE expires_at IS NOT NULL"

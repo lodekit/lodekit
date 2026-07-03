@@ -76,8 +76,9 @@ describe("expense tracker e2e (bundled)", () => {
     expect(html).toContain("<div id=\"root\">");
     const asset = html.match(/\/assets\/[\w.-]+\.js/);
     expect(asset).toBeTruthy();
-    expect((await fetch(base + "/expense-tracker" + asset![0])).status).toBe(200);
-    const js = await (await fetch(base + "/expense-tracker" + asset![0])).text();
+    const assetRes = await fetch(base + "/expense-tracker" + asset![0]);
+    expect(assetRes.status).toBe(200);
+    const js = await assetRes.text();
     // __LODEKIT_SLUG__ define reached the bundle (Rollup may fold it into the
     // "/api/apps/<slug>/kv-store" URL string, so match the bare slug, not quotes).
     expect(js).toContain("expense-tracker");

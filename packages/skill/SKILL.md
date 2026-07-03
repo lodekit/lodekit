@@ -5,6 +5,10 @@ description: Use when building a local tool/app "with Lodekit" — scaffolds via
 
 # Building Lodekit Apps
 
+> **Stale — pending the v0.1 rewrite** (umbrella spec §2.7). The storage API is now the `kv`
+> handle (`docs/specs/2026-07-03-kv-store-v2-design.md`); `lodekit_inspect_db` was replaced by
+> `lodekit_kv_list`/`lodekit_kv_get`.
+
 Lodekit hosts small single-page tools. You write plain HTML + vanilla JS; Lodekit
 auto-injects the design system and a client SDK. Data is per-app SQLite via the SDK.
 

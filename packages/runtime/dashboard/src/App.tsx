@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { createClient, type KvEntry } from "@lodekit/sdk";
 import {
   Badge,
   Button,
@@ -29,16 +30,11 @@ function StateBadge({ state }: { state: BuildStatus | undefined }) {
   return <Badge variant="destructive">error: {state.message ?? ""}</Badge>;
 }
 
-interface KvEntry { key: string; value: unknown; createdAt: number; updatedAt: number; expiresAt: number | null }
-interface KvPage { entries: KvEntry[]; nextCursor: string | null }
-
 function StorePanel({ slug }: { slug: string }) {
+  const kv = createClient({ baseUrl: "", slug }).kv;
   const q = useInfiniteQuery({
     queryKey: ["kv", slug],
-    queryFn: async ({ pageParam }): Promise<KvPage> =>
-      (await fetch(
-        `/api/apps/${slug}/kv-store?limit=100${pageParam ? `&cursor=${encodeURIComponent(pageParam)}` : ""}`
-      )).json(),
+    queryFn: ({ pageParam }) => kv.list({ limit: 100, cursor: pageParam || undefined }),
     initialPageParam: "",
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
@@ -48,10 +44,12 @@ function StorePanel({ slug }: { slug: string }) {
     <div className="mt-2 space-y-1 border-t pt-2 text-sm">
       {q.isLoading ? (
         <Skeleton className="h-4" />
+      ) : q.isError ? (
+        <p className="text-muted-foreground">Failed to load data.</p>
       ) : entries.length === 0 ? (
         <p className="text-muted-foreground">No data yet.</p>
       ) : (
-        entries.map((e) => (
+        entries.map((e: KvEntry) => (
           <div key={e.key} className="flex gap-2">
             <code className="shrink-0 text-muted-foreground">{e.key}</code>
             <code className="truncate">{JSON.stringify(e.value)}</code>
