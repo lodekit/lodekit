@@ -137,6 +137,11 @@ above; the remainder:
   (~1s). Skip via mtime/hash comparison if startup cost starts to matter.
 - **Watch dashboard source in dev** — dashboard source isn't watched; runtime restart
   rebuilds it. Add rebuild-on-change if restart friction grows.
+- **Manager hardening (post-v0.1, from the slice's final review)** — PID-reuse guard for
+  stale-runtime cleanup (verify the process before signaling); supervisor test gaps
+  (stop-during-poll, spawnRuntime throw); a Retry item for the root-creation-failure boot
+  error (today: fix permissions, relaunch); transient "exited unexpectedly" log line during
+  a startup-timeout kill.
 - **MCP uses deprecated `server.tool`** — `mcp/index.ts` registers tools via the
   SDK's `server.tool()`, deprecated in `@modelcontextprotocol/sdk` 1.12 in favor of
   `registerTool`. Works fine; migrate when convenient.

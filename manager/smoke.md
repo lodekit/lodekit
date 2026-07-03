@@ -16,9 +16,11 @@ fail). Build the artifact first: `pnpm --filter @lodekit/manager make`.
        `echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' | <command + args from the README snippet>`
        prints an `initialize` result.)
 6. [ ] Stop/Start from the menu works; "Open Logs" shows `manager.log` + `runtime.log`.
-7. [ ] Error surfacing: with Lodekit stopped, occupy the port (`python3 -m http.server
-       7777` or a dev runtime), then Start → menu shows "Lodekit — error" with the
-       port-in-use message; free the port, Restart → running.
+7. [ ] Error surfacing: with Lodekit stopped, start a dev runtime on the port (from the repo:
+       `pnpm dev`), then Start → menu shows "Lodekit — error" with the port-in-use message;
+       stop the dev runtime, Restart → running. (A non-runtime process squatting the port
+       surfaces differently — the spawned runtime exits and the menu shows "Runtime exited
+       unexpectedly"; both are surfaced errors, never a crash.)
 8. [ ] "Start at Login": toggle on, log out/in, Lodekit is running.
 9. [ ] Quit: `pgrep -f "Resources/platform/runtime"` prints nothing (no orphan).
 10. [ ] Crash cleanup: `kill -9 <manager pid>` while running (find it via Activity

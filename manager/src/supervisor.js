@@ -90,15 +90,27 @@ class Supervisor extends EventEmitter {
       return;
     }
     this.child = child;
-    fs.mkdirSync(path.dirname(this.pidFile), { recursive: true });
-    fs.writeFileSync(this.pidFile, String(child.pid));
     child.on("exit", (code, signal) => {
       this.child = null;
-      fs.rmSync(this.pidFile, { force: true });
+      // force:true only swallows ENOENT; a pidfile path that can't exist at all
+      // (e.g. a parent segment replaced by a file) still throws ENOTDIR, and this
+      // handler can run from a microtask (child.kill's exit emit) where an
+      // uncaught throw crashes the process — so swallow unconditionally here.
+      try {
+        fs.rmSync(this.pidFile, { force: true });
+      } catch {}
       if (this.state === "running" || this.state === "starting") {
         this.setState("error", `Runtime exited unexpectedly (${signal ?? `code ${code}`})`);
       }
     });
+    try {
+      fs.mkdirSync(path.dirname(this.pidFile), { recursive: true });
+      fs.writeFileSync(this.pidFile, String(child.pid));
+    } catch (e) {
+      await this.killChild();
+      this.setState("error", `Could not write ${this.pidFile}: ${e.message}`);
+      return;
+    }
     const deadline = Date.now() + this.startTimeoutMs;
     while (this.state === "starting" && this.child && Date.now() < deadline) {
       if (await this.checkHealth()) {

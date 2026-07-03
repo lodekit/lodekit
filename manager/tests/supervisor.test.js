@@ -141,4 +141,38 @@ describe("Supervisor", () => {
     expect(sup.errorMessage).toMatch(/did not become ready/);
     expect(child.signalsSent).toContain("SIGTERM");
   });
+
+  it("restart() from error lands back in running", async () => {
+    let child = fakeChild();
+    let spawned = false;
+    const sup = new Supervisor({
+      ...fastOpts,
+      pidFile: tmpPidFile(),
+      spawnRuntime: () => ((spawned = true), child),
+      checkHealth: async () => spawned && sup.child !== null,
+    });
+    await sup.start();
+    child.emit("exit", 1, null);
+    expect(sup.state).toBe("error");
+    child = fakeChild(); // a fresh child for the restart
+    await sup.restart();
+    expect(sup.state).toBe("running");
+  });
+
+  it("errors and kills the child when the pid file cannot be written", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lodekit-sup-"));
+    fs.writeFileSync(path.join(dir, "blocker"), ""); // a FILE where the pidfile's parent dir must go
+    const child = fakeChild();
+    let spawned = false;
+    const sup = new Supervisor({
+      ...fastOpts,
+      pidFile: path.join(dir, "blocker", "runtime.pid"), // mkdir over a file → throws
+      spawnRuntime: () => ((spawned = true), child),
+      checkHealth: async () => spawned,
+    });
+    await sup.start();
+    expect(sup.state).toBe("error");
+    expect(sup.errorMessage).toMatch(/Could not write/);
+    expect(child.signalsSent).toContain("SIGTERM");
+  });
 });

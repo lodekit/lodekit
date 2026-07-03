@@ -7,7 +7,12 @@ const { getPaths } = require("./paths");
 const { openLogStream } = require("./logs");
 const { Supervisor } = require("./supervisor");
 
-if (!app.requestSingleInstanceLock()) app.exit(0);
+if (!app.requestSingleInstanceLock()) {
+  // Second instance: leave before touching the primary's log files —
+  // app.exit() alone doesn't stop the current tick.
+  app.exit(0);
+  process.exit(0);
+}
 
 const paths = getPaths({
   packaged: app.isPackaged,
@@ -73,10 +78,10 @@ function rebuildMenu() {
   const action = bootError
     ? []
     : state === "running" || state === "starting"
-      ? [{ label: "Stop", click: () => supervisor.stop() }]
+      ? [{ label: "Stop", click: () => supervisor.stop().catch((e) => log(`supervisor: ${e.message}`)) }]
       : state === "error"
-        ? [{ label: "Restart", click: () => supervisor.restart() }]
-        : [{ label: "Start", click: () => supervisor.start() }];
+        ? [{ label: "Restart", click: () => supervisor.restart().catch((e) => log(`supervisor: ${e.message}`)) }]
+        : [{ label: "Start", click: () => supervisor.start().catch((e) => log(`supervisor: ${e.message}`)) }];
   tray.setContextMenu(
     Menu.buildFromTemplate([
       { label: STATE_LABEL[state], enabled: false },
@@ -116,8 +121,13 @@ async function quit() {
   if (quitting) return;
   quitting = true;
   log("quit requested");
-  await supervisor.stop();
-  app.exit(0);
+  try {
+    await supervisor.stop();
+  } catch (e) {
+    log(`supervisor.stop failed: ${e.message}`);
+  } finally {
+    app.exit(0);
+  }
 }
 
 app.whenReady().then(() => {
@@ -147,7 +157,7 @@ app.whenReady().then(() => {
     supervisor.on("state", onState);
   }
   log(`mode: ${paths.mode}, root: ${paths.lodekitRoot}`);
-  supervisor.start();
+  supervisor.start().catch((e) => log(`supervisor: ${e.message}`));
 });
 
 // Tray app: no windows to close, keep running.
