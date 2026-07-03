@@ -5,7 +5,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildStart } from "../src/build.js";
 import {
-  configureWorkers, startAppWorker, stopAllWorkers, forwardToWorker, getServerState,
+  configureWorkers, startAppWorker, stopAppWorker, stopAllWorkers, forwardToWorker,
+  getServerState, workerForTest,
 } from "../src/appWorker.js";
 import type { Config } from "../src/config.js";
 
@@ -64,5 +65,33 @@ describe("appWorker", () => {
 
   it("forwarding to a never-started app throws", async () => {
     await expect(forwardToWorker("nope", new Request("http://x/nope/"))).rejects.toThrow();
+  });
+
+  it("stopAppWorker mid-start rejects in-flight forwards (no hang) and clears state", async () => {
+    startAppWorker(cfg, "start-app");
+    // Awaits m.ready — the worker hasn't posted ready yet (import takes ms; this is sync code).
+    const inflight = forwardToWorker("start-app", new Request("http://x/start-app/"));
+    stopAppWorker("start-app");
+    await expect(inflight).rejects.toThrow("app worker stopped");
+    expect(getServerState("start-app")).toBeUndefined();
+    await expect(forwardToWorker("start-app", new Request("http://x/start-app/")))
+      .rejects.toThrow("no app worker");
+  }, 15_000);
+
+  it("a crash mid-start rejects in-flight forwards (no hang)", async () => {
+    startAppWorker(cfg, "start-app");
+    const inflight = forwardToWorker("start-app", new Request("http://x/start-app/"));
+    await workerForTest("start-app")!.terminate();
+    await expect(inflight).rejects.toThrow("app worker");
+    stopAppWorker("start-app"); // cancel the scheduled respawn; end clean
+  }, 15_000);
+
+  it("a missing server bundle surfaces as error state without spawning", () => {
+    startAppWorker(cfg, "not-built");
+    expect(getServerState("not-built")).toEqual({
+      status: "error",
+      message: "server bundle missing (not built)",
+    });
+    expect(workerForTest("not-built")).toBeUndefined();
   });
 });

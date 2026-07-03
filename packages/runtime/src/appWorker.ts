@@ -18,12 +18,14 @@ const BACKOFF_CAP_MS = 10_000;
 interface Managed {
   worker: Worker;
   ready: Promise<void>;
+  readyReject: (e: Error) => void; // settles waiters on crash/stop; no-op once ready resolved
   pending: Map<number, { resolve: (r: Response) => void; reject: (e: Error) => void; timer: NodeJS.Timeout }>;
   nextId: number;
   attempts: number;       // consecutive crashes; reset on ready
   respawn?: NodeJS.Timeout;
   cfg: Config;
   stopped: boolean;       // deliberate stop — suppress respawn
+  failed: boolean;        // fail() ran — a crash fires both 'error' and 'exit'; act once
 }
 
 const managed = new Map<string, Managed>();
@@ -58,7 +60,10 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
   let readyResolve!: () => void, readyReject!: (e: Error) => void;
   const ready = new Promise<void>((res, rej) => { readyResolve = res; readyReject = rej; });
   ready.catch(() => {}); // observed via forwardToWorker; avoid unhandled rejection
-  const m: Managed = { worker, ready, pending: new Map(), nextId: 1, attempts, cfg, stopped: false };
+  const m: Managed = {
+    worker, ready, readyReject, pending: new Map(), nextId: 1, attempts, cfg,
+    stopped: false, failed: false,
+  };
   managed.set(appId, m);
 
   worker.on("message", (msg) => {
@@ -75,11 +80,18 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
 }
 
 function fail(appId: string, m: Managed, message: string): void {
+  // A genuine crash fires both 'error' and 'exit'; act on the first only, or the
+  // second setTimeout would orphan the first (untracked spawn / resurrect-after-stop).
+  if (m.stopped || m.failed) return;
+  m.failed = true;
+  m.readyReject(new Error(message)); // settle forwards awaiting startup (no-op if already ready)
   for (const [, p] of m.pending) { clearTimeout(p.timer); p.reject(new Error(message)); }
   m.pending.clear();
   setState(appId, { status: "error", message });
   const delay = Math.min(BACKOFF_BASE_MS * 2 ** m.attempts, BACKOFF_CAP_MS);
-  m.respawn = setTimeout(() => spawn(m.cfg, appId, m.attempts + 1), delay);
+  m.respawn = setTimeout(() => {
+    if (managed.get(appId) === m && !m.stopped) spawn(m.cfg, appId, m.attempts + 1);
+  }, delay);
   m.respawn.unref();
 }
 
@@ -88,6 +100,7 @@ export function stopAppWorker(appId: string): void {
   if (!m) return;
   m.stopped = true;
   clearTimeout(m.respawn);
+  m.readyReject(new Error("app worker stopped")); // settle forwards awaiting startup
   for (const [, p] of m.pending) { clearTimeout(p.timer); p.reject(new Error("app worker stopped")); }
   m.pending.clear();
   void m.worker.terminate();
