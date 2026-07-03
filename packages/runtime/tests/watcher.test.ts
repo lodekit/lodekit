@@ -89,6 +89,27 @@ describe("watcher", () => {
     const buf = await collectEvents(base, "event: error", 30000);
     expect(buf).toContain("event: error");
   }, 40000);
+
+  it("triggers a rebuild when only a route file changes (the canonical editing surface)", async () => {
+    const done = collectEvents(base, "event: building", 30000);
+    await new Promise((r) => setTimeout(r, 100));
+    writeApp(
+      "wroute",
+      `import { createFileRoute } from "@tanstack/react-router";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>v1</h1>,\n});\n`
+    );
+    await done;
+    await collectEvents(base, "event: ready", 30000);
+
+    // Edit ONLY the route file — no manifest/router touch — and confirm a rebuild fires.
+    const rebuildDone = collectEvents(base, "event: building", 30000);
+    await new Promise((r) => setTimeout(r, 100));
+    fs.writeFileSync(
+      path.join(root, "apps", "wroute", "src", "routes", "index.tsx"),
+      `import { createFileRoute } from "@tanstack/react-router";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>v2</h1>,\n});\n`
+    );
+    const buf = await rebuildDone;
+    expect(buf).toContain("event: building");
+  }, 60000);
 });
 
 describe("isGeneratedPath", () => {

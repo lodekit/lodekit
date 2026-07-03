@@ -48,8 +48,10 @@ export function startWatcher(cfg: Config): FSWatcher {
 
   const watcher = chokidar.watch(cfg.appsDir, {
     ignoreInitial: true,
-    depth: 2,
-    ignored: (p) => isGeneratedPath(p),
+    // No depth bound: apps/<id>/src/routes/<file> is already 3 levels down from
+    // appsDir, and a shallow depth (e.g. 2) silently drops events for route-file
+    // edits — the canonical editing surface — without erroring.
+    ignored: (p) => isGeneratedPath(p) || p.split(path.sep).includes("node_modules"),
   });
   watcher
     .on("add", onChange)
