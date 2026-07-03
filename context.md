@@ -71,11 +71,13 @@ _Avoid_: template, boilerplate, scaffold (scaffold is the act, not the shape)
 **Server function**:
 App-defined code that runs on the server side of the contract — a TanStack Start
 `createServerFn`, callable from the app's own client; inputs validated at the trust
-boundary. _Avoid_: server code, RPC, action, endpoint.
+boundary.
+_Avoid_: server code, RPC, action, endpoint
 
 **App worker**:
 The per-app worker thread inside the runtime that executes an app's built server bundle
-(SSR + server functions). _Avoid_: sandbox, per-app server, process.
+(SSR + server functions).
+_Avoid_: sandbox, per-app server, process
 
 **Scaffold**:
 To generate a new app's starter files conforming to the app contract.
