@@ -70,4 +70,18 @@ describe("dashboard serving", () => {
     const asset = await fetch(base + assetPath!);
     expect(asset.status).toBe(200);
   }, 60000);
+
+  it("rejects a cross-origin _serverFn call and accepts a same-origin one", async () => {
+    await boot();
+    await buildDashboard(cfg);
+    const crossOrigin = await fetch(base + "/_dashboard/_serverFn/x", { method: "POST" });
+    expect(crossOrigin.status).toBe(403);
+    expect(await crossOrigin.json()).toEqual({ error: "server functions are same-origin only" });
+
+    const sameOrigin = await fetch(base + "/_dashboard/_serverFn/x", {
+      method: "POST",
+      headers: { "sec-fetch-site": "same-origin" },
+    });
+    expect(sameOrigin.status).not.toBe(403);
+  }, 60000);
 });

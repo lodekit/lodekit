@@ -47,6 +47,12 @@ export function createApp(cfg: Config): Hono {
       if (!state || state.status === "error") {
         return c.html(fallbackPage(state?.status === "error" ? state.message : undefined));
       }
+      // Soft same-origin guard: mirrors appHost's _serverFn check. The dashboard defines
+      // none today, but it's app #0 on the same substrate and will host privileged ones.
+      const segments = new URL(c.req.url).pathname.split("/").filter(Boolean);
+      if (segments[1] === "_serverFn" && c.req.header("sec-fetch-site") !== "same-origin") {
+        return c.json({ error: "server functions are same-origin only" }, 403);
+      }
       try {
         return await forwardToWorker("_dashboard", c.req.raw);
       } catch (e) {
