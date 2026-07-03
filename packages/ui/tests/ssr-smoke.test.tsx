@@ -15,6 +15,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogMedia,
   AlertDialogTitle,
   AlertDialogTrigger,
   AlertTitle,
@@ -60,6 +61,7 @@ import {
   ContextMenuGroup,
   ContextMenuItem,
   ContextMenuLabel,
+  ContextMenuPortal,
   ContextMenuRadioGroup,
   ContextMenuRadioItem,
   ContextMenuSeparator,
@@ -90,6 +92,7 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
@@ -242,6 +245,11 @@ function Smoke() {
       <Input id="smoke-input" placeholder="Input Placeholder Marker" />
       <Textarea placeholder="Textarea Placeholder Marker" />
 
+      {/* SelectScrollUpButton/SelectScrollDownButton are the one exception to
+          full coverage: they throw outside SelectContent (Radix scoped
+          context), and SelectContent's children never execute server-side
+          (portal-gated), so their render bodies cannot run under SSR at all.
+          They remain composed inside SelectContent's own body below. */}
       <Select open={false}>
         <SelectTrigger>
           <SelectValue placeholder="Select Placeholder Marker" />
@@ -289,6 +297,11 @@ function Smoke() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* AlertDialogMedia normally sits inside AlertDialogContent, but that
+          subtree is portal-gated (never invoked server-side), so render it
+          standalone too — it is a plain context-free div — to actually
+          execute its render body under SSR. */}
+      <AlertDialogMedia>Alert Dialog Media Marker</AlertDialogMedia>
 
       <Sheet>
         <SheetTrigger asChild>
@@ -346,6 +359,12 @@ function Smoke() {
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         </DropdownMenuContent>
+        {/* DropdownMenuContent uses the raw primitive portal internally, so
+            exercise the exported DropdownMenuPortal wrapper directly. Closed
+            menu → it emits nothing, but its render body executes. */}
+        <DropdownMenuPortal>
+          <div>dropdown portal child</div>
+        </DropdownMenuPortal>
       </DropdownMenu>
 
       <Menubar>
@@ -392,6 +411,10 @@ function Smoke() {
             </ContextMenuSubContent>
           </ContextMenuSub>
         </ContextMenuContent>
+        {/* Same rationale as DropdownMenuPortal above. */}
+        <ContextMenuPortal>
+          <div>context menu portal child</div>
+        </ContextMenuPortal>
       </ContextMenu>
 
       <NavigationMenu>
@@ -648,6 +671,7 @@ describe("SSR smoke", () => {
       "Select Placeholder Marker",
       "Dialog Trigger Marker",
       "Alert Dialog Trigger Marker",
+      "Alert Dialog Media Marker",
       "Sheet Trigger Marker",
       "Drawer Trigger Marker",
       "Dropdown Trigger Marker",
