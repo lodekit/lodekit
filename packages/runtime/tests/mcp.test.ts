@@ -6,6 +6,7 @@ import type { Server } from "node:http";
 import { start } from "../src/server.js";
 import { loadConfig } from "../src/config.js";
 import { scaffold, listApps, inspectDb } from "../../mcp/client.js";
+import { createClient } from "@lodekit/sdk";
 
 let root: string, server: Server, base: string;
 beforeEach(async () => {
@@ -38,5 +39,15 @@ describe("mcp tool helpers", () => {
     });
     const schema = await inspectDb(base, "books");
     expect(schema.schema.map((t: { table: string }) => t.table)).toContain("b");
+  });
+
+  it("reads app data through the sdk core the kv tools use", async () => {
+    await scaffold(base, { slug: "recipes", name: "Recipes" });
+    const kv = createClient({ baseUrl: base, slug: "recipes" }).kv;
+    await kv.set("recipe:1", { title: "Soup" });
+    expect(await kv.get("recipe:1")).toEqual({ title: "Soup" });
+    const page = await kv.list({ prefix: "recipe:" });
+    expect(page.entries.map((e) => e.key)).toEqual(["recipe:1"]);
+    expect(await kv.get("missing")).toBeUndefined();
   });
 });

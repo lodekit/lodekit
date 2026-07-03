@@ -7,6 +7,7 @@
     "start": "tsx index.ts"
   },
   "dependencies": {
+    "@lodekit/sdk": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.12.0",
     "tsx": "^4.19.2",
     "zod": "^3.24.1"

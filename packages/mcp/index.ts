@@ -4,6 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { scaffold, listApps, inspectDb } from "./client.js";
+import { createClient } from "@lodekit/sdk";
 
 const BASE = process.env.LODEKIT_BASE_URL ?? "http://lodekit.localhost:7777";
 
@@ -34,6 +35,22 @@ server.tool("lodekit_open_app", { slug: z.string() }, async ({ slug }) => {
 
 server.tool("lodekit_inspect_db", { slug: z.string() }, async ({ slug }) =>
   text(await inspectDb(BASE, slug))
+);
+
+server.tool(
+  "lodekit_kv_list",
+  { slug: z.string(), prefix: z.string().optional() },
+  async ({ slug, prefix }) =>
+    text(await createClient({ baseUrl: BASE, slug }).kv.list({ prefix }))
+);
+
+server.tool(
+  "lodekit_kv_get",
+  { slug: z.string(), key: z.string() },
+  async ({ slug, key }) => {
+    const value = await createClient({ baseUrl: BASE, slug }).kv.get(key);
+    return text(value === undefined ? { found: false } : { found: true, value });
+  }
 );
 
 // Only connect stdio when run directly (not when imported by tests).
