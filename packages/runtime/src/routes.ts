@@ -88,5 +88,20 @@ export function apiRouter(cfg: Config): express.Router {
     addClient(res);
   });
 
+  r.get("/apps/:slug/events", (req, res) => {
+    if (!isValidSlug(req.params.slug)) {
+      res.status(400).json({ error: "invalid slug" });
+      return;
+    }
+    res.set({
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
+    res.flushHeaders();
+    res.write(": connected\n\n");
+    addClient(res, req.params.slug);
+  });
+
   return r;
 }
