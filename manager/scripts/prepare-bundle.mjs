@@ -97,7 +97,10 @@ function buildPayload() {
     const pkgDir = path.join(platformDir, pkg);
     fs.copyFileSync(path.join(repoRoot, "tsconfig.base.json"), path.join(pkgDir, "tsconfig.base.json"));
     const tsconfigPath = path.join(pkgDir, "tsconfig.json");
-    const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, "utf8"));
+    // tsconfig.json is JSONC (the runtime's has full-line `//` comments, added by the
+    // tanstack-start-host slice) — strip those before JSON.parse.
+    const tsconfigRaw = fs.readFileSync(tsconfigPath, "utf8").replace(/^\s*\/\/.*$/gm, "");
+    const tsconfig = JSON.parse(tsconfigRaw);
     if (tsconfig.extends) tsconfig.extends = "./tsconfig.base.json";
     fs.writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2) + "\n");
   }
