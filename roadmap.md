@@ -187,6 +187,21 @@ above; the remainder:
   and a multi-instance setup would need per-instance registries. Since the Hono migration
   (stack-refresh slice), the registry holds writer callbacks, not Express `Response`
   objects — the facts above are unchanged.
+- **App worker respawn has no give-up** — a permanently-fatal server bundle respawns
+  forever at the 10s backoff cap (states/SSE churn error→starting→error; the `exit`
+  handler also overwrites the informative fatal stack). Add a give-up-after-N or
+  wait-for-next-build latch.
+- **`forwardToWorker` buffers request bodies with no size cap** — the scoped API's 100kb
+  `bodyLimit` doesn't apply to app-worker forwards. Enforce a cap when the webhooks
+  trigger lands.
+- **Scaffold templates interpolate the app display name unescaped** — into generated TS
+  source (root title + `CardTitle`). Escape when scaffold is next touched.
+- **Scaffold/fixture root routes lack a `notFoundComponent`** — TanStack warns in SSR;
+  falls back to a generic `<p>Not Found</p>`. Add one with the slice-3 skill work.
+- **`appWorker`'s worker map is keyed by bare `appId`, not per-`Config`** — a stale server
+  `"close"` from a previous `start()` can kill a newer instance's workers — only manifests
+  in test churn today (mitigated in e2e teardown); revisit if the runtime ever
+  multi-instances.
 
 - **No browser-level test coverage** — every test (incl. `e2e.test.ts`) drives the
   HTTP/SDK layer with `fetch`, never a real browser. This let a browser-only bug ship: at
