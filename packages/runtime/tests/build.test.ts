@@ -18,15 +18,15 @@ function cfgFor(root: string, cache: string): Config {
   };
 }
 
-function writeApp(slug: string, appTsx: string) {
-  const dir = path.join(root, "apps", slug, "src");
+function writeApp(appId: string, appTsx: string) {
+  const dir = path.join(root, "apps", appId, "src");
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(
-    path.join(root, "apps", slug, "manifest.json"),
-    JSON.stringify({ name: slug, slug })
+    path.join(root, "apps", appId, "manifest.json"),
+    JSON.stringify({ name: appId, appId })
   );
   fs.writeFileSync(
-    path.join(root, "apps", slug, "index.html"),
+    path.join(root, "apps", appId, "index.html"),
     `<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>`
   );
   fs.writeFileSync(
@@ -36,15 +36,15 @@ function writeApp(slug: string, appTsx: string) {
   fs.writeFileSync(path.join(dir, "App.tsx"), appTsx);
 }
 
-function writeUiApp(slug: string) {
-  const dir = path.join(root, "apps", slug, "src");
+function writeUiApp(appId: string) {
+  const dir = path.join(root, "apps", appId, "src");
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(
-    path.join(root, "apps", slug, "manifest.json"),
-    JSON.stringify({ name: slug, slug })
+    path.join(root, "apps", appId, "manifest.json"),
+    JSON.stringify({ name: appId, appId })
   );
   fs.writeFileSync(
-    path.join(root, "apps", slug, "index.html"),
+    path.join(root, "apps", appId, "index.html"),
     `<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>`
   );
   fs.writeFileSync(path.join(dir, "index.css"), `@import "@lodekit/ui/theme.css";\n`);
@@ -88,7 +88,7 @@ describe("buildApp", () => {
     expect(getBuildState("broken")?.status).toBe("error");
   }, 30000);
 
-  it("serializes concurrent builds of the same slug without racing the outDir", async () => {
+  it("serializes concurrent builds of the same app id without racing the outDir", async () => {
     writeApp("concurrent", `import { kv } from "@lodekit/sdk";\nexport default function App() { return <h1>c {typeof kv}</h1>; }\n`);
     const [a, b] = await Promise.all([buildApp(cfg, "concurrent"), buildApp(cfg, "concurrent")]);
     expect(a.status).toBe("ready");

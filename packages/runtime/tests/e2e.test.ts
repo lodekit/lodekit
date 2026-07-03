@@ -25,18 +25,18 @@ function copyDir(src: string, dst: string) {
 // SSE `ready` event, which start()'s buildAll can broadcast before a listener
 // attaches (the event is then missed and the wait hangs). A transient "Build failed"
 // is tolerated and re-polled: build state is a process-global map, so a prior test's
-// in-flight build against its since-removed temp dir can briefly leave this slug in
+// in-flight build against its since-removed temp dir can briefly leave this app id in
 // error before the correct build supersedes it. A genuine failure persists to the
 // deadline, where we surface the last page for diagnosis.
-async function waitReady(base: string, slug: string, timeoutMs: number) {
+async function waitReady(base: string, appId: string, timeoutMs: number) {
   const deadline = Date.now() + timeoutMs;
   let last = "";
   while (Date.now() < deadline) {
-    last = await (await fetch(base + "/" + slug + "/")).text();
+    last = await (await fetch(base + "/" + appId + "/")).text();
     if (last.includes("/assets/")) return;
     await new Promise((r) => setTimeout(r, 100));
   }
-  throw new Error(`timed out waiting for ${slug} to build; last page: ${last.slice(0, 300)}`);
+  throw new Error(`timed out waiting for ${appId} to build; last page: ${last.slice(0, 300)}`);
 }
 
 beforeEach(async () => {
@@ -71,7 +71,7 @@ afterEach(() => {
 describe("expense tracker e2e (bundled)", () => {
   it("serves the bundled index.html and a hashed asset", async () => {
     const list = await (await fetch(base + "/api/apps")).json();
-    expect(list.map((a: { slug: string }) => a.slug)).toContain("expense-tracker");
+    expect(list.map((a: { appId: string }) => a.appId)).toContain("expense-tracker");
     const html = await (await fetch(base + "/expense-tracker/")).text();
     expect(html).toContain("<div id=\"root\">");
     const asset = html.match(/\/assets\/[\w.-]+\.js/);
@@ -79,8 +79,8 @@ describe("expense tracker e2e (bundled)", () => {
     const assetRes = await fetch(base + "/expense-tracker" + asset![0]);
     expect(assetRes.status).toBe(200);
     const js = await assetRes.text();
-    // __LODEKIT_SLUG__ define reached the bundle (Rollup may fold it into the
-    // "/api/apps/<slug>/kv-store" URL string, so match the bare slug, not quotes).
+    // __LODEKIT_APP_ID__ define reached the bundle (Rollup may fold it into the
+    // "/api/apps/<appId>/kv-store" URL string, so match the bare app id, not quotes).
     expect(js).toContain("expense-tracker");
   }, 45000);
 

@@ -3,7 +3,7 @@ import path from "node:path";
 import type { Config } from "./config.js";
 
 export interface ScaffoldInput {
-  slug: string;
+  appId: string;
   name: string;
   description?: string;
   icon?: string;
@@ -76,12 +76,12 @@ function writeIfAbsent(filePath: string, contents: string): void {
 }
 
 export function scaffoldApp(cfg: Config, input: ScaffoldInput) {
-  const appDir = path.join(cfg.appsDir, input.slug);
+  const appDir = path.join(cfg.appsDir, input.appId);
   const srcDir = path.join(appDir, "src");
   fs.mkdirSync(srcDir, { recursive: true });
   const manifest = {
     name: input.name,
-    slug: input.slug,
+    appId: input.appId,
     icon: input.icon ?? "📦",
     description: input.description ?? "",
   };
@@ -91,9 +91,9 @@ export function scaffoldApp(cfg: Config, input: ScaffoldInput) {
   writeIfAbsent(path.join(srcDir, "App.tsx"), appTsx(manifest.name));
   writeIfAbsent(path.join(srcDir, "index.css"), indexCss);
   return {
-    slug: input.slug,
+    appId: input.appId,
     appDir,
-    url: `${cfg.baseUrl}/${input.slug}`,
+    url: `${cfg.baseUrl}/${input.appId}`,
     files: ["manifest.json", "index.html", "src/main.tsx", "src/App.tsx", "src/index.css"],
   };
 }

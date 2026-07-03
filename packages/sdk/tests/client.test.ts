@@ -7,7 +7,7 @@ beforeEach(() => {
   fetchMock.mockReset();
 });
 
-const client = () => createClient({ baseUrl: "http://x", slug: "notes" }).kv;
+const client = () => createClient({ baseUrl: "http://x", appId: "notes" }).kv;
 const okJson = (v: unknown) => ({ ok: true, json: async () => v });
 
 describe("createClient kv ops", () => {
@@ -119,8 +119,8 @@ describe("watch", () => {
     expect(FakeEventSource.instances).toHaveLength(1);
     const es = FakeEventSource.instances[0];
     expect(es.url).toBe("http://x/api/apps/notes/events");
-    es.dispatch("kv-store-change", { slug: "notes", key: "e:1", op: "set" });
-    es.dispatch("kv-store-change", { slug: "notes", key: "other", op: "del" });
+    es.dispatch("kv-store-change", { appId: "notes", key: "e:1", op: "set" });
+    es.dispatch("kv-store-change", { appId: "notes", key: "other", op: "del" });
     expect(seen).toEqual(["1:e:1", "2:e:1", "2:other"]);
     un1();
     expect(es.closed).toBe(false);

@@ -1,6 +1,6 @@
 export async function scaffold(
   base: string,
-  input: { slug: string; name: string; description?: string; icon?: string }
+  input: { appId: string; name: string; description?: string; icon?: string }
 ) {
   const r = await fetch(base + "/api/apps", {
     method: "POST",

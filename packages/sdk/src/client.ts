@@ -58,8 +58,8 @@ const jsonInit = (method: string, body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
-export function createClient({ baseUrl, slug }: { baseUrl: string; slug: string }): LodekitClient {
-  const api = `${baseUrl}/api/apps/${slug}/kv-store`;
+export function createClient({ baseUrl, appId }: { baseUrl: string; appId: string }): LodekitClient {
+  const api = `${baseUrl}/api/apps/${appId}/kv-store`;
   const keyUrl = (key: string) => `${api}/${encodeURIComponent(key)}`;
 
   type GetResponse<T> = { found: false } | { found: true; value: T };
@@ -137,7 +137,7 @@ export function createClient({ baseUrl, slug }: { baseUrl: string; slug: string 
       }
       const watcher = { prefix, cb };
       if (watchers.size === 0) {
-        const source = new EventSource(`${baseUrl}/api/apps/${slug}/events`);
+        const source = new EventSource(`${baseUrl}/api/apps/${appId}/events`);
         source.addEventListener("kv-store-change", (e) => {
           const change = JSON.parse((e as MessageEvent).data) as KvChange;
           for (const w of watchers) {

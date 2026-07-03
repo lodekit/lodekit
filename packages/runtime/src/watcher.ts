@@ -12,7 +12,7 @@ export function startWatcher(cfg: Config): FSWatcher {
   fs.mkdirSync(cfg.appsDir, { recursive: true });
   const timers = new Map<string, NodeJS.Timeout>();
 
-  const slugOf = (p: string): string | undefined => {
+  const appIdOf = (p: string): string | undefined => {
     const rel = path.relative(cfg.appsDir, p);
     if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) return undefined;
     return rel.split(path.sep)[0] || undefined;
@@ -20,21 +20,21 @@ export function startWatcher(cfg: Config): FSWatcher {
 
   const notify = () => broadcast("apps-changed", scanApps(cfg.appsDir));
 
-  const rebuild = (slug: string) => {
-    clearTimeout(timers.get(slug));
+  const rebuild = (appId: string) => {
+    clearTimeout(timers.get(appId));
     timers.set(
-      slug,
+      appId,
       setTimeout(() => {
-        timers.delete(slug);
-        void buildApp(cfg, slug);
+        timers.delete(appId);
+        void buildApp(cfg, appId);
       }, DEBOUNCE_MS)
     );
   };
 
   const onChange = (p: string) => {
     notify();
-    const slug = slugOf(p);
-    if (slug) rebuild(slug);
+    const appId = appIdOf(p);
+    if (appId) rebuild(appId);
   };
 
   const watcher = chokidar.watch(cfg.appsDir, { ignoreInitial: true, depth: 2 });

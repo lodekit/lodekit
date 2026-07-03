@@ -9,12 +9,12 @@ import type { Config } from "../src/config.js";
 
 let root: string, cache: string, cfg: Config, server: Server, base: string;
 
-function writeApp(slug: string, appTsx: string) {
-  const src = path.join(root, "apps", slug, "src");
+function writeApp(appId: string, appTsx: string) {
+  const src = path.join(root, "apps", appId, "src");
   fs.mkdirSync(src, { recursive: true });
-  fs.writeFileSync(path.join(root, "apps", slug, "manifest.json"), JSON.stringify({ name: slug, slug }));
+  fs.writeFileSync(path.join(root, "apps", appId, "manifest.json"), JSON.stringify({ name: appId, appId }));
   fs.writeFileSync(
-    path.join(root, "apps", slug, "index.html"),
+    path.join(root, "apps", appId, "index.html"),
     `<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>`
   );
   fs.writeFileSync(path.join(src, "main.tsx"),
@@ -52,7 +52,7 @@ describe("appHost", () => {
     expect((await fetch(base + "/built" + assetMatch![0])).status).toBe(200);
   }, 30000);
 
-  it("redirects /<slug> to /<slug>/", async () => {
+  it("redirects /<appId> to /<appId>/", async () => {
     writeApp("redir", `export default function App() { return <h1>r</h1>; }`);
     await buildApp(cfg, "redir");
     const res = await fetch(base + "/redir", { redirect: "manual" });

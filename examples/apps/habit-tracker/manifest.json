@@ -1,6 +1,6 @@
 {
   "name": "Habit Tracker",
-  "slug": "habit-tracker",
+  "appId": "habit-tracker",
   "icon": "✅",
   "description": "Track daily habits and build streaks."
 }

@@ -33,10 +33,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const kv = (slug: string, p = "") => `${base}/api/apps/${slug}/kv-store${p}`;
+const kv = (appId: string, p = "") => `${base}/api/apps/${appId}/kv-store${p}`;
 
-async function put(slug: string, key: string, body: unknown) {
-  return fetch(kv(slug, `/${encodeURIComponent(key)}`), {
+async function put(appId: string, key: string, body: unknown) {
+  return fetch(kv(appId, `/${encodeURIComponent(key)}`), {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -77,7 +77,7 @@ describe("kv-store HTTP surface", () => {
     expect(page2.entries.map((e: { key: string }) => e.key)).toEqual(["e:2"]);
   });
 
-  it("validates: bad slug, missing value, bad ttl, incr on non-number, oversized key, literal action-route keys, non-finite limit", async () => {
+  it("validates: bad app id, missing value, bad ttl, incr on non-number, oversized key, literal action-route keys, non-finite limit", async () => {
     expect((await put("Bad Slug", "k", { value: 1 })).status).toBe(400);
     expect((await put("app", "k", {})).status).toBe(400); // no value property
     expect((await put("app", "k", { value: 1, ttl: -5 })).status).toBe(400);

@@ -40,11 +40,11 @@ async function jpost(p: string, body: unknown) {
 
 describe("API", () => {
   it("scaffolds, lists, and round-trips app data through kv-store", async () => {
-    const created = await jpost("/api/apps", { slug: "exp", name: "Exp" });
+    const created = await jpost("/api/apps", { appId: "exp", name: "Exp" });
     expect(created.status).toBe(201);
 
     const list = await (await fetch(base + "/api/apps")).json();
-    expect(list.map((a: { slug: string }) => a.slug)).toContain("exp");
+    expect(list.map((a: { appId: string }) => a.appId)).toContain("exp");
 
     await fetch(base + "/api/apps/exp/kv-store/cfg", {
       method: "PUT",
@@ -55,7 +55,7 @@ describe("API", () => {
     expect(got).toMatchObject({ found: true, value: { currency: "USD" } });
   });
 
-  it("rejects invalid slugs", async () => {
+  it("rejects invalid app ids", async () => {
     const r = await fetch(base + "/api/apps/Bad Slug/kv-store/k");
     expect(r.status).toBe(400);
   });

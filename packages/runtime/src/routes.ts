@@ -1,6 +1,6 @@
 import express from "express";
 import type { Config } from "./config.js";
-import { scanApps, isValidSlug } from "./registry.js";
+import { scanApps, isValidAppId } from "./registry.js";
 import { scaffoldApp } from "./scaffold.js";
 import { addClient } from "./sse.js";
 import { kvRouter, CATALOG_NAME } from "./services/kv-store.js";
@@ -14,15 +14,15 @@ export function apiRouter(cfg: Config): express.Router {
   });
 
   r.post("/apps", (req, res) => {
-    const { slug, name, description, icon } = req.body ?? {};
-    if (!isValidSlug(slug ?? "") || !name) {
-      res.status(400).json({ error: "invalid slug or missing name" });
+    const { appId, name, description, icon } = req.body ?? {};
+    if (!isValidAppId(appId ?? "") || !name) {
+      res.status(400).json({ error: "invalid app id or missing name" });
       return;
     }
-    res.status(201).json(scaffoldApp(cfg, { slug, name, description, icon }));
+    res.status(201).json(scaffoldApp(cfg, { appId, name, description, icon }));
   });
 
-  r.use(`/apps/:slug/${CATALOG_NAME}`, kvRouter(cfg));
+  r.use(`/apps/:appId/${CATALOG_NAME}`, kvRouter(cfg));
 
   r.get("/events", (_req, res) => {
     res.set({
@@ -35,9 +35,9 @@ export function apiRouter(cfg: Config): express.Router {
     addClient(res);
   });
 
-  r.get("/apps/:slug/events", (req, res) => {
-    if (!isValidSlug(req.params.slug)) {
-      res.status(400).json({ error: "invalid slug" });
+  r.get("/apps/:appId/events", (req, res) => {
+    if (!isValidAppId(req.params.appId)) {
+      res.status(400).json({ error: "invalid app id" });
       return;
     }
     res.set({
@@ -47,7 +47,7 @@ export function apiRouter(cfg: Config): express.Router {
     });
     res.flushHeaders();
     res.write(": connected\n\n");
-    addClient(res, req.params.slug);
+    addClient(res, req.params.appId);
   });
 
   return r;

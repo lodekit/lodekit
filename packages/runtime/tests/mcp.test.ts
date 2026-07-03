@@ -26,16 +26,16 @@ afterEach(() => {
 
 describe("mcp tool helpers", () => {
   it("scaffolds and lists an app via http", async () => {
-    const created = await scaffold(base, { slug: "books", name: "Books" });
+    const created = await scaffold(base, { appId: "books", name: "Books" });
     expect(created.url).toContain("/books");
 
     const list = await listApps(base);
-    expect(list.map((a: { slug: string }) => a.slug)).toContain("books");
+    expect(list.map((a: { appId: string }) => a.appId)).toContain("books");
   });
 
   it("reads app data through the sdk core the kv tools use", async () => {
-    await scaffold(base, { slug: "recipes", name: "Recipes" });
-    const kv = createClient({ baseUrl: base, slug: "recipes" }).kv;
+    await scaffold(base, { appId: "recipes", name: "Recipes" });
+    const kv = createClient({ baseUrl: base, appId: "recipes" }).kv;
     await kv.set("recipe:1", { title: "Soup" });
     expect(await kv.get("recipe:1")).toEqual({ title: "Soup" });
     const page = await kv.list({ prefix: "recipe:" });

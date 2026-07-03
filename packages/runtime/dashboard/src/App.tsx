@@ -12,7 +12,7 @@ import {
 } from "@lodekit/ui";
 
 interface AppInfo {
-  slug: string;
+  appId: string;
   name: string;
   icon?: string;
   description?: string;
@@ -30,10 +30,10 @@ function StateBadge({ state }: { state: BuildStatus | undefined }) {
   return <Badge variant="destructive">error: {state.message ?? ""}</Badge>;
 }
 
-function StorePanel({ slug }: { slug: string }) {
-  const kv = createClient({ baseUrl: "", slug }).kv;
+function StorePanel({ appId }: { appId: string }) {
+  const kv = createClient({ baseUrl: "", appId }).kv;
   const q = useInfiniteQuery({
-    queryKey: ["kv", slug],
+    queryKey: ["kv", appId],
     queryFn: ({ pageParam }) => kv.list({ limit: 100, cursor: pageParam || undefined }),
     initialPageParam: "",
     getNextPageParam: (last) => last.nextCursor ?? undefined,
@@ -81,13 +81,13 @@ export default function App() {
     es.addEventListener("apps-changed", () => void load());
     for (const ev of ["building", "ready", "error"] as const) {
       es.addEventListener(ev, (e) => {
-        const d = JSON.parse((e as MessageEvent).data) as { slug: string; message?: string };
-        setStates((s) => ({ ...s, [d.slug]: { status: ev, message: d.message } }));
+        const d = JSON.parse((e as MessageEvent).data) as { appId: string; message?: string };
+        setStates((s) => ({ ...s, [d.appId]: { status: ev, message: d.message } }));
       });
     }
     es.addEventListener("kv-store-change", (e) => {
-      const d = JSON.parse((e as MessageEvent).data) as { slug: string };
-      void queryClient.invalidateQueries({ queryKey: ["kv", d.slug] });
+      const d = JSON.parse((e as MessageEvent).data) as { appId: string };
+      void queryClient.invalidateQueries({ queryKey: ["kv", d.appId] });
     });
     return () => es.close();
   }, [queryClient]);
@@ -116,24 +116,24 @@ export default function App() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {apps.map((a) => (
-            <Card key={a.slug} className="h-full transition-colors hover:bg-accent/50">
+            <Card key={a.appId} className="h-full transition-colors hover:bg-accent/50">
               <CardHeader>
                 <div className="text-3xl">{a.icon || "📦"}</div>
                 <CardTitle>
-                  <a href={`/${a.slug}/`} className="hover:underline">{a.name}</a>
+                  <a href={`/${a.appId}/`} className="hover:underline">{a.name}</a>
                 </CardTitle>
                 <CardDescription>{a.description || ""}</CardDescription>
                 <div className="flex items-center gap-2">
-                  <StateBadge state={states[a.slug]} />
+                  <StateBadge state={states[a.appId]} />
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setOpenPanels((p) => ({ ...p, [a.slug]: !p[a.slug] }))}
+                    onClick={() => setOpenPanels((p) => ({ ...p, [a.appId]: !p[a.appId] }))}
                   >
-                    {openPanels[a.slug] ? "Hide data" : "Data"}
+                    {openPanels[a.appId] ? "Hide data" : "Data"}
                   </Button>
                 </div>
-                {openPanels[a.slug] && <StorePanel slug={a.slug} />}
+                {openPanels[a.appId] && <StorePanel appId={a.appId} />}
               </CardHeader>
             </Card>
           ))}

@@ -3,15 +3,15 @@ import path from "node:path";
 
 export interface AppManifest {
   name: string;
-  slug: string;
+  appId: string;
   icon?: string;
   description?: string;
 }
 
-const SLUG_RE = /^[a-z0-9-]+$/;
+const APP_ID_RE = /^[a-z0-9-]+$/;
 
-export function isValidSlug(slug: string): boolean {
-  return SLUG_RE.test(slug);
+export function isValidAppId(appId: string): boolean {
+  return APP_ID_RE.test(appId);
 }
 
 export function scanApps(appsDir: string): AppManifest[] {
@@ -22,9 +22,10 @@ export function scanApps(appsDir: string): AppManifest[] {
     const manifestPath = path.join(appsDir, entry.name, "manifest.json");
     if (!fs.existsSync(manifestPath)) continue;
     try {
-      const m = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as AppManifest;
-      if (!isValidSlug(m.slug) || m.slug !== entry.name) continue;
-      apps.push({ name: m.name, slug: m.slug, icon: m.icon, description: m.description });
+      const raw = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as AppManifest & { slug?: string };
+      const appId = raw.appId ?? raw.slug ?? "";
+      if (!isValidAppId(appId) || appId !== entry.name) continue;
+      apps.push({ name: raw.name, appId, icon: raw.icon, description: raw.description });
     } catch {
       // skip malformed manifest
     }

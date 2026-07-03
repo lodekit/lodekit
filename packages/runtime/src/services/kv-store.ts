@@ -2,7 +2,7 @@ import type Database from "better-sqlite3";
 import express, { type Request, type Response, type NextFunction } from "express";
 import { getAppDb, openDbs } from "../db.js";
 import type { Config } from "../config.js";
-import { isValidSlug } from "../registry.js";
+import { isValidAppId } from "../registry.js";
 import { broadcast } from "../sse.js";
 
 export const CATALOG_NAME = "kv-store";
@@ -35,8 +35,8 @@ const toEntry = (r: Row): Entry => ({
 
 const ensured = new WeakSet<Database.Database>();
 
-export function getKv(dataDir: string, slug: string): Database.Database {
-  const db = getAppDb(dataDir, slug);
+export function getKv(dataDir: string, appId: string): Database.Database {
+  const db = getAppDb(dataDir, appId);
   if (!ensured.has(db)) {
     ensureSchema(db);
     ensured.add(db);
@@ -180,15 +180,15 @@ export function sweep(db: Database.Database): string[] {
 // until first access — lazy expiry on read covers correctness; the sweep is
 // for space. Only connections opened through getKv have the v2 schema
 // guaranteed, so guard with ensureSchema idempotently.
-export function sweepAll(): { slug: string; keys: string[] }[] {
-  const results: { slug: string; keys: string[] }[] = [];
-  for (const { slug, db } of openDbs()) {
+export function sweepAll(): { appId: string; keys: string[] }[] {
+  const results: { appId: string; keys: string[] }[] = [];
+  for (const { appId, db } of openDbs()) {
     if (!ensured.has(db)) {
       ensureSchema(db);
       ensured.add(db);
     }
     const keys = sweep(db);
-    if (keys.length > 0) results.push({ slug, keys });
+    if (keys.length > 0) results.push({ appId, keys });
   }
   return results;
 }
@@ -198,13 +198,13 @@ const EVENT = `${CATALOG_NAME}-change`;
 const validKey = (k: unknown): k is string =>
   typeof k === "string" && k.length > 0 && k.length <= 512;
 
-function emit(slug: string, key: string, op: "set" | "del" | "expire"): void {
-  broadcast(EVENT, { slug, key, op }, slug);
+function emit(appId: string, key: string, op: "set" | "del" | "expire"): void {
+  broadcast(EVENT, { appId, key, op }, appId);
 }
 
 export function sweepAllAndBroadcast(): void {
-  for (const { slug, keys } of sweepAll()) {
-    for (const key of keys) emit(slug, key, "expire");
+  for (const { appId, keys } of sweepAll()) {
+    for (const key of keys) emit(appId, key, "expire");
   }
 }
 
@@ -212,17 +212,17 @@ interface KvRequest extends Request {
   kvDb?: Database.Database;
 }
 
-// Router mounted at /apps/:slug/kv-store (mergeParams gives it :slug).
+// Router mounted at /apps/:appId/kv-store (mergeParams gives it :appId).
 export function kvRouter(cfg: Config): express.Router {
   const r = express.Router({ mergeParams: true });
 
   r.use((req: KvRequest, res: Response, next: NextFunction) => {
-    const slug = (req.params as { slug: string }).slug;
-    if (!isValidSlug(slug)) {
-      res.status(400).json({ error: "invalid slug" });
+    const appId = (req.params as { appId: string }).appId;
+    if (!isValidAppId(appId)) {
+      res.status(400).json({ error: "invalid app id" });
       return;
     }
-    req.kvDb = getKv(cfg.dataDir, slug);
+    req.kvDb = getKv(cfg.dataDir, appId);
     next();
   });
 
@@ -235,7 +235,7 @@ export function kvRouter(cfg: Config): express.Router {
   };
   const ttlOk = (ttl: unknown) =>
     ttl === undefined || (typeof ttl === "number" && Number.isFinite(ttl) && ttl > 0);
-  const slugOf = (req: Request) => (req.params as { slug: string }).slug;
+  const appIdOf = (req: Request) => (req.params as { appId: string }).appId;
 
   r.get("/", (req: KvRequest, res) =>
     handle(res, () => {
@@ -260,7 +260,7 @@ export function kvRouter(cfg: Config): express.Router {
         return;
       }
       const value = incr(req.kvDb!, key, by);
-      emit(slugOf(req), key, "set");
+      emit(appIdOf(req), key, "set");
       res.json({ value });
     })
   );
@@ -288,7 +288,7 @@ export function kvRouter(cfg: Config): express.Router {
         return;
       }
       setMany(req.kvDb!, entries, { ttl });
-      for (const e of entries) emit(slugOf(req), e.key, "set");
+      for (const e of entries) emit(appIdOf(req), e.key, "set");
       res.json({ ok: true });
     })
   );
@@ -317,7 +317,7 @@ export function kvRouter(cfg: Config): express.Router {
         return;
       }
       set(req.kvDb!, req.params.key, body.value, { ttl: body.ttl });
-      emit(slugOf(req), req.params.key, "set");
+      emit(appIdOf(req), req.params.key, "set");
       res.json({ ok: true });
     })
   );
@@ -329,7 +329,7 @@ export function kvRouter(cfg: Config): express.Router {
         return;
       }
       const deleted = del(req.kvDb!, req.params.key);
-      if (deleted) emit(slugOf(req), req.params.key, "del");
+      if (deleted) emit(appIdOf(req), req.params.key, "del");
       res.json({ deleted });
     })
   );

@@ -15,7 +15,7 @@ describe("db connection management", () => {
     expect(getAppDb(dir, "demo")).toBe(a);
   });
 
-  it("returns independent databases for the same slug under different data dirs", () => {
+  it("returns independent databases for the same app id under different data dirs", () => {
     const dirB = fs.mkdtempSync(path.join(os.tmpdir(), "lkb-"));
     expect(getAppDb(dir, "same")).not.toBe(getAppDb(dirB, "same"));
     fs.rmSync(dirB, { recursive: true, force: true });

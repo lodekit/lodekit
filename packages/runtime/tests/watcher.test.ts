@@ -24,11 +24,11 @@ async function collectEvents(base: string, until: string, timeoutMs: number): Pr
   return buf;
 }
 
-function writeApp(slug: string, appTsx: string) {
-  const src = path.join(root, "apps", slug, "src");
+function writeApp(appId: string, appTsx: string) {
+  const src = path.join(root, "apps", appId, "src");
   fs.mkdirSync(src, { recursive: true });
-  fs.writeFileSync(path.join(root, "apps", slug, "manifest.json"), JSON.stringify({ name: slug, slug }));
-  fs.writeFileSync(path.join(root, "apps", slug, "index.html"),
+  fs.writeFileSync(path.join(root, "apps", appId, "manifest.json"), JSON.stringify({ name: appId, appId }));
+  fs.writeFileSync(path.join(root, "apps", appId, "index.html"),
     `<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>`);
   fs.writeFileSync(path.join(src, "main.tsx"),
     `import { createRoot } from "react-dom/client";\nimport App from "./App";\ncreateRoot(document.getElementById("root")!).render(<App />);\n`);

@@ -21,30 +21,30 @@ const server = new McpServer({ name: "lodekit", version: "0.0.1" });
 
 server.tool(
   "lodekit_scaffold",
-  { slug: z.string(), name: z.string(), description: z.string().optional(), icon: z.string().optional() },
+  { appId: z.string(), name: z.string(), description: z.string().optional(), icon: z.string().optional() },
   async (args) => text(await scaffold(BASE, args))
 );
 
 server.tool("lodekit_list_apps", {}, async () => text(await listApps(BASE)));
 
-server.tool("lodekit_open_app", { slug: z.string() }, async ({ slug }) => {
-  const url = `${BASE}/${slug}`;
+server.tool("lodekit_open_app", { appId: z.string() }, async ({ appId }) => {
+  const url = `${BASE}/${appId}`;
   openInBrowser(url);
   return text({ opened: url });
 });
 
 server.tool(
   "lodekit_kv_list",
-  { slug: z.string(), prefix: z.string().optional() },
-  async ({ slug, prefix }) =>
-    text(await createClient({ baseUrl: BASE, slug }).kv.list({ prefix }))
+  { appId: z.string(), prefix: z.string().optional() },
+  async ({ appId, prefix }) =>
+    text(await createClient({ baseUrl: BASE, appId }).kv.list({ prefix }))
 );
 
 server.tool(
   "lodekit_kv_get",
-  { slug: z.string(), key: z.string() },
-  async ({ slug, key }) => {
-    const value = await createClient({ baseUrl: BASE, slug }).kv.get(key);
+  { appId: z.string(), key: z.string() },
+  async ({ appId, key }) => {
+    const value = await createClient({ baseUrl: BASE, appId }).kv.get(key);
     return text(value === undefined ? { found: false } : { found: true, value });
   }
 );

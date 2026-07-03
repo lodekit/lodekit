@@ -55,61 +55,61 @@ export type BuildState =
 
 const states = new Map<string, BuildState>();
 
-export function getBuildState(slug: string): BuildState | undefined {
-  return states.get(slug);
+export function getBuildState(appId: string): BuildState | undefined {
+  return states.get(appId);
 }
 
-function setState(slug: string, state: BuildState): void {
-  states.set(slug, state);
+function setState(appId: string, state: BuildState): void {
+  states.set(appId, state);
   broadcast(
     state.status,
-    state.status === "error" ? { slug, message: state.message } : { slug }
+    state.status === "error" ? { appId, message: state.message } : { appId }
   );
 }
 
-function appOutDir(cfg: Config, slug: string): string {
-  return path.join(cfg.cacheDir, slug);
+function appOutDir(cfg: Config, appId: string): string {
+  return path.join(cfg.cacheDir, appId);
 }
 
-// Runs one Vite build for a slug. Never throws — build failures become error state.
-async function runBuild(cfg: Config, slug: string): Promise<BuildState> {
-  setState(slug, { status: "building" });
+// Runs one Vite build for an app id. Never throws — build failures become error state.
+async function runBuild(cfg: Config, appId: string): Promise<BuildState> {
+  setState(appId, { status: "building" });
   try {
     await build(
-      viteOptions(path.join(cfg.appsDir, slug), appOutDir(cfg, slug), "/", {
-        __LODEKIT_SLUG__: JSON.stringify(slug),
+      viteOptions(path.join(cfg.appsDir, appId), appOutDir(cfg, appId), "/", {
+        __LODEKIT_APP_ID__: JSON.stringify(appId),
       })
     );
-    setState(slug, { status: "ready" });
+    setState(appId, { status: "ready" });
   } catch (e) {
-    setState(slug, { status: "error", message: e instanceof Error ? e.message : String(e) });
+    setState(appId, { status: "error", message: e instanceof Error ? e.message : String(e) });
   }
-  return states.get(slug)!;
+  return states.get(appId)!;
 }
 
 const chains = new Map<string, Promise<BuildState>>();
 
-// Serialize builds per slug so concurrent triggers never run two Vite builds against the
+// Serialize builds per app id so concurrent triggers never run two Vite builds against the
 // same outDir (emptyOutDir would race). A trigger during an in-flight build chains a single
 // rebuild after it settles. runBuild never rejects, so the chain never rejects.
-export function buildApp(cfg: Config, slug: string): Promise<BuildState> {
-  const prev = chains.get(slug) ?? Promise.resolve(undefined as unknown as BuildState);
-  const next = prev.then(() => runBuild(cfg, slug));
-  chains.set(slug, next);
-  void next.finally(() => { if (chains.get(slug) === next) chains.delete(slug); });
+export function buildApp(cfg: Config, appId: string): Promise<BuildState> {
+  const prev = chains.get(appId) ?? Promise.resolve(undefined as unknown as BuildState);
+  const next = prev.then(() => runBuild(cfg, appId));
+  chains.set(appId, next);
+  void next.finally(() => { if (chains.get(appId) === next) chains.delete(appId); });
   return next;
 }
 
 export async function buildAll(cfg: Config): Promise<void> {
   for (const app of scanApps(cfg.appsDir)) {
-    await buildApp(cfg, app.slug);
+    await buildApp(cfg, app.appId);
   }
 }
 
-export function dropBuild(cfg: Config, slug: string): void {
-  states.delete(slug);
-  chains.delete(slug);
-  fs.rmSync(appOutDir(cfg, slug), { recursive: true, force: true });
+export function dropBuild(cfg: Config, appId: string): void {
+  states.delete(appId);
+  chains.delete(appId);
+  fs.rmSync(appOutDir(cfg, appId), { recursive: true, force: true });
 }
 
 export type DashboardState = { status: "ready" } | { status: "error"; message: string };
@@ -121,7 +121,7 @@ export function getDashboardState(): DashboardState | undefined {
 }
 
 // Builds Lodekit's own dashboard through the same pipeline apps use. `_dashboard` sits
-// outside the slug grammar, so it can never collide with an app's cache entry or URL.
+// outside the app id grammar, so it can never collide with an app's cache entry or URL.
 export async function buildDashboard(cfg: Config): Promise<DashboardState> {
   try {
     await build(viteOptions(DASHBOARD_ROOT, path.join(cfg.cacheDir, "_dashboard"), "/_dashboard/"));

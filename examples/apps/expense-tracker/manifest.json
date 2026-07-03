@@ -1,6 +1,6 @@
 {
   "name": "Expense Tracker",
-  "slug": "expense-tracker",
+  "appId": "expense-tracker",
   "icon": "💸",
   "description": "Track expenses with a running total."
 }
