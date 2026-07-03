@@ -13,3 +13,4 @@ manager/.vite/
 pnpm-debug.log*
 web/dist/
 web/.astro/
+packages/runtime/tests/fixtures/start-app/src/routeTree.gen.ts

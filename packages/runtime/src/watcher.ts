@@ -26,7 +26,11 @@ export function startWatcher(cfg: Config): FSWatcher {
       appId,
       setTimeout(() => {
         timers.delete(appId);
-        void buildApp(cfg, appId);
+        // The debounced folder may since have been removed entirely (e.g. a rapid
+        // rename/delete) — building it would fail on the now-missing rootDir and,
+        // since build state is keyed by the bare app id, could clobber a same-named
+        // app's fresh state elsewhere. Skip rather than build a folder that's gone.
+        if (fs.existsSync(path.join(cfg.appsDir, appId))) void buildApp(cfg, appId);
       }, DEBOUNCE_MS)
     );
   };
@@ -46,7 +50,14 @@ export function startWatcher(cfg: Config): FSWatcher {
     .on("unlinkDir", (p) => {
       notify();
       const rel = path.relative(cfg.appsDir, p);
-      if (rel && !rel.includes(path.sep)) dropBuild(cfg, rel); // top-level app folder removed
+      if (rel && !rel.includes(path.sep)) {
+        // Top-level app folder removed — cancel any rebuild the preceding file-unlink
+        // events already debounced, or it fires later against a now-deleted rootDir
+        // (Vite's build() throwing ENOENT) and clobbers a same-named app's fresh state.
+        clearTimeout(timers.get(rel));
+        timers.delete(rel);
+        dropBuild(cfg, rel);
+      }
     });
   return watcher;
 }

@@ -2,9 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { build } from "vite";
+import { build, createBuilder } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import type { Config } from "./config.js";
 import { broadcast } from "./sse.js";
 import { scanApps } from "./registry.js";
@@ -133,4 +134,81 @@ export async function buildDashboard(cfg: Config): Promise<DashboardState> {
     dashboardState = { status: "error", message: e instanceof Error ? e.message : String(e) };
   }
   return dashboardState;
+}
+
+// One Start build target: an app (urlBase "/<app-id>") or the dashboard ("/_dashboard").
+export interface StartBuildTarget {
+  rootDir: string;
+  outDir: string;   // cache/<app-id> — client/ and server/ land inside
+  urlBase: string;  // no trailing slash
+  appId: string;    // __LODEKIT_APP_ID__ define value
+}
+
+// Packages the Start ecosystem reaches via deep subpaths (e.g. "@tanstack/react-start/client",
+// "@tanstack/react-router/ssr/server") whose exports map redirects into a nested dist folder.
+// A plain resolve.alias entry does a literal prefix substitution (pkgDir + "/client"), which
+// only happens to work for packages whose subpaths sit flat at the package root (react-dom's
+// do); it 404s for anything exports-mapped into a subfolder. Resolve these through Node's own
+// ESM exports algorithm instead, anchored at this module's own install.
+const DEEP_IMPORT_PACKAGES = [
+  "react",
+  "react-dom",
+  "@tanstack/react-query",
+  "@tanstack/react-router",
+  "@tanstack/react-start",
+  "zod",
+];
+
+function packageNameOf(specifier: string): string {
+  const parts = specifier.split("/");
+  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0]!;
+}
+
+function deepImportResolver() {
+  const packages = new Set(DEEP_IMPORT_PACKAGES);
+  return {
+    name: "lodekit:deep-import-resolver",
+    enforce: "pre" as const,
+    resolveId(source: string) {
+      if (!packages.has(packageNameOf(source))) return undefined;
+      try {
+        return fileURLToPath(import.meta.resolve(source));
+      } catch {
+        return undefined;
+      }
+    },
+  };
+}
+
+const appAliases = () => ({
+  "@lodekit/sdk": pkgDir("@lodekit/sdk"),
+  "@lodekit/ui": uiDir,
+  "lucide-react": lucideDir,
+});
+
+export async function buildStart(t: StartBuildTarget): Promise<void> {
+  const builder = await createBuilder({
+    root: fs.realpathSync(t.rootDir),
+    base: `${t.urlBase}/_build/`, // vite-level base — the plugin's client.base does NOT do this (spike)
+    logLevel: "silent",
+    define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId) },
+    plugins: [
+      deepImportResolver(),
+      tanstackStart({
+        router: { basepath: t.urlBase },
+        serverFns: { base: `${t.urlBase}/_serverFn` },
+      }),
+      react(),
+      tailwind(),
+    ],
+    resolve: { alias: appAliases() },
+    environments: {
+      client: { build: { outDir: path.join(t.outDir, "client"), emptyOutDir: true } },
+      ssr: {
+        resolve: { noExternal: true },
+        build: { outDir: path.join(t.outDir, "server"), emptyOutDir: true },
+      },
+    },
+  });
+  await builder.buildApp();
 }
