@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { db, store } from "@lodekit/sdk";
+import { kv } from "@lodekit/sdk";
 import {
   Button,
   Input,
@@ -17,29 +17,27 @@ import {
 } from "@lodekit/ui";
 
 interface Expense {
-  id: number;
   amount: number;
   category: string;
   note: string;
   created_at: string;
 }
 
+const expenses = kv.collection<Expense>("expense");
+
 const CATEGORIES = ["Food", "Transport", "Bills", "Other"];
 
 export default function App() {
-  const [rows, setRows] = useState<Expense[]>([]);
+  const [rows, setRows] = useState<{ id: number; value: Expense }[]>([]);
   const [currency, setCurrency] = useState("USD");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [note, setNote] = useState("");
 
   async function load() {
-    await db.exec(
-      "CREATE TABLE IF NOT EXISTS expenses (id INTEGER PRIMARY KEY, amount REAL, category TEXT, note TEXT, created_at TEXT)"
-    );
-    if ((await store.get("currency")) === null) await store.set("currency", "USD");
-    setCurrency((await store.get<string>("currency")) ?? "USD");
-    setRows(await db.query<Expense>("SELECT * FROM expenses ORDER BY id DESC"));
+    if ((await kv.get("currency")) === undefined) await kv.set("currency", "USD");
+    setCurrency((await kv.get<string>("currency")) ?? "USD");
+    setRows((await expenses.all()).reverse()); // newest first
   }
 
   useEffect(() => {
@@ -49,16 +47,18 @@ export default function App() {
   async function add() {
     const value = parseFloat(amount);
     if (!value) return;
-    await db.exec(
-      "INSERT INTO expenses (amount, category, note, created_at) VALUES (?,?,?,?)",
-      [value, category, note, new Date().toISOString().slice(0, 10)]
-    );
+    await expenses.add({
+      amount: value,
+      category,
+      note,
+      created_at: new Date().toISOString().slice(0, 10),
+    });
     setAmount("");
     setNote("");
     await load();
   }
 
-  const total = rows.reduce((sum, r) => sum + r.amount, 0);
+  const total = rows.reduce((sum, r) => sum + r.value.amount, 0);
 
   return (
     <main className="mx-auto max-w-2xl p-8">
@@ -95,10 +95,10 @@ export default function App() {
         <TableBody>
           {rows.map((r) => (
             <TableRow key={r.id}>
-              <TableCell>{r.created_at}</TableCell>
-              <TableCell>{r.category}</TableCell>
-              <TableCell>{r.note}</TableCell>
-              <TableCell>{currency} {r.amount.toFixed(2)}</TableCell>
+              <TableCell>{r.value.created_at}</TableCell>
+              <TableCell>{r.value.category}</TableCell>
+              <TableCell>{r.value.note}</TableCell>
+              <TableCell>{currency} {r.value.amount.toFixed(2)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

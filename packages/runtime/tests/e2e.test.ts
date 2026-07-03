@@ -83,20 +83,19 @@ describe("expense tracker e2e (bundled)", () => {
     expect(js).toContain("expense-tracker");
   }, 45000);
 
-  it("round-trips an expense through the API", async () => {
-    await fetch(base + "/api/apps/expense-tracker/db/exec", {
+  it("round-trips an expense through the kv-store API", async () => {
+    const kvBase = base + "/api/apps/expense-tracker/kv-store";
+    const incr = await (await fetch(kvBase + "/incr", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sql: "CREATE TABLE IF NOT EXISTS expenses (id INTEGER PRIMARY KEY, amount REAL, category TEXT, note TEXT, created_at TEXT)" }),
-    });
-    await fetch(base + "/api/apps/expense-tracker/db/exec", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sql: "INSERT INTO expenses (amount, category, note, created_at) VALUES (?,?,?,?)", params: [12.5, "food", "lunch", "2026-06-30"] }),
-    });
-    const q = await (await fetch(base + "/api/apps/expense-tracker/db/query", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sql: "SELECT SUM(amount) AS total FROM expenses" }),
+      body: JSON.stringify({ key: "_seq:expense" }),
     })).json();
-    expect(q.rows[0].total).toBe(12.5);
+    await fetch(`${kvBase}/expense%3A${incr.value}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: { amount: 12.5, category: "Food", note: "lunch", created_at: "2026-07-03" } }),
+    });
+    const page = await (await fetch(kvBase + "?prefix=expense%3A")).json();
+    expect(page.entries).toHaveLength(1);
+    expect(page.entries[0].value.amount).toBe(12.5);
   }, 45000);
 
   it("serves the bundled habit-tracker index.html and a hashed asset", async () => {

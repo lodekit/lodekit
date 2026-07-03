@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { db } from "@lodekit/sdk";
+import { kv } from "@lodekit/sdk";
 import { Badge, Button, Card, CardContent, Input } from "@lodekit/ui";
 
-interface Habit { id: number; name: string; icon: string; created_at: string }
+interface Habit { name: string; icon: string; created_at: string }
 interface Checkin { habit_id: number; day: string }
+
+const habits = kv.collection<Habit>("habit");
 
 const today = () => new Date().toISOString().slice(0, 10);
 const dayOffset = (n: number) => {
@@ -23,16 +25,20 @@ function streak(days: string[]): number {
 }
 
 export default function App() {
-  const [habits, setHabits] = useState<Habit[]>([]);
+  const [habitRows, setHabitRows] = useState<{ id: number; value: Habit }[]>([]);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
 
   async function load() {
-    await db.exec("CREATE TABLE IF NOT EXISTS habits (id INTEGER PRIMARY KEY, name TEXT, icon TEXT, created_at TEXT)");
-    await db.exec("CREATE TABLE IF NOT EXISTS checkins (id INTEGER PRIMARY KEY, habit_id INTEGER, day TEXT, UNIQUE(habit_id, day))");
-    setHabits(await db.query<Habit>("SELECT * FROM habits ORDER BY id ASC"));
-    setCheckins(await db.query<Checkin>("SELECT habit_id, day FROM checkins"));
+    setHabitRows(await habits.all());
+    const { entries } = await kv.list({ prefix: "checkin:" });
+    setCheckins(
+      entries.map((e) => {
+        const [, id, day] = e.key.split(":"); // day is an ISO date — no ":" inside
+        return { habit_id: Number(id), day };
+      })
+    );
   }
 
   useEffect(() => {
@@ -42,27 +48,28 @@ export default function App() {
   async function add() {
     const n = name.trim();
     if (!n) return;
-    await db.exec("INSERT INTO habits (name, icon, created_at) VALUES (?,?,?)", [n, icon.trim() || "✅", today()]);
+    await habits.add({ name: n, icon: icon.trim() || "✅", created_at: today() });
     setName("");
     setIcon("");
     await load();
   }
 
   async function toggle(habitId: number, done: boolean) {
-    if (done) await db.exec("DELETE FROM checkins WHERE habit_id = ? AND day = ?", [habitId, today()]);
-    else await db.exec("INSERT OR IGNORE INTO checkins (habit_id, day) VALUES (?,?)", [habitId, today()]);
+    const key = `checkin:${habitId}:${today()}`;
+    if (done) await kv.del(key);
+    else await kv.set(key, true);
     await load();
   }
 
   const byHabit = new Map<number, string[]>();
   for (const c of checkins) byHabit.set(c.habit_id, [...(byHabit.get(c.habit_id) ?? []), c.day]);
-  const doneToday = habits.filter((h) => (byHabit.get(h.id) ?? []).includes(today())).length;
+  const doneToday = habitRows.filter(({ id }) => (byHabit.get(id) ?? []).includes(today())).length;
 
   return (
     <main className="mx-auto max-w-2xl p-8">
       <h1 className="text-2xl font-semibold">Habit Tracker</h1>
       <p className="text-muted-foreground">
-        <strong>{habits.length ? `${doneToday} of ${habits.length} done today` : "No habits yet"}</strong>
+        <strong>{habitRows.length ? `${doneToday} of ${habitRows.length} done today` : "No habits yet"}</strong>
       </p>
       <div className="my-5 flex flex-wrap gap-2">
         <Input className="w-16" placeholder="🎯" maxLength={2}
@@ -72,12 +79,12 @@ export default function App() {
         <Button onClick={add}>Add</Button>
       </div>
       <div className="grid gap-3">
-        {habits.map((h) => {
-          const days = byHabit.get(h.id) ?? [];
+        {habitRows.map(({ id, value: h }) => {
+          const days = byHabit.get(id) ?? [];
           const done = days.includes(today());
           const s = streak(days);
           return (
-            <Card key={h.id}>
+            <Card key={id}>
               <CardContent className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{h.icon || "✅"}</span>
@@ -88,7 +95,7 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                <Button variant={done ? "secondary" : "default"} onClick={() => toggle(h.id, done)}>
+                <Button variant={done ? "secondary" : "default"} onClick={() => toggle(id, done)}>
                   {done ? "Undo" : "Done"}
                 </Button>
               </CardContent>
