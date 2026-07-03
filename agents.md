@@ -50,8 +50,9 @@ Package manager is **pnpm** (workspaces). From the repo root:
 - `pnpm dev` — run the runtime against the example apps
   (`LODEKIT_ROOT=$(pwd)/examples pnpm --filter @lodekit/runtime start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
-- `pnpm test` — runs `pnpm -r test`; today only `@lodekit/runtime` has a suite (vitest, incl.
-  the runtime↔MCP integration test). Per-package: `pnpm --filter @lodekit/runtime test`.
+- `pnpm test` — runs `pnpm -r test`: `@lodekit/runtime` (vitest, incl. the runtime↔MCP
+  integration test), `@lodekit/sdk`, and `@lodekit/manager` (supervisor/paths/logs).
+  Per-package: `pnpm --filter @lodekit/runtime test`.
 - `pnpm --filter @lodekit/web dev` | `build` — the Astro site.
 - `pnpm --filter @lodekit/manager start` — the menubar manager in dev mode (system Node;
   supervises the runtime against `examples/`).
