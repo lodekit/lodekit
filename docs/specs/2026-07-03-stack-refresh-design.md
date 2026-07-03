@@ -242,3 +242,4 @@ store panel's liveness.
 | React 19 / zod 4 | Workspace-wide; MCP SDK bumped mechanically, `registerTool` stays slice 3 |
 | `slug` → `app-id` | Pure terminology rename; manifest written as `appId`, read `appId ?? slug` for back-compat |
 | Basepath source | SDK exports the injected app id (`appId`) — a one-export SDK addition; apps derive `basepath: /<app-id>/` from it |
+| App asset base | Apps build with Vite base `/<app-id>/` (was `/`) — pre-existing defect (root-absolute `/assets/*` 404'd in the browser) made load-bearing by §5's deep links; fixed at final review |

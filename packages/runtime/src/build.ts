@@ -78,7 +78,8 @@ async function runBuild(cfg: Config, appId: string): Promise<BuildState> {
   setState(appId, { status: "building" });
   try {
     await build(
-      viteOptions(path.join(cfg.appsDir, appId), appOutDir(cfg, appId), "/", {
+      // Base must match the app's URL prefix so emitted asset paths resolve through appHost.
+      viteOptions(path.join(cfg.appsDir, appId), appOutDir(cfg, appId), `/${appId}/`, {
         __LODEKIT_APP_ID__: JSON.stringify(appId),
       })
     );

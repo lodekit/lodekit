@@ -114,4 +114,12 @@ describe("expense tracker e2e (bundled)", () => {
       expect(html).toContain("/assets/");
     }
   }, 45000);
+
+  it("emits app-prefixed asset URLs that resolve as written in the shell", async () => {
+    const html = await (await fetch(base + "/habit-tracker/")).text();
+    const src = html.match(/src="([^"]+\.js)"/)?.[1];
+    expect(src).toBeTruthy();
+    expect(src!.startsWith("/habit-tracker/")).toBe(true);
+    expect((await fetch(base + src!)).status).toBe(200);
+  }, 45000);
 });
