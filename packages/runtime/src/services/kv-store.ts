@@ -1,5 +1,9 @@
 import type Database from "better-sqlite3";
+import express, { type Request, type Response, type NextFunction } from "express";
 import { getAppDb, openDbs } from "../db.js";
+import type { Config } from "../config.js";
+import { isValidSlug } from "../registry.js";
+import { broadcast } from "../sse.js";
 
 export const CATALOG_NAME = "kv-store";
 
@@ -177,4 +181,148 @@ export function sweepAll(): { slug: string; keys: string[] }[] {
     if (keys.length > 0) results.push({ slug, keys });
   }
   return results;
+}
+
+const EVENT = `${CATALOG_NAME}-change`;
+
+const validKey = (k: unknown): k is string =>
+  typeof k === "string" && k.length > 0 && k.length <= 512;
+
+function emit(slug: string, key: string, op: "set" | "del" | "expire"): void {
+  broadcast(EVENT, { slug, key, op }, slug);
+}
+
+export function sweepAllAndBroadcast(): void {
+  for (const { slug, keys } of sweepAll()) {
+    for (const key of keys) emit(slug, key, "expire");
+  }
+}
+
+interface KvRequest extends Request {
+  kvDb?: Database.Database;
+}
+
+// Router mounted at /apps/:slug/kv-store (mergeParams gives it :slug).
+export function kvRouter(cfg: Config): express.Router {
+  const r = express.Router({ mergeParams: true });
+
+  r.use((req: KvRequest, res: Response, next: NextFunction) => {
+    const slug = (req.params as { slug: string }).slug;
+    if (!isValidSlug(slug)) {
+      res.status(400).json({ error: "invalid slug" });
+      return;
+    }
+    req.kvDb = getKv(cfg.dataDir, slug);
+    next();
+  });
+
+  const handle = (res: Response, fn: () => void) => {
+    try {
+      fn();
+    } catch (e) {
+      res.status(400).json({ error: e instanceof Error ? e.message : String(e) });
+    }
+  };
+  const ttlOk = (ttl: unknown) =>
+    ttl === undefined || (typeof ttl === "number" && Number.isFinite(ttl) && ttl > 0);
+  const slugOf = (req: Request) => (req.params as { slug: string }).slug;
+
+  r.get("/", (req: KvRequest, res) =>
+    handle(res, () => {
+      const { prefix, cursor } = req.query as { prefix?: string; cursor?: string };
+      let limit: number | undefined;
+      if (req.query.limit !== undefined) {
+        limit = Number(req.query.limit);
+        if (!Number.isFinite(limit)) {
+          res.status(400).json({ error: "invalid limit" });
+          return;
+        }
+      }
+      res.json(list(req.kvDb!, { prefix, limit, cursor }));
+    })
+  );
+
+  r.post("/incr", (req: KvRequest, res) =>
+    handle(res, () => {
+      const { key, by } = req.body ?? {};
+      if (!validKey(key) || (by !== undefined && !(typeof by === "number" && Number.isFinite(by)))) {
+        res.status(400).json({ error: "invalid key or by" });
+        return;
+      }
+      const value = incr(req.kvDb!, key, by);
+      emit(slugOf(req), key, "set");
+      res.json({ value });
+    })
+  );
+
+  r.post("/get-many", (req: KvRequest, res) =>
+    handle(res, () => {
+      const { keys } = req.body ?? {};
+      if (!Array.isArray(keys) || !keys.every(validKey)) {
+        res.status(400).json({ error: "keys must be an array of valid keys" });
+        return;
+      }
+      res.json({ entries: getMany(req.kvDb!, keys) });
+    })
+  );
+
+  r.post("/set-many", (req: KvRequest, res) =>
+    handle(res, () => {
+      const { entries, ttl } = req.body ?? {};
+      const ok =
+        Array.isArray(entries) &&
+        entries.every((e) => e && typeof e === "object" && validKey(e.key) && "value" in e) &&
+        ttlOk(ttl);
+      if (!ok) {
+        res.status(400).json({ error: "invalid entries or ttl" });
+        return;
+      }
+      setMany(req.kvDb!, entries, { ttl });
+      for (const e of entries) emit(slugOf(req), e.key, "set");
+      res.json({ ok: true });
+    })
+  );
+
+  r.get("/:key", (req: KvRequest, res) =>
+    handle(res, () => {
+      if (!validKey(req.params.key)) {
+        res.status(400).json({ error: "invalid key" });
+        return;
+      }
+      const r2 = get(req.kvDb!, req.params.key);
+      if (!r2.found) {
+        res.json({ found: false });
+        return;
+      }
+      const { value, createdAt, updatedAt, expiresAt } = r2.entry!;
+      res.json({ found: true, value, createdAt, updatedAt, expiresAt });
+    })
+  );
+
+  r.put("/:key", (req: KvRequest, res) =>
+    handle(res, () => {
+      const body = req.body ?? {};
+      if (!validKey(req.params.key) || !("value" in body) || !ttlOk(body.ttl)) {
+        res.status(400).json({ error: "invalid key, missing value, or invalid ttl" });
+        return;
+      }
+      set(req.kvDb!, req.params.key, body.value, { ttl: body.ttl });
+      emit(slugOf(req), req.params.key, "set");
+      res.json({ ok: true });
+    })
+  );
+
+  r.delete("/:key", (req: KvRequest, res) =>
+    handle(res, () => {
+      if (!validKey(req.params.key)) {
+        res.status(400).json({ error: "invalid key" });
+        return;
+      }
+      const deleted = del(req.kvDb!, req.params.key);
+      if (deleted) emit(slugOf(req), req.params.key, "del");
+      res.json({ deleted });
+    })
+  );
+
+  return r;
 }

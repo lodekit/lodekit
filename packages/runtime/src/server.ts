@@ -7,6 +7,8 @@ import { apiRouter } from "./routes.js";
 import { appHost } from "./appHost.js";
 import { startWatcher } from "./watcher.js";
 import { buildAll, buildDashboard, getDashboardState } from "./build.js";
+import { every, stop } from "./scheduler.js";
+import { sweepAllAndBroadcast } from "./services/kv-store.js";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
@@ -45,10 +47,11 @@ export async function start(cfg: Config): Promise<Server> {
   const app = createServer(cfg);
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
   const watcher = startWatcher(cfg);
+  every("kv-store-sweep", 60_000, sweepAllAndBroadcast);
   const server = app.listen(cfg.port, () => {
     console.log(`Lodekit running at ${cfg.baseUrl}`);
   });
-  server.on("close", () => { void watcher.close(); });
+  server.on("close", () => { void watcher.close(); stop("kv-store-sweep"); });
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
   void buildAll(cfg);
   return server;

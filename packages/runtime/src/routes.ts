@@ -5,6 +5,7 @@ import { scanApps, isValidSlug } from "./registry.js";
 import * as dbsvc from "./db.js";
 import { scaffoldApp } from "./scaffold.js";
 import { addClient } from "./sse.js";
+import { kvRouter, CATALOG_NAME } from "./services/kv-store.js";
 
 interface DbRequest extends Request {
   db?: Database.Database;
@@ -26,6 +27,8 @@ export function apiRouter(cfg: Config): express.Router {
     }
     res.status(201).json(scaffoldApp(cfg, { slug, name, description, icon }));
   });
+
+  r.use(`/apps/:slug/${CATALOG_NAME}`, kvRouter(cfg));
 
   const withDb = (req: DbRequest, res: Response, next: NextFunction) => {
     if (!isValidSlug(req.params.slug)) {
