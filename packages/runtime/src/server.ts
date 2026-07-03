@@ -10,6 +10,7 @@ import { apiRoutes } from "./routes.js";
 import { appHost } from "./appHost.js";
 import { startWatcher } from "./watcher.js";
 import { buildAll, buildDashboard, getDashboardState } from "./build.js";
+import { configureWorkers, stopAllWorkers } from "./appWorker.js";
 import { every, stop } from "./scheduler.js";
 import { sweepAllAndBroadcast } from "./services/kv-store.js";
 
@@ -62,14 +63,16 @@ export function createServer(cfg: Config): Server {
 
 export async function start(cfg: Config): Promise<Server> {
   const server = createServer(cfg);
-  await buildDashboard(cfg); // never throws; failures surface as the fallback page
-  const watcher = startWatcher(cfg);
-  every("kv-store-sweep", 60_000, sweepAllAndBroadcast);
-  server.on("close", () => { void watcher.close(); stop("kv-store-sweep"); });
   server.listen(cfg.port, () => {
     console.log(`Lodekit running at ${cfg.baseUrl}`);
   });
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+  const addr = server.address();
+  configureWorkers(`http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : cfg.port}`);
+  await buildDashboard(cfg); // never throws; failures surface as the fallback page
+  const watcher = startWatcher(cfg);
+  every("kv-store-sweep", 60_000, sweepAllAndBroadcast);
+  server.on("close", () => { void watcher.close(); stop("kv-store-sweep"); stopAllWorkers(); });
   void buildAll(cfg);
   return server;
 }

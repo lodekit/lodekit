@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { kv } from "@lodekit/sdk";
 import {
@@ -28,11 +30,32 @@ const expenses = kv.collection<Expense>("expense");
 
 const CATEGORIES = ["Food", "Transport", "Bills", "Other"];
 
-export default function App() {
+// Server function: totals by category over the expenses collection (canonical pattern).
+export const getSummary = createServerFn().handler(async () => {
+  const rows = await expenses.all();
+  const totals: Record<string, number> = {};
+  for (const r of rows) totals[r.value.category] = (totals[r.value.category] ?? 0) + r.value.amount;
+  return totals;
+});
+
+export const Route = createFileRoute("/")({
+  loader: () => getSummary(),
+  component: ExpenseTrackerPage,
+});
+
+function ExpenseTrackerPage() {
+  const summary = Route.useLoaderData();
   const queryClient = useQueryClient();
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [note, setNote] = useState("");
+
+  // Canonical live-data pattern: store change events invalidate queries; Query refetches.
+  // useEffect (not module scope) keeps kv.watch off the SSR path — it's client-only.
+  useEffect(
+    () => kv.watch("", () => void queryClient.invalidateQueries({ queryKey: ["kv"] })),
+    [queryClient]
+  );
 
   const { data: currency = "USD" } = useQuery({
     queryKey: ["kv", "currency"],
@@ -79,6 +102,11 @@ export default function App() {
       <p className="text-muted-foreground">
         Total: <strong>{currency} {total.toFixed(2)}</strong>
       </p>
+      <ul className="text-muted-foreground text-sm">
+        {Object.entries(summary).map(([cat, amt]) => (
+          <li key={cat}>{cat}: {currency} {amt.toFixed(2)}</li>
+        ))}
+      </ul>
       <div className="my-5 flex flex-wrap gap-2">
         <Input className="w-28" type="number" step="0.01"
           placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />

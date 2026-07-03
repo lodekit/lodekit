@@ -1,9 +1,14 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, CardContent, Input } from "@lodekit/ui";
 import { habits, habitsQuery, today } from "../lib";
 
-export default function Manage() {
+export const Route = createFileRoute("/manage")({
+  component: ManagePage,
+});
+
+function ManagePage() {
   const queryClient = useQueryClient();
   const { data: habitRows = [] } = useQuery(habitsQuery);
   const [name, setName] = useState("");

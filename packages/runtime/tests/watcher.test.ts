@@ -5,6 +5,8 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { start } from "../src/server.js";
 import { loadConfig } from "../src/config.js";
+import { isGeneratedPath } from "../src/watcher.js";
+import { stopAllWorkers } from "../src/appWorker.js";
 
 let root: string, cache: string, server: Server, base: string;
 
@@ -24,15 +26,22 @@ async function collectEvents(base: string, until: string, timeoutMs: number): Pr
   return buf;
 }
 
-function writeApp(appId: string, appTsx: string) {
+// Fixture-shaped Start app (see tests/fixtures/start-app): manifest + src/router.tsx +
+// src/routes/{__root,index}.tsx — no HTML entry, routeTree.gen.ts generated at build time.
+function writeApp(appId: string, indexRoute: string) {
   const src = path.join(root, "apps", appId, "src");
-  fs.mkdirSync(src, { recursive: true });
+  const routes = path.join(src, "routes");
+  fs.mkdirSync(routes, { recursive: true });
   fs.writeFileSync(path.join(root, "apps", appId, "manifest.json"), JSON.stringify({ name: appId, appId }));
-  fs.writeFileSync(path.join(root, "apps", appId, "index.html"),
-    `<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>`);
-  fs.writeFileSync(path.join(src, "main.tsx"),
-    `import { createRoot } from "react-dom/client";\nimport App from "./App";\ncreateRoot(document.getElementById("root")!).render(<App />);\n`);
-  fs.writeFileSync(path.join(src, "App.tsx"), appTsx);
+  fs.writeFileSync(
+    path.join(src, "router.tsx"),
+    `import { createRouter } from "@tanstack/react-router";\nimport { routeTree } from "./routeTree.gen";\n\nexport function getRouter() {\n  return createRouter({ routeTree });\n}\n\ndeclare module "@tanstack/react-router" {\n  interface Register {\n    router: ReturnType<typeof getRouter>;\n  }\n}\n`
+  );
+  fs.writeFileSync(
+    path.join(routes, "__root.tsx"),
+    `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";\n\nexport const Route = createRootRoute({\n  head: () => ({ meta: [{ title: "${appId}" }] }),\n  component: () => (\n    <html>\n      <head><HeadContent /></head>\n      <body><Outlet /><Scripts /></body>\n    </html>\n  ),\n});\n`
+  );
+  fs.writeFileSync(path.join(routes, "index.tsx"), indexRoute);
 }
 
 beforeEach(async () => {
@@ -46,6 +55,7 @@ beforeEach(async () => {
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
 }, 60000);
 afterEach(() => {
+  stopAllWorkers();
   server.close();
   fs.rmSync(root, { recursive: true, force: true });
   fs.rmSync(cache, { recursive: true, force: true });
@@ -59,7 +69,10 @@ describe("watcher", () => {
     const done = collectEvents(base, "event: building", 30000);
     // give the SSE reader a tick to attach before writing files
     await new Promise((r) => setTimeout(r, 100));
-    writeApp("wgood", `export default function App() { return <h1>ok</h1>; }`);
+    writeApp(
+      "wgood",
+      `import { createFileRoute } from "@tanstack/react-router";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>ok</h1>,\n});\n`
+    );
     const buf = await done;
     expect(buf).toContain("event: building");
     // wait for the ready event specifically
@@ -69,8 +82,25 @@ describe("watcher", () => {
 
   it("emits an error event for a broken app", async () => {
     await new Promise((r) => setTimeout(r, 100));
-    writeApp("wbad", `export default function App() { return <h1>x</h1>  // missing brace\n`);
+    writeApp(
+      "wbad",
+      `import { createFileRoute } from "@tanstack/react-router";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>x</h1>  // missing brace\n`
+    );
     const buf = await collectEvents(base, "event: error", 30000);
     expect(buf).toContain("event: error");
   }, 40000);
+});
+
+describe("isGeneratedPath", () => {
+  it("flags a routeTree.gen.ts file", () => {
+    expect(isGeneratedPath(path.join("apps", "my-app", "src", "routeTree.gen.ts"))).toBe(true);
+  });
+
+  it("does not flag an ordinary route file", () => {
+    expect(isGeneratedPath(path.join("apps", "my-app", "src", "routes", "index.tsx"))).toBe(false);
+  });
+
+  it("flags anything under a .tanstack scratch directory", () => {
+    expect(isGeneratedPath(path.join("apps", "my-app", ".tanstack", "tmp", "x"))).toBe(true);
+  });
 });

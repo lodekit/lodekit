@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { buildApp, getBuildState } from "../src/build.js";
+import { stopAppWorker } from "../src/appWorker.js";
 import type { Config } from "../src/config.js";
 
 let root: string, cache: string, cfg: Config;
@@ -18,44 +19,33 @@ function cfgFor(root: string, cache: string): Config {
   };
 }
 
-function writeApp(appId: string, appTsx: string) {
-  const dir = path.join(root, "apps", appId, "src");
-  fs.mkdirSync(dir, { recursive: true });
+// Fixture-shaped Start app (see tests/fixtures/start-app): manifest + src/router.tsx +
+// src/routes/{__root,index}.tsx — no HTML entry, routeTree.gen.ts generated at build time.
+function writeStartApp(appId: string, indexRoute: string, opts?: { css?: boolean }) {
+  const src = path.join(root, "apps", appId, "src");
+  const routes = path.join(src, "routes");
+  fs.mkdirSync(routes, { recursive: true });
   fs.writeFileSync(
     path.join(root, "apps", appId, "manifest.json"),
     JSON.stringify({ name: appId, appId })
   );
   fs.writeFileSync(
-    path.join(root, "apps", appId, "index.html"),
-    `<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>`
+    path.join(src, "router.tsx"),
+    `import { createRouter } from "@tanstack/react-router";\nimport { routeTree } from "./routeTree.gen";\n\nexport function getRouter() {\n  return createRouter({ routeTree });\n}\n\ndeclare module "@tanstack/react-router" {\n  interface Register {\n    router: ReturnType<typeof getRouter>;\n  }\n}\n`
   );
-  fs.writeFileSync(
-    path.join(dir, "main.tsx"),
-    `import { createRoot } from "react-dom/client";\nimport App from "./App";\ncreateRoot(document.getElementById("root")!).render(<App />);\n`
-  );
-  fs.writeFileSync(path.join(dir, "App.tsx"), appTsx);
-}
-
-function writeUiApp(appId: string) {
-  const dir = path.join(root, "apps", appId, "src");
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(
-    path.join(root, "apps", appId, "manifest.json"),
-    JSON.stringify({ name: appId, appId })
-  );
-  fs.writeFileSync(
-    path.join(root, "apps", appId, "index.html"),
-    `<!doctype html><html><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>`
-  );
-  fs.writeFileSync(path.join(dir, "index.css"), `@import "@lodekit/ui/theme.css";\n`);
-  fs.writeFileSync(
-    path.join(dir, "main.tsx"),
-    `import { createRoot } from "react-dom/client";\nimport "./index.css";\nimport App from "./App";\ncreateRoot(document.getElementById("root")!).render(<App />);\n`
-  );
-  fs.writeFileSync(
-    path.join(dir, "App.tsx"),
-    `import { Button, Card, CardContent } from "@lodekit/ui";\nimport { Plus } from "lucide-react";\nexport default function App() {\n  return <Card><CardContent><Button><Plus /> Add</Button></CardContent></Card>;\n}\n`
-  );
+  if (opts?.css) {
+    fs.writeFileSync(path.join(src, "index.css"), `@import "@lodekit/ui/theme.css";\n`);
+    fs.writeFileSync(
+      path.join(routes, "__root.tsx"),
+      `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";\nimport appCss from "../index.css?url";\n\nexport const Route = createRootRoute({\n  head: () => ({ meta: [{ title: "${appId}" }], links: [{ rel: "stylesheet", href: appCss }] }),\n  component: () => (\n    <html>\n      <head><HeadContent /></head>\n      <body><Outlet /><Scripts /></body>\n    </html>\n  ),\n});\n`
+    );
+  } else {
+    fs.writeFileSync(
+      path.join(routes, "__root.tsx"),
+      `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";\n\nexport const Route = createRootRoute({\n  head: () => ({ meta: [{ title: "${appId}" }] }),\n  component: () => (\n    <html>\n      <head><HeadContent /></head>\n      <body><Outlet /><Scripts /></body>\n    </html>\n  ),\n});\n`
+    );
+  }
+  fs.writeFileSync(path.join(routes, "index.tsx"), indexRoute);
 }
 
 beforeEach(() => {
@@ -64,48 +54,61 @@ beforeEach(() => {
   cfg = cfgFor(root, cache);
 });
 afterEach(() => {
+  for (const appId of ["demo", "broken", "concurrent", "themed"]) stopAppWorker(appId);
   fs.rmSync(root, { recursive: true, force: true });
   fs.rmSync(cache, { recursive: true, force: true });
 });
 
 describe("buildApp", () => {
-  it("builds a fixture app to cacheDir and marks it ready", async () => {
-    writeApp("demo", `import { kv } from "@lodekit/sdk";\nexport default function App() { return <h1>demo {typeof kv}</h1>; }\n`);
+  it("builds a fixture Start app to cacheDir and marks it ready", async () => {
+    writeStartApp(
+      "demo",
+      `import { createFileRoute } from "@tanstack/react-router";\nimport { kv } from "@lodekit/sdk";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>demo {typeof kv}</h1>,\n});\n`
+    );
     const state = await buildApp(cfg, "demo");
     expect(state).toEqual({ status: "ready" });
     expect(getBuildState("demo")).toEqual({ status: "ready" });
     const outDir = path.join(cache, "demo");
-    expect(fs.existsSync(path.join(outDir, "index.html"))).toBe(true);
-    const assets = fs.readdirSync(path.join(outDir, "assets"));
-    expect(assets.some((f) => /\.js$/.test(f))).toBe(true);
-  }, 30000);
+    expect(fs.existsSync(path.join(outDir, "server", "server.js"))).toBe(true);
+    expect(fs.readdirSync(path.join(outDir, "client"), { recursive: true }).length).toBeGreaterThan(0);
+  }, 60000);
 
   it("marks a broken app as error without throwing", async () => {
-    writeApp("broken", `export default function App() { return <h1>oops</h1>  // missing brace\n`);
+    writeStartApp(
+      "broken",
+      `import { createFileRoute } from "@tanstack/react-router";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>oops</h1>  // missing brace\n`
+    );
     const state = await buildApp(cfg, "broken");
     expect(state.status).toBe("error");
     if (state.status === "error") expect(state.message.length).toBeGreaterThan(0);
     expect(getBuildState("broken")?.status).toBe("error");
-  }, 30000);
+  }, 60000);
 
   it("serializes concurrent builds of the same app id without racing the outDir", async () => {
-    writeApp("concurrent", `import { kv } from "@lodekit/sdk";\nexport default function App() { return <h1>c {typeof kv}</h1>; }\n`);
+    writeStartApp(
+      "concurrent",
+      `import { createFileRoute } from "@tanstack/react-router";\nimport { kv } from "@lodekit/sdk";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>c {typeof kv}</h1>,\n});\n`
+    );
     const [a, b] = await Promise.all([buildApp(cfg, "concurrent"), buildApp(cfg, "concurrent")]);
     expect(a.status).toBe("ready");
     expect(b.status).toBe("ready");
     const outDir = path.join(cache, "concurrent");
-    expect(fs.existsSync(path.join(outDir, "index.html"))).toBe(true);
-    expect(fs.readdirSync(path.join(outDir, "assets")).some((f) => /\.js$/.test(f))).toBe(true);
-  }, 30000);
+    expect(fs.existsSync(path.join(outDir, "server", "server.js"))).toBe(true);
+    expect(fs.readdirSync(path.join(outDir, "client"), { recursive: true }).length).toBeGreaterThan(0);
+  }, 60000);
 
   it("builds an app importing @lodekit/ui, lucide-react, and the theme", async () => {
-    writeUiApp("themed");
+    writeStartApp(
+      "themed",
+      `import { createFileRoute } from "@tanstack/react-router";\nimport { Button, Card, CardContent } from "@lodekit/ui";\nimport { Plus } from "lucide-react";\nexport const Route = createFileRoute("/")({\n  component: () => <Card><CardContent><Button><Plus /> Add</Button></CardContent></Card>,\n});\n`,
+      { css: true }
+    );
     const state = await buildApp(cfg, "themed");
     expect(state).toEqual({ status: "ready" });
-    const assets = fs.readdirSync(path.join(cache, "themed", "assets"));
+    const assets = fs.readdirSync(path.join(cache, "themed", "client", "assets"));
     const cssFile = assets.find((f) => f.endsWith(".css"));
     expect(cssFile).toBeTruthy();
-    const css = fs.readFileSync(path.join(cache, "themed", "assets", cssFile!), "utf8");
+    const css = fs.readFileSync(path.join(cache, "themed", "client", "assets", cssFile!), "utf8");
     expect(css).toContain("--primary");
     // inline-flex comes from Button's classes in @lodekit/ui source — proves @source scanning worked
     expect(css).toContain("inline-flex");

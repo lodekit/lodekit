@@ -9,6 +9,7 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import type { Config } from "./config.js";
 import { broadcast } from "./sse.js";
 import { scanApps } from "./registry.js";
+import { startAppWorker, stopAppWorker } from "./appWorker.js";
 
 const require = createRequire(import.meta.url);
 // Point Vite at the runtime's copy of each package so apps (which have no
@@ -26,7 +27,9 @@ const DASHBOARD_ROOT = path.join(
   "dashboard"
 );
 
-function viteOptions(rootDir: string, outDir: string, base = "/", define?: Record<string, string>) {
+// Retained only for the dashboard (Task 6 flips it onto buildStart too); apps now build
+// through buildStart below.
+function legacyDashboardViteOptions(rootDir: string, outDir: string, base = "/", define?: Record<string, string>) {
   return {
     // Resolve symlinks (e.g. macOS os.tmpdir()'s /var -> /private/var) so Vite's
     // root and the on-disk app files agree on a canonical path; otherwise Rollup's
@@ -74,17 +77,18 @@ function appOutDir(cfg: Config, appId: string): string {
   return path.join(cfg.cacheDir, appId);
 }
 
-// Runs one Vite build for an app id. Never throws — build failures become error state.
+// Runs one Start build for an app id. Never throws — build failures become error state.
 async function runBuild(cfg: Config, appId: string): Promise<BuildState> {
   setState(appId, { status: "building" });
   try {
-    await build(
-      // Base must match the app's URL prefix so emitted asset paths resolve through appHost.
-      viteOptions(path.join(cfg.appsDir, appId), appOutDir(cfg, appId), `/${appId}/`, {
-        __LODEKIT_APP_ID__: JSON.stringify(appId),
-      })
-    );
+    await buildStart({
+      rootDir: path.join(cfg.appsDir, appId),
+      outDir: appOutDir(cfg, appId),
+      urlBase: `/${appId}`,
+      appId,
+    });
     setState(appId, { status: "ready" });
+    startAppWorker(cfg, appId);
   } catch (e) {
     setState(appId, { status: "error", message: e instanceof Error ? e.message : String(e) });
   }
@@ -113,6 +117,7 @@ export async function buildAll(cfg: Config): Promise<void> {
 export function dropBuild(cfg: Config, appId: string): void {
   states.delete(appId);
   chains.delete(appId);
+  stopAppWorker(appId);
   fs.rmSync(appOutDir(cfg, appId), { recursive: true, force: true });
 }
 
@@ -128,7 +133,7 @@ export function getDashboardState(): DashboardState | undefined {
 // outside the app id grammar, so it can never collide with an app's cache entry or URL.
 export async function buildDashboard(cfg: Config): Promise<DashboardState> {
   try {
-    await build(viteOptions(DASHBOARD_ROOT, path.join(cfg.cacheDir, "_dashboard"), "/_dashboard/"));
+    await build(legacyDashboardViteOptions(DASHBOARD_ROOT, path.join(cfg.cacheDir, "_dashboard"), "/_dashboard/"));
     dashboardState = { status: "ready" };
   } catch (e) {
     dashboardState = { status: "error", message: e instanceof Error ? e.message : String(e) };
@@ -211,9 +216,22 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
       client: { build: { outDir: path.join(t.outDir, "client"), emptyOutDir: true } },
       ssr: {
         resolve: { noExternal: true },
-        build: { outDir: path.join(t.outDir, "server"), emptyOutDir: true },
+        build: {
+          outDir: path.join(t.outDir, "server"),
+          emptyOutDir: true,
+          // Vite's default SSR filenames pick .js vs .mjs by sniffing the nearest
+          // package.json "type" field *above the app's source dir* (real Lodekit apps —
+          // and even these examples — have no such ancestor, so it silently emits
+          // server.mjs, breaking appWorker's fixed "server.js" lookup). Force .js here;
+          // the sibling package.json below makes Node parse it as ESM regardless of
+          // where the cache dir happens to sit on disk.
+          rollupOptions: {
+            output: { entryFileNames: "[name].js", chunkFileNames: "assets/[name]-[hash].js" },
+          },
+        },
       },
     },
   });
   await builder.buildApp();
+  fs.writeFileSync(path.join(t.outDir, "package.json"), JSON.stringify({ type: "module" }));
 }
