@@ -12,7 +12,8 @@ same client as apps.
 
 kv-store becomes the sole storage service through early 0.x, expressive enough to power real
 apps (the retiring `db` surface is the bar: both example apps must migrate onto it), offering
-the most valuable Redis capabilities re-derived SQLite-native.
+the most valuable Redis capabilities re-derived SQLite-native. Future ones will follow in the
+next minor version updates.
 
 **Scope decision — shape + thin proof.** This slice designs the services-layer contract that
 MCP and the dashboard consume, and builds one thin proof on each side: two read-only MCP
