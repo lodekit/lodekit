@@ -12,6 +12,7 @@ function getPaths({ packaged, homedir, resourcesPath, repoRoot }) {
     dashboardUrl: `http://lodekit.localhost:${PORT}`,
     appSupportDir,
     pidFile: path.join(appSupportDir, "runtime.pid"),
+    settingsFile: path.join(appSupportDir, "settings.json"),
     logsDir: path.join(homedir, "Library", "Logs", "Lodekit"),
   };
   if (packaged) {

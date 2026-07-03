@@ -6,6 +6,7 @@ const path = require("node:path");
 const { getPaths } = require("./paths");
 const { openLogStream } = require("./logs");
 const { Supervisor } = require("./supervisor");
+const { getIconStyle, setIconStyle } = require("./settings");
 
 if (!app.requestSingleInstanceLock()) {
   // Second instance: leave before touching the primary's log files —
@@ -63,6 +64,7 @@ const supervisor = new Supervisor({ spawnRuntime, checkHealth, pidFile: paths.pi
 let tray = null;
 let bootError = null; // e.g. Lodekit root creation failed (spec §10)
 let quitting = false;
+let iconStyle = getIconStyle(paths.settingsFile);
 
 const STATE_LABEL = {
   stopped: "Lodekit — stopped",
@@ -70,6 +72,62 @@ const STATE_LABEL = {
   running: "Lodekit — running",
   error: "Lodekit — error",
 };
+
+// Monochrome template glyphs (macOS tints them for light/dark automatically). Files ship
+// as jar-cloud-{style}-{state}-18.png with @2x siblings; nativeImage picks the retina one.
+const ICON_STYLE_LABEL = { a: "Solid", b: "Knockout", c: "Outline" };
+const iconsDir = path.join(__dirname, "..", "assets", "menubar-icons");
+const iconCache = new Map();
+function trayIcon(frame) {
+  const key = `${iconStyle}-${frame}`;
+  let img = iconCache.get(key);
+  if (!img) {
+    img = nativeImage.createFromPath(path.join(iconsDir, `jar-cloud-${key}-18.png`));
+    img.setTemplateImage(true);
+    iconCache.set(key, img);
+  }
+  return img;
+}
+
+// `starting` cycles starting-1→2→3 on a ~500 ms timer; every other state is a still frame.
+let animTimer = null;
+let animFrame = 1;
+function stopAnim() {
+  if (animTimer) {
+    clearInterval(animTimer);
+    animTimer = null;
+  }
+}
+function updateTrayIcon() {
+  if (!tray) return;
+  const state = bootError ? "error" : supervisor.state;
+  if (state === "starting") {
+    if (!animTimer) {
+      animFrame = 1;
+      const tick = () => {
+        tray.setImage(trayIcon(`starting-${animFrame}`));
+        animFrame = (animFrame % 3) + 1;
+      };
+      tick();
+      animTimer = setInterval(tick, 500);
+    }
+    return;
+  }
+  stopAnim();
+  tray.setImage(trayIcon(state));
+}
+
+function selectIconStyle(style) {
+  if (style === iconStyle) return;
+  iconStyle = style;
+  try {
+    setIconStyle(paths.settingsFile, style);
+  } catch (e) {
+    log(`settings: ${e.message}`);
+  }
+  stopAnim(); // drop the running animation so it re-renders in the new style
+  rebuildMenu(); // updates the radio selection and re-renders the tray icon
+}
 
 function rebuildMenu() {
   if (!tray) return;
@@ -102,11 +160,20 @@ function rebuildMenu() {
         click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }),
       },
       { label: "Open Logs", click: () => shell.openPath(paths.logsDir) },
+      {
+        label: "Icon Style",
+        submenu: ["b", "a", "c"].map((style) => ({
+          label: ICON_STYLE_LABEL[style],
+          type: "radio",
+          checked: iconStyle === style,
+          click: () => selectIconStyle(style),
+        })),
+      },
       { type: "separator" },
       { label: "Quit Lodekit", click: quit },
     ])
   );
-  tray.setTitle(state === "error" ? "⬡ !" : "⬡");
+  updateTrayIcon();
 }
 
 // Returns true when this launch created the root (= first run).
