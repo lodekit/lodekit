@@ -80,4 +80,20 @@ describe("appHost", () => {
     expect((await fetch(base + "/safe/..%2f..%2fpackage.json")).status).toBe(403);
     dropBuild(cfg, "safe");
   }, 30000);
+
+  it("serves index.html for an extension-less sub-path once built (SPA fallback)", async () => {
+    writeApp("spa", `export default function App() { return <h1>spa</h1>; }`);
+    await buildApp(cfg, "spa");
+    const res = await fetch(base + "/spa/manage");
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain('<div id="root">');
+  }, 30000);
+
+  it("asset-like sub-paths still 404 and the building page keeps precedence", async () => {
+    writeApp("spa2", `export default function App() { return <h1>s2</h1>; }`);
+    // Not built yet: extension-less sub-path shows the building page, not the shell.
+    expect(await (await fetch(base + "/spa2/manage")).text()).toContain("Building");
+    await buildApp(cfg, "spa2");
+    expect((await fetch(base + "/spa2/missing.js")).status).toBe(404);
+  }, 30000);
 });

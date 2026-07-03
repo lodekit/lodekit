@@ -59,6 +59,13 @@ export function appHost(cfg: Config): MiddlewareHandler {
       return c.body(null, 403);
     }
     if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+      // SPA fallback: a GET for an extension-less sub-path of a ready app serves
+      // the app shell, so Router deep links and refreshes work. Asset-like paths
+      // (with an extension) keep their 404; building/error pages take precedence above.
+      const last = rest.split("/").pop() ?? "";
+      if (c.req.method === "GET" && path.extname(last) === "") {
+        return c.html(fs.readFileSync(path.join(outDir, "index.html"), "utf8"));
+      }
       return c.body(null, 404);
     }
     return staticHandler(c, next);
