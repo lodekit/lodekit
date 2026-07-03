@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { kv } from "@lodekit/sdk";
 import {
   Button,
@@ -28,34 +29,46 @@ const expenses = kv.collection<Expense>("expense");
 const CATEGORIES = ["Food", "Transport", "Bills", "Other"];
 
 export default function App() {
-  const [rows, setRows] = useState<{ id: number; value: Expense }[]>([]);
-  const [currency, setCurrency] = useState("USD");
+  const queryClient = useQueryClient();
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [note, setNote] = useState("");
 
-  async function load() {
-    if ((await kv.get("currency")) === undefined) await kv.set("currency", "USD");
-    setCurrency((await kv.get<string>("currency")) ?? "USD");
-    setRows((await expenses.all()).reverse()); // newest first
-  }
+  const { data: currency = "USD" } = useQuery({
+    queryKey: ["kv", "currency"],
+    queryFn: async () => {
+      const c = await kv.get<string>("currency");
+      if (c === undefined) {
+        await kv.set("currency", "USD");
+        return "USD";
+      }
+      return c;
+    },
+  });
 
-  useEffect(() => {
-    void load();
-  }, []);
+  const { data: rows = [] } = useQuery({
+    queryKey: ["kv", "expenses"],
+    queryFn: async () => (await expenses.all()).reverse(), // newest first
+  });
 
-  async function add() {
+  const addExpense = useMutation({
+    mutationFn: (e: Expense) => expenses.add(e),
+    onSuccess: () => {
+      setAmount("");
+      setNote("");
+      void queryClient.invalidateQueries({ queryKey: ["kv", "expenses"] });
+    },
+  });
+
+  function add() {
     const value = parseFloat(amount);
     if (!value) return;
-    await expenses.add({
+    addExpense.mutate({
       amount: value,
       category,
       note,
       created_at: new Date().toISOString().slice(0, 10),
     });
-    setAmount("");
-    setNote("");
-    await load();
   }
 
   const total = rows.reduce((sum, r) => sum + r.value.amount, 0);
