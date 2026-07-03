@@ -48,4 +48,13 @@ describe("server error handling", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it("rejects a body over 100 kb with 413", async () => {
+    const res = await fetch(base + "/api/apps/app/kv-store/big", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: "x".repeat(110 * 1024) }),
+    });
+    expect(res.status).toBe(413);
+  });
 });

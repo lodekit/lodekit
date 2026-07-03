@@ -91,7 +91,7 @@ Big-picture context that shaped the slice-1 SDK design but was explicitly **not*
   holistically (umbrella spec §2.12).
 - **Settings** — apps register settings surfaced and editable in the dashboard.
 - **Business-logic structure** — app-folder conventions that keep app logic from sprawling.
-- **Stale build-cache GC** — apps removed while the runtime is down leave orphaned `cacheDir/<slug>/`
+- **Stale build-cache GC** — apps removed while the runtime is down leave orphaned `cacheDir/<app-id>/`
   output (`dropBuild` only runs on a live `unlinkDir`; startup `buildAll` only builds existing apps and
   never prunes). Harmless (nothing serves them — no manifest) but the disposable cache accumulates; a
   startup prune of cacheDir entries with no matching app would close it.
@@ -144,7 +144,10 @@ above; the remainder:
 - **v0.1 skill rewrite scope** — must cover the `kv` surface, the collection/`_seq:<name>`
   convention, and the new MCP kv tools (`lodekit_kv_list`/`lodekit_kv_get`); the `appId`
   naming (slug retired), the Query `watch → invalidateQueries` live-data pattern, and the
-  two contract shapes (single-page expense-tracker, two-page habit-tracker).
+  two contract shapes (single-page expense-tracker, two-page habit-tracker); teach the
+  pattern's caveats eyes-open: a write inside a queryFn plus a coarse `kv.watch("")`
+  invalidation causes one redundant self-invalidate refetch per write, and collection
+  removal does not cascade (e.g. deleting a habit orphans its checkin keys).
 - **Internal scheduler vs the Tasks service** — packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.
 - **Dashboard startup-build freshness skip** — `buildDashboard` runs on every start
   (~1s). Skip via mtime/hash comparison if startup cost starts to matter.
