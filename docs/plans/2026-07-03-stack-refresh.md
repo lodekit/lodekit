@@ -1112,7 +1112,9 @@ git add -A
 git commit -m "feat(appHost): SPA fallback — extension-less GET on a ready app serves index.html"
 ```
 
----### Task 9: TanStack Router wiring (habit-tracker two-page example)
+---
+
+### Task 9: TanStack Router wiring (habit-tracker two-page example)
 
 Code-based routes only — no `@tanstack/router-plugin`, no file-route conventions (slice 4).
 
