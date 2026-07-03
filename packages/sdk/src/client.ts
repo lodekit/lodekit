@@ -42,8 +42,13 @@ export interface LodekitClient {
 }
 
 // Preserves the hand-written transport's error semantics around the hc calls:
-// non-OK -> throw Error carrying the server's { error } message.
-async function parse<T>(res: ClientResponse<T> | Response): Promise<T> {
+// non-OK -> throw Error carrying the server's { error } message. The return type
+// strips the routes' { error } 400 variant (parse throws before returning it, so
+// it can never be the result) while staying structurally derived from KvRoutes —
+// response-shape drift in the runtime routes fails tsc at the accesses below.
+type SuccessData<R> = Exclude<R extends ClientResponse<infer O, number, "json"> ? O : never, { error: string }>;
+
+async function parse<R extends ClientResponse<unknown>>(res: R): Promise<SuccessData<R>> {
   if (!res.ok) {
     let message = res.statusText;
     try {
@@ -54,7 +59,7 @@ async function parse<T>(res: ClientResponse<T> | Response): Promise<T> {
     }
     throw new Error(message);
   }
-  return (await res.json()) as T;
+  return (await res.json()) as SuccessData<R>;
 }
 
 export function createClient({ baseUrl, appId }: { baseUrl: string; appId: string }): LodekitClient {
@@ -63,21 +68,15 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
   const rpc = hc<KvRoutes>(api);
   const key$ = rpc[":key"];
 
-  type GetResponse<T> = { found: false } | { found: true; value: T };
-
   // One EventSource per client, shared by all watchers, closed with the last.
   const watchers = new Set<{ prefix: string; cb: (c: KvChange) => void }>();
   let es: { close(): void } | null = null;
 
   const kv: Kv = {
     async get<T>(key: string): Promise<T | undefined> {
-      // zValidator's shared validationHook widens every validated route's inferred output with
-      // an `{ error }` 400 variant; parse() already runtime-checks res.ok before this point, so
-      // narrowing back to the SDK's own response shape needs the unknown round-trip tsc suggests.
-      const r = (await parse(
-        await key$.$get({ param: { key: encodeURIComponent(key) } })
-      )) as unknown as GetResponse<T>;
-      return r.found ? r.value : undefined;
+      const r = await parse(await key$.$get({ param: { key: encodeURIComponent(key) } }));
+      // Cast only at the value-typed position — the server stores unknown values.
+      return r.found ? (r.value as T) : undefined;
     },
     async set(key, value, opts = {}) {
       await parse(
@@ -88,38 +87,27 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
       );
     },
     async del(key) {
-      return (
-        (await parse(await key$.$delete({ param: { key: encodeURIComponent(key) } }))) as unknown as {
-          deleted: boolean;
-        }
-      ).deleted;
+      return (await parse(await key$.$delete({ param: { key: encodeURIComponent(key) } }))).deleted;
     },
     async has(key) {
-      return (
-        (await parse(
-          await key$.$get({ param: { key: encodeURIComponent(key) } })
-        )) as unknown as { found: boolean }
-      ).found;
+      return (await parse(await key$.$get({ param: { key: encodeURIComponent(key) } }))).found;
     },
     async incr(key, by) {
-      return (
-        (await parse(
-          await rpc.incr.$post({ json: by === undefined ? { key } : { key, by } })
-        )) as unknown as { value: number }
-      ).value;
+      return (await parse(await rpc.incr.$post({ json: by === undefined ? { key } : { key, by } }))).value;
     },
-    async list(opts = {}) {
+    async list<T>(opts: { prefix?: string; limit?: number; cursor?: string } = {}) {
       const query: Record<string, string> = {};
       if (opts.prefix !== undefined) query.prefix = opts.prefix;
       if (opts.limit !== undefined) query.limit = String(opts.limit);
       if (opts.cursor !== undefined) query.cursor = opts.cursor;
-      return (await parse(await rpc.index.$get({ query }))) as never;
+      const r = await parse(await rpc.index.$get({ query }));
+      // Cast only at the value-typed position — the server stores unknown values.
+      return { entries: r.entries as KvEntry<T>[], nextCursor: r.nextCursor };
     },
-    async getMany(keys) {
-      const r = (await parse(await rpc["get-many"].$post({ json: { keys } }))) as unknown as {
-        entries: KvEntry<never>[];
-      };
-      return r.entries as never;
+    async getMany<T>(keys: string[]) {
+      const r = await parse(await rpc["get-many"].$post({ json: { keys } }));
+      // Cast only at the value-typed position — the server stores unknown values.
+      return r.entries as KvEntry<T>[];
     },
     async setMany(entries, opts = {}) {
       await parse(await rpc["set-many"].$post({ json: { entries, ...(opts.ttl != null ? { ttl: opts.ttl } : {}) } }));
