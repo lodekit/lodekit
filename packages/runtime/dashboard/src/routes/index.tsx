@@ -1,3 +1,4 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient, type KvEntry } from "@lodekit/sdk";
@@ -11,6 +12,10 @@ import {
   Skeleton,
 } from "@lodekit/ui";
 
+export const Route = createFileRoute("/")({
+  component: DashboardHome,
+});
+
 interface AppInfo {
   appId: string;
   name: string;
@@ -23,11 +28,25 @@ type BuildStatus =
   | { status: "ready" }
   | { status: "error"; message?: string };
 
+type ServerStatus =
+  | { status: "starting" }
+  | { status: "running" }
+  | { status: "error"; message?: string };
+
 function StateBadge({ state }: { state: BuildStatus | undefined }) {
   if (!state) return null;
   if (state.status === "building") return <Badge variant="outline">building…</Badge>;
   if (state.status === "ready") return <Badge variant="secondary">ready</Badge>;
   return <Badge variant="destructive">error: {state.message ?? ""}</Badge>;
+}
+
+function ServerStateBadge({ state }: { state: ServerStatus | undefined }) {
+  if (!state || state.status !== "error") return null;
+  return (
+    <Badge variant="destructive" title={state.message}>
+      server error
+    </Badge>
+  );
 }
 
 function StorePanel({ appId }: { appId: string }) {
@@ -65,9 +84,10 @@ function StorePanel({ appId }: { appId: string }) {
   );
 }
 
-export default function App() {
+function DashboardHome() {
   const [apps, setApps] = useState<AppInfo[] | null>(null);
   const [states, setStates] = useState<Record<string, BuildStatus>>({});
+  const [serverStates, setServerStates] = useState<Record<string, ServerStatus>>({});
   const queryClient = useQueryClient();
   const [openPanels, setOpenPanels] = useState<Record<string, boolean>>({});
 
@@ -85,6 +105,14 @@ export default function App() {
         setStates((s) => ({ ...s, [d.appId]: { status: ev, message: d.message } }));
       });
     }
+    es.addEventListener("server-state", (e) => {
+      const d = JSON.parse((e as MessageEvent).data) as {
+        appId: string;
+        status: ServerStatus["status"];
+        message?: string;
+      };
+      setServerStates((s) => ({ ...s, [d.appId]: { status: d.status, message: d.message } }));
+    });
     es.addEventListener("kv-store-change", (e) => {
       const d = JSON.parse((e as MessageEvent).data) as { appId: string };
       void queryClient.invalidateQueries({ queryKey: ["kv", d.appId] });
@@ -125,6 +153,7 @@ export default function App() {
                 <CardDescription>{a.description || ""}</CardDescription>
                 <div className="flex items-center gap-2">
                   <StateBadge state={states[a.appId]} />
+                  <ServerStateBadge state={serverStates[a.appId]} />
                   <Button
                     variant="ghost"
                     size="sm"

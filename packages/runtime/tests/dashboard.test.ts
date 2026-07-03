@@ -5,6 +5,7 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { buildDashboard } from "../src/build.js";
 import { createServer } from "../src/server.js";
+import { configureWorkers, stopAllWorkers } from "../src/appWorker.js";
 import type { Config } from "../src/config.js";
 
 let root: string, cache: string, cfg: Config;
@@ -22,20 +23,18 @@ beforeEach(() => {
   };
 });
 afterEach(() => {
+  stopAllWorkers();
   fs.rmSync(root, { recursive: true, force: true });
   fs.rmSync(cache, { recursive: true, force: true });
 });
 
 describe("buildDashboard", () => {
-  it("builds the dashboard into cacheDir/_dashboard with /_dashboard/ asset urls", async () => {
+  it("builds the dashboard to cacheDir/_dashboard through the Start pipeline", async () => {
     const state = await buildDashboard(cfg);
     expect(state).toEqual({ status: "ready" });
-    const out = path.join(cache, "_dashboard");
-    const html = fs.readFileSync(path.join(out, "index.html"), "utf8");
-    expect(html).toContain("/_dashboard/assets/");
-    const assets = fs.readdirSync(path.join(out, "assets"));
-    expect(assets.some((f) => f.endsWith(".js"))).toBe(true);
-    expect(assets.some((f) => f.endsWith(".css"))).toBe(true);
+    const outDir = path.join(cache, "_dashboard");
+    expect(fs.existsSync(path.join(outDir, "server", "server.js"))).toBe(true);
+    expect(fs.readdirSync(path.join(outDir, "client"), { recursive: true }).length).toBeGreaterThan(0);
   }, 60000);
 });
 
@@ -48,28 +47,27 @@ describe("dashboard serving", () => {
     });
     const addr = server.address();
     base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
+    configureWorkers(base);
   }
   afterEach(() => server?.close());
 
-  it("serves the built dashboard at / and its assets under /_dashboard/", async () => {
-    await buildDashboard(cfg);
+  it("redirects / to /_dashboard/", async () => {
     await boot();
-    const home = await fetch(base + "/");
+    const res = await fetch(base + "/", { redirect: "manual" });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/_dashboard/");
+  });
+
+  it("serves the SSR'd dashboard at /_dashboard/ and its built assets under /_dashboard/_build/", async () => {
+    await boot();
+    await buildDashboard(cfg);
+    const home = await fetch(base + "/_dashboard/");
     expect(home.status).toBe(200);
     const html = await home.text();
-    expect(html).toContain('<div id="root">');
-    const assetPath = html.match(/\/_dashboard\/assets\/[^"]+\.js/)?.[0];
+    expect(html).toContain("Lodekit");
+    const assetPath = html.match(/\/_dashboard\/_build\/assets\/[^"]+\.js/)?.[0];
     expect(assetPath).toBeTruthy();
     const asset = await fetch(base + assetPath!);
     expect(asset.status).toBe(200);
   }, 60000);
-
-  it("serves a fallback page at / when the dashboard output is missing", async () => {
-    await boot(); // no buildDashboard — cache is empty
-    const res = await fetch(base + "/");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("Lodekit");
-    expect(html).toContain("dashboard");
-  });
 });

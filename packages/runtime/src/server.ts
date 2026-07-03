@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import type { Server } from "node:http";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -10,7 +9,7 @@ import { apiRoutes } from "./routes.js";
 import { appHost } from "./appHost.js";
 import { startWatcher } from "./watcher.js";
 import { buildAll, buildDashboard, getDashboardState } from "./build.js";
-import { configureWorkers, stopAllWorkers } from "./appWorker.js";
+import { configureWorkers, forwardToWorker, stopAllWorkers } from "./appWorker.js";
 import { every, stop } from "./scheduler.js";
 import { sweepAllAndBroadcast } from "./services/kv-store.js";
 
@@ -31,7 +30,6 @@ export function createApp(cfg: Config): Hono {
   // construction time and logs to stderr when missing — pre-create the cache
   // dir so a fresh boot stays as silent as Express's static serving was.
   fs.mkdirSync(cfg.cacheDir, { recursive: true });
-  const dashOut = path.join(cfg.cacheDir, "_dashboard");
   return new Hono()
     .onError((err, c) => {
       if (err instanceof HTTPException) return err.getResponse(); // e.g. bodyLimit's 413
@@ -40,18 +38,23 @@ export function createApp(cfg: Config): Hono {
       return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);
     })
     .route("/api", apiRoutes(cfg))
-    // serveStatic joins its root with the full (unstripped) request path, so the
-    // root must be cacheDir (the parent of dashOut) — the "/_dashboard" segment
-    // in the URL is what selects dashOut on disk.
-    .use("/_dashboard/*", serveStatic({ root: cfg.cacheDir }))
-    .get("/", (c) => {
+    .use("/_dashboard/_build/*", serveStatic({
+      root: cfg.cacheDir,
+      rewriteRequestPath: (p) => p.replace(/^\/_dashboard\/_build\//, "/_dashboard/client/"),
+    }))
+    .all("/_dashboard/*", async (c) => {
       const state = getDashboardState();
-      const index = path.join(dashOut, "index.html");
-      if (state?.status === "error" || !fs.existsSync(index)) {
+      if (!state || state.status === "error") {
         return c.html(fallbackPage(state?.status === "error" ? state.message : undefined));
       }
-      return c.html(fs.readFileSync(index, "utf8"));
+      try {
+        return await forwardToWorker("_dashboard", c.req.raw);
+      } catch (e) {
+        return c.html(fallbackPage(e instanceof Error ? e.message : String(e)), 502);
+      }
     })
+    .get("/_dashboard", (c) => c.redirect("/_dashboard/", 301))
+    .get("/", (c) => c.redirect("/_dashboard/", 302))
     .use("*", appHost(cfg));
 }
 

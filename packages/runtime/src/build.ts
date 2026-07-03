@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { build, createBuilder } from "vite";
+import { createBuilder } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -26,33 +26,6 @@ const DASHBOARD_ROOT = path.join(
   "..",
   "dashboard"
 );
-
-// Retained only for the dashboard (Task 6 flips it onto buildStart too); apps now build
-// through buildStart below.
-function legacyDashboardViteOptions(rootDir: string, outDir: string, base = "/", define?: Record<string, string>) {
-  return {
-    // Resolve symlinks (e.g. macOS os.tmpdir()'s /var -> /private/var) so Vite's
-    // root and the on-disk app files agree on a canonical path; otherwise Rollup's
-    // relative-path computation for emitted HTML can produce paths that escape outDir.
-    root: fs.realpathSync(rootDir),
-    base,
-    logLevel: "silent" as const,
-    define,
-    plugins: [react(), tailwind()],
-    resolve: {
-      alias: {
-        react: pkgDir("react"),
-        "react-dom": pkgDir("react-dom"),
-        "@lodekit/sdk": pkgDir("@lodekit/sdk"),
-        "@tanstack/react-query": pkgDir("@tanstack/react-query"),
-        "@tanstack/react-router": pkgDir("@tanstack/react-router"),
-        "@lodekit/ui": uiDir,
-        "lucide-react": lucideDir,
-      },
-    },
-    build: { outDir, emptyOutDir: true },
-  };
-}
 
 export type BuildState =
   | { status: "building" }
@@ -133,8 +106,14 @@ export function getDashboardState(): DashboardState | undefined {
 // outside the app id grammar, so it can never collide with an app's cache entry or URL.
 export async function buildDashboard(cfg: Config): Promise<DashboardState> {
   try {
-    await build(legacyDashboardViteOptions(DASHBOARD_ROOT, path.join(cfg.cacheDir, "_dashboard"), "/_dashboard/"));
+    await buildStart({
+      rootDir: DASHBOARD_ROOT,
+      outDir: path.join(cfg.cacheDir, "_dashboard"),
+      urlBase: "/_dashboard",
+      appId: "_dashboard",
+    });
     dashboardState = { status: "ready" };
+    startAppWorker(cfg, "_dashboard");
   } catch (e) {
     dashboardState = { status: "error", message: e instanceof Error ? e.message : String(e) };
   }

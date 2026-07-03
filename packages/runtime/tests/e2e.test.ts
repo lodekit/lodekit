@@ -70,9 +70,16 @@ beforeEach(async () => {
   await waitReady(base, "habit-tracker", 60000);
   await waitReady(base, "start-app", 60000);
 }, 120000); // hook builds three real Start apps; well above vitest's 10s default
-afterEach(() => {
+afterEach(async () => {
   stopAllWorkers();
-  server.close();
+  // start()'s "close" listener also calls stopAllWorkers() — if that fires late (Node's
+  // http server only emits "close" once every keep-alive socket this test's fetch() calls
+  // opened has actually closed) it would land after the *next* test's beforeEach has
+  // already repopulated the (module-global) worker registry with same-named workers,
+  // killing them out from under it. Force sockets closed and wait for "close" here so that
+  // stale event can never leak into the next test.
+  server.closeAllConnections();
+  await new Promise<void>((resolve) => server.close(() => resolve()));
   fs.rmSync(root, { recursive: true, force: true });
   fs.rmSync(cache, { recursive: true, force: true });
   delete process.env.LODEKIT_ROOT;
