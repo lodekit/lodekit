@@ -1,9 +1,12 @@
 import type Database from "better-sqlite3";
-import express, { type Request, type Response, type NextFunction } from "express";
+import { Hono, type MiddlewareHandler } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { getAppDb, openDbs } from "../db.js";
 import type { Config } from "../config.js";
 import { isValidAppId } from "../registry.js";
 import { broadcast } from "../sse.js";
+import { validationHook } from "../validation.js";
 
 export const CATALOG_NAME = "kv-store";
 
@@ -195,9 +198,6 @@ export function sweepAll(): { appId: string; keys: string[] }[] {
 
 const EVENT = `${CATALOG_NAME}-change`;
 
-const validKey = (k: unknown): k is string =>
-  typeof k === "string" && k.length > 0 && k.length <= 512;
-
 function emit(appId: string, key: string, op: "set" | "del" | "expire"): void {
   broadcast(EVENT, { appId, key, op }, appId);
 }
@@ -208,131 +208,81 @@ export function sweepAllAndBroadcast(): void {
   }
 }
 
-interface KvRequest extends Request {
-  kvDb?: Database.Database;
+export type KvEnv = { Variables: { db: Database.Database; appId: string } };
+
+// Applied by the parent router on /apps/:appId/kv-store/* — validates the app id
+// and sets the better-sqlite3 handle in context vars.
+export function withDb(cfg: Config): MiddlewareHandler<KvEnv> {
+  return async (c, next) => {
+    const appId = c.req.param("appId");
+    if (!appId || !isValidAppId(appId)) return c.json({ error: "invalid app id" }, 400);
+    c.set("db", getKv(cfg.dataDir, appId));
+    c.set("appId", appId);
+    await next();
+  };
 }
 
-// Router mounted at /apps/:appId/kv-store (mergeParams gives it :appId).
-export function kvRouter(cfg: Config): express.Router {
-  const r = express.Router({ mergeParams: true });
+// zod 4: z.number() rejects NaN/Infinity by default — the old Number.isFinite checks fold in.
+const keySchema = z.string().min(1).max(512);
+const keyParam = z.object({ key: keySchema });
+const ttlSchema = z.number().positive().optional();
+const listQuery = z.object({
+  prefix: z.string().optional(),
+  limit: z.coerce.number().optional(),
+  cursor: z.string().optional(),
+});
+const incrBody = z.object({ key: keySchema, by: z.number().optional() });
+const getManyBody = z.object({ keys: z.array(keySchema) });
+const hasValue = { message: "missing value" };
+const putBody = z.object({ value: z.unknown(), ttl: ttlSchema }).refine((b) => "value" in b, hasValue);
+const setManyBody = z.object({
+  entries: z.array(z.object({ key: keySchema, value: z.unknown() }).refine((e) => "value" in e, hasValue)),
+  ttl: ttlSchema,
+});
 
-  r.use((req: KvRequest, res: Response, next: NextFunction) => {
-    const appId = (req.params as { appId: string }).appId;
-    if (!isValidAppId(appId)) {
-      res.status(400).json({ error: "invalid app id" });
-      return;
-    }
-    req.kvDb = getKv(cfg.dataDir, appId);
-    next();
+// Chained style is normative: it is what makes hc route-type inference work.
+// onError preserves the shipped semantics: every thrown error in a kv route
+// (KvError from incr included) maps to a 400 { error } — the 400-vs-500 split
+// stays parked in roadmap.md.
+export const kvRoutes = new Hono<KvEnv>()
+  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
+  .get("/", zValidator("query", listQuery, validationHook), (c) => {
+    const { prefix, limit, cursor } = c.req.valid("query");
+    return c.json(list(c.var.db, { prefix, limit, cursor }));
+  })
+  .post("/incr", zValidator("json", incrBody, validationHook), (c) => {
+    const { key, by } = c.req.valid("json");
+    const value = incr(c.var.db, key, by);
+    emit(c.var.appId, key, "set");
+    return c.json({ value });
+  })
+  .post("/get-many", zValidator("json", getManyBody, validationHook), (c) => {
+    return c.json({ entries: getMany(c.var.db, c.req.valid("json").keys) });
+  })
+  .post("/set-many", zValidator("json", setManyBody, validationHook), (c) => {
+    const { entries, ttl } = c.req.valid("json");
+    setMany(c.var.db, entries as { key: string; value: unknown }[], { ttl });
+    for (const e of entries) emit(c.var.appId, e.key, "set");
+    return c.json({ ok: true });
+  })
+  .get("/:key", zValidator("param", keyParam, validationHook), (c) => {
+    const r = get(c.var.db, c.req.valid("param").key);
+    if (!r.found) return c.json({ found: false as const });
+    const { value, createdAt, updatedAt, expiresAt } = r.entry!;
+    return c.json({ found: true as const, value, createdAt, updatedAt, expiresAt });
+  })
+  .put("/:key", zValidator("param", keyParam, validationHook), zValidator("json", putBody, validationHook), (c) => {
+    const { key } = c.req.valid("param");
+    const body = c.req.valid("json");
+    set(c.var.db, key, body.value, { ttl: body.ttl });
+    emit(c.var.appId, key, "set");
+    return c.json({ ok: true });
+  })
+  .delete("/:key", zValidator("param", keyParam, validationHook), (c) => {
+    const { key } = c.req.valid("param");
+    const deleted = del(c.var.db, key);
+    if (deleted) emit(c.var.appId, key, "del");
+    return c.json({ deleted });
   });
 
-  const handle = (res: Response, fn: () => void) => {
-    try {
-      fn();
-    } catch (e) {
-      res.status(400).json({ error: e instanceof Error ? e.message : String(e) });
-    }
-  };
-  const ttlOk = (ttl: unknown) =>
-    ttl === undefined || (typeof ttl === "number" && Number.isFinite(ttl) && ttl > 0);
-  const appIdOf = (req: Request) => (req.params as { appId: string }).appId;
-
-  r.get("/", (req: KvRequest, res) =>
-    handle(res, () => {
-      const { prefix, cursor } = req.query as { prefix?: string; cursor?: string };
-      let limit: number | undefined;
-      if (req.query.limit !== undefined) {
-        limit = Number(req.query.limit);
-        if (!Number.isFinite(limit)) {
-          res.status(400).json({ error: "invalid limit" });
-          return;
-        }
-      }
-      res.json(list(req.kvDb!, { prefix, limit, cursor }));
-    })
-  );
-
-  r.post("/incr", (req: KvRequest, res) =>
-    handle(res, () => {
-      const { key, by } = req.body ?? {};
-      if (!validKey(key) || (by !== undefined && !(typeof by === "number" && Number.isFinite(by)))) {
-        res.status(400).json({ error: "invalid key or by" });
-        return;
-      }
-      const value = incr(req.kvDb!, key, by);
-      emit(appIdOf(req), key, "set");
-      res.json({ value });
-    })
-  );
-
-  r.post("/get-many", (req: KvRequest, res) =>
-    handle(res, () => {
-      const { keys } = req.body ?? {};
-      if (!Array.isArray(keys) || !keys.every(validKey)) {
-        res.status(400).json({ error: "keys must be an array of valid keys" });
-        return;
-      }
-      res.json({ entries: getMany(req.kvDb!, keys) });
-    })
-  );
-
-  r.post("/set-many", (req: KvRequest, res) =>
-    handle(res, () => {
-      const { entries, ttl } = req.body ?? {};
-      const ok =
-        Array.isArray(entries) &&
-        entries.every((e) => e && typeof e === "object" && validKey(e.key) && "value" in e) &&
-        ttlOk(ttl);
-      if (!ok) {
-        res.status(400).json({ error: "invalid entries or ttl" });
-        return;
-      }
-      setMany(req.kvDb!, entries, { ttl });
-      for (const e of entries) emit(appIdOf(req), e.key, "set");
-      res.json({ ok: true });
-    })
-  );
-
-  r.get("/:key", (req: KvRequest, res) =>
-    handle(res, () => {
-      if (!validKey(req.params.key)) {
-        res.status(400).json({ error: "invalid key" });
-        return;
-      }
-      const r2 = get(req.kvDb!, req.params.key);
-      if (!r2.found) {
-        res.json({ found: false });
-        return;
-      }
-      const { value, createdAt, updatedAt, expiresAt } = r2.entry!;
-      res.json({ found: true, value, createdAt, updatedAt, expiresAt });
-    })
-  );
-
-  r.put("/:key", (req: KvRequest, res) =>
-    handle(res, () => {
-      const body = req.body ?? {};
-      if (!validKey(req.params.key) || !("value" in body) || !ttlOk(body.ttl)) {
-        res.status(400).json({ error: "invalid key, missing value, or invalid ttl" });
-        return;
-      }
-      set(req.kvDb!, req.params.key, body.value, { ttl: body.ttl });
-      emit(appIdOf(req), req.params.key, "set");
-      res.json({ ok: true });
-    })
-  );
-
-  r.delete("/:key", (req: KvRequest, res) =>
-    handle(res, () => {
-      if (!validKey(req.params.key)) {
-        res.status(400).json({ error: "invalid key" });
-        return;
-      }
-      const deleted = del(req.kvDb!, req.params.key);
-      if (deleted) emit(appIdOf(req), req.params.key, "del");
-      res.json({ deleted });
-    })
-  );
-
-  return r;
-}
+export type KvRoutes = typeof kvRoutes;

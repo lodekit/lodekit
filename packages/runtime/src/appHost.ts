@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { RequestHandler } from "express";
+import type { MiddlewareHandler } from "hono";
+import { serveStatic } from "@hono/node-server/serve-static";
 import type { Config } from "./config.js";
 import { isValidAppId } from "./registry.js";
 import { getBuildState } from "./build.js";
@@ -20,48 +21,46 @@ const buildingPage = (appId: string) =>
 const errorPage = (appId: string, message: string) =>
   page(appId, `<h1>Build failed</h1><p class="muted">${appId} could not be built.</p><pre>${message.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!))}</pre>`, true);
 
-export function appHost(cfg: Config): RequestHandler {
-  return (req, res, next) => {
-    const segments = req.path.split("/").filter(Boolean);
+export function appHost(cfg: Config): MiddlewareHandler {
+  // serveStatic's root accepts an absolute path in the installed v2 (path.join
+  // handles it directly); the URL path (/<app-id>/<rest>) mirrors the cache
+  // layout, so no path rewrite is needed.
+  const staticHandler = serveStatic({ root: cfg.cacheDir });
+  return async (c, next) => {
+    // Raw (still percent-encoded) pathname — the decode/containment checks below
+    // must see the encoded form, exactly as Express's req.path did.
+    const reqPath = new URL(c.req.url).pathname;
+    const segments = reqPath.split("/").filter(Boolean);
     const appId = segments[0];
     if (!appId || !isValidAppId(appId)) return next();
     if (!fs.existsSync(path.join(cfg.appsDir, appId, "manifest.json"))) return next();
 
-    // Redirect /<appId> -> /<appId>/ so the app's relative asset URLs resolve under the app.
-    if (segments.length === 1 && !req.path.endsWith("/")) {
-      res.redirect(301, req.path + "/");
-      return;
+    // Redirect /<app-id> -> /<app-id>/ so the app's relative asset URLs resolve under the app.
+    if (segments.length === 1 && !reqPath.endsWith("/")) {
+      return c.redirect(reqPath + "/", 301);
     }
 
     const state = getBuildState(appId);
-    if (state?.status === "error") {
-      res.status(200).type("html").send(errorPage(appId, state.message));
-      return;
-    }
+    if (state?.status === "error") return c.html(errorPage(appId, state.message));
 
     const outDir = path.resolve(cfg.cacheDir, appId);
-    if (!fs.existsSync(path.join(outDir, "index.html"))) {
-      res.status(200).type("html").send(buildingPage(appId));
-      return;
-    }
+    if (!fs.existsSync(path.join(outDir, "index.html"))) return c.html(buildingPage(appId));
 
     let decoded: string;
     try {
-      decoded = decodeURIComponent(req.path);
+      decoded = decodeURIComponent(reqPath);
     } catch (e) {
-      if (e instanceof URIError) { res.status(400).end(); return; }
+      if (e instanceof URIError) return c.body(null, 400);
       throw e;
     }
     const rest = decoded.split("/").filter(Boolean).slice(1).join("/") || "index.html";
     const filePath = path.resolve(outDir, rest);
     if (filePath !== outDir && !filePath.startsWith(outDir + path.sep)) {
-      res.status(403).end();
-      return;
+      return c.body(null, 403);
     }
     if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
-      res.status(404).end();
-      return;
+      return c.body(null, 404);
     }
-    res.sendFile(filePath);
+    return staticHandler(c, next);
   };
 }

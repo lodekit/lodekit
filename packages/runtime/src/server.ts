@@ -1,9 +1,12 @@
-import express from "express";
 import fs from "node:fs";
 import path from "node:path";
 import type { Server } from "node:http";
+import { Hono } from "hono";
+import { HTTPException } from "hono/http-exception";
+import { createAdaptorServer } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import type { Config } from "./config.js";
-import { apiRouter } from "./routes.js";
+import { apiRoutes } from "./routes.js";
 import { appHost } from "./appHost.js";
 import { startWatcher } from "./watcher.js";
 import { buildAll, buildDashboard, getDashboardState } from "./build.js";
@@ -22,36 +25,46 @@ const fallbackPage = (message?: string) => `<!doctype html>
 </html>
 `;
 
-export function createServer(cfg: Config): express.Express {
-  const app = express();
+export function createApp(cfg: Config): Hono {
   const dashOut = path.join(cfg.cacheDir, "_dashboard");
-  app.use("/api", apiRouter(cfg));
-  app.use("/_dashboard", express.static(dashOut));
-  app.get("/", (_req, res) => {
-    const state = getDashboardState();
-    const index = path.join(dashOut, "index.html");
-    if (state?.status === "error" || !fs.existsSync(index)) {
-      res
-        .status(200)
-        .type("html")
-        .send(fallbackPage(state?.status === "error" ? state.message : undefined));
-      return;
-    }
-    res.sendFile(index);
-  });
-  app.use(appHost(cfg));
-  return app;
+  return new Hono()
+    .onError((err, c) => {
+      if (err instanceof HTTPException) return err.getResponse(); // e.g. bodyLimit's 413
+      if (err instanceof SyntaxError) return c.json({ error: "invalid JSON body" }, 400);
+      // Uncaught route errors surface as Express's 500-with-message did — never crash.
+      return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);
+    })
+    .route("/api", apiRoutes(cfg))
+    // serveStatic joins its root with the full (unstripped) request path, so the
+    // root must be cacheDir (the parent of dashOut) — the "/_dashboard" segment
+    // in the URL is what selects dashOut on disk.
+    .use("/_dashboard/*", serveStatic({ root: cfg.cacheDir }))
+    .get("/", (c) => {
+      const state = getDashboardState();
+      const index = path.join(dashOut, "index.html");
+      if (state?.status === "error" || !fs.existsSync(index)) {
+        return c.html(fallbackPage(state?.status === "error" ? state.message : undefined));
+      }
+      return c.html(fs.readFileSync(index, "utf8"));
+    })
+    .use("*", appHost(cfg));
+}
+
+// Returns the underlying (unlistened) Node http.Server — shutdown semantics and
+// every fetch-against-listening-server test keep working unchanged.
+export function createServer(cfg: Config): Server {
+  return createAdaptorServer({ fetch: createApp(cfg).fetch }) as Server;
 }
 
 export async function start(cfg: Config): Promise<Server> {
-  const app = createServer(cfg);
+  const server = createServer(cfg);
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
   const watcher = startWatcher(cfg);
   every("kv-store-sweep", 60_000, sweepAllAndBroadcast);
-  const server = app.listen(cfg.port, () => {
+  server.on("close", () => { void watcher.close(); stop("kv-store-sweep"); });
+  server.listen(cfg.port, () => {
     console.log(`Lodekit running at ${cfg.baseUrl}`);
   });
-  server.on("close", () => { void watcher.close(); stop("kv-store-sweep"); });
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
   void buildAll(cfg);
   return server;
