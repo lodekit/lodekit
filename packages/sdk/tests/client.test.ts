@@ -129,3 +129,17 @@ describe("watch", () => {
     delete (globalThis as { EventSource?: unknown }).EventSource;
   });
 });
+
+describe("server context", () => {
+  it("watch throws a clear client-only error where EventSource is missing", () => {
+    const kvClient = createClient({ baseUrl: "http://127.0.0.1:9", appId: "x" });
+    expect(() => kvClient.kv.watch("", () => {})).toThrow(/client-only/);
+  });
+
+  it("kv singleton uses LODEKIT_BASE_URL outside a browser", async () => {
+    process.env.LODEKIT_BASE_URL = "http://127.0.0.1:1";
+    const { kv } = await import("../src/index.js?" + Date.now());
+    await expect(kv.get("k")).rejects.toThrow();
+    delete process.env.LODEKIT_BASE_URL;
+  });
+});

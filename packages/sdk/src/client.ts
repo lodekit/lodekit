@@ -140,7 +140,7 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
     },
     watch(prefix, cb) {
       if (typeof EventSource === "undefined") {
-        throw new Error("kv.watch requires EventSource (browser only)");
+        throw new Error("kv.watch is client-only (no EventSource in this environment)");
       }
       const watcher = { prefix, cb };
       if (watchers.size === 0) {
