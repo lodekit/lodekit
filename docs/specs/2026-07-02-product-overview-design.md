@@ -71,7 +71,7 @@ from the cache, the dashboard, the API). Buildless — runs from source via `tsx
 ### 2.2 Service catalog — two services shipped, grows inside the runtime
 
 The cloud batteries themselves. A **service** is one capability the runtime provides to
-apps; the **catalog** is the full set, named AWS-style, with per-app namespacing by slug and
+apps; the **catalog** is the full set, named AWS-style, with per-app namespacing by app id and
 persistence in the data tree where applicable:
 
 | Service | Domain word | Status |
@@ -84,7 +84,7 @@ persistence in the data tree where applicable:
 | settings | Settings (declared, person-editable in the dashboard) | Future |
 
 - **Invariant:** every service is provided by the runtime, reached by apps only through the
-  SDK, and scoped to the app's slug. Backup tree = apps tree + data tree; the cache lives
+  SDK, and scoped to the app's app id. Backup tree = apps tree + data tree; the cache lives
   outside it and is disposable.
 - **Contract:** service names are normative end to end (marketing → docs → dashboard → SDK
   API). Each service closes its own naming and surface in its slice-spec — the storage
@@ -100,9 +100,10 @@ catalog. Buildless raw TypeScript, bundled into each app by the shared toolchain
 from source. The SDK is the *only* sanctioned way app code touches Lodekit — every service
 lands as an SDK surface backed by a scoped-API endpoint.
 
-- **Today:** `createClient({baseUrl, slug})` exposing the `kv` surface (apps import the `kv` singleton; MCP and the dashboard call `createClient` explicitly). Transport stays a hand-written
-  HTTP facade (tRPC/Zod reconsideration is parked until a procedure surface exists to
-  justify it). The v0.1 storage iteration (name, API, ergonomics) shipped; every later service closes its
+- **Today:** `createClient({baseUrl, appId})` exposing the `kv` surface (apps import the `kv` singleton; MCP and the dashboard call `createClient` explicitly). Transport is Hono RPC — the
+  implementations go through `hc<Routes>` behind the explicit public interface, so route/SDK
+  drift fails `tsc` at edit time (stack-refresh slice, 2026-07-03; this resolved the parked
+  tRPC/Zod reconsideration). The v0.1 storage iteration (name, API, ergonomics) shipped; every later service closes its
   SDK-facing names the same way, in its own slice-spec.
 
 ### 2.4 UI library (`@lodekit/ui`) — unbuilt, v0.1-required
@@ -140,7 +141,7 @@ no import-time dependency on the runtime, so it stays startable even when the ru
   scaffold, list apps, inspect an app (manifest, build state, last build error), open (URLs
   for app + dashboard). *Service* tools give the agent guarded access to an app's services
   on the person's behalf — "show me all the recipes in my recipe app" reads the app's data
-  through MCP. **Read-only at v0.1** (scoped to one app's services, same slug namespacing as
+  through MCP. **Read-only at v0.1** (scoped to one app's services, same app id namespacing as
   the SDK); write access comes later, once its guardrails are designed (roadmap: Security).
 - **Today:** basic driving tools shipped against the old contract-era expectations. Needed:
   alignment with the bundled contract, build-state/error inspection (the agent's feedback
@@ -237,17 +238,19 @@ these without amending this spec first.
    apps live in the browser, so HTTP is mandatory for the SDK regardless; routing every other
    client through the same door keeps one uniform, testable, guardable surface (alternatives
    — in-process imports, unix sockets, WebSocket, IPC — each serve only a subset of clients
-   and would fragment where guardrails live).
+   and would fragment where guardrails live). Type-only imports of runtime-exported types are
+   permitted — they erase at build and create no runtime coupling; the invariant governs
+   runtime behavior.
 5. **The SDK is the only app-facing surface.** Every service reaches apps as a typed SDK
    surface backed by scoped-API endpoints — never as globals, and never scoped wider than the
-   app's own slug.
+   app's own app id.
 6. **Agent-agnostic by construction.** The only agent coupling is MCP + the skill, both open
    standards/plain content. No component may depend on a specific agent; agent-specific
    material is limited to per-agent setup guides in the docs.
 7. **One theme everywhere.** Apps and the dashboard draw from `@lodekit/ui`, so everything
    running on Lodekit looks like one product.
 8. **Failures surface, never crash.** A broken app is a build state and an explanatory page,
-   not a down runtime. Trust-boundary validation (slug pattern, path containment) holds at
+   not a down runtime. Trust-boundary validation (app id pattern, path containment) holds at
    every surface.
 9. **One language.** `context.md` is normative: canonical terms in code, specs, docs, and
    skill — one word per concept from marketing copy down to SDK API names (_app_, _task_,
@@ -269,7 +272,7 @@ knowledge, not to fix a concrete v1.0 target.
 | --- | --- | --- |
 | Runtime | Current core + dev/default path modes + `services/` module convention | One service at a time from the catalog; migrations; cache GC |
 | Service catalog | kv-store second iteration (name, API, ergonomics revisited); relational-store parked | file-store, secret-store, task-queue/task-schedule, settings; relational-store's return — each its own slice-spec |
-| SDK | The re-derived KV surface (`db` retired with relational-store) | One typed surface per new service; tRPC/Zod transport revisit |
+| SDK | The re-derived KV surface (`db` retired with relational-store) | One typed surface per new service; transport revisit resolved (Hono RPC, 2026-07-03) |
 | UI library | Themed shadcn core set (layout, forms, button, table, dialog…) via alias | Charts, data-table, rich-text, media components |
 | Stack / contract | Bundled contract + UI-library import | Settings declaration, server-side task code, multi-page routing, type-check gating, logic-folder conventions |
 | MCP server | Contract-aligned driving tools incl. build-state/error inspection; read-only service tools; `registerTool` migration | Write access behind designed guardrails; service tools tracking the catalog |

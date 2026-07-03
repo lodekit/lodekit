@@ -23,7 +23,7 @@ surface. The existing vitest suites are the safety net and must pass essentially
 
 **Non-goals:** MCP tool redesign and the skill rewrite (slice 3 — MCP gets mechanical
 renames and a version bump only); file-based routing and the multi-page app contract
-(deferred; this slice wires Router and proves it, nothing more); SDK-level React hooks
+(deferred; this slice wires Router and proves it, nothing more — slated as **slice 4**); SDK-level React hooks
 (the Query pattern lives in examples until the skill teaches it); Vite 7; `node:sqlite`;
 scaffold-starter modernization (slice 3, with the skill).
 
@@ -128,7 +128,7 @@ No SDK-level hooks or `@lodekit/sdk/react` entry: the pattern hardens in example
 
 `@tanstack/react-router` joins the toolchain aliases. **Code-based** routes only — no
 `@tanstack/router-plugin` in the toolchain, no file-route conventions; the multi-page app
-contract remains deferred and gets its own slice.
+contract remains deferred and gets its own slice (**slice 4**).
 
 - **habit-tracker** becomes the wiring example: a root route with nav + `Outlet`, `/`
   (today's check-ins) and `/manage` (habit management), real browser history with
@@ -241,3 +241,4 @@ store panel's liveness.
 | Example split | habit-tracker two-page, expense-tracker single-page reference |
 | React 19 / zod 4 | Workspace-wide; MCP SDK bumped mechanically, `registerTool` stays slice 3 |
 | `slug` → `app-id` | Pure terminology rename; manifest written as `appId`, read `appId ?? slug` for back-compat |
+| Basepath source | SDK exports the injected app id (`appId`) — a one-export SDK addition; apps derive `basepath: /<app-id>/` from it |

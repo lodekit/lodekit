@@ -54,12 +54,12 @@ _Avoid_: the prompt, system prompt, docs (docs are human-facing)
 A self-contained personal web app that runs on Lodekit. The canonical word — in code, docs, and marketing alike — for the thing a person builds.
 _Avoid_: tool, project, site, plugin, widget
 
-**Slug**:
-An app's URL-safe identity (`^[a-z0-9-]+$`). It equals the app's folder name and is simultaneously its URL path and its data namespace.
-_Avoid_: id, key, handle
+**App id**:
+An app's URL-safe identity (`^[a-z0-9-]+$`). It equals the app's folder name and is simultaneously its URL path and its data namespace (`apps/<app-id>/`, `data/<app-id>/`). Normative forms: `appId` in code and JSON fields, `:appId` in route params, "app id" in prose. The toolchain injects it into each app's bundle as the canonical define `__LODEKIT_APP_ID__`.
+_Avoid_: slug (the retired name), id, key, handle
 
 **Manifest**:
-The `manifest.json` at an app's root declaring its name, slug, icon, and description. The record that makes a folder an app.
+The `manifest.json` at an app's root declaring its name, app id, icon, and description. The record that makes a folder an app.
 _Avoid_: config, metadata, lodekit.json (the retired filename)
 
 **App contract**:
@@ -114,7 +114,7 @@ The `apps/` directory under the Lodekit root — app _source_ only, carrying no 
 _Avoid_: source dir, workspace
 
 **Data tree**:
-The `data/` directory under the Lodekit root — each app's persistent storage, one namespace per slug.
+The `data/` directory under the Lodekit root — each app's persistent storage, one namespace per app id.
 _Avoid_: db dir, storage
 
 **Backup tree**:
@@ -156,14 +156,14 @@ The themed component library (`@lodekit/ui`) — shadcn components carrying one 
 _Avoid_: design system, component kit, shadcn (the upstream, not the package)
 
 **Scoped API**:
-The per-app HTTP API namespaced by slug (`/api/apps/:slug/...`) that backs the SDK.
+The per-app HTTP API namespaced by app id (`/api/apps/:appId/...`) that backs the SDK.
 _Avoid_: the endpoints, the REST API
 
 ## Relationships
 
 - The **Manager** installs and supervises the **Runtime**. The runtime has two doors: the **MCP server** (the agent's) and the **Dashboard** (the person's).
 - The person builds **Apps** using an **Agent**: the agent loads the **Skill**, drives Lodekit through the **MCP server**, and writes code on the **Stack** — the **SDK** and **UI library** on the **shared toolchain**, conforming to the **App contract**.
-- An **App** is identified by its **Slug**; that same slug is its URL path and its data namespace.
+- An **App** is identified by its **App id**; that same app id is its URL path and its data namespace.
 - Every **Service** in the **Service catalog** is provided by the **Runtime**; an app reaches its services (**Database**, **Store**, **Settings**, **Tasks**) only through the **SDK**, which calls the **Scoped API**.
 - An app's source lives in the **Apps tree**, its built output in the **Cache**, and its persistent state (**Database** + **Store**) in the **Data tree**.
 - The **Backup tree** = apps tree + data tree. The **Cache** is deliberately outside it.

@@ -21,9 +21,10 @@ pointed here):
 - **Real secrets storage** — back the `lodekit.secrets.get()` stub with actual encrypted
   storage + a UI to manage secrets (the secret-store service; design with the lens of
   powering integrations).
-- **Slug-existence check** — the kv router (and the scoped events endpoint) materialize
-  `data/<slug>/db.sqlite` for any well-formed slug without checking the app registry —
-  inherited from the old `withDb`; tighten with this body of work.
+- **App-id-existence check** — the kv router (and the scoped events endpoint) materialize
+  `data/<app-id>/db.sqlite` for any well-formed app id without checking the app registry —
+  inherited from the old `withDb` (now the Hono `withDb` middleware); tighten with this body
+  of work.
 - **400-vs-500 split** — the kv router's `handle()` maps every thrown error to 400
   (spec-mandated "never crash"); split `KvError` → 400 / unexpected → 500 once
   observability/security work lands.
@@ -78,8 +79,10 @@ The POC is buildless, which rules out the real component ecosystem. The intended
 
 Big-picture context that shaped the slice-1 SDK design but was explicitly **not** built or stubbed:
 
-- **tRPC + Zod** — reconsider as the SDK↔runtime transport/validation layer once an app-facing
-  *procedure* surface (integrations, jobs) exists to make end-to-end typing pay off.
+- **tRPC + Zod** — ~~reconsider as the SDK↔runtime transport/validation layer once an
+  app-facing *procedure* surface (integrations, jobs) exists to make end-to-end typing pay
+  off~~ **Resolved (2026-07-03, stack-refresh slice):** Hono RPC (`hc<Routes>`) + zod
+  validators are the SDK↔runtime transport/validation layer.
 - **Per-app type-checking** — gate builds (or surface warnings) via `tsc`; the slice transpiles
   without type-checking, so app source (which has no `node_modules`/tsconfig) gets no type feedback yet.
 - **Persistence, per-app (inside the data folder):** blob storage, real encrypted secrets, schemas/migrations, and data initialization/fixtures.
@@ -139,7 +142,9 @@ above; the remainder:
 
 ## Other deferred items
 - **v0.1 skill rewrite scope** — must cover the `kv` surface, the collection/`_seq:<name>`
-  convention, and the new MCP kv tools (`lodekit_kv_list`/`lodekit_kv_get`).
+  convention, and the new MCP kv tools (`lodekit_kv_list`/`lodekit_kv_get`); the `appId`
+  naming (slug retired), the Query `watch → invalidateQueries` live-data pattern, and the
+  two contract shapes (single-page expense-tracker, two-page habit-tracker).
 - **Internal scheduler vs the Tasks service** — packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.
 - **Dashboard startup-build freshness skip** — `buildDashboard` runs on every start
   (~1s). Skip via mtime/hash comparison if startup cost starts to matter.
@@ -156,7 +161,9 @@ above; the remainder:
 - **SSE client registry is a process singleton** — `src/sse.ts` keeps one module-level
   `clients` Set shared across all server instances. Fine for the single-process server,
   but SSE integration tests must tear down client connections before `server.close()`,
-  and a multi-instance setup would need per-instance registries.
+  and a multi-instance setup would need per-instance registries. Since the Hono migration
+  (stack-refresh slice), the registry holds writer callbacks, not Express `Response`
+  objects — the facts above are unchanged.
 
 - **No browser-level test coverage** — every test (incl. `e2e.test.ts`) drives the
   HTTP/SDK layer with `fetch`, never a real browser. This let a browser-only bug ship: at
@@ -176,10 +183,13 @@ above; the remainder:
   as a config toggle (manager slice-spec §9).
 - **True `lodekit.local` / port-free access** — mDNS/Bonjour or a local reverse proxy,
   instead of `lodekit.localhost:7777`.
-- **Blob storage** — per-app `data/<slug>/blobs/` for images/files, exposed via the SDK
+- **Blob storage** — per-app `data/<app-id>/blobs/` for images/files, exposed via the SDK
   and easily browsable in Finder.
-- **Multi-page apps + client-side routing** — expand the app contract beyond
-  single-page.
+- **Multi-page apps + file-based routing (slice 4)** — expand the app contract beyond
+  single-page and adopt file-based route conventions. TanStack Router is already wired in
+  the toolchain (stack-refresh slice, code-based routes; habit-tracker is the two-page
+  example with an appHost SPA fallback); slice 4 designs the multi-page app contract on
+  top.
 - **Per-app git** — initialize/manage a git repo per app or a Lodekit-apps monorepo.
 - **Runtime auto-install** — Lodekit checks for / installs Node and other runtime deps.
 - **Image/file app icons** — beyond emoji in `lodekit.json`.

@@ -14,7 +14,7 @@ pnpm-workspace monorepo. Members: `packages/*`, `web`, `manager`. `examples/` is
 member (so the buildless sample apps never get a `node_modules`). Structure and rationale:
 `docs/specs/2026-06-30-monorepo-migration-design.md`.
 
-- **`packages/runtime`** (`@lodekit/runtime`) — the product. A single Node/Express process
+- **`packages/runtime`** (`@lodekit/runtime`) — the product. A single Node/Hono process
   (buildless, run via `tsx`) that is host + scoped API + dashboard + folder-watcher + SSE. It
   serves apps from a Lodekit root (`LODEKIT_ROOT`, default `~/Documents/Lodekit`) holding
   sibling `apps/` + `data/` trees. Storage is per-app `better-sqlite3`.
