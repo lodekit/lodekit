@@ -25,7 +25,7 @@ const DASHBOARD_ROOT = path.join(
   "dashboard"
 );
 
-function viteOptions(rootDir: string, outDir: string, base = "/") {
+function viteOptions(rootDir: string, outDir: string, base = "/", define?: Record<string, string>) {
   return {
     // Resolve symlinks (e.g. macOS os.tmpdir()'s /var -> /private/var) so Vite's
     // root and the on-disk app files agree on a canonical path; otherwise Rollup's
@@ -33,6 +33,7 @@ function viteOptions(rootDir: string, outDir: string, base = "/") {
     root: fs.realpathSync(rootDir),
     base,
     logLevel: "silent" as const,
+    define,
     plugins: [react(), tailwind()],
     resolve: {
       alias: {
@@ -74,7 +75,11 @@ function appOutDir(cfg: Config, slug: string): string {
 async function runBuild(cfg: Config, slug: string): Promise<BuildState> {
   setState(slug, { status: "building" });
   try {
-    await build(viteOptions(path.join(cfg.appsDir, slug), appOutDir(cfg, slug)));
+    await build(
+      viteOptions(path.join(cfg.appsDir, slug), appOutDir(cfg, slug), "/", {
+        __LODEKIT_SLUG__: JSON.stringify(slug),
+      })
+    );
     setState(slug, { status: "ready" });
   } catch (e) {
     setState(slug, { status: "error", message: e instanceof Error ? e.message : String(e) });
