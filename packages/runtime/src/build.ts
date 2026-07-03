@@ -169,9 +169,14 @@ function deepImportResolver() {
   return {
     name: "lodekit:deep-import-resolver",
     enforce: "pre" as const,
+    // import.meta.resolve is environment-blind: it does not consult Vite's per-environment
+    // resolve.conditions (client vs ssr). This is safe for the current DEEP_IMPORT_PACKAGES
+    // because their condition branches don't diverge; extending the list requires care.
     resolveId(source: string) {
       if (!packages.has(packageNameOf(source))) return undefined;
       try {
+        // Synchronous import.meta.resolve (stable since Node ~20.6); earlier versions
+        // would silently fall through to default resolution.
         return fileURLToPath(import.meta.resolve(source));
       } catch {
         return undefined;
