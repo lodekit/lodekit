@@ -3,9 +3,13 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "exports": {
+    "./services/kv-store": "./src/services/kv-store.ts"
+  },
   "scripts": {
     "start": "tsx src/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@lodekit/sdk": "workspace:*",

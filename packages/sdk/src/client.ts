@@ -1,3 +1,7 @@
+import { hc } from "hono/client";
+import type { ClientResponse } from "hono/client";
+import type { KvRoutes } from "@lodekit/runtime/services/kv-store";
+
 export interface KvEntry<T = unknown> {
   key: string;
   value: T;
@@ -37,8 +41,9 @@ export interface LodekitClient {
   kv: Kv;
 }
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
+// Preserves the hand-written transport's error semantics around the hc calls:
+// non-OK -> throw Error carrying the server's { error } message.
+async function parse<T>(res: ClientResponse<T> | Response): Promise<T> {
   if (!res.ok) {
     let message = res.statusText;
     try {
@@ -52,15 +57,11 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-const jsonInit = (method: string, body: unknown): RequestInit => ({
-  method,
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(body),
-});
-
 export function createClient({ baseUrl, appId }: { baseUrl: string; appId: string }): LodekitClient {
   const api = `${baseUrl}/api/apps/${appId}/kv-store`;
-  const keyUrl = (key: string) => `${api}/${encodeURIComponent(key)}`;
+  // Any route/SDK mismatch (path, method, param, body shape) fails tsc at edit time.
+  const rpc = hc<KvRoutes>(api);
+  const key$ = rpc[":key"];
 
   type GetResponse<T> = { found: false } | { found: true; value: T };
 
@@ -70,40 +71,58 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
 
   const kv: Kv = {
     async get<T>(key: string): Promise<T | undefined> {
-      const r = await request<GetResponse<T>>(keyUrl(key));
+      // zValidator's shared validationHook widens every validated route's inferred output with
+      // an `{ error }` 400 variant; parse() already runtime-checks res.ok before this point, so
+      // narrowing back to the SDK's own response shape needs the unknown round-trip tsc suggests.
+      const r = (await parse(
+        await key$.$get({ param: { key: encodeURIComponent(key) } })
+      )) as unknown as GetResponse<T>;
       return r.found ? r.value : undefined;
     },
     async set(key, value, opts = {}) {
-      await request(keyUrl(key), jsonInit("PUT", { value, ...(opts.ttl != null ? { ttl: opts.ttl } : {}) }));
+      await parse(
+        await key$.$put({
+          param: { key: encodeURIComponent(key) },
+          json: { value, ...(opts.ttl != null ? { ttl: opts.ttl } : {}) },
+        })
+      );
     },
     async del(key) {
-      const r = await request<{ deleted: boolean }>(keyUrl(key), { method: "DELETE" });
-      return r.deleted;
+      return (
+        (await parse(await key$.$delete({ param: { key: encodeURIComponent(key) } }))) as unknown as {
+          deleted: boolean;
+        }
+      ).deleted;
     },
     async has(key) {
-      return (await request<{ found: boolean }>(keyUrl(key))).found;
+      return (
+        (await parse(
+          await key$.$get({ param: { key: encodeURIComponent(key) } })
+        )) as unknown as { found: boolean }
+      ).found;
     },
     async incr(key, by) {
-      const r = await request<{ value: number }>(
-        `${api}/incr`,
-        jsonInit("POST", by === undefined ? { key } : { key, by })
-      );
-      return r.value;
+      return (
+        (await parse(
+          await rpc.incr.$post({ json: by === undefined ? { key } : { key, by } })
+        )) as unknown as { value: number }
+      ).value;
     },
     async list(opts = {}) {
-      const q = new URLSearchParams();
-      if (opts.prefix !== undefined) q.set("prefix", opts.prefix);
-      if (opts.limit !== undefined) q.set("limit", String(opts.limit));
-      if (opts.cursor !== undefined) q.set("cursor", opts.cursor);
-      const qs = q.toString();
-      return request(`${api}${qs ? `?${qs}` : ""}`);
+      const query: Record<string, string> = {};
+      if (opts.prefix !== undefined) query.prefix = opts.prefix;
+      if (opts.limit !== undefined) query.limit = String(opts.limit);
+      if (opts.cursor !== undefined) query.cursor = opts.cursor;
+      return (await parse(await rpc.index.$get({ query }))) as never;
     },
     async getMany(keys) {
-      const r = await request<{ entries: KvEntry<never>[] }>(`${api}/get-many`, jsonInit("POST", { keys }));
+      const r = (await parse(await rpc["get-many"].$post({ json: { keys } }))) as unknown as {
+        entries: KvEntry<never>[];
+      };
       return r.entries as never;
     },
     async setMany(entries, opts = {}) {
-      await request(`${api}/set-many`, jsonInit("POST", { entries, ...(opts.ttl != null ? { ttl: opts.ttl } : {}) }));
+      await parse(await rpc["set-many"].$post({ json: { entries, ...(opts.ttl != null ? { ttl: opts.ttl } : {}) } }));
     },
     collection<T>(name: string): Collection<T> {
       const itemKey = (id: number) => `${name}:${id}`;
