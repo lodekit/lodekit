@@ -106,4 +106,12 @@ describe("expense tracker e2e (bundled)", () => {
     expect(asset).toBeTruthy();
     expect((await fetch(base + "/habit-tracker" + asset![0])).status).toBe(200);
   }, 45000);
+
+  it("habit-tracker serves both pages; a deep-link fetch of /manage returns the app shell", async () => {
+    for (const p of ["/habit-tracker/", "/habit-tracker/manage"]) {
+      const html = await (await fetch(base + p)).text();
+      expect(html).toContain('<div id="root">');
+      expect(html).toContain("/assets/");
+    }
+  }, 45000);
 });

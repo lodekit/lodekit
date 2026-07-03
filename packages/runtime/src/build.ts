@@ -41,6 +41,7 @@ function viteOptions(rootDir: string, outDir: string, base = "/", define?: Recor
         "react-dom": pkgDir("react-dom"),
         "@lodekit/sdk": pkgDir("@lodekit/sdk"),
         "@tanstack/react-query": pkgDir("@tanstack/react-query"),
+        "@tanstack/react-router": pkgDir("@tanstack/react-router"),
         "@lodekit/ui": uiDir,
         "lucide-react": lucideDir,
       },

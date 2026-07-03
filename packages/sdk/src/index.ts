@@ -8,3 +8,6 @@ declare const __LODEKIT_APP_ID__: string | undefined;
 const injectedAppId = typeof __LODEKIT_APP_ID__ === "string" ? __LODEKIT_APP_ID__ : "";
 
 export const kv = createClient({ baseUrl: "", appId: injectedAppId }).kv;
+
+/** The app's own app id, injected by the toolchain at build time ("" outside an app build). */
+export const appId = injectedAppId;
