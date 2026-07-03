@@ -83,8 +83,13 @@ _Avoid_: the SDK (the SDK is the layer into the catalog, not the catalog), featu
 The shipped and near-term services:
 
 **Store**:
-An app's per-app key–value store of JSON values, reached through the SDK. The sole storage service through early 0.x; its second iteration (name, API, ergonomics) is a v0.1 slice. Distinct from the Cache and from Settings — see Flagged ambiguities.
-_Avoid_: cache, settings, kv, preferences
+An app's per-app key–value store of JSON values (the kv-store service), reached through the
+SDK as the `kv` handle (`import { kv } from "@lodekit/sdk"`; catalog-name → handle mapping:
+kv-store→kv, relational-store→db, file-store→files, secret-store→secrets). The sole storage
+service through early 0.x; its second iteration shipped as the v0.1 storage slice
+(`docs/specs/2026-07-03-kv-store-v2-design.md`). Distinct from the Cache and from Settings —
+see Flagged ambiguities.
+_Avoid_: cache, settings, preferences
 
 **Database**:
 An app's per-app SQL database (relational-store). **Parked**: retired in the v0.1 storage iteration; returns to the catalog once a schemas/migrations story exists.

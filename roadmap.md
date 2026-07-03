@@ -27,7 +27,7 @@ pointed here):
 The database service (per-app SQL) is **parked** by the v0.1 storage iteration — kv-store is
 the sole storage service through early 0.x. Iterate after v0.1 ships: define the
 schemas/migrations story (plus data initialization/fixtures) that lets relational-store
-re-enter the service catalog.
+re-enter the service catalog. The parking shipped with kv-store v2 (docs/specs/2026-07-03-kv-store-v2-design.md).
 
 ## Guiding principle
 
@@ -76,8 +76,7 @@ Big-picture context that shaped the slice-1 SDK design but was explicitly **not*
   *procedure* surface (integrations, jobs) exists to make end-to-end typing pay off.
 - **Per-app type-checking** — gate builds (or surface warnings) via `tsc`; the slice transpiles
   without type-checking, so app source (which has no `node_modules`/tsconfig) gets no type feedback yet.
-- **Persistence, per-app (inside the data folder):** blob storage, real encrypted secrets,
-  cache with TTLs, schemas/migrations, and data initialization/fixtures.
+- **Persistence, per-app (inside the data folder):** blob storage, real encrypted secrets, schemas/migrations, and data initialization/fixtures.
 - **Integrations** — gateways, outbound connections, rate limiting.
 - **Tasks** — task-queue/task-schedule, durable execution, hooks, signals; design
   holistically (umbrella spec §2.12).
@@ -133,6 +132,7 @@ above; the remainder:
   versions requires `pnpm rebuild better-sqlite3` (ABI mismatch otherwise).
 
 ## Other deferred items
+- **Internal scheduler vs the Tasks service** — packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.
 - **Dashboard startup-build freshness skip** — `buildDashboard` runs on every start
   (~1s). Skip via mtime/hash comparison if startup cost starts to matter.
 - **Watch dashboard source in dev** — dashboard source isn't watched; runtime restart

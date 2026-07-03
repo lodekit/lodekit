@@ -76,8 +76,8 @@ persistence in the data tree where applicable:
 
 | Service | Domain word | Status |
 | --- | --- | --- |
-| kv-store | Store (per-app KV of JSON values) | Shipped; second iteration (name, API, ergonomics) in v0.1 |
-| relational-store | Database (SQLite via `better-sqlite3`) | Shipped in the POC; **parked** in the v0.1 storage iteration — returns once a schemas/migrations story exists |
+| kv-store | Store (per-app KV of JSON values) | v2 shipped (docs/specs/2026-07-03-kv-store-v2-design.md): six ops + TTL + SSE change feed; SDK handle kv |
+| relational-store | Database (SQLite via `better-sqlite3`) | **Parked** by kv-store v2 (surface deleted) — returns once a schemas/migrations story exists |
 | file-store | Blobs (files/images per app) | Future |
 | secret-store | Secrets (encrypted; designed with the lens of powering integrations) | Future |
 | task-queue / task-schedule | Tasks (queued + scheduled background work) | Future (§2.12) |
@@ -101,10 +101,9 @@ catalog. Buildless raw TypeScript, bundled into each app by the shared toolchain
 from source. The SDK is the *only* sanctioned way app code touches Lodekit — every service
 lands as an SDK surface backed by a scoped-API endpoint.
 
-- **Today:** `db.query`/`db.exec`, `store.get`/`store.set`. Transport stays a hand-written
+- **Today:** `createClient({baseUrl, slug})` exposing the `kv` surface (apps import the `kv` singleton; MCP and the dashboard call `createClient` explicitly). Transport stays a hand-written
   HTTP facade (tRPC/Zod reconsideration is parked until a procedure surface exists to
-  justify it). The v0.1 storage iteration retires the `db` surface (relational-store parked)
-  and re-derives the KV surface's name, API, and ergonomics; every later service closes its
+  justify it). The v0.1 storage iteration (name, API, ergonomics) shipped; every later service closes its
   SDK-facing names the same way, in its own slice-spec.
 
 ### 2.4 UI library (`@lodekit/ui`) — unbuilt, v0.1-required
