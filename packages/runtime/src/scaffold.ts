@@ -9,47 +9,78 @@ export interface ScaffoldInput {
   icon?: string;
 }
 
-const indexHtml = (name: string) => `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${name}</title>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
-</body>
-</html>
+const routerTsx = `import { createRouter } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
+
+export function getRouter() {
+  return createRouter({ routeTree });
+}
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof getRouter>;
+  }
+}
 `;
 
-const mainTsx = `import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
-import "./index.css";
+const rootTsx = (name: string) => `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import appCss from "../styles.css?url";
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+export const Route = createRootRoute({
+  head: () => ({
+    meta: [{ title: "${name}" }],
+    links: [{ rel: "stylesheet", href: appCss }],
+  }),
+  component: () => (
+    <html lang="en">
+      <head>
+        <HeadContent />
+        {/* Theme before hydration — no dark-mode flash (spec §2 / shadcn item 2).
+            dangerouslySetInnerHTML is safe ONLY because this is a fixed string
+            literal; never interpolate anything into it. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: \`document.documentElement.classList.toggle("dark",matchMedia("(prefers-color-scheme: dark)").matches)\`,
+          }}
+        />
+      </head>
+      <body>
+        <Outlet />
+        <Scripts />
+      </body>
+    </html>
+  ),
+});
 `;
 
-const appTsx = (name: string) => `import { useEffect, useState } from "react";
+const indexTsx = (name: string) => `import { createFileRoute } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { useState } from "react";
 import { kv } from "@lodekit/sdk";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@lodekit/ui";
 
-export default function App() {
-  const [count, setCount] = useState(0);
+const getCount = createServerFn().handler(async () => (await kv.get<number>("count")) ?? 0);
 
-  useEffect(() => {
-    void kv.get<number>("count").then((v) => setCount(v ?? 0));
-  }, []);
+const setCount = createServerFn()
+  .inputValidator(z.object({ count: z.number().int().min(0) }))
+  .handler(async ({ data }) => {
+    await kv.set("count", data.count);
+    return data.count;
+  });
+
+export const Route = createFileRoute("/")({
+  loader: () => getCount(),
+  component: Home,
+});
+
+function Home() {
+  const initial = Route.useLoaderData();
+  const [count, setCountState] = useState(initial);
 
   async function increment() {
-    const next = count + 1;
-    setCount(next);
-    await kv.set("count", next);
+    const next = await setCount({ data: { count: count + 1 } });
+    setCountState(next);
   }
 
   return (
@@ -59,7 +90,7 @@ export default function App() {
           <CardTitle>${name}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <p className="text-muted-foreground">Edit src/App.tsx to build this app.</p>
+          <p className="text-muted-foreground">Edit src/routes/index.tsx to build this app.</p>
           <Button onClick={increment}>Get started ({count})</Button>
         </CardContent>
       </Card>
@@ -68,7 +99,7 @@ export default function App() {
 }
 `;
 
-const indexCss = `@import "@lodekit/ui/theme.css";
+const stylesCss = `@import "@lodekit/ui/theme.css";
 `;
 
 function writeIfAbsent(filePath: string, contents: string): void {
@@ -78,7 +109,8 @@ function writeIfAbsent(filePath: string, contents: string): void {
 export function scaffoldApp(cfg: Config, input: ScaffoldInput) {
   const appDir = path.join(cfg.appsDir, input.appId);
   const srcDir = path.join(appDir, "src");
-  fs.mkdirSync(srcDir, { recursive: true });
+  const routesDir = path.join(srcDir, "routes");
+  fs.mkdirSync(routesDir, { recursive: true });
   const manifest = {
     name: input.name,
     appId: input.appId,
@@ -86,14 +118,20 @@ export function scaffoldApp(cfg: Config, input: ScaffoldInput) {
     description: input.description ?? "",
   };
   fs.writeFileSync(path.join(appDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
-  writeIfAbsent(path.join(appDir, "index.html"), indexHtml(manifest.name));
-  writeIfAbsent(path.join(srcDir, "main.tsx"), mainTsx);
-  writeIfAbsent(path.join(srcDir, "App.tsx"), appTsx(manifest.name));
-  writeIfAbsent(path.join(srcDir, "index.css"), indexCss);
+  writeIfAbsent(path.join(srcDir, "router.tsx"), routerTsx);
+  writeIfAbsent(path.join(routesDir, "__root.tsx"), rootTsx(manifest.name));
+  writeIfAbsent(path.join(routesDir, "index.tsx"), indexTsx(manifest.name));
+  writeIfAbsent(path.join(srcDir, "styles.css"), stylesCss);
   return {
     appId: input.appId,
     appDir,
     url: `${cfg.baseUrl}/${input.appId}`,
-    files: ["manifest.json", "index.html", "src/main.tsx", "src/App.tsx", "src/index.css"],
+    files: [
+      "manifest.json",
+      "src/router.tsx",
+      "src/routes/__root.tsx",
+      "src/routes/index.tsx",
+      "src/styles.css",
+    ],
   };
 }
