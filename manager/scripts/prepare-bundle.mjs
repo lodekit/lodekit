@@ -89,6 +89,18 @@ function buildPayload() {
     recursive: true,
     filter: (src) => !src.includes("node_modules"),
   });
+  // Both deployed packages extend the workspace-root tsconfig.base.json, which
+  // doesn't exist inside the bundle — vendor it into each package and point the
+  // extends at the local copy so the payload is self-contained (the runtime's
+  // dashboard build reads its tsconfig at runtime).
+  for (const pkg of ["runtime", "mcp"]) {
+    const pkgDir = path.join(platformDir, pkg);
+    fs.copyFileSync(path.join(repoRoot, "tsconfig.base.json"), path.join(pkgDir, "tsconfig.base.json"));
+    const tsconfigPath = path.join(pkgDir, "tsconfig.json");
+    const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, "utf8"));
+    if (tsconfig.extends) tsconfig.extends = "./tsconfig.base.json";
+    fs.writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2) + "\n");
+  }
 }
 
 // Relocatable means no symlink may resolve outside the payload (spec §3);
@@ -114,9 +126,25 @@ function assertNativeModule() {
   });
 }
 
+// Any tsconfig `extends` in the payload must resolve inside the payload —
+// out-of-bundle extends broke the packaged dashboard build once already.
+function assertSelfContainedTsconfigs() {
+  const tsconfigs = execSync(
+    `find "${platformDir}" -name tsconfig.json -not -path "*/node_modules/*"`,
+    { encoding: "utf8" }
+  ).trim().split("\n").filter(Boolean);
+  for (const file of tsconfigs) {
+    const { extends: ext } = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (!ext) continue;
+    const target = path.resolve(path.dirname(file), ext);
+    if (!fs.existsSync(target)) throw new Error(`Payload tsconfig extends outside the bundle: ${file} -> ${ext}`);
+  }
+}
+
 assertNodeVersion();
 await fetchNode();
 buildPayload();
 assertNoEscapingSymlinks();
 assertNativeModule();
+assertSelfContainedTsconfigs();
 console.log(`Bundle inputs ready: ${buildDir} (Node v${NODE_VERSION} + platform payload)`);
