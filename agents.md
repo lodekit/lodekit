@@ -11,13 +11,14 @@ For trivial tasks, use judgment.
 ## Architecture
 
 pnpm-workspace monorepo. Members: `packages/*`, `web`, `manager`. `examples/` is **not** a
-member (so the buildless sample apps never get a `node_modules`). Structure and rationale:
+member (so the sample apps never get a `node_modules`). Structure and rationale:
 `docs/specs/2026-06-30-monorepo-migration-design.md`.
 
 - **`packages/runtime`** (`@lodekit/runtime`) — the product. A single Node/Hono process
-  (buildless, run via `tsx`) that is host + scoped API + dashboard + folder-watcher + SSE. It
-  serves apps from a Lodekit root (`LODEKIT_ROOT`, default `~/Documents/Lodekit`) holding
-  sibling `apps/` + `data/` trees. Storage is per-app `better-sqlite3`.
+  (buildless, run via `tsx`) that is host + scoped API + dashboard + folder-watcher + SSE,
+  and hosts TanStack Start apps in per-app worker threads. It serves apps from a Lodekit
+  root (`LODEKIT_ROOT`, default `~/Documents/Lodekit`) holding sibling `apps/` + `data/`
+  trees. Storage is per-app `better-sqlite3`.
 - **`packages/mcp`** (`@lodekit/mcp`) — the Claude-facing MCP server. Reaches the runtime
   **over HTTP only** — no import-time dependency on the runtime. The dependency-free HTTP
   helpers live in `client.ts`; the MCP-SDK wiring in `index.ts`.
@@ -29,8 +30,8 @@ member (so the buildless sample apps never get a `node_modules`). Structure and 
   `Resources/`, spawning the runtime as a single direct child Node process (so
   `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
   app supervising the workspace runtime against `examples/` on the system Node.
-- **`examples/`** — buildless sample apps as a self-contained Lodekit root, used in dev via
-  `LODEKIT_ROOT=./examples`.
+- **`examples/`** — sample Start apps (no per-app dependencies) as a self-contained Lodekit
+  root, used in dev via `LODEKIT_ROOT=./examples`.
 
 Deferred subsystems (designed-in, not built): Starlight and packaging polish (Developer ID
 signing/notarization, auto-update). See `roadmap.md`.

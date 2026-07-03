@@ -20,7 +20,9 @@ pointed here):
   before any multi-user or shared exposure, audit app-side rendering guidance in the skill.
 - **Real secrets storage** — back the `lodekit.secrets.get()` stub with actual encrypted
   storage + a UI to manage secrets (the secret-store service; design with the lens of
-  powering integrations).
+  powering integrations). **Unblocked** by the tanstack-start-host substrate — server
+  functions reach the SDK, so secrets have a server-side door
+  (`docs/specs/2026-07-03-tanstack-start-host-design.md`); still its own slice.
 - **App-id-existence check** — the kv router (and the scoped events endpoint) materialize
   `data/<app-id>/db.sqlite` for any well-formed app id without checking the app registry —
   inherited from the old `withDb` (now the Hono `withDb` middleware); tighten with this body
@@ -35,6 +37,21 @@ The database service (per-app SQL) is **parked** by the v0.1 storage iteration �
 the sole storage service through early 0.x. Iterate after v0.1 ships: define the
 schemas/migrations story (plus data initialization/fixtures) that lets relational-store
 re-enter the service catalog. The parking shipped with kv-store v2 (docs/specs/2026-07-03-kv-store-v2-design.md).
+
+## App server code — next triggers
+
+The substrate shipped as the tanstack-start-host slice
+(`docs/specs/2026-07-03-tanstack-start-host-design.md`): apps (and the dashboard) host as
+TanStack Start apps in per-app app workers; server functions reach the SDK over loopback
+HTTP. Its HTTP trigger (server functions + server-rendered routes) shipped with it; the
+remaining triggers are their own slices:
+
+- **Webhooks trigger** — replace the soft same-origin guard on `/<app-id>/_serverFn/*`
+  with a real inbound story: auth, reachability (exposing the runtime beyond localhost),
+  and signature verification.
+- **Server-side `watch`/signals** — `kv.watch` is client-only this slice (EventSource-based);
+  a server-side subscription story belongs with the Tasks design (task-queue/task-schedule),
+  invoking exported functions in the app worker.
 
 ## Guiding principle
 
@@ -149,8 +166,11 @@ above; the remainder:
   invalidation causes one redundant self-invalidate refetch per write, and collection
   removal does not cascade (e.g. deleting a habit orphans its checkin keys).
 - **Internal scheduler vs the Tasks service** — packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.
-- **Dashboard startup-build freshness skip** — `buildDashboard` runs on every start
-  (~1s). Skip via mtime/hash comparison if startup cost starts to matter.
+- **Dashboard startup-build freshness skip** — `buildDashboard` runs on every start. Raised
+  relevance since the tanstack-start-host slice: the Start build (~2–5s) is heavier than the
+  old bundled build (~1s), per
+  `docs/specs/2026-07-03-tanstack-start-host-design.md` §7. Skip via mtime/hash comparison
+  if startup cost starts to matter.
 - **Watch dashboard source in dev** — dashboard source isn't watched; runtime restart
   rebuilds it. Add rebuild-on-change if restart friction grows.
 - **Manager hardening (post-v0.1, from the slice's final review)** — PID-reuse guard for
@@ -188,11 +208,13 @@ above; the remainder:
   instead of `lodekit.localhost:7777`.
 - **Blob storage** — per-app `data/<app-id>/blobs/` for images/files, exposed via the SDK
   and easily browsable in Finder.
-- **Multi-page apps + file-based routing (slice 4)** — expand the app contract beyond
+- **Multi-page apps + file-based routing (slice 4)** — ~~expand the app contract beyond
   single-page and adopt file-based route conventions. TanStack Router is already wired in
   the toolchain (stack-refresh slice, code-based routes; habit-tracker is the two-page
   example with an appHost SPA fallback); slice 4 designs the multi-page app contract on
-  top.
+  top.~~ **Dissolved (2026-07-03, tanstack-start-host slice):** file-based routing arrives
+  with TanStack Start's own route conventions
+  (`docs/specs/2026-07-03-tanstack-start-host-design.md`) — no separate slice needed.
 - **Per-app git** — initialize/manage a git repo per app or a Lodekit-apps monorepo.
 - **Runtime auto-install** — Lodekit checks for / installs Node and other runtime deps.
 - **Image/file app icons** — beyond emoji in `lodekit.json`.

@@ -21,7 +21,9 @@ your data are files in a folder you own — back it up and it's yours forever.
 Positioning behind the statement: written for **non-devs and tinkerers**; positioned
 **against the cloud** (keep the batteries, drop the accounts, subscriptions, and
 someone-else's-computer); **local is the point** — ownership — not merely the means; the
-robustness claimed is all three of durable, reliable, and safe.
+robustness claimed is all three of durable, reliable, and safe; **powered by TanStack,
+shadcn, and SQLite** — the stack agents already know, not hidden behind an abstraction
+layer.
 
 In the language of `context.md`: a person — working with an AI agent in whatever form they
 use it: a desktop app, an IDE, a terminal — builds and runs their own personal web apps on
@@ -61,8 +63,11 @@ rebuilds), the scoped API, storage, SSE (build state + registry changes), and se
 from the cache, the dashboard, the API). Buildless — runs from source via `tsx`.
 
 - **Boundary:** everything server-side is the runtime. No second process, no per-app
-  servers. As the service catalog grows (§2.2), the runtime owns every service in it —
-  tasks, secrets, settings, file storage all run inside this one process.
+  servers. Apps (and the dashboard) are TanStack Start applications, built by the runtime
+  and executed in per-app **app workers** — worker threads inside this one process (§2.12)
+  — fault containment, never a per-app server. As the service catalog grows (§2.2), the
+  runtime owns every service in it — tasks, secrets, settings, file storage all run inside
+  this one process.
 - **Contract:** HTTP is the only way in — the SDK, the MCP server, the dashboard, and the
   manager all reach it over HTTP (+ SSE). Nothing imports runtime internals.
 - **Today:** host + build + watch + scoped API (`db`, `store`) + SSE + dashboard serving all
@@ -117,19 +122,23 @@ makes ten agent-built apps look like one product instead of ten codepens.
 - **Today:** nothing built. First unbuilt component on the derivation order (§4.2), because
   the skill and the scaffold can't be finished without it.
 
-### 2.5 Stack & app contract — shipped shape, unfinished surface
+### 2.5 Stack & app contract — Start-hosted, unfinished surface
 
-The stack is the prescribed way app code is written; the app contract is its on-disk shape
-(manifest + HTML entry + `src/` of React + TypeScript importing the SDK). The shared
-toolchain (Vite + React + TypeScript + Tailwind) lives in Lodekit's install, never per-app —
-apps carry no dependencies, the person never runs a build.
+The stack is the prescribed way app code is written: **TanStack Start** (React, file-based
+routes, loaders, server functions, SSR) + TypeScript + Tailwind through the shared
+toolchain, importing the SDK and the UI library. The app contract is its on-disk shape: a
+manifest, `src/routes/` + `src/router.tsx` (Start's shape), and the build-generated,
+committed `routeTree.gen.ts`. No HTML entry — apps are **server-rendered** (canonical Start
+SSR, no SPA mode). The shared toolchain lives in Lodekit's install, never per-app — apps
+carry no dependencies, the person never runs a build.
 
 - **Contract:** the skill teaches the stack; the scaffold emits a conforming starter; the
   runtime refuses nothing (build errors surface as build state, not crashes).
-- **Today:** bundled contract + toolchain shipped. Missing: the UI-library import,
-  business-logic folder conventions, per-app type-checking (transpile-only today), multi-page
-  routing (TanStack Router, deferred), and — arriving with their services — settings
-  declaration and server-side task code.
+- **Today:** the Start-hosted contract shipped
+  (`docs/specs/2026-07-03-tanstack-start-host-design.md`) — a hard cutover from the old
+  SPA/HTML-entry shape. Missing: the UI-library import, business-logic folder conventions,
+  and per-app type-checking (transpile-only today); settings declaration arrives with its
+  service.
 
 ### 2.6 MCP server (`@lodekit/mcp`) — shipped basic
 
@@ -172,6 +181,11 @@ Lodekit's built-in web UI, served by the runtime. The person's window into their
   it ships — settings editor, tasks (schedule + last-run state), secrets.
 - **Contract:** driven entirely by the runtime's HTTP + SSE surfaces; themed with
   `@lodekit/ui` so the product and its apps share one design.
+- **Substrate:** the dashboard is a Start app on the same substrate as regular apps — same
+  pipeline, same **app worker** hosting, mounted at `/_dashboard` (outside the app id
+  grammar and the registry; not person-deletable). A dependency-free plain-HTML fallback
+  page covers "building / build failed / worker down" — the debug surface never depends on
+  the substrate it's debugging.
 
 ### 2.9 Manager (`@lodekit/manager`) — dev shell today, THE download at v0.1
 
@@ -211,28 +225,48 @@ your first app (through your agent), concepts (the loop, the backup tree, the da
 per-agent MCP/skill setup guides (the manual registration/linking snippets, which live with
 the skill/readme until then). Agent-facing depth stays in the skill.
 
-### 2.12 Tasks — a future service, noted here, not yet specced
+### 2.12 App server code — substrate shipped (Start hosting), triggers arrive as slices
 
-Background work an app hands to the runtime: **task-queue** (queued work) and
-**task-schedule** (scheduled tasks). A step-level change to the service catalog — the first
-capability that puts *app-defined code on the server side of the contract* — so it must be
-designed holistically: queueing, scheduling, hooks, signals; where task code lives in the app
-folder, how the runtime loads and sandboxes it, what SDK surface it sees, and how schedule +
-last-run state reach the dashboard. The spec that introduces tasks must extend the app
-contract, the SDK, the skill, and the dashboard together. For now this section only records
-that the service exists and is coming; no spec until we get there.
+App-defined code running *on the server side of the contract*. The **substrate** is
+**Start hosting** (`docs/specs/2026-07-03-tanstack-start-host-design.md`): apps (and the
+dashboard) are TanStack Start applications, built by the runtime and executed in per-app
+**app workers** — worker threads inside the one runtime process. **Server functions**
+(`createServerFn`) reach services through the SDK over loopback HTTP (invariant 4); a
+crashing or hung server module is a worker death → app server-error state → respawn, never
+a down runtime (invariant 8).
+
+On the substrate, **triggers** arrive as their own slices:
+
+- **HTTP** (this slice) — the app's own server functions and server-rendered routes,
+  called by the app's client. A soft same-origin guard on `/<app-id>/_serverFn/*` makes
+  "webhooks are unsupported" a stated fact until a real inbound story (auth, reachability,
+  signatures) gets its own slice (roadmap).
+- **Tasks** (task-queue, task-schedule) — later, invoking exported functions in the same
+  app worker: queueing, scheduling, hooks, signals, and schedule + last-run state in the
+  dashboard.
+
+Sequencing consumers: **secret-store**'s app door depends on this substrate (server
+functions read secrets; values never reach browser code — see the roadmap's Security
+section), and **integrations** build on server functions + secrets (server functions do
+outbound fetch; gateway conveniences later).
 
 ## 3. Cohesion invariants
 
 The cross-cutting rules that make eleven components one product. Slice-specs may not violate
 these without amending this spec first.
 
-1. **One shared instance.** One runtime hosts every app. Never one process per app.
+1. **One shared instance.** One runtime hosts every app. Never one process per app. A
+   built Start app's server output is a pure fetch handler (no port, no process); app
+   server code runs in per-app **app workers** — worker threads inside the one runtime —
+   fault containment, never a per-app server.
 2. **The person never builds.** No dev servers, no terminal commands, no per-app
    dependencies. Lodekit drives the build chain programmatically (Vite JS API), and the
    manager provisions its own pinned Lodekit-local Node — never the system's.
 3. **The backup tree is sacred.** Apps tree + data tree hold everything worth keeping; both
-   stay dependency-free and human-readable. The cache is disposable and lives outside.
+   stay dependency-free and human-readable. The cache is disposable and lives outside. One
+   amendment: `routeTree.gen.ts` (Start's generated route tree) lives in the apps tree, per
+   Start convention — its first generated-but-committed file, still human-readable and
+   dependency-free.
 4. **HTTP is the runtime's only door.** SDK, MCP server, dashboard, and manager all
    speak HTTP(+SSE) to the runtime. No cross-package imports of runtime internals. Why HTTP:
    apps live in the browser, so HTTP is mandatory for the SDK regardless; routing every other
@@ -240,10 +274,13 @@ these without amending this spec first.
    — in-process imports, unix sockets, WebSocket, IPC — each serve only a subset of clients
    and would fragment where guardrails live). Type-only imports of runtime-exported types are
    permitted — they erase at build and create no runtime coupling; the invariant governs
-   runtime behavior.
+   runtime behavior. Server-side app code (server functions, in an app worker) reaches
+   services through the SDK over this same HTTP loopback door (`LODEKIT_BASE_URL`) — same
+   guardrails; a runtime-injected scoped binding was considered and rejected.
 5. **The SDK is the only app-facing surface.** Every service reaches apps as a typed SDK
    surface backed by scoped-API endpoints — never as globals, and never scoped wider than the
-   app's own app id.
+   app's own app id. This holds on both sides of the app contract: `import { kv } from
+   "@lodekit/sdk"` works identically in components, loaders, and server functions.
 6. **Agent-agnostic by construction.** The only agent coupling is MCP + the skill, both open
    standards/plain content. No component may depend on a specific agent; agent-specific
    material is limited to per-agent setup guides in the docs.
@@ -251,7 +288,8 @@ these without amending this spec first.
    running on Lodekit looks like one product.
 8. **Failures surface, never crash.** A broken app is a build state and an explanatory page,
    not a down runtime. Trust-boundary validation (app id pattern, path containment) holds at
-   every surface.
+   every surface. Strengthened for server-side app code: a crashing or hung server module is
+   a worker death → app server-error state → respawn; the runtime never goes down with it.
 9. **One language.** `context.md` is normative: canonical terms in code, specs, docs, and
    skill — one word per concept from marketing copy down to SDK API names (_app_, _task_,
    _store_ — never _tool_, _job_, _cache_ for those concepts).
@@ -274,26 +312,35 @@ knowledge, not to fix a concrete v1.0 target.
 | Service catalog | kv-store second iteration (name, API, ergonomics revisited); relational-store parked | file-store, secret-store, task-queue/task-schedule, settings; relational-store's return — each its own slice-spec |
 | SDK | The re-derived KV surface (`db` retired with relational-store) | One typed surface per new service; transport revisit resolved (Hono RPC, 2026-07-03) |
 | UI library | Themed shadcn core set (layout, forms, button, table, dialog…) via alias | Charts, data-table, rich-text, media components |
-| Stack / contract | Bundled contract + UI-library import | Settings declaration, server-side task code, multi-page routing, type-check gating, logic-folder conventions |
+| Stack / contract | Start-hosted contract (file-based routes, loaders, server functions, SSR) shipped; UI-library import | Settings declaration, type-check gating, logic-folder conventions |
 | MCP server | Contract-aligned driving tools incl. build-state/error inspection; read-only service tools; `registerTool` migration | Write access behind designed guardrails; service tools tracking the catalog |
 | Skill | Full agent-neutral rewrite against the v0.1 stack; manual linking | Guidance per new service; automated distribution (FTUX) |
 | Dashboard | Grid + build state (shipped), restyled with `@lodekit/ui` | App detail/health, data explorer, per-service panels (settings, tasks, secrets) |
 | Manager | Packaged menubar app (macOS, ad-hoc signed), bundled Lodekit-local Node (pinned), runtime lifecycle + autostart, status + open-dashboard + quit; manual MCP registration via docs | FTUX/onboarding (auto MCP registration, skill linking), auto-update + managed platform artifacts, Developer ID signing, Windows/Linux |
 | Landing site | — | Real page deployed to lodekit.com, with the unassisted-loop push |
 | Docs | — (assisted alpha: setup snippets live with the skill/readme) | Starlight: install, first app, concepts, per-agent setup; full reference |
-| Tasks | — (recorded as a future service, §2.12; no spec yet) | Holistic design: queueing, scheduling, hooks, signals |
+| Tasks | — (the substrate ships this slice, §2.12; no Tasks spec yet) | On the Start-hosting substrate (§2.12): queueing, scheduling, hooks, signals, invoking exported functions in the same app worker |
 
 ### 4.2 Derivation order
 
-Four slices; each becomes its own slice-spec → plan → build cycle. The order minimizes
-rework — everything the skill teaches must exist before the skill is rewritten; the manager
-packages last, once what it ships works:
+Four slices in the original line; each becomes its own slice-spec → plan → build cycle. The
+order minimizes rework — everything the skill teaches must exist before the skill is
+rewritten; the manager packages last, once what it ships works:
 
 1. **`@lodekit/ui`** — theme + core components + alias into the toolchain + dashboard
    restyle.
 2. **Storage iteration (kv-store v2)** — revisit name/API/ergonomics, park relational-store,
    migrate the example apps, introduce `services/` in the runtime, matching SDK surface.
    (1 and 2 are independent — order between them is convenience.)
+
+   Two more slices landed here, once building on the toolchain surfaced needs the original
+   line hadn't named — both ahead of slice 3, so the skill (slice 3) teaches the real
+   contract instead of an interim one:
+   - **Stack refresh** (2026-07-03) — Hono runtime migration; Hono RPC (`hc<Routes>`)
+     becomes the SDK↔runtime transport.
+   - **TanStack Start host** (2026-07-03) — apps (and the dashboard) become hosted
+     TanStack Start apps in per-app **app workers**; **server functions** land the §2.12
+     substrate + its first trigger (HTTP).
 3. **MCP + skill v0.1** — contract-aligned driving tools, build-state feedback loop,
    read-only service tools, full skill rewrite. (Depends on 1–2 so the skill teaches
    reality.)

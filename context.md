@@ -63,8 +63,19 @@ The `manifest.json` at an app's root declaring its name, app id, icon, and descr
 _Avoid_: config, metadata, lodekit.json (the retired filename)
 
 **App contract**:
-The required shape of an app's source: a manifest, an HTML entry, and a `src/` of React + TypeScript that imports the SDK. What "a valid app" means.
+The required shape of an app's source: a manifest, `src/routes/` + `src/router.tsx`
+(TanStack Start shape), and the build-generated, committed `routeTree.gen.ts`. No HTML
+entry. What "a valid app" means.
 _Avoid_: template, boilerplate, scaffold (scaffold is the act, not the shape)
+
+**Server function**:
+App-defined code that runs on the server side of the contract — a TanStack Start
+`createServerFn`, callable from the app's own client; inputs validated at the trust
+boundary. _Avoid_: server code, RPC, action, endpoint.
+
+**App worker**:
+The per-app worker thread inside the runtime that executes an app's built server bundle
+(SSR + server functions). _Avoid_: sandbox, per-app server, process.
 
 **Scaffold**:
 To generate a new app's starter files conforming to the app contract.
@@ -128,7 +139,7 @@ _Avoid_: build dir, dist, output, storage
 ### Building & serving
 
 **Bundled**:
-The app contract's build model: app source is compiled into static output that Lodekit serves. The person never runs a build themselves.
+The app contract's build model: app source is compiled into built output (static client assets plus a server bundle) that Lodekit serves. The person never runs a build themselves.
 _Avoid_: compiled, production build
 
 **Buildless**:
@@ -144,11 +155,11 @@ The one build stack (Vite + React + TypeScript + Tailwind) Lodekit installs once
 _Avoid_: per-app dependencies, node_modules per app
 
 **Stack**:
-The prescribed way app code is written: React + TypeScript + Tailwind through the shared toolchain, importing the SDK and the UI library, and conforming to the app contract. The skill teaches the stack; agents follow its guardrails.
+The prescribed way app code is written: TanStack Start (React, file-based routes, loaders, server functions, SSR) + TypeScript + Tailwind through the shared toolchain, importing the SDK and the UI library, conforming to the app contract. Apps are **server-rendered**. The skill teaches the stack; agents follow its guardrails.
 _Avoid_: framework, template, best practices
 
 **SDK**:
-The typed client (`@lodekit/sdk`) an app imports to reach its own scoped API — the layer into the service catalog. Replaces the old injected `window.lodekit` global.
+The typed client (`@lodekit/sdk`) an app imports to reach its own scoped API — the layer into the service catalog. Works on both sides of the contract — the browser and the app worker. Replaces the old injected `window.lodekit` global.
 _Avoid_: client library, api wrapper, window.lodekit
 
 **UI library**:
@@ -165,6 +176,7 @@ _Avoid_: the endpoints, the REST API
 - The person builds **Apps** using an **Agent**: the agent loads the **Skill**, drives Lodekit through the **MCP server**, and writes code on the **Stack** — the **SDK** and **UI library** on the **shared toolchain**, conforming to the **App contract**.
 - An **App** is identified by its **App id**; that same app id is its URL path and its data namespace.
 - Every **Service** in the **Service catalog** is provided by the **Runtime**; an app reaches its services (**Database**, **Store**, **Settings**, **Tasks**) only through the **SDK**, which calls the **Scoped API**.
+- An app's **server functions** run in its **app worker** inside the **runtime**; they reach services through the **SDK** over loopback HTTP.
 - An app's source lives in the **Apps tree**, its built output in the **Cache**, and its persistent state (**Database** + **Store**) in the **Data tree**.
 - The **Backup tree** = apps tree + data tree. The **Cache** is deliberately outside it.
 - **Settings** and **Tasks** are declared by an app and surfaced to the person in the **Dashboard**.
