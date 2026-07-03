@@ -139,7 +139,11 @@ describe("server context", () => {
   it("kv singleton uses LODEKIT_BASE_URL outside a browser", async () => {
     process.env.LODEKIT_BASE_URL = "http://127.0.0.1:1";
     const { kv } = await import("../src/index.js?" + Date.now());
-    await expect(kv.get("k")).rejects.toThrow();
+    await kv.get("k").catch(() => {}); // fetchMock resolves undefined — rejection expected
+    const fetched = fetchMock.mock.calls[0][0];
+    // hc may pass a string or a Request — normalize either.
+    const url = typeof fetched === "string" ? fetched : (fetched as Request).url;
+    expect(url).toContain("127.0.0.1:1");
     delete process.env.LODEKIT_BASE_URL;
   });
 });
