@@ -22,7 +22,17 @@ const platformDir = path.join(buildDir, "platform");
 const nodeDir = path.join(buildDir, "node");
 const cacheDir = path.join(managerDir, ".node-cache");
 
-const run = (cmd, opts = {}) => execSync(cmd, { stdio: "inherit", cwd: repoRoot, ...opts });
+// pnpm exports its resolved config to children as npm_config_* env vars. When this
+// script runs nested under `pnpm --filter @lodekit/manager make`, the inner `pnpm bundle`
+// has CWD manager/ and picks up manager/.npmrc's node-linker=hoisted — inherited by the
+// deploys below, that made pnpm partially relink the workspace and silently break the
+// runtime's Vite/Tailwind resolution. Strip the whole npm_config_* family so every child
+// behaves as if invoked fresh from the repo root.
+const cleanEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([k]) => !k.toLowerCase().startsWith("npm_config_"))
+);
+const run = (cmd, opts = {}) =>
+  execSync(cmd, { stdio: "inherit", cwd: repoRoot, env: cleanEnv, ...opts });
 
 // The payload's node_modules are whatever the last `pnpm install` built —
 // native modules (better-sqlite3) must match the bundled Node's ABI.
