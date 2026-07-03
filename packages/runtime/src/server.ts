@@ -26,6 +26,10 @@ const fallbackPage = (message?: string) => `<!doctype html>
 `;
 
 export function createApp(cfg: Config): Hono {
+  // serveStatic (here and in appHost below) checks its root's existence at
+  // construction time and logs to stderr when missing — pre-create the cache
+  // dir so a fresh boot stays as silent as Express's static serving was.
+  fs.mkdirSync(cfg.cacheDir, { recursive: true });
   const dashOut = path.join(cfg.cacheDir, "_dashboard");
   return new Hono()
     .onError((err, c) => {
