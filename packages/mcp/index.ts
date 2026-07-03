@@ -3,7 +3,7 @@ import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { scaffold, listApps, inspectDb } from "./client.js";
+import { scaffold, listApps } from "./client.js";
 import { createClient } from "@lodekit/sdk";
 
 const BASE = process.env.LODEKIT_BASE_URL ?? "http://lodekit.localhost:7777";
@@ -32,10 +32,6 @@ server.tool("lodekit_open_app", { slug: z.string() }, async ({ slug }) => {
   openInBrowser(url);
   return text({ opened: url });
 });
-
-server.tool("lodekit_inspect_db", { slug: z.string() }, async ({ slug }) =>
-  text(await inspectDb(BASE, slug))
-);
 
 server.tool(
   "lodekit_kv_list",

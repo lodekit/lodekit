@@ -39,37 +39,24 @@ async function jpost(p: string, body: unknown) {
 }
 
 describe("API", () => {
-  it("scaffolds, lists, and round-trips app data", async () => {
+  it("scaffolds, lists, and round-trips app data through kv-store", async () => {
     const created = await jpost("/api/apps", { slug: "exp", name: "Exp" });
     expect(created.status).toBe(201);
 
     const list = await (await fetch(base + "/api/apps")).json();
     expect(list.map((a: { slug: string }) => a.slug)).toContain("exp");
 
-    await jpost("/api/apps/exp/db/exec", {
-      sql: "CREATE TABLE t (id INTEGER PRIMARY KEY, v TEXT)",
-    });
-    const ins = await jpost("/api/apps/exp/db/exec", {
-      sql: "INSERT INTO t (v) VALUES (?)",
-      params: ["hi"],
-    });
-    expect(ins.body.changes).toBe(1);
-    const q = await jpost("/api/apps/exp/db/query", { sql: "SELECT v FROM t" });
-    expect(q.body.rows).toEqual([{ v: "hi" }]);
-  });
-
-  it("stores KV via PUT/GET", async () => {
-    await fetch(base + "/api/apps/exp/store/cfg", {
+    await fetch(base + "/api/apps/exp/kv-store/cfg", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ value: { currency: "USD" } }),
     });
-    const got = await (await fetch(base + "/api/apps/exp/store/cfg")).json();
-    expect(got.value).toEqual({ currency: "USD" });
+    const got = await (await fetch(base + "/api/apps/exp/kv-store/cfg")).json();
+    expect(got).toMatchObject({ found: true, value: { currency: "USD" } });
   });
 
   it("rejects invalid slugs", async () => {
-    const r = await jpost("/api/apps/Bad Slug/db/query", { sql: "SELECT 1" });
+    const r = await fetch(base + "/api/apps/Bad Slug/kv-store/k");
     expect(r.status).toBe(400);
   });
 });

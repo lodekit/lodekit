@@ -5,7 +5,7 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { start } from "../src/server.js";
 import { loadConfig } from "../src/config.js";
-import { scaffold, listApps, inspectDb } from "../../mcp/client.js";
+import { scaffold, listApps } from "../../mcp/client.js";
 import { createClient } from "@lodekit/sdk";
 
 let root: string, server: Server, base: string;
@@ -25,20 +25,12 @@ afterEach(() => {
 });
 
 describe("mcp tool helpers", () => {
-  it("scaffolds, lists, and inspects an app via http", async () => {
+  it("scaffolds and lists an app via http", async () => {
     const created = await scaffold(base, { slug: "books", name: "Books" });
     expect(created.url).toContain("/books");
 
     const list = await listApps(base);
     expect(list.map((a: { slug: string }) => a.slug)).toContain("books");
-
-    await fetch(base + "/api/apps/books/db/exec", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sql: "CREATE TABLE b (id INTEGER PRIMARY KEY, title TEXT)" }),
-    });
-    const schema = await inspectDb(base, "books");
-    expect(schema.schema.map((t: { table: string }) => t.table)).toContain("b");
   });
 
   it("reads app data through the sdk core the kv tools use", async () => {

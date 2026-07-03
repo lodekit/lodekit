@@ -70,7 +70,7 @@ afterEach(() => {
 
 describe("buildApp", () => {
   it("builds a fixture app to cacheDir and marks it ready", async () => {
-    writeApp("demo", `import { db } from "@lodekit/sdk";\nexport default function App() { return <h1>demo {typeof db}</h1>; }\n`);
+    writeApp("demo", `import { kv } from "@lodekit/sdk";\nexport default function App() { return <h1>demo {typeof kv}</h1>; }\n`);
     const state = await buildApp(cfg, "demo");
     expect(state).toEqual({ status: "ready" });
     expect(getBuildState("demo")).toEqual({ status: "ready" });
@@ -89,7 +89,7 @@ describe("buildApp", () => {
   }, 30000);
 
   it("serializes concurrent builds of the same slug without racing the outDir", async () => {
-    writeApp("concurrent", `import { db } from "@lodekit/sdk";\nexport default function App() { return <h1>c {typeof db}</h1>; }\n`);
+    writeApp("concurrent", `import { kv } from "@lodekit/sdk";\nexport default function App() { return <h1>c {typeof kv}</h1>; }\n`);
     const [a, b] = await Promise.all([buildApp(cfg, "concurrent"), buildApp(cfg, "concurrent")]);
     expect(a.status).toBe("ready");
     expect(b.status).toBe("ready");

@@ -16,49 +16,10 @@ export function getAppDb(dataDir: string, slug: string): Database.Database {
   fs.mkdirSync(appDataDir, { recursive: true });
   const db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
-  db.exec("CREATE TABLE IF NOT EXISTS _lodekit_store (key TEXT PRIMARY KEY, value TEXT)");
   connections.set(dbPath, { slug, db });
   return db;
 }
 
 export function openDbs(): { slug: string; db: Database.Database }[] {
   return [...connections.values()];
-}
-
-export function query(db: Database.Database, sql: string, params: unknown[] = []): unknown[] {
-  return db.prepare(sql).all(...(params as never[]));
-}
-
-export function exec(db: Database.Database, sql: string, params: unknown[] = []) {
-  const info = db.prepare(sql).run(...(params as never[]));
-  return { changes: info.changes, lastInsertRowid: info.lastInsertRowid };
-}
-
-export function storeGet(db: Database.Database, key: string): unknown {
-  const row = db.prepare("SELECT value FROM _lodekit_store WHERE key = ?").get(key) as
-    | { value: string }
-    | undefined;
-  return row ? JSON.parse(row.value) : null;
-}
-
-export function storeSet(db: Database.Database, key: string, value: unknown): void {
-  db.prepare(
-    "INSERT INTO _lodekit_store (key, value) VALUES (?, ?) " +
-      "ON CONFLICT(key) DO UPDATE SET value = excluded.value"
-  ).run(key, JSON.stringify(value));
-}
-
-export function schema(db: Database.Database) {
-  const tables = db
-    .prepare(
-      "SELECT name FROM sqlite_master WHERE type='table' " +
-        "AND name NOT LIKE 'sqlite_%' AND name != '_lodekit_store'"
-    )
-    .all() as { name: string }[];
-  return tables.map((t) => ({
-    table: t.name,
-    columns: (db.prepare(`PRAGMA table_info("${t.name}")`).all() as { name: string; type: string }[])
-      .map((c) => ({ name: c.name, type: c.type })),
-    sample: db.prepare(`SELECT * FROM "${t.name}" LIMIT 5`).all(),
-  }));
 }

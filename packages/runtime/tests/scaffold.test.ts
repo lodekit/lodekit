@@ -32,6 +32,10 @@ describe("scaffoldApp", () => {
     expect(fs.readFileSync(path.join(d, "src", "main.tsx"), "utf8")).toContain("createRoot");
     expect(fs.readFileSync(path.join(d, "src", "App.tsx"), "utf8")).toContain('from "@lodekit/sdk"');
     expect(fs.readFileSync(path.join(d, "src", "App.tsx"), "utf8")).toContain('from "@lodekit/ui"');
+    expect(fs.readFileSync(path.join(d, "src", "App.tsx"), "utf8")).toMatch(
+      /import\s*{\s*kv\s*}\s*from "@lodekit\/sdk"/
+    );
+    expect(fs.readFileSync(path.join(d, "src", "App.tsx"), "utf8")).not.toMatch(/\b(?:db|store)\b/);
     expect(fs.readFileSync(path.join(d, "src", "index.css"), "utf8")).toContain('@import "@lodekit/ui/theme.css"');
   });
 

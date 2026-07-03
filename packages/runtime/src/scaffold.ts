@@ -35,10 +35,23 @@ createRoot(document.getElementById("root")!).render(
 );
 `;
 
-const appTsx = (name: string) => `import { db, store } from "@lodekit/sdk";
+const appTsx = (name: string) => `import { useEffect, useState } from "react";
+import { kv } from "@lodekit/sdk";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@lodekit/ui";
 
 export default function App() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    void kv.get<number>("count").then((v) => setCount(v ?? 0));
+  }, []);
+
+  async function increment() {
+    const next = count + 1;
+    setCount(next);
+    await kv.set("count", next);
+  }
+
   return (
     <main className="mx-auto max-w-2xl p-8">
       <Card>
@@ -47,7 +60,7 @@ export default function App() {
         </CardHeader>
         <CardContent className="space-y-2">
           <p className="text-muted-foreground">Edit src/App.tsx to build this app.</p>
-          <Button>Get started</Button>
+          <Button onClick={increment}>Get started ({count})</Button>
         </CardContent>
       </Card>
     </main>
