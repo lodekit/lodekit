@@ -15,7 +15,10 @@ class Supervisor extends EventEmitter {
     checkHealth,
     pidFile,
     killProcess = process.kill,
-    startTimeoutMs = 30_000,
+    // The runtime builds its dashboard before it starts listening; a cold
+    // cache can take well past 30s (the old dev shell's budget was raised
+    // to 60s for the same reason).
+    startTimeoutMs = 60_000,
     pollIntervalMs = 500,
     graceMs = 5_000,
   }) {
