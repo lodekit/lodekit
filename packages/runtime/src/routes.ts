@@ -32,7 +32,8 @@ export function apiRouter(cfg: Config): express.Router {
     });
     res.flushHeaders();
     res.write(": connected\n\n");
-    addClient(res);
+    const remove = addClient((payload) => { res.write(payload); });
+    res.on("close", remove);
   });
 
   r.get("/apps/:appId/events", (req, res) => {
@@ -47,7 +48,8 @@ export function apiRouter(cfg: Config): express.Router {
     });
     res.flushHeaders();
     res.write(": connected\n\n");
-    addClient(res, req.params.appId);
+    const remove = addClient((payload) => { res.write(payload); }, req.params.appId);
+    res.on("close", remove);
   });
 
   return r;
