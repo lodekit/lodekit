@@ -104,6 +104,15 @@ function buildPayload() {
     if (tsconfig.extends) tsconfig.extends = "./tsconfig.base.json";
     fs.writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, 2) + "\n");
   }
+  // Stamp the bundled commit into each payload package (versioning spec §3) — the
+  // payload has no .git, so this is how buildInfo resolves the commit when packaged.
+  const commit = execSync("git rev-parse --short HEAD", { cwd: repoRoot, encoding: "utf8" }).trim();
+  for (const pkg of ["runtime", "mcp", "skill"]) {
+    fs.writeFileSync(
+      path.join(platformDir, pkg, "build-info.json"),
+      JSON.stringify({ commit }, null, 2) + "\n"
+    );
+  }
 }
 
 // Relocatable means no symlink may resolve outside the payload (spec §3);
