@@ -235,8 +235,8 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
       const qs = opts.ttl != null ? `?ttl=${opts.ttl}` : "";
       const headers: Record<string, string> = {};
       if (opts.contentType) headers["Content-Type"] = opts.contentType;
-      if (opts.title) headers["X-Lodekit-Title"] = opts.title;
-      if (opts.metadata) headers["X-Lodekit-Metadata"] = JSON.stringify(opts.metadata);
+      if (opts.title) headers["X-Lodekit-Title"] = encodeURIComponent(opts.title);
+      if (opts.metadata) headers["X-Lodekit-Metadata"] = encodeURIComponent(JSON.stringify(opts.metadata));
       const init: RequestInit & { duplex?: "half" } = {
         method: opts.slug ? "PUT" : "POST",
         body: body as BodyInit,

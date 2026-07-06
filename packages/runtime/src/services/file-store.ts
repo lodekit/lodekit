@@ -429,16 +429,34 @@ const listQuery = z.object({
 const ttlQuery = z.object({ ttl: z.coerce.number().positive().optional() });
 
 // Upload metadata rides headers/query on the raw-body request (spec §6).
+// Header values must be ByteStrings, so both headers travel percent-encoded
+// (UTF-8) on the wire; the SDK encodes, we decode here. Plain-ASCII values
+// without `%` pass through decodeURIComponent unchanged, so hand-rolled curl
+// calls keep working.
 function uploadOpts(c: Context<FilesEnv>, ttl?: number) {
-  const title = c.req.header("x-lodekit-title");
-  if (title !== undefined && title.length > 512) throw new FilesError("title too long (max 512 chars)");
+  const rawTitle = c.req.header("x-lodekit-title");
+  let title: string | undefined;
+  if (rawTitle !== undefined) {
+    try {
+      title = decodeURIComponent(rawTitle);
+    } catch {
+      throw new FilesError("malformed percent-encoding in X-Lodekit-Title");
+    }
+    if (title.length > 512) throw new FilesError("title too long (max 512 chars)");
+  }
   const rawMeta = c.req.header("x-lodekit-metadata");
   let metadata: Record<string, unknown> | undefined;
   if (rawMeta !== undefined) {
-    if (rawMeta.length > 4096) throw new FilesError("metadata too large (max 4096 bytes)");
+    let decodedMeta: string;
+    try {
+      decodedMeta = decodeURIComponent(rawMeta);
+    } catch {
+      throw new FilesError("malformed percent-encoding in X-Lodekit-Metadata");
+    }
+    if (decodedMeta.length > 4096) throw new FilesError("metadata too large (max 4096 bytes)");
     let parsed: unknown;
     try {
-      parsed = JSON.parse(rawMeta);
+      parsed = JSON.parse(decodedMeta);
     } catch {
       throw new FilesError("metadata is not valid JSON");
     }

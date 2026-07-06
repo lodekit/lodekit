@@ -134,6 +134,26 @@ describe("file-store HTTP surface", () => {
     });
     expect(badCopy.status).toBe(400);
   });
+
+  it("rejects malformed percent-encoding in X-Lodekit-Metadata with a 400", async () => {
+    expect((await upload("/badpct", "x", { "X-Lodekit-Metadata": "%zz" })).status).toBe(400);
+  });
+
+  it("kv and apps routes stay under the 100kb body limit (mount-order invariant)", async () => {
+    const big = "x".repeat(300 * 1024);
+    const kvRes = await fetch(`${base}/api/apps/app/kv-store/big`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: big }),
+    });
+    expect(kvRes.status).toBe(413);
+    const appsRes = await fetch(`${base}/api/apps`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ appId: "big", name: big }),
+    });
+    expect(appsRes.status).toBe(413);
+  });
 });
 
 describe("sdk files handle (core) against the booted runtime", () => {
@@ -168,6 +188,17 @@ describe("sdk files handle (core) against the booted runtime", () => {
 
     expect(await files.delete("expenses-final")).toBe(true);
     expect(await files.delete("expenses-final")).toBe(false);
+  });
+
+  it("round-trips non-ASCII title/metadata via percent-encoded headers", async () => {
+    const files = createClient({ baseUrl: base, appId: "sdkapp" }).files;
+    const stat = await files.put("conteúdo", {
+      slug: "unicode-doc",
+      title: "支出レポート — 2026",
+      metadata: { período: "julho" },
+    });
+    expect(stat.title).toBe("支出レポート — 2026");
+    expect(stat.metadata).toEqual({ período: "julho" });
   });
 
   it("put streams a ReadableStream body", async () => {
