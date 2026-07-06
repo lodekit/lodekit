@@ -35,6 +35,11 @@ describe("resolveBuildInfo", () => {
   it("returns a null commit when neither stamp nor git resolves", () => {
     expect(resolveBuildInfo(tmpPkg()).commit).toBeNull();
   });
+
+  it("never throws — an empty dir resolves to unknown/null", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lk-buildinfo-"));
+    expect(resolveBuildInfo(dir)).toEqual({ version: "unknown", commit: null });
+  });
 });
 
 describe("getBuildInfo", () => {

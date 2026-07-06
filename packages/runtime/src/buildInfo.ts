@@ -12,8 +12,17 @@ export interface BuildInfo {
 }
 
 export function resolveBuildInfo(pkgDir: string): BuildInfo {
-  const pkg = JSON.parse(fs.readFileSync(path.join(pkgDir, "package.json"), "utf8"));
-  return { version: pkg.version, commit: resolveCommit(pkgDir) };
+  return { version: resolveVersion(pkgDir), commit: resolveCommit(pkgDir) };
+}
+
+function resolveVersion(pkgDir: string): string {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(pkgDir, "package.json"), "utf8"));
+    if (typeof pkg.version === "string") return pkg.version;
+  } catch {
+    // Unreadable/malformed package.json — diagnostics must never crash (spec §3).
+  }
+  return "unknown";
 }
 
 function resolveCommit(pkgDir: string): string | null {
