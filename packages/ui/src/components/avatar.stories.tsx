@@ -16,10 +16,14 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+// Inline SVG portrait placeholder — the packaged catalog must render without network.
+const placeholderPortrait =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%236366f1'/%3E%3Ccircle cx='32' cy='26' r='11' fill='white'/%3E%3Cpath d='M10 60c2-13 11-19 22-19s20 6 22 19z' fill='white'/%3E%3C/svg%3E";
+
 export const Default: Story = {
   render: () => (
     <Avatar>
-      <AvatarImage src="https://github.com/shadcn.png" alt="Jane Cooper" />
+      <AvatarImage src={placeholderPortrait} alt="Jane Cooper" />
       <AvatarFallback>JC</AvatarFallback>
     </Avatar>
   ),
