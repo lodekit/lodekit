@@ -218,10 +218,13 @@ consumers (§9.1).
 `If-None-Match` with a bodyless 304 — the stored hash is an exact content identifier, so
 repeat browser loads of unchanged files transfer nothing and re-puts bust the cache
 automatically), and `Content-Disposition: inline; filename="<slug>.<ext>"`; `?download=1`
-switches to `attachment` for download links.
+switches to `attachment` for download links. Served user bytes also carry
+`X-Content-Type-Options: nosniff` and `Content-Security-Policy: sandbox`, so stored content
+never executes on the app origin (embeds and downloads unaffected).
 
 **`list`** filters by slug prefix, returns FileStats slug-ascending with keyset pagination
-(`cursor` = last slug of the previous page), default limit 100, expired filtered out.
+(`cursor` = last slug of the previous page), default limit 100, max 1000, expired filtered
+out.
 
 **`copy`** writes a second copy of the bytes under today's date folder with the new slug
 prefix; the new row copies title/content_type/metadata/expires_at, with fresh timestamps.
@@ -306,9 +309,10 @@ piping a fetched body to `put`, and the MCP `path`-vs-`url` rule (§9.1).
 - **No artificial body-size cap** — it's the person's disk. A put that fails mid-stream
   (disk full, client abort) removes its temp file and leaves the previous version of the
   slug untouched.
-- Missing slug on `get`/`stat`/serve/`delete`/`copy`/`move` → 404 (SDK: `undefined` /
-  `false`); ENOENT with a live row → the lazy reconciliation of §4.5 (404 + row cleanup +
-  `del` event).
+- Missing slug on `get`/`stat`/serve/`copy`/`move` → 404 (SDK: `undefined`); `delete` of a
+  missing slug is not an error — 200 `{ deleted: false }` (SDK: `false`), matching
+  kv-store's `del`. ENOENT with a live row → the lazy reconciliation of §4.5 (404 + row
+  cleanup + `del` event).
 - A failing sweep tick logs and continues (scheduler contract, kv-store v2 §4.4).
 
 ## 11. Testing
@@ -356,3 +360,5 @@ Vitest, in the `@lodekit/runtime` suite:
 | Services-DB convention | Per-app db holds every service's structured state (payload or authoritative index) under `_lodekit_<service>` tables; normative from this slice |
 | MCP byte access | Bytes never through MCP; FileStat carries both `url` and absolute `path`, skill teaches the path-first rule |
 | ETag/304 | In, serving endpoint only — the stored hash makes it free and exact |
+| Serving hardening headers | `X-Content-Type-Options: nosniff` + `Content-Security-Policy: sandbox` added during implementation from security review |
+| Upload metadata header encoding | `X-Lodekit-Title`/`X-Lodekit-Metadata` travel percent-encoded UTF-8 (fetch header values must be ByteStrings); SDK encodes, runtime decodes |

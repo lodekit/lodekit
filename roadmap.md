@@ -197,6 +197,10 @@ above; the remainder:
 - **`forwardToWorker` buffers request bodies with no size cap** — the scoped API's 100kb
   `bodyLimit` doesn't apply to app-worker forwards. Enforce a cap when the webhooks
   trigger lands.
+- **`db.ts`'s `connections` cache never evicts** — fine in production (one Config per
+  process) but tests accumulate stale connections across temp roots, so `openDbs()`-walking
+  sweeps touch stale fds; add eviction/close (e.g. on data-dir removal or an explicit
+  `closeAll` for tests) when it first bites.
 - **Scaffold templates interpolate the app display name unescaped** — into generated TS
   source (root title + `CardTitle`). Escape when scaffold is next touched.
 - **Scaffold/fixture root routes lack a `notFoundComponent`** — TanStack warns in SSR;
