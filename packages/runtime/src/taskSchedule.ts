@@ -14,6 +14,9 @@ const MIN_EVERY_MS = 60_000;
 
 export function validateSchedule(kind: ScheduleKind, expr: string): void {
   if (kind === "cron") {
+    if (expr.trim().split(/\s+/).length !== 5) {
+      throw new Error(`cron "${expr}" must have exactly 5 fields`);
+    }
     new Cron(expr); // throws on a bad expression
     return;
   }

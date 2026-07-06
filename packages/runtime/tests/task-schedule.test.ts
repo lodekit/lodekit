@@ -15,6 +15,7 @@ describe("validateSchedule", () => {
     expect(() => validateSchedule("cron", "not a cron")).toThrow();
     expect(() => validateSchedule("every", "nope")).toThrow(/invalid duration/);
     expect(() => validateSchedule("every", "30s")).toThrow(/at least/);
+    expect(() => validateSchedule("cron", "*/30 * * * * *")).toThrow(/5 fields/);
   });
 });
 
