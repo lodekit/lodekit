@@ -21,14 +21,14 @@ export const Default: Story = {
   render: () => (
     <HoverCard>
       <HoverCardTrigger asChild>
-        <Button variant="link">@ulyssesv</Button>
+        <Button variant="link">@janecooper</Button>
       </HoverCardTrigger>
       <HoverCardContent className="flex gap-3">
         <Avatar>
-          <AvatarFallback>UV</AvatarFallback>
+          <AvatarFallback>JC</AvatarFallback>
         </Avatar>
         <div className="flex flex-col gap-1">
-          <p className="text-sm font-medium">Ulysses</p>
+          <p className="text-sm font-medium">Jane Cooper</p>
           <p className="text-sm text-muted-foreground">
             Builds personal tools with Lodekit.
           </p>
