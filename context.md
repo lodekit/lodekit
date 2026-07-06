@@ -27,11 +27,11 @@ Lodekit's built-in web UI: every app with its live build state and health, plus 
 _Avoid_: home page, admin, console
 
 **Landing site**:
-The public marketing site at lodekit.com (`@lodekit/web`).
+The public marketing site at lodekit.com (`@lodekit/web-main`).
 _Avoid_: the website, homepage
 
 **Docs**:
-The public documentation site for people, living alongside the landing site. Distinct from the Skill — see Flagged ambiguities.
+The public documentation site for people at docs.lodekit.com (`@lodekit/web-docs`), living alongside the landing site. Distinct from the Skill — see Flagged ambiguities.
 _Avoid_: wiki, manual
 
 ### Agent surface

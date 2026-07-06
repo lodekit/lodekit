@@ -10,7 +10,7 @@ For trivial tasks, use judgment.
 
 ## Architecture
 
-pnpm-workspace monorepo. Members: `packages/*`, `web`, `manager`. `examples/` is **not** a
+pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `examples/` is **not** a
 member (so the sample apps never get a `node_modules`). Structure and rationale:
 `docs/specs/2026-06-30-monorepo-migration-design.md`.
 
@@ -23,7 +23,8 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
   **over HTTP only** — no import-time dependency on the runtime. The dependency-free HTTP
   helpers live in `client.ts`; the MCP-SDK wiring in `index.ts`.
 - **`packages/skill`** (`@lodekit/skill`) — the Claude skill (content only).
-- **`web`** (`@lodekit/web`) — Astro landing site (Starlight docs deferred).
+- **`web/main`** (`@lodekit/web-main`) — Astro landing site.
+- **`web/docs`** (`@lodekit/web-docs`) — Starlight docs site (placeholder scaffold).
 - **`manager`** (`@lodekit/manager`) — the menubar app that ships and supervises the
   platform. Packaged (`make`): an ad-hoc-signed arm64 `Lodekit.app` bundling a pinned
   Lodekit-local Node + the platform payload (runtime/mcp/skill via `pnpm deploy`) in
@@ -54,7 +55,8 @@ Package manager is **pnpm** (workspaces). From the repo root:
 - `pnpm test` — runs `pnpm -r test`: `@lodekit/runtime` (vitest, incl. the runtime↔MCP
   integration test), `@lodekit/sdk`, and `@lodekit/manager` (supervisor/paths/logs).
   Per-package: `pnpm --filter @lodekit/runtime test`.
-- `pnpm --filter @lodekit/web dev` | `build` — the Astro site.
+- `pnpm --filter @lodekit/web-main dev` | `build` — the landing site.
+- `pnpm --filter @lodekit/web-docs dev` | `build` — the docs site.
 - `pnpm --filter @lodekit/manager start` — the menubar manager in dev mode (system Node;
   supervises the runtime against `examples/`).
 - `pnpm --filter @lodekit/manager make` — package `Lodekit.app` (runs
