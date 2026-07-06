@@ -33,6 +33,7 @@ function spawnRuntime() {
       ...process.env,
       LODEKIT_ROOT: paths.lodekitRoot,
       LODEKIT_CACHE_DIR: paths.cacheDir,
+      LODEKIT_STATE_DIR: paths.stateDir,
       LODEKIT_PORT: String(paths.port),
     },
     stdio: ["ignore", "pipe", "pipe"],

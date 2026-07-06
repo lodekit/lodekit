@@ -35,7 +35,21 @@ describe("loadConfig", () => {
     process.env.LODEKIT_ROOT = "/tmp/lodekit-test";
     delete process.env.LODEKIT_CACHE_DIR;
     const cfg = loadConfig();
-    expect(cfg.cacheDir).toBe(path.join(os.homedir(), ".cache", "lodekit"));
+    expect(cfg.cacheDir).toBe(path.join(os.homedir(), "Library", "Caches", "Lodekit"));
     expect(cfg.cacheDir.startsWith(cfg.root)).toBe(false);
+  });
+
+  it("defaults cache and state to the macOS-native dirs", () => {
+    delete process.env.LODEKIT_CACHE_DIR;
+    delete process.env.LODEKIT_STATE_DIR;
+    const cfg = loadConfig();
+    expect(cfg.cacheDir).toBe(path.join(os.homedir(), "Library", "Caches", "Lodekit"));
+    expect(cfg.stateDir).toBe(path.join(os.homedir(), "Library", "Application Support", "Lodekit"));
+  });
+
+  it("honors LODEKIT_STATE_DIR", () => {
+    process.env.LODEKIT_STATE_DIR = "/tmp/lk-state";
+    expect(loadConfig().stateDir).toBe(path.resolve("/tmp/lk-state"));
+    delete process.env.LODEKIT_STATE_DIR;
   });
 });

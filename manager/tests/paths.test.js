@@ -15,6 +15,7 @@ describe("getPaths", () => {
     expect(p.mode).toBe("default");
     expect(p.lodekitRoot).toBe(path.join(HOME, "Documents", "Lodekit"));
     expect(p.cacheDir).toBe(path.join(HOME, "Library", "Caches", "Lodekit"));
+    expect(p.stateDir).toBe(path.join(HOME, "Library", "Application Support", "Lodekit"));
     expect(p.logsDir).toBe(path.join(HOME, "Library", "Logs", "Lodekit"));
     expect(p.pidFile).toBe(
       path.join(HOME, "Library", "Application Support", "Lodekit", "runtime.pid")
@@ -34,6 +35,7 @@ describe("getPaths", () => {
     expect(p.mode).toBe("dev");
     expect(p.lodekitRoot).toBe("/repo/examples");
     expect(p.cacheDir).toBe("/repo/.cache");
+    expect(p.stateDir).toBe("/repo/.cache/state");
     expect(p.nodeBin).toBe("node");
     expect(p.runtimeDir).toBe("/repo/packages/runtime");
     expect(p.runtimeEntry).toBe("/repo/packages/runtime/src/index.ts");
