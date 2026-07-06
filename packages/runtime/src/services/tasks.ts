@@ -3,6 +3,14 @@ import { getAppDb, openDbs } from "../db.js";
 import { broadcast } from "../sse.js";
 import { parseDuration } from "../duration.js";
 import { validateSchedule, type ScheduleKind } from "../taskSchedule.js";
+import { Hono, type MiddlewareHandler } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
+import type { Config } from "../config.js";
+import { isValidAppId } from "../registry.js";
+import { validationHook } from "../validation.js";
+import { tick } from "../scheduler.js";
+import { nextOccurrence } from "../taskSchedule.js";
 
 export const CATALOG_NAME = "tasks";
 
@@ -423,3 +431,109 @@ export function emitTasksChange(
 ): void {
   broadcast(EVENT, { appId, ...data }, appId);
 }
+
+export type TasksEnv = { Variables: { tasksDb: Database.Database; appId: string } };
+
+// Applied by the parent router on /apps/:appId/tasks/* — validates the app id
+// and sets the better-sqlite3 handle in context vars (kv-store withDb pattern).
+export function withTasks(cfg: Config): MiddlewareHandler<TasksEnv> {
+  return async (c, next) => {
+    const appId = c.req.param("appId");
+    if (!appId || !isValidAppId(appId)) return c.json({ error: "invalid app id" }, 400);
+    c.set("tasksDb", getTasksDb(cfg.dataDir, appId));
+    c.set("appId", appId);
+    await next();
+  };
+}
+
+const nameParam = z.object({ name: z.string().regex(/^[a-z0-9-]+$/).max(128) });
+const idParam = z.object({ id: z.coerce.number().int().positive() });
+const runsQuery = z.object({
+  task: z.string().optional(),
+  state: z.enum(["queued", "running", "succeeded", "failed", "canceled"]).optional(),
+  limit: z.coerce.number().optional(),
+});
+const enqueueBody = z.object({
+  payload: z.unknown().optional(),
+  delay: z.string().optional(),
+  at: z.number().int().positive().optional(),
+  dedupeKey: z.string().min(1).max(256).optional(),
+  source: z.literal("manual").optional(), // dashboard's Run now / Re-run
+});
+
+const toApiRun = (r: TaskRunRow) => ({
+  id: r.id,
+  task: r.task,
+  state: r.state,
+  source: r.source,
+  attempt: r.attempt,
+  payload: r.payload === null ? null : (JSON.parse(r.payload) as unknown),
+  notBefore: r.notBefore,
+  createdAt: r.createdAt,
+  startedAt: r.startedAt,
+  finishedAt: r.finishedAt,
+  durationMs: r.durationMs,
+  error: r.error,
+});
+
+// Chained style is normative: it is what makes hc route-type inference work.
+// onError maps thrown errors (TasksError, parseDuration) to 400 — kv-store pattern.
+export const tasksRoutes = new Hono<TasksEnv>()
+  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
+  .get("/", (c) => {
+    const now = Date.now();
+    return c.json({
+      tasks: listDefs(c.var.tasksDb).map((d) => ({
+        name: d.name,
+        schedule: d.scheduleKind ? { kind: d.scheduleKind, expr: d.scheduleExpr! } : null,
+        retired: d.retired,
+        error: d.error,
+        nextRun:
+          d.scheduleKind && !d.retired && !d.error
+            ? nextOccurrence(d.scheduleKind, d.scheduleExpr!, d.registeredAt, now)
+            : null,
+        lastRun: lastRunOf(c.var.tasksDb, d.name) ?? null,
+      })),
+    });
+  })
+  .get("/runs", zValidator("query", runsQuery, validationHook), (c) => {
+    return c.json({ runs: listRuns(c.var.tasksDb, c.req.valid("query")).map(toApiRun) });
+  })
+  .get("/runs/:id", zValidator("param", idParam, validationHook), (c) => {
+    const run = getRun(c.var.tasksDb, c.req.valid("param").id);
+    if (!run) return c.json({ error: "run not found" }, 404);
+    return c.json(toApiRun(run));
+  })
+  .delete("/runs/:id", zValidator("param", idParam, validationHook), (c) => {
+    const { id } = c.req.valid("param");
+    const res = cancelRun(c.var.tasksDb, id, Date.now());
+    if (res === "not-found") return c.json({ error: "run not found" }, 404);
+    if (res === "not-queued") return c.json({ error: "only a queued run can be canceled" }, 409);
+    emitTasksChange(c.var.appId, { task: res.task, runId: id, state: "canceled" });
+    return c.json({ canceled: true as const });
+  })
+  .post(
+    "/:name/runs",
+    zValidator("param", nameParam, validationHook),
+    zValidator("json", enqueueBody, validationHook),
+    (c) => {
+      const { name } = c.req.valid("param");
+      const { payload, delay, at, dedupeKey, source } = c.req.valid("json");
+      const def = getDef(c.var.tasksDb, name);
+      if (!def || def.retired) throw new TasksError(`unknown task "${name}"`);
+      if (def.error) throw new TasksError(`task "${name}" has a configuration error: ${def.error}`);
+      if (delay != null && at != null) throw new TasksError("delay and at are mutually exclusive");
+      const now = Date.now();
+      const notBefore = at ?? (delay != null ? now + parseDuration(delay) : now);
+      const { runId, deduped } = insertRun(c.var.tasksDb, {
+        task: name, payload, notBefore, source: source ?? "enqueue", dedupeKey: dedupeKey ?? null, now,
+      });
+      if (!deduped) {
+        emitTasksChange(c.var.appId, { task: name, runId, state: "queued" });
+        tick("tasks-dispatch"); // no-op until the engine registers it (server.ts)
+      }
+      return c.json({ runId, deduped });
+    }
+  );
+
+export type TasksRoutes = typeof tasksRoutes;

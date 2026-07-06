@@ -12,6 +12,7 @@ import { kvRoutes, withDb, CATALOG_NAME } from "./services/kv-store.js";
 import { filesRoutes, withFiles, CATALOG_NAME as FILES } from "./services/file-store.js";
 import { logRoutes, withLogs, logsQuery, CATALOG_NAME as LOGS } from "./services/log-store.js";
 import { queryLogs } from "./logStore.js";
+import { tasksRoutes, withTasks, CATALOG_NAME as TASKS } from "./services/tasks.js";
 
 // Holds the stream open until the client disconnects; the abort callback
 // removes the client from the SSE registry.
@@ -55,6 +56,8 @@ export function apiRoutes(cfg: Config) {
       const { app, level, source, before, limit, q } = c.req.valid("query");
       return c.json(queryLogs({ app, level, source, before, limit, q }));
     })
+    .use(`/apps/:appId/${TASKS}/*`, withTasks(cfg))
+    .route(`/apps/:appId/${TASKS}`, tasksRoutes)
     .get("/events", (c) => sseHandler()(c))
     .get("/apps/:appId/events", (c) => {
       const appId = c.req.param("appId");
