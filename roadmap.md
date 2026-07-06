@@ -141,6 +141,9 @@ above; the remainder:
 - **OSS hygiene** — LICENSE, public README, CONTRIBUTING, CODE_OF_CONDUCT, `.github/`
   templates; reserve/publish under the secured `@lodekit/*` npm scope.
 - **`web/` deploy** — deploy the Astro site to `lodekit.com` (domain secured).
+- **ui.lodekit.com** — deploy the UI catalog's static Storybook build publicly beside
+  docs.lodekit.com (docs branch owns web deploys); the build is already
+  deploy-agnostic.
 - **Dedicated integration-test home** — cross-package integration tests (e.g. the
   runtime↔MCP test that boots the real server and drives the MCP helpers) currently live in
   `packages/runtime/tests/` because that package already has the heavy deps. As thorough
@@ -244,6 +247,8 @@ above; the remainder:
 - **file-store storage dedup** — hardlink or content-addressed variants if duplicate bytes
   ever matter at personal scale; today the hash suffix (`<slug>-<hash8>.<ext>`) buys
   integrity, not dedup.
+- **Dashboard theme picker** — person-facing UI (presets/color pickers) writing the same
+  theme-override token files.
 - **Multi-page apps + file-based routing (slice 4)** — ~~expand the app contract beyond
   single-page and adopt file-based route conventions. TanStack Router is already wired in
   the toolchain (stack-refresh slice, code-based routes; habit-tracker is the two-page

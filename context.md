@@ -176,6 +176,20 @@ _Avoid_: client library, api wrapper, window.lodekit
 The themed component library (`@lodekit/ui`) — shadcn components carrying one shared theme — that every app imports, so all apps look like one product.
 _Avoid_: design system, component kit, shadcn (the upstream, not the package)
 
+**Theme overrides**:
+The person's styling surface: optional plain-CSS files redefining the UI library's
+token variables — `theme.css` at the Lodekit root (global: all apps and the dashboard)
+and `apps/<app-id>/theme.css` (one app, layered after the global file). Tokens are the
+contract; arbitrary CSS is possible but unpromised.
+_Avoid_: skins, custom CSS (the mechanism is token redefinition)
+
+**UI catalog**:
+The person-facing window onto the UI library: a statically built Storybook the runtime
+serves at `/_ui/`, rendering every component under the live global theme or any app's
+composed theme. Parallel to the service catalog ("what can my apps use?"). The term is
+docs-only — code says `/_ui`.
+_Avoid_: "catalog" in code, Storybook (as the product name — Storybook is the tool)
+
 **Scoped API**:
 The per-app HTTP API namespaced by app id (`/api/apps/:appId/...`) that backs the SDK.
 _Avoid_: the endpoints, the REST API
