@@ -90,7 +90,7 @@ One cloud battery — a capability the runtime provides to apps: storage, secret
 _Avoid_: capability, feature, component (components are UI), battery (marketing metaphor, not the domain word)
 
 **Service catalog**:
-The full set of services Lodekit offers, named AWS-style: kv-store (the Store), relational-store (the Database, currently parked), file-store (Files), log-store (Logs), secret-store, task-queue and task-schedule (Tasks), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
+The full set of services Lodekit offers, named AWS-style: kv-store (the Store), relational-store (the Database, currently parked), file-store (Files), log-store (Logs), secret-store, tasks (Tasks — one service; task-queue and task-schedule are its two capabilities), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
 _Avoid_: the SDK (the SDK is the layer into the catalog, not the catalog), feature list
 
 The shipped and near-term services:
@@ -128,7 +128,7 @@ Configuration an app declares so the person can view and edit it in the dashboar
 _Avoid_: preferences, config, options
 
 **Task**:
-Background work an app hands to the runtime to run on the app's behalf — queued (task-queue) or triggered on a time schedule (task-schedule; a **scheduled task**). Tasks are listed with their schedule and last-run state in the dashboard. A future service, to be designed holistically (queueing, scheduling, hooks, signals).
+Background work an app hands to the runtime to run on the app's behalf — queued (task-queue) or triggered on a time schedule (task-schedule; a **scheduled task**). Declared in the app's `src/tasks.ts`; the task name is the kebab-case of its export. Each execution is a **run** (queued → running → succeeded/failed/canceled). Tasks are listed with their schedule and last-run state in the dashboard. Specced: `docs/specs/2026-07-06-tasks-service-design.md` (v1 = queue + schedule + retries + history; hooks/signals deferred).
 _Avoid_: job, cron, worker, workflow
 
 ### Storage & filesystem

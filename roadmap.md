@@ -51,7 +51,9 @@ remaining triggers are their own slices:
   and signature verification.
 - **Server-side `watch`/signals** — `kv.watch` is client-only this slice (EventSource-based);
   a server-side subscription story belongs with the Tasks design (task-queue/task-schedule),
-  invoking exported functions in the app worker.
+  invoking exported functions in the app worker. **Update (2026-07-06):** the Tasks v1
+  slice-spec (`docs/specs/2026-07-06-tasks-service-design.md` §11) defers this as
+  event-triggered tasks, gated on the events revamp.
 
 ## Guiding principle
 
@@ -104,8 +106,11 @@ Big-picture context that shaped the slice-1 SDK design but was explicitly **not*
   without type-checking, so app source (which has no `node_modules`/tsconfig) gets no type feedback yet.
 - **Persistence, per-app (inside the data folder):** blob storage, real encrypted secrets, schemas/migrations, and data initialization/fixtures.
 - **Integrations** — gateways, outbound connections, rate limiting.
-- **Tasks** — task-queue/task-schedule, durable execution, hooks, signals; design
-  holistically (umbrella spec §2.12).
+- **Tasks** — ~~task-queue/task-schedule, durable execution, hooks, signals; design
+  holistically (umbrella spec §2.12).~~ **Specced (2026-07-06):**
+  `docs/specs/2026-07-06-tasks-service-design.md` — queue + schedule + retries + history at
+  v1; durable execution/hooks/signals deferred (see "Tasks — deferred from the v1
+  slice-spec" under Other deferred items).
 - **Settings** — apps register settings surfaced and editable in the dashboard.
 - **Business-logic structure** — app-folder conventions that keep app logic from sprawling.
 - **Stale build-cache GC** — apps removed while the runtime is down leave orphaned `cacheDir/<app-id>/`
@@ -171,7 +176,9 @@ above; the remainder:
   pattern's caveats eyes-open: a write inside a queryFn plus a coarse `kv.watch("")`
   invalidation causes one redundant self-invalidate refetch per write, and collection
   removal does not cascade (e.g. deleting a habit orphans its checkin keys).
-- **Internal scheduler vs the Tasks service** — packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.
+- **Internal scheduler vs the Tasks service** — ~~packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.~~ **Resolved (2026-07-06, Tasks slice-spec §2):** layered, not conflated — the scheduler stays the internal heartbeat; the Tasks dispatcher is its third consumer (`docs/specs/2026-07-06-tasks-service-design.md`).
+- **Tasks — deferred from the v1 slice-spec** (`docs/specs/2026-07-06-tasks-service-design.md` §11): event-triggered tasks (after the events revamp; closes the server-side `watch`/signals gap), step-based durable execution (`step.run`/`sleep`/`waitForEvent`), signals, dynamic schedule API, per-task concurrency/rate limits/priorities, MCP task tools (read-only first), and optionally consolidating the kv/file TTL sweeps onto Tasks.
+- **Service defaults/thresholds → settings** — every hard-coded default and threshold across the catalog becomes a setting when the settings service lands: the Tasks defaults (`catchUp` "1h", `retries` 3, `timeout` "5m", backoff curve, dispatch poll interval, run retention "last 100 runs or 30 days") and equivalents in other services (e.g. sweep intervals, kv/file TTL behavior).
 - **Dashboard startup-build freshness skip** — `buildDashboard` runs on every start. Raised
   relevance since the tanstack-start-host slice: the Start build (~2–5s) is heavier than the
   old bundled build (~1s), per
