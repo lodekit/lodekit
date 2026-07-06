@@ -118,7 +118,9 @@ export const resizeImage = task({
 emission on mutation. Two `_lodekit_`-prefixed tables in `data/<appId>/db.sqlite`:
 
 - **`_lodekit_task_defs`** — name (PK), schedule kind + expression, `catchUp`, `retries`,
-  `timeout`, retired flag, registered-at, last-scheduled-at (the cron high-water mark).
+  `timeout`, retired flag, config-error text, registered-at, last-scheduled-at (the cron
+  high-water mark). Schedule changes are detected by direct comparison on re-registration
+  (a changed schedule resets the anchor and high-water mark).
 - **`_lodekit_task_runs`** — run id (PK, generated), task name, state, payload (JSON text),
   `dedupeKey` (nullable), attempt, `notBefore`, source (`enqueue` | `schedule` | `manual`),
   created/started/finished timestamps, duration, truncated error (message + stack).
