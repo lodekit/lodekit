@@ -55,13 +55,16 @@ promised to keep working as the UI library evolves.
 
 ### 2.2 Mechanism — build-time composition, zero app changes
 
-`packages/ui/theme.css` gains one trailing line:
+`packages/ui/theme.css` gains the import
 
 ```css
 @import "@lodekit/ui/theme-overrides.css";
 ```
 
-and the package ships an **empty** `theme-overrides.css` beside it. Resolution then has
+as its last `@import`, and the package ships an **empty** `theme-overrides.css` beside
+it. (CSS requires `@import` to precede all other rules, so `theme.css` becomes a pure
+import manifest — its token rules move verbatim to a sibling `theme-tokens.css` imported
+just before the overrides.) Resolution then has
 two paths:
 
 - **Runtime builds** (`build.ts`): a higher-precedence alias points the exact specifier
