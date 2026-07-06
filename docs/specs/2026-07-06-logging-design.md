@@ -49,8 +49,8 @@ The design splits logging by what can observe it:
 
 - **System stream** — the runtime *as a process*, in text, written from outside. The
   manager keeps piping the runtime child's stdout/stderr into
-  `~/Library/Logs/Lodekit/runtime.log` exactly as today (`manager/src/logs.js` unchanged).
-  What lands there: bootstrap lines before the log service exists, port-bind failures,
+  `~/Library/Logs/Lodekit/`, now as daily dated files (`runtime-YYYYMMDD.log`; retention
+  in §7). What lands there: bootstrap lines before the log service exists, port-bind failures,
   top-level crashes, supervisor respawns. Deliberately minimal — a healthy day is a few
   lines. This tier exists because of the bootstrap/observer problem: the structured
   pipeline cannot record its own failure to start (ABI mismatch, unwritable state dir,
@@ -184,10 +184,21 @@ gains the corresponding "check the logs" guidance.
 
 ## 7. Retention & failure handling
 
-A scheduler task (same pattern as the TTL sweeps, every 60s): delete records older than
-**7 days**, then trim oldest-first beyond **200k rows** total. Time bounds staleness; the
-cap bounds a runaway logger inside the window. Both are constants in this slice; the
-roadmap notes they become dashboard settings later.
+**Platform log:** a scheduler task (same pattern as the TTL sweeps, every 60s): delete
+records older than **7 days**, then trim oldest-first beyond **200k rows** total. Time
+bounds staleness; the cap bounds a runaway logger inside the window.
+
+**System stream:** the manager's `.old` single-generation rotation is replaced with daily
+dated files — `runtime-YYYYMMDD.log` and `manager-YYYYMMDD.log`. Within a day, launches
+**append** (a crash loop must not destroy the log of the launch that started it — the
+failure mode of the `.old` scheme); the write path rolls to a new file when the cached
+date stamp changes, so a long-lived manager doesn't grow one file for weeks. A sweep at
+launch and at each roll deletes dated files older than **7 days** and removes the legacy
+`runtime.log`/`manager.log`(+`.old`) names as one-time cleanup. No size cap: the stream
+is minimal by design, and the platform log's row cap bounds error spam at the source.
+
+All retention values are constants in this slice; the roadmap notes they become dashboard
+settings later (both tiers).
 
 Logging never takes down its caller:
 
@@ -202,13 +213,16 @@ Logging never takes down its caller:
 Vitest in the runtime package: log-store service tests (insert, level filtering, cursor
 pagination, `q`), retention sweep (time + cap), worker console-capture integration (spawn
 a real worker, assert tagged records land), logger degradation with an unopenable DB, and
-a `lodekit_logs` case in the runtime↔MCP integration test. Manager tests unchanged.
+a `lodekit_logs` case in the runtime↔MCP integration test. Manager log tests
+(`manager/tests/logs.test.js`) are rewritten for the dated-file scheme: same-day append,
+date roll, sweep, legacy-name cleanup.
 
 ## 9. Docs & bookkeeping
 
 - **`context.md`:** the State term (§3); Cache path amended; the log-store catalog entry
   and `log-store→logs` in the handle mapping; the level set.
-- **`roadmap.md`:** retention values as settings; derived metrics from the log schema;
+- **`roadmap.md`:** retention values as settings (both tiers); derived metrics from the
+  log schema;
   close the "respawn loses fatal stack" item; note the abandoned `~/.cache/lodekit` dir.
 - **Skill (`packages/skill`):** document the `logs` handle and the check-the-logs
   debugging step.
