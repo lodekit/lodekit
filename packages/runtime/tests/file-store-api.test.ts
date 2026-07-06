@@ -155,6 +155,8 @@ describe("sdk files handle (core) against the booted runtime", () => {
     expect(await blob!.text()).toBe("col1,col2\n1,2");
     expect(await files.get("missing")).toBeUndefined();
     expect(await files.stat("missing")).toBeUndefined();
+    // non-404 errors carry the server's { error } message (kv transport parity)
+    await expect(files.get("UPPER")).rejects.toThrow(/invalid slug/i);
 
     const copied = await files.copy(stat.slug, "expenses-copy");
     expect(copied.hash).toBe(stat.hash);

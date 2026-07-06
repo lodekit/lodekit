@@ -128,6 +128,25 @@ describe("watch", () => {
     expect(es.closed).toBe(true);
     delete (globalThis as { EventSource?: unknown }).EventSource;
   });
+
+  it("kv.watch and files.watch share one EventSource across handles", () => {
+    (globalThis as unknown as { EventSource: unknown }).EventSource = FakeEventSource;
+    FakeEventSource.instances = [];
+    const c = createClient({ baseUrl: "http://x", appId: "notes" });
+    const seen: string[] = [];
+    const unKv = c.kv.watch("", (ch) => seen.push(`kv:${ch.key}`));
+    const unFiles = c.files.watch("", (ch) => seen.push(`files:${ch.slug}`));
+    expect(FakeEventSource.instances).toHaveLength(1);
+    const es = FakeEventSource.instances[0];
+    es.dispatch("kv-store-change", { appId: "notes", key: "k1", op: "set" });
+    es.dispatch("file-store-change", { appId: "notes", slug: "f1", op: "put" });
+    expect(seen).toEqual(["kv:k1", "files:f1"]);
+    unKv();
+    expect(es.closed).toBe(false);
+    unFiles();
+    expect(es.closed).toBe(true);
+    delete (globalThis as { EventSource?: unknown }).EventSource;
+  });
 });
 
 describe("server context", () => {

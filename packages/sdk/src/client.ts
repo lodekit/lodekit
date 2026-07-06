@@ -97,17 +97,19 @@ async function parse<R extends ClientResponse<unknown>>(res: R): Promise<Success
 
 // Twin of `parse` for the raw-body/byte routes, which can't go through `hc`
 // (the hc-typed `parse` can't type raw `fetch` responses).
-async function parseJson<T>(res: Response): Promise<T> {
-  if (!res.ok) {
-    let message = res.statusText;
-    try {
-      const data = (await res.json()) as { error?: string };
-      if (data?.error) message = data.error;
-    } catch {
-      // non-JSON error body — keep statusText
-    }
-    throw new Error(message);
+async function throwHttpError(res: Response): Promise<never> {
+  let message = res.statusText;
+  try {
+    const data = (await res.json()) as { error?: string };
+    if (data?.error) message = data.error;
+  } catch {
+    // non-JSON error body — keep statusText
   }
+  throw new Error(message);
+}
+
+async function parseJson<T>(res: Response): Promise<T> {
+  if (!res.ok) await throwHttpError(res);
   return (await res.json()) as T;
 }
 
@@ -226,7 +228,7 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
     },
   };
 
-  const filesApi = `${baseUrl}/api/apps/${appId}/${"file-store"}`;
+  const filesApi = `${baseUrl}/api/apps/${appId}/file-store`;
 
   const files: Files = {
     async put(body, opts = {}) {
@@ -247,7 +249,7 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
     async get(slug) {
       const res = await fetch(`${filesApi}/${slug}`);
       if (res.status === 404) return undefined;
-      if (!res.ok) throw new Error(res.statusText);
+      if (!res.ok) await throwHttpError(res);
       return res.blob();
     },
     url(slug, opts = {}) {
