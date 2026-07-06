@@ -158,6 +158,8 @@ above; the remainder:
   versions requires `pnpm rebuild better-sqlite3` (ABI mismatch otherwise).
 
 ## Other deferred items
+- **Versioning — release automation** — changelogs, tags, bump tooling; versions are bumped
+  by hand in lockstep for now (docs/specs/2026-07-06-versioning-design.md §8).
 - **v0.1 skill rewrite scope** — must cover the `kv` surface, the collection/`_seq:<name>`
   convention, and the new MCP kv tools (`lodekit_kv_list`/`lodekit_kv_get`); the `appId`
   naming (slug retired), the Query `watch → invalidateQueries` live-data pattern, and the
