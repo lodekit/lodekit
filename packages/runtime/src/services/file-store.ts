@@ -198,12 +198,22 @@ function verifiedRow(ctx: FilesCtx, slug: string): Row | undefined {
   return row;
 }
 
+// Slugs become path segments on disk; the HTTP router validates them at the
+// trust boundary, but the ops layer is exported — enforce here too so no
+// future internal caller can smuggle a path.
+const SLUG_RE = /^[a-z0-9-]{1,128}$/;
+
+export function assertSlug(slug: string): string {
+  if (!SLUG_RE.test(slug)) throw new FilesError(`invalid slug "${slug}"`);
+  return slug;
+}
+
 export async function putFile(
   ctx: FilesCtx,
   body: NodeJS.ReadableStream,
   opts: { slug?: string; title?: string; contentType?: string; ttl?: number; metadata?: Record<string, unknown> } = {}
 ): Promise<FileStat> {
-  const slug = opts.slug ?? deriveSlug(ctx.db, opts.title);
+  const slug = opts.slug !== undefined ? assertSlug(opts.slug) : deriveSlug(ctx.db, opts.title);
   const contentType = opts.contentType || "application/octet-stream";
   const date = dateFolder();
   const dayDir = path.join(ctx.dir, date);

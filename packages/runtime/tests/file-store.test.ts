@@ -168,6 +168,14 @@ describe("putFile", () => {
     expect(statFile(c, "keep")!.hash).toBe(sha("v1"));
     expect(fs.readdirSync(path.join(c.dir, dateFolder())).some((f) => f.startsWith(".tmp-"))).toBe(false);
   });
+
+  it("rejects explicit slugs outside the slug charset (no path smuggling)", async () => {
+    const c = ctx();
+    for (const slug of ["../evil", "a/b", "UPPER", "", "-".repeat(129)]) {
+      await expect(put(c, "x", { slug })).rejects.toThrow(/invalid slug/);
+    }
+    expect(fs.existsSync(path.join(cfg.dataDir, "evil"))).toBe(false);
+  });
 });
 
 describe("statFile / openFile / deleteFile", () => {
