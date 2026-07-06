@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import chokidar, { type FSWatcher } from "chokidar";
+import chokidar from "chokidar";
 import type { Config } from "./config.js";
 import { broadcast } from "./sse.js";
 import { scanApps } from "./registry.js";
-import { buildApp, dropBuild } from "./build.js";
+import { buildAll, buildApp, buildDashboard, dropBuild } from "./build.js";
 
 const DEBOUNCE_MS = 150;
 
@@ -13,7 +13,7 @@ const DEBOUNCE_MS = 150;
 export const isGeneratedPath = (p: string): boolean =>
   p.endsWith(path.sep + "routeTree.gen.ts") || p.split(path.sep).includes(".tanstack");
 
-export function startWatcher(cfg: Config): FSWatcher {
+export function startWatcher(cfg: Config): { close(): Promise<void> } {
   fs.mkdirSync(cfg.appsDir, { recursive: true });
   const timers = new Map<string, NodeJS.Timeout>();
 
@@ -70,5 +70,29 @@ export function startWatcher(cfg: Config): FSWatcher {
         dropBuild(cfg, rel);
       }
     });
-  return watcher;
+
+  // The person's global theme file sits at the Lodekit root, outside appsDir — a
+  // separate depth-0 watch (apps/ and data/ churn stays ignored) that rebuilds
+  // everything, since every app and the dashboard composes it in.
+  const globalTheme = path.join(cfg.root, "theme.css");
+  let globalTimer: NodeJS.Timeout | undefined;
+  const onGlobalTheme = () => {
+    clearTimeout(globalTimer);
+    globalTimer = setTimeout(() => {
+      void buildAll(cfg);
+      void buildDashboard(cfg);
+    }, DEBOUNCE_MS);
+  };
+  const rootWatcher = chokidar.watch(cfg.root, {
+    ignoreInitial: true,
+    depth: 0,
+    ignored: (p) => p !== cfg.root && p !== globalTheme,
+  });
+  rootWatcher.on("add", onGlobalTheme).on("change", onGlobalTheme).on("unlink", onGlobalTheme);
+
+  return {
+    close: async () => {
+      await Promise.all([watcher.close(), rootWatcher.close()]);
+    },
+  };
 }

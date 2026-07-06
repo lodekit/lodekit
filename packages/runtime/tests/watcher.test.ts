@@ -110,6 +110,29 @@ describe("watcher", () => {
     const buf = await rebuildDone;
     expect(buf).toContain("event: building");
   }, 60000);
+
+  it("rebuilds apps and dashboard when the global theme.css changes", async () => {
+    writeApp(
+      "gt",
+      `import { createFileRoute } from "@tanstack/react-router";\nimport { Button } from "@lodekit/ui";\nexport const Route = createFileRoute("/")({\n  component: () => <Button>gt</Button>,\n});\n`
+    );
+    // retrofit a theme.css import (writeApp's __root has no stylesheet link)
+    fs.writeFileSync(
+      path.join(root, "apps", "gt", "src", "index.css"),
+      `@import "@lodekit/ui/theme.css";\n`
+    );
+    fs.writeFileSync(
+      path.join(root, "apps", "gt", "src", "routes", "__root.tsx"),
+      `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";\nimport appCss from "../index.css?url";\n\nexport const Route = createRootRoute({\n  head: () => ({ meta: [{ title: "gt" }], links: [{ rel: "stylesheet", href: appCss }] }),\n  component: () => (\n    <html>\n      <head><HeadContent /></head>\n      <body><Outlet /><Scripts /></body>\n    </html>\n  ),\n});\n`
+    );
+    await collectEvents(base, `event: ready`, 90000); // initial build settles
+    fs.writeFileSync(path.join(root, "theme.css"), ":root { --primary: #ff3456; }\n");
+    await collectEvents(base, `event: ready`, 90000); // theme-triggered rebuild
+    const assets = fs.readdirSync(path.join(cache, "gt", "client", "assets"));
+    const cssFile = assets.find((f) => f.endsWith(".css"));
+    const css = fs.readFileSync(path.join(cache, "gt", "client", "assets", cssFile!), "utf8");
+    expect(css).toContain("ff3456");
+  }, 180000);
 });
 
 describe("isGeneratedPath", () => {
