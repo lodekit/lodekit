@@ -278,4 +278,23 @@ describe("copyFile / moveFile", () => {
     expect(copyFile(c, "nope", "x")).toBeUndefined();
     expect(moveFile(c, "nope", "x")).toBeUndefined();
   });
+
+  it("copy-to-self is a safe no-op (bytes intact)", async () => {
+    const c = ctx();
+    const src = await put(c, "data", { slug: "solo", contentType: "text/plain" });
+    const same = copyFile(c, "solo", "solo")!;
+    expect(same.hash).toBe(src.hash);
+    expect(fs.readFileSync(src.path, "utf8")).toBe("data");
+  });
+
+  it("copy/move reject destinations outside the slug charset before touching anything", async () => {
+    const c = ctx();
+    const src = await put(c, "data", { slug: "guarded", contentType: "text/plain" });
+    for (const bad of ["../evil", "a/b", "UPPER"]) {
+      expect(() => copyFile(c, "guarded", bad)).toThrow(/invalid slug/);
+      expect(() => moveFile(c, "guarded", bad)).toThrow(/invalid slug/);
+      expect(() => moveFile(c, bad, bad)).toThrow(/invalid slug/);
+    }
+    expect(fs.readFileSync(src.path, "utf8")).toBe("data");
+  });
 });
