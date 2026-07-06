@@ -47,6 +47,15 @@ describe("buildDashboard", () => {
     const css = fs.readFileSync(path.join(cache, "_dashboard", "client", "assets", cssFile!), "utf8");
     expect(css).toContain("ff3456");
   }, 60000);
+
+  it("serializes concurrent dashboard builds without racing the outDir", async () => {
+    const [a, b] = await Promise.all([buildDashboard(cfg), buildDashboard(cfg)]);
+    expect(a).toEqual({ status: "ready" });
+    expect(b).toEqual({ status: "ready" });
+    const outDir = path.join(cache, "_dashboard");
+    expect(fs.existsSync(path.join(outDir, "server", "server.js"))).toBe(true);
+    expect(fs.readdirSync(path.join(outDir, "client"), { recursive: true }).length).toBeGreaterThan(0);
+  }, 60000);
 });
 
 describe("dashboard serving", () => {

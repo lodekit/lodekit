@@ -73,13 +73,17 @@ async function runBuild(cfg: Config, appId: string): Promise<BuildState> {
   return states.get(appId)!;
 }
 
-const chains = new Map<string, Promise<BuildState>>();
+// Shared by both buildApp (keyed by app id) and buildDashboard (keyed by "_dashboard",
+// outside the app id grammar — see buildDashboard below). Value type is loose because the
+// two build kinds resolve different state shapes; each chain only awaits its predecessor
+// for ordering, never reads its resolved value.
+const chains = new Map<string, Promise<unknown>>();
 
 // Serialize builds per app id so concurrent triggers never run two Vite builds against the
 // same outDir (emptyOutDir would race). A trigger during an in-flight build chains a single
 // rebuild after it settles. runBuild never rejects, so the chain never rejects.
 export function buildApp(cfg: Config, appId: string): Promise<BuildState> {
-  const prev = chains.get(appId) ?? Promise.resolve(undefined as unknown as BuildState);
+  const prev = chains.get(appId) ?? Promise.resolve();
   const next = prev.then(() => runBuild(cfg, appId));
   chains.set(appId, next);
   void next.finally(() => { if (chains.get(appId) === next) chains.delete(appId); });
@@ -116,9 +120,8 @@ export function getDashboardState(): DashboardState | undefined {
   return dashboardState;
 }
 
-// Builds Lodekit's own dashboard through the same pipeline apps use. `_dashboard` sits
-// outside the app id grammar, so it can never collide with an app's cache entry or URL.
-export async function buildDashboard(cfg: Config): Promise<DashboardState> {
+// Runs one dashboard build. Never throws — build failures become error state.
+async function runDashboardBuild(cfg: Config): Promise<DashboardState> {
   try {
     const info = getBuildInfo();
     await buildStart({
@@ -138,6 +141,19 @@ export async function buildDashboard(cfg: Config): Promise<DashboardState> {
     dashboardState = { status: "error", message: e instanceof Error ? e.message : String(e) };
   }
   return dashboardState;
+}
+
+// Builds Lodekit's own dashboard through the same pipeline apps use. `_dashboard` sits
+// outside the app id grammar, so it can never collide with an app's cache entry or URL —
+// chained under that key in the same `chains` map buildApp uses, so concurrent triggers
+// (e.g. rapid global-theme saves) never race two Vite builds against the same outDir, and
+// idleBuilds' shutdown drain waits for an in-flight dashboard build too.
+export function buildDashboard(cfg: Config): Promise<DashboardState> {
+  const prev = chains.get("_dashboard") ?? Promise.resolve();
+  const next = prev.then(() => runDashboardBuild(cfg));
+  chains.set("_dashboard", next);
+  void next.finally(() => { if (chains.get("_dashboard") === next) chains.delete("_dashboard"); });
+  return next;
 }
 
 // One Start build target: an app (urlBase "/<app-id>") or the dashboard ("/_dashboard").
