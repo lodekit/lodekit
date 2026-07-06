@@ -34,8 +34,8 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
 - **`examples/`** — sample Start apps (no per-app dependencies) as a self-contained Lodekit
   root, used in dev via `LODEKIT_ROOT=./examples`.
 
-Deferred subsystems (designed-in, not built): Starlight and packaging polish (Developer ID
-signing/notarization, auto-update). See `roadmap.md`.
+Deferred subsystems (designed-in, not built): docs content/theming/deploy and packaging
+polish (Developer ID signing/notarization, auto-update). See `roadmap.md`.
 
 ## Build & Test
 
