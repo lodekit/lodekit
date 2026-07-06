@@ -47,6 +47,9 @@ describe("file-store HTTP surface", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/plain");
     expect(res.headers.get("content-disposition")).toBe('inline; filename="report.txt"');
+    // user bytes never execute on the app origin
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("content-security-policy")).toBe("sandbox");
     expect(await res.text()).toBe("hello");
     const dl = await fetch(api("/report?download=1"));
     expect(dl.headers.get("content-disposition")).toBe('attachment; filename="report.txt"');

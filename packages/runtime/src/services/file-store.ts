@@ -490,9 +490,16 @@ export const filesRoutes = new Hono<FilesEnv>()
     c.header("ETag", etag);
     c.header("Content-Type", r.stat.contentType);
     c.header("Content-Disposition", `${dispo}; filename="${filename}"`);
+    // User bytes on the app origin: never sniff, and sandbox navigated documents
+    // (scriptless unique origin). Embeds (<img>) and downloads are unaffected.
+    c.header("X-Content-Type-Options", "nosniff");
+    c.header("Content-Security-Policy", "sandbox");
     if (c.req.header("if-none-match") === etag) return c.body(null, 304);
     c.header("Content-Length", String(r.stat.size));
-    return c.body(Readable.toWeb(fs.createReadStream(r.abs)) as ReadableStream);
+    const bytes = fs.createReadStream(r.abs);
+    // Headers are committed once streaming starts — log instead of vanishing on a reset.
+    bytes.on("error", (e) => console.error(`[file-store] serving ${c.var.files.appId}/${r.stat.slug} failed:`, e));
+    return c.body(Readable.toWeb(bytes) as ReadableStream);
   })
   .put(
     "/:slug",
