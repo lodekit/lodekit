@@ -4,6 +4,7 @@ import { Worker } from "node:worker_threads";
 import { fileURLToPath } from "node:url";
 import type { Config } from "./config.js";
 import { broadcast } from "./sse.js";
+import { emitLog, createLogger } from "./logger.js";
 
 export type ServerState =
   | { status: "starting" }
@@ -66,9 +67,11 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
   };
   managed.set(appId, m);
 
+  const lifecycle = createLogger("lifecycle", appId);
   worker.on("message", (msg) => {
-    if (msg.type === "ready") { m.attempts = 0; setState(appId, { status: "running" }); readyResolve(); return; }
-    if (msg.type === "fatal") { setState(appId, { status: "error", message: msg.message }); readyReject(new Error(msg.message)); return; }
+    if (msg.type === "log") { emitLog(msg.level, "console", msg.message, msg.fields ?? undefined, appId); return; }
+    if (msg.type === "ready") { m.attempts = 0; setState(appId, { status: "running" }); lifecycle.info("app server ready"); readyResolve(); return; }
+    if (msg.type === "fatal") { setState(appId, { status: "error", message: msg.message }); lifecycle.error("app server failed to start", { stack: msg.message }); readyReject(new Error(msg.message)); return; }
     const p = m.pending.get(msg.id);
     if (!p) return;
     m.pending.delete(msg.id); clearTimeout(p.timer);
@@ -88,6 +91,7 @@ function fail(appId: string, m: Managed, message: string): void {
   for (const [, p] of m.pending) { clearTimeout(p.timer); p.reject(new Error(message)); }
   m.pending.clear();
   setState(appId, { status: "error", message });
+  emitLog("error", "lifecycle", message, undefined, appId);
   const delay = Math.min(BACKOFF_BASE_MS * 2 ** m.attempts, BACKOFF_CAP_MS);
   m.respawn = setTimeout(() => {
     if (managed.get(appId) === m && !m.stopped) spawn(m.cfg, appId, m.attempts + 1);

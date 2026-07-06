@@ -4,7 +4,25 @@
 //   worker -> main  { type:"ready" } | { type:"fatal", message }
 //                   | { type:"response", id, status, headers:[[k,v]], body:ReadableStream|null }
 //                   | { type:"response-error", id, message }
+//                   | { type:"log", level, message, fields }
 import { parentPort, workerData } from "node:worker_threads";
+import { inspect } from "node:util";
+
+// Console capture (logging spec §5): app console output becomes structured log
+// records instead of untagged runtime stdout — keeping the text tier minimal.
+// Replaces (not tees) the console methods; the platform log is the destination.
+const CONSOLE_LEVELS = { debug: "debug", log: "info", info: "info", warn: "warn", error: "error" };
+for (const [method, level] of Object.entries(CONSOLE_LEVELS)) {
+  console[method] = (...args) => {
+    try {
+      const err = args.find((a) => a instanceof Error);
+      const message = args.map((a) => (typeof a === "string" ? a : inspect(a))).join(" ");
+      parentPort.postMessage({ type: "log", level, message, fields: err?.stack ? { stack: err.stack } : null });
+    } catch {
+      // logging must never break the app (e.g. unserializable arg)
+    }
+  };
+}
 
 let handler;
 try {
