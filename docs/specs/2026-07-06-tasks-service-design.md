@@ -190,6 +190,9 @@ dropped, and no attempt is consumed.
   (interrupted) and rescheduled by the same rule.
 - A terminal `failed` run is visible and re-runnable from the dashboard; re-run = a fresh
   run (source `manual`), never a mutation of the failed one. No DLQ concept.
+- A failing attempt whose task was retired mid-run goes terminal `failed` immediately
+  (no retry) — otherwise the requeued run would be orphaned, since retired defs are
+  never claimable and the retire-time cancel only sees `queued` rows.
 
 **Defaults** (all to become settings later — roadmap §11): `retries` 3, `timeout` "5m",
 `catchUp` "1h", backoff 30s·2ⁿ capped 10m, dispatch poll 1s.

@@ -312,7 +312,7 @@ export function finishRun(
     return { state: "succeeded" };
   }
   const error = (result.message ?? "task failed").slice(0, 4_000);
-  if (run.attempt <= def.retries) {
+  if (run.attempt <= def.retries && !def.retired) {
     const notBefore = now + Math.min(BACKOFF_BASE_MS * 2 ** (run.attempt - 1), BACKOFF_CAP_MS);
     db.prepare(
       "UPDATE _lodekit_task_runs SET state = 'queued', not_before = ?, started_at = NULL, error = ? WHERE id = ?"

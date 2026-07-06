@@ -144,6 +144,15 @@ describe("runs — insert, dedupe, claim, finish", () => {
     expect(getRun(db, runId)!.state).toBe("canceled");
     expect(cancelRun(db, runId, T0 + 2)).toBe("not-queued");
   });
+
+  it("a failing run of a retired def goes terminal instead of requeueing (no orphan)", () => {
+    insertRun(db, { task: "job", notBefore: T0, source: "enqueue", now: T0 });
+    const run = claimNextDue(db, T0 + 1)!;
+    applyManifest(db, [{ name: "digest", cron: "0 9 * * *" }], T0 + 2); // job retired mid-run
+    const def = getDef(db, "job")!; // retries: 1 — retry budget remains
+    expect(finishRun(db, run, { ok: false, message: "boom" }, def, T0 + 3).state).toBe("failed");
+    expect(getRun(db, run.id)).toMatchObject({ state: "failed", error: "boom" });
+  });
 });
 
 describe("sweepRuns", () => {
