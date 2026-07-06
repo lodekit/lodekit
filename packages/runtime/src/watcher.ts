@@ -13,7 +13,7 @@ const DEBOUNCE_MS = 150;
 export const isGeneratedPath = (p: string): boolean =>
   p.endsWith(path.sep + "routeTree.gen.ts") || p.split(path.sep).includes(".tanstack");
 
-export function startWatcher(cfg: Config): { close(): Promise<void> } {
+export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void> }> {
   fs.mkdirSync(cfg.appsDir, { recursive: true });
   const timers = new Map<string, NodeJS.Timeout>();
 
@@ -90,9 +90,22 @@ export function startWatcher(cfg: Config): { close(): Promise<void> } {
   });
   rootWatcher.on("add", onGlobalTheme).on("change", onGlobalTheme).on("unlink", onGlobalTheme);
 
+  // Resolve only once both watchers have completed their initial scan. Chokidar with
+  // ignoreInitial drops add/change events that land before "ready" fires, so returning
+  // eagerly leaves a window where an app created right after boot is never built.
+  await Promise.all([
+    new Promise<void>((r) => watcher.once("ready", () => r())),
+    new Promise<void>((r) => rootWatcher.once("ready", () => r())),
+  ]);
+
   return {
     close: async () => {
       clearTimeout(globalTimer);
+      // Cancel any in-flight per-app debounce so it can't fire buildApp after close —
+      // against a root a caller is about to remove (ENOENT) and clobbering a same-named
+      // app's fresh state. The unlinkDir handler clears these per app; close clears the rest.
+      for (const t of timers.values()) clearTimeout(t);
+      timers.clear();
       await Promise.all([watcher.close(), rootWatcher.close()]);
     },
   };

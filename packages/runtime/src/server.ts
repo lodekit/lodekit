@@ -9,7 +9,7 @@ import type { Config } from "./config.js";
 import { apiRoutes } from "./routes.js";
 import { appHost } from "./appHost.js";
 import { startWatcher } from "./watcher.js";
-import { buildAll, buildDashboard, getDashboardState, uiDir } from "./build.js";
+import { buildAll, buildDashboard, getDashboardState, idleBuilds, uiDir } from "./build.js";
 import { isValidAppId, scanApps } from "./registry.js";
 import { configureWorkers, forwardToWorker, stopAllWorkers } from "./appWorker.js";
 import { every, stop } from "./scheduler.js";
@@ -105,6 +105,11 @@ export function createApp(cfg: Config): Hono {
     .use("*", appHost(cfg));
 }
 
+// The folder-watcher shuts down off the server's "close" event (async chokidar teardown).
+// Exposed so a caller that must fully quiesce before touching the Lodekit root on disk —
+// tests removing their temp root between runs — can await the shutdown it kicked off.
+export const watcherShutdown = new WeakMap<Server, Promise<void>>();
+
 // Returns the underlying (unlistened) Node http.Server — shutdown semantics and
 // every fetch-against-listening-server test keep working unchanged.
 export function createServer(cfg: Config): Server {
@@ -120,10 +125,20 @@ export async function start(cfg: Config): Promise<Server> {
   const addr = server.address();
   configureWorkers(`http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : cfg.port}`);
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
-  const watcher = startWatcher(cfg);
+  const watcher = await startWatcher(cfg);
   every("kv-store-sweep", 60_000, sweepAllAndBroadcast);
   every("file-store-sweep", 60_000, () => sweepFiles(cfg));
-  server.on("close", () => { void watcher.close(); stop("kv-store-sweep"); stop("file-store-sweep"); stopAllWorkers(); });
+  server.on("close", () => {
+    stop("kv-store-sweep");
+    stop("file-store-sweep");
+    // Order matters: close the watcher (no new build triggers), let in-flight builds
+    // finish — each may (re)start its app worker on success — and only THEN stop every
+    // worker. Stopping first would let the drain resurrect a worker that outlives close;
+    // it then crashes on the removed cache dir and schedules a backoff respawn that leaks
+    // into the next boot. Draining before removing files also avoids a build running
+    // against files a caller is about to delete.
+    watcherShutdown.set(server, watcher.close().then(idleBuilds).then(stopAllWorkers));
+  });
   void buildAll(cfg);
   return server;
 }

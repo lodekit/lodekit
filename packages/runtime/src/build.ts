@@ -86,6 +86,15 @@ export function buildApp(cfg: Config, appId: string): Promise<BuildState> {
   return next;
 }
 
+// Resolves once no app build is in flight. Builds are fire-and-forget (the watcher calls
+// buildApp without awaiting), so a caller tearing down the runtime must drain them before
+// removing files on disk — a build whose createBuilder runs after its rootDir is gone
+// throws ENOENT. Chains self-delete on settle and, with the watcher already closed, no new
+// ones are queued, so this terminates.
+export async function idleBuilds(): Promise<void> {
+  while (chains.size) await Promise.allSettled([...chains.values()]);
+}
+
 export async function buildAll(cfg: Config): Promise<void> {
   for (const app of scanApps(cfg.appsDir)) {
     await buildApp(cfg, app.appId);

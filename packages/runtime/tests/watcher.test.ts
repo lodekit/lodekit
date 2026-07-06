@@ -3,10 +3,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { Server } from "node:http";
-import { start } from "../src/server.js";
+import { start, watcherShutdown } from "../src/server.js";
 import { loadConfig } from "../src/config.js";
 import { isGeneratedPath } from "../src/watcher.js";
-import { stopAllWorkers } from "../src/appWorker.js";
 
 let root: string, cache: string, server: Server, base: string;
 
@@ -54,9 +53,14 @@ beforeEach(async () => {
   const addr = server.address();
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
 }, 60000);
-afterEach(() => {
-  stopAllWorkers();
-  server.close();
+afterEach(async () => {
+  // Fully quiesce before removing the root: drop lingering SSE connections so the server's
+  // "close" fires, then await the shutdown it kicks off (watcher close -> drain builds ->
+  // stop workers). Otherwise a still-live watcher or a drain-spawned worker outlives this
+  // test — observing the rmSync below (Vite ENOENT) or respawning into the next test.
+  server.closeAllConnections();
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  await watcherShutdown.get(server);
   fs.rmSync(root, { recursive: true, force: true });
   fs.rmSync(cache, { recursive: true, force: true });
   delete process.env.LODEKIT_ROOT;
@@ -112,6 +116,10 @@ describe("watcher", () => {
   }, 60000);
 
   it("rebuilds apps and dashboard when the global theme.css changes", async () => {
+    // Give the freshly-booted watcher a tick to settle before writing (as the other
+    // tests do); otherwise, under a loaded machine, fsevents can drop the initial add
+    // and no build fires.
+    await new Promise((r) => setTimeout(r, 100));
     writeApp(
       "gt",
       `import { createFileRoute } from "@tanstack/react-router";\nimport { Button } from "@lodekit/ui";\nexport const Route = createFileRoute("/")({\n  component: () => <Button>gt</Button>,\n});\n`
