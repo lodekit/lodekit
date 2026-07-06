@@ -7,6 +7,7 @@ import { buildDashboard } from "../src/build.js";
 import { createServer } from "../src/server.js";
 import { configureWorkers, stopAllWorkers } from "../src/appWorker.js";
 import type { Config } from "../src/config.js";
+import { getBuildInfo } from "../src/buildInfo.js";
 
 let root: string, cache: string, cfg: Config;
 
@@ -65,6 +66,8 @@ describe("dashboard serving", () => {
     expect(home.status).toBe(200);
     const html = await home.text();
     expect(html).toContain("Lodekit");
+    const { version, commit } = getBuildInfo();
+    expect(html).toContain(`lodekit v${version} ${commit}`);
     const assetPath = html.match(/\/_dashboard\/_build\/assets\/[^"]+\.js/)?.[0];
     expect(assetPath).toBeTruthy();
     const asset = await fetch(base + assetPath!);

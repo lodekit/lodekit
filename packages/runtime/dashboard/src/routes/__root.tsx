@@ -4,6 +4,12 @@ import appCss from "../index.css?url";
 
 const queryClient = new QueryClient();
 
+// Injected by the runtime's dashboard build (build.ts defines) — never present in app builds.
+declare const __LODEKIT_VERSION__: string;
+declare const __LODEKIT_COMMIT__: string | null;
+
+const versionLine = `lodekit v${__LODEKIT_VERSION__}${__LODEKIT_COMMIT__ ? ` ${__LODEKIT_COMMIT__}` : ""}`;
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [{ title: "Lodekit" }],
@@ -26,6 +32,7 @@ export const Route = createRootRoute({
         <QueryClientProvider client={queryClient}>
           <Outlet />
         </QueryClientProvider>
+        <footer className="text-muted-foreground py-4 text-center text-xs">{versionLine}</footer>
         <Scripts />
       </body>
     </html>

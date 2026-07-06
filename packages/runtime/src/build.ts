@@ -10,6 +10,7 @@ import type { Config } from "./config.js";
 import { broadcast } from "./sse.js";
 import { scanApps } from "./registry.js";
 import { startAppWorker, stopAppWorker } from "./appWorker.js";
+import { getBuildInfo } from "./buildInfo.js";
 
 const require = createRequire(import.meta.url);
 // Point Vite at the runtime's copy of each package so apps (which have no
@@ -106,11 +107,16 @@ export function getDashboardState(): DashboardState | undefined {
 // outside the app id grammar, so it can never collide with an app's cache entry or URL.
 export async function buildDashboard(cfg: Config): Promise<DashboardState> {
   try {
+    const info = getBuildInfo();
     await buildStart({
       rootDir: DASHBOARD_ROOT,
       outDir: path.join(cfg.cacheDir, "_dashboard"),
       urlBase: "/_dashboard",
       appId: "_dashboard",
+      defines: {
+        __LODEKIT_VERSION__: JSON.stringify(info.version),
+        __LODEKIT_COMMIT__: JSON.stringify(info.commit),
+      },
     });
     dashboardState = { status: "ready" };
     startAppWorker(cfg, "_dashboard");
@@ -126,6 +132,7 @@ export interface StartBuildTarget {
   outDir: string;   // cache/<app-id> — client/ and server/ land inside
   urlBase: string;  // no trailing slash
   appId: string;    // __LODEKIT_APP_ID__ define value
+  defines?: Record<string, string>; // extra Vite defines — dashboard-only today (spec §5)
 }
 
 // Packages the Start ecosystem reaches via deep subpaths (e.g. "@tanstack/react-start/client",
@@ -180,7 +187,7 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
     root: fs.realpathSync(t.rootDir),
     base: `${t.urlBase}/_build/`, // vite-level base — the plugin's client.base does NOT do this (spike)
     logLevel: "silent",
-    define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId) },
+    define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
     plugins: [
       deepImportResolver(),
       tanstackStart({
