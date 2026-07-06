@@ -31,6 +31,31 @@ auto-injects the design system and a client SDK. Data is per-app SQLite via the 
 - `await lodekit.store.set(key, value)` → persists JSON.
 - `lodekit.secrets.get(name)` — not implemented in the POC; do not use.
 
+## Files (file-store)
+
+Per-app blob storage for documents and binary data — use the Store (`kv`) for JSON
+values, Files for bytes (reports, downloads, images). Import: `import { files } from "@lodekit/sdk"`.
+
+- A file's key is its **slug** (`a-z0-9-`). Pass one explicitly, or pass `title`
+  and let the service derive it ("Q2 Report" → `q2-report`); re-putting the same
+  slug replaces the content.
+- **Export pattern** (file the person downloads): in a server function,
+  `await files.put(csvString, { title, contentType: "text/csv", ttl: 7 * 24 * 3600 })`,
+  then render `files.url(stat.slug, { download: true })` as the link. `ttl` (seconds)
+  auto-deletes it later.
+- **Ingest pattern** (fetch and store): pipe the response straight through —
+  `await files.put(res.body!, { slug: "latest", contentType: res.headers.get("content-type") ?? undefined })`.
+- `files.list({ prefix })`, `files.stat(slug)`, `files.delete(slug)`,
+  `files.copy(from, to)`, `files.move(from, to)`, and `files.watch(prefix, cb)`
+  (live change events) round out the API.
+- Files are real files on disk under the app's data folder — the person can browse
+  them in Finder.
+- **Via MCP** you can inspect an app's files with `lodekit_files_list` /
+  `lodekit_files_stat`. Never pull bytes through MCP: stat returns an absolute
+  `path` — read it with your own file tools, and treat it as **read-only** (all
+  writes go through `files.put`). Use `url` to verify what's served or to hand
+  the person a link.
+
 ## Design system classes
 
 `lk-container` (page wrapper), `lk-h1`, `lk-muted`, `lk-card`, `lk-grid`, `lk-row`,

@@ -83,7 +83,7 @@ persistence in the data tree where applicable:
 | --- | --- | --- |
 | kv-store | Store (per-app KV of JSON values) | v2 shipped (docs/specs/2026-07-03-kv-store-v2-design.md): six ops + TTL + SSE change feed; SDK handle kv |
 | relational-store | Database (SQLite via `better-sqlite3`) | **Parked** by kv-store v2 (surface deleted) — returns once a schemas/migrations story exists |
-| file-store | Blobs (files/images per app) | Future |
+| file-store | Blobs (files/images per app) | Shipped (docs/specs/2026-07-06-file-store-design.md): slug-identity blobs, TTL, SSE feed, serving URLs; SDK handle files |
 | secret-store | Secrets (encrypted; designed with the lens of powering integrations) | Future |
 | task-queue / task-schedule | Tasks (queued + scheduled background work) | Future (§2.12) |
 | settings | Settings (declared, person-editable in the dashboard) | Future |

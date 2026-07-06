@@ -98,11 +98,19 @@ The shipped and near-term services:
 **Store**:
 An app's per-app key–value store of JSON values (the kv-store service), reached through the
 SDK as the `kv` handle (`import { kv } from "@lodekit/sdk"`; catalog-name → handle mapping:
-kv-store→kv, relational-store→db, file-store→files, secret-store→secrets). The sole storage
-service through early 0.x; its second iteration shipped as the v0.1 storage slice
-(`docs/specs/2026-07-03-kv-store-v2-design.md`). Distinct from the Cache and from Settings —
-see Flagged ambiguities.
+kv-store→kv, relational-store→db, file-store→files, secret-store→secrets). The first storage
+service; joined by Files (file-store) in 0.x. Its second iteration shipped as the v0.1 storage
+slice (`docs/specs/2026-07-03-kv-store-v2-design.md`). Distinct from the Cache and from
+Settings — see Flagged ambiguities.
 _Avoid_: cache, settings, preferences
+
+**Files**:
+An app's per-app blob storage (the file-store service) for documents and binary data,
+reached through the SDK as the `files` handle. A file is identified by its slug; bytes
+live as real, Finder-browsable files under the app's data tree, date-foldered, while
+the per-app database holds the authoritative index
+(`docs/specs/2026-07-06-file-store-design.md`).
+_Avoid_: blobs (the retired working name), uploads, attachments, assets
 
 **Database**:
 An app's per-app SQL database (relational-store). **Parked**: retired in the v0.1 storage iteration; returns to the catalog once a schemas/migrations story exists.

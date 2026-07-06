@@ -224,8 +224,22 @@ above; the remainder:
   as a config toggle (manager slice-spec §9).
 - **True `lodekit.local` / port-free access** — mDNS/Bonjour or a local reverse proxy,
   instead of `lodekit.localhost:7777`.
-- **Blob storage** — per-app `data/<app-id>/blobs/` for images/files, exposed via the SDK
-  and easily browsable in Finder.
+- **Blob storage** — ~~per-app `data/<app-id>/blobs/` for images/files, exposed via the SDK
+  and easily browsable in Finder.~~ **Shipped (2026-07-06)** as the file-store slice
+  (`docs/specs/2026-07-06-file-store-design.md`): slug-identity blobs, TTL, SSE change feed,
+  serving URLs, copy/move; SDK handle `files`; real files under `data/<app-id>/files/`,
+  browsable in Finder.
+- **Dashboard file explorer** — per-app Files panel (list, preview, delete), deferred from
+  the file-store slice (`docs/specs/2026-07-06-file-store-design.md`).
+- **file-store `list()` drift reconciliation** — Finder-deleted files linger in listings
+  until something reads them (lazy reconciliation only, by design — no existence-polling
+  sweep); add a cheap reconciliation pass (e.g. stat-on-list) if it bites in practice.
+- **Files lifecycle rules via Tasks** — when task-schedule is designed, richer lifecycle
+  rules than TTL (e.g. "keep last N exports"), possibly subsuming the file-store sweep —
+  same consolidation note as kv-store's scheduler above.
+- **file-store storage dedup** — hardlink or content-addressed variants if duplicate bytes
+  ever matter at personal scale; today the hash suffix (`<slug>-<hash8>.<ext>`) buys
+  integrity, not dedup.
 - **Multi-page apps + file-based routing (slice 4)** — ~~expand the app contract beyond
   single-page and adopt file-based route conventions. TanStack Router is already wired in
   the toolchain (stack-refresh slice, code-based routes; habit-tracker is the two-page
