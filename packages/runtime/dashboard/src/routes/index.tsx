@@ -124,9 +124,14 @@ function DashboardHome() {
     <main className="mx-auto max-w-4xl p-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Lodekit</h1>
-        <span className="text-muted-foreground">
-          {apps ? `${apps.length} ${apps.length === 1 ? "app" : "apps"}` : ""}
-        </span>
+        <div className="flex items-center gap-4">
+          <a href="/_ui/" className="text-sm text-muted-foreground hover:underline">
+            Components
+          </a>
+          <span className="text-muted-foreground">
+            {apps ? `${apps.length} ${apps.length === 1 ? "app" : "apps"}` : ""}
+          </span>
+        </div>
       </div>
       {apps === null ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

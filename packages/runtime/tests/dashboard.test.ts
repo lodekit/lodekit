@@ -97,4 +97,11 @@ describe("dashboard serving", () => {
     });
     expect(sameOrigin.status).not.toBe(403);
   }, 60000);
+
+  it("links to the ui component preview", async () => {
+    await boot();
+    await buildDashboard(cfg);
+    const html = await (await fetch(base + "/_dashboard/")).text();
+    expect(html).toContain('href="/_ui/"');
+  }, 60000);
 });
