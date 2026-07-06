@@ -5,7 +5,7 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { buildDashboard } from "../src/build.js";
 import { createServer } from "../src/server.js";
-import { configureWorkers, stopAllWorkers } from "../src/appWorker.js";
+import { configureWorkers, stopAllWorkers, startAppWorker } from "../src/appWorker.js";
 import type { Config } from "../src/config.js";
 import { getBuildInfo } from "../src/buildInfo.js";
 
@@ -113,5 +113,14 @@ describe("dashboard serving", () => {
     await buildDashboard(cfg);
     const html = await (await fetch(base + "/_dashboard/")).text();
     expect(html).toContain('href="/_ui/"');
+  }, 60000);
+
+  it("serves the logs view", async () => {
+    await buildDashboard(cfg);
+    await boot();
+    startAppWorker(cfg, "_dashboard");
+    const res = await fetch(`${base}/_dashboard/logs`);
+    expect(res.status).toBe(200);
+    expect(await res.text()).toContain("Logs");
   }, 60000);
 });

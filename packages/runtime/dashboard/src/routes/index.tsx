@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient, type KvEntry } from "@lodekit/sdk";
@@ -131,6 +131,7 @@ function DashboardHome() {
           <span className="text-muted-foreground">
             {apps ? `${apps.length} ${apps.length === 1 ? "app" : "apps"}` : ""}
           </span>
+          <Link to="/logs" className="text-sm text-muted-foreground hover:underline">Logs</Link>
         </div>
       </div>
       {apps === null ? (
@@ -166,6 +167,7 @@ function DashboardHome() {
                   >
                     {openPanels[a.appId] ? "Hide data" : "Data"}
                   </Button>
+                  <Link to="/logs" search={{ app: a.appId }} className="text-sm text-muted-foreground hover:underline">Logs</Link>
                 </div>
                 {openPanels[a.appId] && <StorePanel appId={a.appId} />}
               </CardHeader>
