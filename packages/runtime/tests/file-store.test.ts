@@ -15,6 +15,9 @@ import {
   statFile,
   openFile,
   deleteFile,
+  listFiles,
+  copyFile,
+  moveFile,
   type FilesCtx,
 } from "../src/services/file-store.js";
 
@@ -208,5 +211,71 @@ describe("statFile / openFile / deleteFile", () => {
     fs.rmSync(stat.path);
     expect(statFile(c, "vanished")).toBeUndefined();
     expect(c.db.prepare("SELECT 1 FROM _lodekit_files WHERE slug = 'vanished'").get()).toBeUndefined();
+  });
+});
+
+describe("listFiles", () => {
+  it("filters by prefix, paginates by cursor, answers from SQLite only", async () => {
+    const c = ctx();
+    await put(c, "a", { slug: "export-a" });
+    await put(c, "b", { slug: "export-b" });
+    await put(c, "c", { slug: "other" });
+    const page1 = listFiles(c, { prefix: "export-", limit: 1 });
+    expect(page1.entries.map((e) => e.slug)).toEqual(["export-a"]);
+    expect(page1.nextCursor).toBe("export-a");
+    const page2 = listFiles(c, { prefix: "export-", cursor: page1.nextCursor! });
+    expect(page2.entries.map((e) => e.slug)).toEqual(["export-b"]);
+    expect(page2.nextCursor).toBeNull();
+    // documented drift (spec §4.5): a Finder-deleted file still lists until first read
+    fs.rmSync(statFile(c, "other")!.path);
+    expect(listFiles(c).entries.map((e) => e.slug)).toContain("other");
+  });
+});
+
+describe("copyFile / moveFile", () => {
+  it("copy duplicates bytes under a new slug, copying descriptive fields with fresh timestamps", async () => {
+    const c = ctx();
+    const src = await put(c, "data", {
+      slug: "orig",
+      title: "Orig",
+      contentType: "text/plain",
+      metadata: { k: 1 },
+      ttl: 60,
+    });
+    const dup = copyFile(c, "orig", "twin")!;
+    expect(dup.slug).toBe("twin");
+    expect(dup).toMatchObject({ title: "Orig", contentType: "text/plain", metadata: { k: 1 }, hash: src.hash });
+    expect(dup.expiresAt).toBe(src.expiresAt); // absolute expiry copied as-is
+    expect(dup.createdAt).toBeGreaterThanOrEqual(src.createdAt);
+    expect(fs.readFileSync(dup.path, "utf8")).toBe("data");
+    expect(fs.readFileSync(src.path, "utf8")).toBe("data"); // source untouched
+    expect(path.basename(dup.path)).toBe(`twin-${src.hash.slice(0, 8)}.txt`);
+  });
+
+  it("move re-keys the row and renames the file in its date folder, preserving created_at", async () => {
+    const c = ctx();
+    const src = await put(c, "data", { slug: "old-name", contentType: "text/plain" });
+    const moved = moveFile(c, "old-name", "new-name")!;
+    expect(moved.createdAt).toBe(src.createdAt);
+    expect(fs.existsSync(src.path)).toBe(false);
+    expect(path.dirname(moved.path)).toBe(path.dirname(src.path)); // same date folder
+    expect(path.basename(moved.path)).toBe(`new-name-${src.hash.slice(0, 8)}.txt`);
+    expect(statFile(c, "old-name")).toBeUndefined();
+    expect(statFile(c, "new-name")!.hash).toBe(src.hash);
+  });
+
+  it("copy/move onto an existing destination replaces it (old bytes deleted)", async () => {
+    const c = ctx();
+    await put(c, "src", { slug: "a", contentType: "text/plain" });
+    const victim = await put(c, "victim", { slug: "b", contentType: "text/plain" });
+    copyFile(c, "a", "b");
+    expect(fs.existsSync(victim.path)).toBe(false);
+    expect(statFile(c, "b")!.hash).toBe(sha("src"));
+  });
+
+  it("copy/move of a missing source returns undefined", () => {
+    const c = ctx();
+    expect(copyFile(c, "nope", "x")).toBeUndefined();
+    expect(moveFile(c, "nope", "x")).toBeUndefined();
   });
 });

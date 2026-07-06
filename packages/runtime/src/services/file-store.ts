@@ -290,3 +290,71 @@ export function deleteFile(ctx: FilesCtx, slug: string): boolean {
   emit(ctx.appId, slug, "del");
   return true;
 }
+
+export function listFiles(
+  ctx: FilesCtx,
+  opts: { prefix?: string; limit?: number; cursor?: string } = {}
+): { entries: FileStat[]; nextCursor: string | null } {
+  const limit = Math.min(Math.max(1, Math.floor(opts.limit ?? 100)), 1000);
+  const like = (opts.prefix ?? "").replace(/[\\%_]/g, (m) => "\\" + m) + "%";
+  const rows = ctx.db
+    .prepare(
+      `SELECT * FROM _lodekit_files
+       WHERE slug LIKE ? ESCAPE '\\' AND slug > ?
+         AND (expires_at IS NULL OR expires_at > ?)
+       ORDER BY slug ASC LIMIT ?`
+    )
+    .all(like, opts.cursor ?? "", Date.now(), limit) as Row[];
+  const entries = rows.map((r) => toStat(ctx, r));
+  return { entries, nextCursor: rows.length === limit ? entries[entries.length - 1].slug : null };
+}
+
+export function copyFile(ctx: FilesCtx, from: string, to: string): FileStat | undefined {
+  const src = verifiedRow(ctx, from);
+  if (!src) return undefined;
+  const dest = assertSlug(to);
+  const existing = liveRow(ctx, dest);
+  if (existing) removeBytes(ctx, existing.path); // destination replace, put semantics
+
+  const date = dateFolder();
+  fs.mkdirSync(path.join(ctx.dir, date), { recursive: true });
+  const relPath = `${date}/${dest}-${src.hash.slice(0, 8)}${path.extname(src.path)}`;
+  fs.copyFileSync(path.join(ctx.dir, src.path), path.join(ctx.dir, relPath));
+
+  const now = Date.now();
+  const row: Row = { ...src, slug: dest, path: relPath, created_at: now, updated_at: now };
+  ctx.db
+    .prepare(
+      `INSERT INTO _lodekit_files (slug, path, title, content_type, size, hash, metadata, created_at, updated_at, expires_at)
+       VALUES (@slug, @path, @title, @content_type, @size, @hash, @metadata, @created_at, @updated_at, @expires_at)
+       ON CONFLICT(slug) DO UPDATE SET
+         path = excluded.path, title = excluded.title, content_type = excluded.content_type,
+         size = excluded.size, hash = excluded.hash, metadata = excluded.metadata,
+         created_at = excluded.created_at, updated_at = excluded.updated_at, expires_at = excluded.expires_at`
+    )
+    .run(row);
+  emit(ctx.appId, dest, "put");
+  return toStat(ctx, row);
+}
+
+export function moveFile(ctx: FilesCtx, from: string, to: string): FileStat | undefined {
+  if (from === to) return statFile(ctx, from);
+  const src = verifiedRow(ctx, from);
+  if (!src) return undefined;
+  const dest = assertSlug(to);
+  const existing = liveRow(ctx, dest);
+  if (existing) removeBytes(ctx, existing.path);
+  ctx.db.prepare("DELETE FROM _lodekit_files WHERE slug = ?").run(dest);
+
+  // Rename in place: stays in its current date folder, created_at survives (spec §6).
+  const relPath = `${path.dirname(src.path)}/${dest}-${src.hash.slice(0, 8)}${path.extname(src.path)}`;
+  fs.renameSync(path.join(ctx.dir, src.path), path.join(ctx.dir, relPath));
+  const now = Date.now();
+  ctx.db
+    .prepare("UPDATE _lodekit_files SET slug = ?, path = ?, updated_at = ? WHERE slug = ?")
+    .run(dest, relPath, now, from);
+  emit(ctx.appId, from, "del");
+  emit(ctx.appId, dest, "put");
+  const row = liveRow(ctx, dest)!;
+  return toStat(ctx, row);
+}
