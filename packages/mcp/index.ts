@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import fs from "node:fs";
 import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -17,7 +18,8 @@ function text(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] };
 }
 
-const server = new McpServer({ name: "lodekit", version: "0.0.1" });
+const pkg = JSON.parse(fs.readFileSync(new URL("./package.json", import.meta.url), "utf8"));
+const server = new McpServer({ name: "lodekit", version: pkg.version });
 
 server.tool(
   "lodekit_scaffold",

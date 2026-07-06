@@ -1,6 +1,6 @@
 {
   "name": "lodekit-monorepo",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "LODEKIT_ROOT=$(pwd)/examples LODEKIT_CACHE_DIR=$(pwd)/.cache pnpm --filter @lodekit/runtime start",
