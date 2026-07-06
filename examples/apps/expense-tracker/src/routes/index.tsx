@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { kv } from "@lodekit/sdk";
+import { kv, files } from "@lodekit/sdk";
 import {
   Button,
   Input,
@@ -36,6 +36,22 @@ export const getSummary = createServerFn().handler(async () => {
   const totals: Record<string, number> = {};
   for (const r of rows) totals[r.value.category] = (totals[r.value.category] ?? 0) + r.value.amount;
   return totals;
+});
+
+// Server function: renders the expenses to CSV in the file-store with a 7-day TTL.
+// Derived slug ("Expenses 2026-07" -> "expenses-2026-07"); re-exports the same
+// month become expenses-2026-07-2, -3, ... (derive-collision suffixing).
+export const exportCsv = createServerFn().handler(async () => {
+  const rows = await expenses.all();
+  const month = new Date().toISOString().slice(0, 7);
+  const lines = rows.map((r) =>
+    [r.value.created_at, r.value.category, JSON.stringify(r.value.note ?? ""), r.value.amount].join(",")
+  );
+  return await files.put(["date,category,note,amount", ...lines].join("\n"), {
+    title: `Expenses ${month}`,
+    contentType: "text/csv",
+    ttl: 7 * 24 * 3600,
+  });
 });
 
 export const Route = createFileRoute("/")({
@@ -94,6 +110,16 @@ function ExpenseTrackerPage() {
     });
   }
 
+  const { data: exports = [] } = useQuery({
+    queryKey: ["files", "exports"],
+    queryFn: async () => (await files.list({ prefix: "expenses-" })).entries,
+  });
+
+  const runExport = useMutation({
+    mutationFn: () => exportCsv(),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["files"] }),
+  });
+
   const total = rows.reduce((sum, r) => sum + r.value.amount, 0);
 
   return (
@@ -144,6 +170,22 @@ function ExpenseTrackerPage() {
           ))}
         </TableBody>
       </Table>
+      <div className="mt-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Exports</h2>
+          <Button variant="outline" onClick={() => runExport.mutate()}>Export CSV</Button>
+        </div>
+        <ul className="text-muted-foreground mt-2 text-sm">
+          {exports.map((f) => (
+            <li key={f.slug}>
+              <a className="underline" href={files.url(f.slug, { download: true })} download>
+                {f.title ?? f.slug}
+              </a>{" "}
+              ({new Date(f.createdAt).toLocaleDateString()})
+            </li>
+          ))}
+        </ul>
+      </div>
     </main>
   );
 }
