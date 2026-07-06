@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import Database from "better-sqlite3";
 import {
   initLogStore, insertLog, queryLogs, sweepLogStore, closeLogStoreForTest,
 } from "../src/logStore.js";
@@ -74,5 +75,18 @@ describe("logStore", () => {
     expect(queryLogs().records).toEqual([]);
     expect(sweepLogStore()).toBe(0);
     expect(err).toHaveBeenCalled(); // the one degradation notice
+  });
+
+  it("queryLogs degrades on read failure instead of throwing", () => {
+    insertLog({ level: "info", source: "host", message: "test" });
+    const err = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    // Corrupt the schema by opening a raw connection and dropping the table
+    const corruptDb = new Database(path.join(dir, "logs.sqlite"));
+    corruptDb.exec("DROP TABLE logs");
+    corruptDb.close();
+    // queryLogs must degrade gracefully, not throw
+    const result = queryLogs();
+    expect(result).toEqual({ records: [], nextBefore: null });
+    expect(err).toHaveBeenCalledWith(expect.stringContaining("[logger] log query failed:"));
   });
 });

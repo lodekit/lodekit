@@ -117,15 +117,20 @@ export function queryLogs(opts: LogQuery = {}): { records: LogRecord[]; nextBefo
     where.push("message LIKE ? ESCAPE '\\'");
     params.push("%" + opts.q.replace(/[\\%_]/g, (m) => "\\" + m) + "%");
   }
-  const rows = db
-    .prepare(
-      `SELECT id, ts, level, source, app_id, message, fields FROM logs
-       ${where.length ? "WHERE " + where.join(" AND ") : ""}
-       ORDER BY id DESC LIMIT ?`
-    )
-    .all(...params, limit) as Row[];
-  const records = rows.map(toRecord);
-  return { records, nextBefore: rows.length === limit ? records[records.length - 1].id : null };
+  try {
+    const rows = db
+      .prepare(
+        `SELECT id, ts, level, source, app_id, message, fields FROM logs
+         ${where.length ? "WHERE " + where.join(" AND ") : ""}
+         ORDER BY id DESC LIMIT ?`
+      )
+      .all(...params, limit) as Row[];
+    const records = rows.map(toRecord);
+    return { records, nextBefore: rows.length === limit ? records[records.length - 1].id : null };
+  } catch (e) {
+    process.stderr.write(`[logger] log query failed: ${e}\n`);
+    return { records: [], nextBefore: null };
+  }
 }
 
 export function sweepLogStore(opts: { maxAgeMs?: number; maxRows?: number } = {}): number {
