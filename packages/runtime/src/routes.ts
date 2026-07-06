@@ -6,6 +6,7 @@ import { scanApps, isValidAppId } from "./registry.js";
 import { scaffoldApp } from "./scaffold.js";
 import { addClient } from "./sse.js";
 import { kvRoutes, withDb, CATALOG_NAME } from "./services/kv-store.js";
+import { filesRoutes, withFiles, CATALOG_NAME as FILES } from "./services/file-store.js";
 
 // Holds the stream open until the client disconnects; the abort callback
 // removes the client from the SSE registry.
@@ -21,6 +22,8 @@ function sseHandler(appId?: string) {
 
 export function apiRoutes(cfg: Config) {
   return new Hono()
+    .use(`/apps/:appId/${FILES}/*`, withFiles(cfg))
+    .route(`/apps/:appId/${FILES}`, filesRoutes)
     // Express's express.json() default (100 kb), preserved explicitly.
     .use(bodyLimit({ maxSize: 100 * 1024 }))
     .get("/apps", (c) => c.json(scanApps(cfg.appsDir)))

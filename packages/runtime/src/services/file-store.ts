@@ -1,12 +1,17 @@
 import path from "node:path";
 import fs from "node:fs";
 import crypto from "node:crypto";
-import { Transform } from "node:stream";
+import { Transform, Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type Database from "better-sqlite3";
+import { Hono, type Context, type MiddlewareHandler } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { getAppDb, openDbs } from "../db.js";
 import { broadcast } from "../sse.js";
 import type { Config } from "../config.js";
+import { isValidAppId } from "../registry.js";
+import { validationHook } from "../validation.js";
 
 export const CATALOG_NAME = "file-store";
 
@@ -399,3 +404,108 @@ export function sweepFiles(cfg: Config): void {
     }
   }
 }
+
+export type FilesEnv = { Variables: { files: FilesCtx } };
+
+// Applied by the parent router on /apps/:appId/file-store/* — validates the
+// app id and sets the FilesCtx in context vars.
+export function withFiles(cfg: Config): MiddlewareHandler<FilesEnv> {
+  return async (c, next) => {
+    const appId = c.req.param("appId");
+    if (!appId || !isValidAppId(appId)) return c.json({ error: "invalid app id" }, 400);
+    c.set("files", getFiles(cfg, appId));
+    await next();
+  };
+}
+
+const slugSchema = z.string().regex(/^[a-z0-9-]{1,128}$/, "invalid slug");
+const slugParam = z.object({ slug: slugSchema });
+const fromToBody = z.object({ from: slugSchema, to: slugSchema });
+const listQuery = z.object({
+  prefix: z.string().optional(),
+  limit: z.coerce.number().optional(),
+  cursor: z.string().optional(),
+});
+const ttlQuery = z.object({ ttl: z.coerce.number().positive().optional() });
+
+// Upload metadata rides headers/query on the raw-body request (spec §6).
+function uploadOpts(c: Context<FilesEnv>, ttl?: number) {
+  const title = c.req.header("x-lodekit-title");
+  if (title !== undefined && title.length > 512) throw new FilesError("title too long (max 512 chars)");
+  const rawMeta = c.req.header("x-lodekit-metadata");
+  let metadata: Record<string, unknown> | undefined;
+  if (rawMeta !== undefined) {
+    if (rawMeta.length > 4096) throw new FilesError("metadata too large (max 4096 bytes)");
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(rawMeta);
+    } catch {
+      throw new FilesError("metadata is not valid JSON");
+    }
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new FilesError("metadata must be a JSON object");
+    }
+    metadata = parsed as Record<string, unknown>;
+  }
+  return { title, contentType: c.req.header("content-type"), ttl, metadata };
+}
+
+function requestBody(c: Context<FilesEnv>): NodeJS.ReadableStream {
+  return c.req.raw.body
+    ? (Readable.fromWeb(c.req.raw.body as import("node:stream/web").ReadableStream) as NodeJS.ReadableStream)
+    : Readable.from([]);
+}
+
+// Chained style is normative (hc route-type inference). onError mirrors kv-store:
+// every thrown error (FilesError included) maps to 400 { error }.
+export const filesRoutes = new Hono<FilesEnv>()
+  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
+  .get("/", zValidator("query", listQuery, validationHook), (c) =>
+    c.json(listFiles(c.var.files, c.req.valid("query")))
+  )
+  .post("/", zValidator("query", ttlQuery, validationHook), async (c) => {
+    const { ttl } = c.req.valid("query");
+    return c.json(await putFile(c.var.files, requestBody(c), uploadOpts(c, ttl)), 201);
+  })
+  .post("/copy", zValidator("json", fromToBody, validationHook), (c) => {
+    const { from, to } = c.req.valid("json");
+    const stat = copyFile(c.var.files, from, to);
+    return stat ? c.json(stat) : c.json({ error: "not found" }, 404);
+  })
+  .post("/move", zValidator("json", fromToBody, validationHook), (c) => {
+    const { from, to } = c.req.valid("json");
+    const stat = moveFile(c.var.files, from, to);
+    return stat ? c.json(stat) : c.json({ error: "not found" }, 404);
+  })
+  .get("/:slug/stat", zValidator("param", slugParam, validationHook), (c) => {
+    const stat = statFile(c.var.files, c.req.valid("param").slug);
+    return stat ? c.json(stat) : c.json({ error: "not found" }, 404);
+  })
+  .get("/:slug", zValidator("param", slugParam, validationHook), (c) => {
+    const r = openFile(c.var.files, c.req.valid("param").slug);
+    if (!r) return c.json({ error: "not found" }, 404);
+    const etag = `"${r.stat.hash}"`;
+    const filename = `${r.stat.slug}${path.extname(r.abs)}`;
+    const dispo = c.req.query("download") !== undefined ? "attachment" : "inline";
+    c.header("ETag", etag);
+    c.header("Content-Type", r.stat.contentType);
+    c.header("Content-Disposition", `${dispo}; filename="${filename}"`);
+    if (c.req.header("if-none-match") === etag) return c.body(null, 304);
+    c.header("Content-Length", String(r.stat.size));
+    return c.body(Readable.toWeb(fs.createReadStream(r.abs)) as ReadableStream);
+  })
+  .put(
+    "/:slug",
+    zValidator("param", slugParam, validationHook),
+    zValidator("query", ttlQuery, validationHook),
+    async (c) => {
+      const { ttl } = c.req.valid("query");
+      const opts = { ...uploadOpts(c, ttl), slug: c.req.valid("param").slug };
+      return c.json(await putFile(c.var.files, requestBody(c), opts));
+    }
+  )
+  .delete("/:slug", zValidator("param", slugParam, validationHook), (c) =>
+    c.json({ deleted: deleteFile(c.var.files, c.req.valid("param").slug) })
+  );
+
+export type FilesRoutes = typeof filesRoutes;
