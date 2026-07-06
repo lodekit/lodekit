@@ -1,6 +1,7 @@
 import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
 import type { KvRoutes } from "@lodekit/runtime/services/kv-store";
+import type { LogRoutes } from "@lodekit/runtime/services/log-store";
 
 export interface KvEntry<T = unknown> {
   key: string;
@@ -44,6 +45,13 @@ export interface Files {
   watch(prefix: string, cb: (change: FilesChange) => void): () => void;
 }
 
+export interface Logs {
+  debug(message: string, fields?: Record<string, unknown>): void;
+  info(message: string, fields?: Record<string, unknown>): void;
+  warn(message: string, fields?: Record<string, unknown>): void;
+  error(message: string, fields?: Record<string, unknown>): void;
+}
+
 export interface Collection<T> {
   add(value: T): Promise<{ id: number; value: T }>;
   all(): Promise<{ id: number; value: T }[]>;
@@ -72,6 +80,7 @@ export interface Kv {
 export interface LodekitClient {
   kv: Kv;
   files: Files;
+  logs: Logs;
 }
 
 // Preserves the hand-written transport's error semantics around the hc calls:
@@ -294,5 +303,17 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
     },
   };
 
-  return { kv, files };
+  // Fire-and-forget by contract (spec §5/§7): emitting a log must never throw
+  // into app code, so failures are swallowed rather than surfaced.
+  const logRpc = hc<LogRoutes>(`${baseUrl}/api/apps/${appId}/log-store`);
+  const sendLog =
+    (level: "debug" | "info" | "warn" | "error") =>
+    (message: string, fields?: Record<string, unknown>): void => {
+      void logRpc.index
+        .$post({ json: fields ? { level, message, fields } : { level, message } })
+        .catch(() => {});
+    };
+  const logs: Logs = { debug: sendLog("debug"), info: sendLog("info"), warn: sendLog("warn"), error: sendLog("error") };
+
+  return { kv, files, logs };
 }
