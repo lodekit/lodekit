@@ -1,0 +1,17 @@
+/* Example per-app theme — applies only to habit-tracker, layered after the root's
+   global theme.css (so these values win over its indigo). Green primary and a
+   tighter corner radius to make the override visible at a glance. */
+:root {
+  --primary: oklch(0.6 0.17 150);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.68 0.13 150);
+  --radius: 0.375rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: oklch(0.72 0.17 150);
+    --primary-foreground: oklch(0.22 0.05 150);
+    --ring: oklch(0.58 0.11 150);
+  }
+}
