@@ -37,6 +37,16 @@ describe("buildDashboard", () => {
     expect(fs.existsSync(path.join(outDir, "server", "server.js"))).toBe(true);
     expect(fs.readdirSync(path.join(outDir, "client"), { recursive: true }).length).toBeGreaterThan(0);
   }, 60000);
+
+  it("applies the global theme override to the dashboard build", async () => {
+    fs.writeFileSync(path.join(root, "theme.css"), ":root { --primary: #ff3456; }\n");
+    const state = await buildDashboard(cfg);
+    expect(state).toEqual({ status: "ready" });
+    const assets = fs.readdirSync(path.join(cache, "_dashboard", "client", "assets"));
+    const cssFile = assets.find((f) => f.endsWith(".css"));
+    const css = fs.readFileSync(path.join(cache, "_dashboard", "client", "assets", cssFile!), "utf8");
+    expect(css).toContain("ff3456");
+  }, 60000);
 });
 
 describe("dashboard serving", () => {

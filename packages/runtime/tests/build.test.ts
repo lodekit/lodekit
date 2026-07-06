@@ -113,4 +113,40 @@ describe("buildApp", () => {
     // inline-flex comes from Button's classes in @lodekit/ui source — proves @source scanning worked
     expect(css).toContain("inline-flex");
   }, 60000);
+
+  it("applies a global theme override to an app build", async () => {
+    fs.writeFileSync(path.join(root, "theme.css"), ":root { --primary: #ff3456; }\n");
+    writeStartApp(
+      "themed",
+      `import { createFileRoute } from "@tanstack/react-router";\nimport { Button } from "@lodekit/ui";\nexport const Route = createFileRoute("/")({\n  component: () => <Button>hi</Button>,\n});\n`,
+      { css: true }
+    );
+    const state = await buildApp(cfg, "themed");
+    expect(state).toEqual({ status: "ready" });
+    const assets = fs.readdirSync(path.join(cache, "themed", "client", "assets"));
+    const cssFile = assets.find((f) => f.endsWith(".css"));
+    const css = fs.readFileSync(path.join(cache, "themed", "client", "assets", cssFile!), "utf8");
+    // hex chosen so minifiers can't shorten it (#ff3456 has no doubled-pair form)
+    expect(css).toContain("ff3456");
+  }, 60000);
+
+  it("layers a per-app theme override after the global one", async () => {
+    fs.writeFileSync(path.join(root, "theme.css"), ":root { --primary: #ff3456; }\n");
+    writeStartApp(
+      "themed",
+      `import { createFileRoute } from "@tanstack/react-router";\nimport { Button } from "@lodekit/ui";\nexport const Route = createFileRoute("/")({\n  component: () => <Button>hi</Button>,\n});\n`,
+      { css: true }
+    );
+    fs.writeFileSync(path.join(root, "apps", "themed", "theme.css"), ":root { --primary: #22cc78; }\n");
+    const state = await buildApp(cfg, "themed");
+    expect(state).toEqual({ status: "ready" });
+    const assets = fs.readdirSync(path.join(cache, "themed", "client", "assets"));
+    const cssFile = assets.find((f) => f.endsWith(".css"));
+    const css = fs.readFileSync(path.join(cache, "themed", "client", "assets", cssFile!), "utf8");
+    // the app value must be present; if the minifier kept both declarations, the
+    // app's must come later (cascade order = later wins)
+    expect(css).toContain("22cc78");
+    const g = css.indexOf("ff3456");
+    if (g !== -1) expect(css.indexOf("22cc78")).toBeGreaterThan(g);
+  }, 60000);
 });
