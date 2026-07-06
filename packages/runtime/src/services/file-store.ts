@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { Transform } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import type Database from "better-sqlite3";
-import { getAppDb } from "../db.js";
+import { getAppDb, openDbs } from "../db.js";
 import { broadcast } from "../sse.js";
 import type { Config } from "../config.js";
 
@@ -358,4 +358,44 @@ export function moveFile(ctx: FilesCtx, from: string, to: string): FileStat | un
   emit(ctx.appId, to, "put");
   const row = liveRow(ctx, to)!;
   return toStat(ctx, row);
+}
+
+// TTL-only sweep (spec §8): expired rows + bytes + emptied folders, and stale
+// temp files. Deliberately does NOT verify existence of unexpired files (§4.5).
+export function sweepFiles(cfg: Config): void {
+  const now = Date.now();
+  for (const { appId, db } of openDbs()) {
+    if (!ensured.has(db)) {
+      ensureSchema(db);
+      ensured.add(db);
+    }
+    const ctx: FilesCtx = {
+      db,
+      dir: path.join(cfg.dataDir, appId, "files"),
+      appId,
+      urlBase: `${cfg.baseUrl}/api/apps/${appId}/${CATALOG_NAME}`,
+    };
+    const expired = db
+      .prepare("DELETE FROM _lodekit_files WHERE expires_at IS NOT NULL AND expires_at <= ? RETURNING slug, path")
+      .all(now) as { slug: string; path: string }[];
+    for (const r of expired) {
+      removeBytes(ctx, r.path);
+      emit(appId, r.slug, "expire");
+    }
+    if (!fs.existsSync(ctx.dir)) continue;
+    for (const day of fs.readdirSync(ctx.dir)) {
+      const dayDir = path.join(ctx.dir, day);
+      if (!fs.statSync(dayDir).isDirectory()) continue;
+      for (const f of fs.readdirSync(dayDir)) {
+        if (!f.startsWith(".tmp-")) continue;
+        const tmp = path.join(dayDir, f);
+        if (fs.statSync(tmp).mtimeMs <= now - 3600_000) fs.rmSync(tmp, { force: true });
+      }
+      try {
+        fs.rmdirSync(dayDir);
+      } catch {
+        // not empty — keep
+      }
+    }
+  }
 }

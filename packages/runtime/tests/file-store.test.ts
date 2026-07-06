@@ -18,6 +18,7 @@ import {
   listFiles,
   copyFile,
   moveFile,
+  sweepFiles,
   type FilesCtx,
 } from "../src/services/file-store.js";
 
@@ -296,5 +297,35 @@ describe("copyFile / moveFile", () => {
       expect(() => moveFile(c, bad, bad)).toThrow(/invalid slug/);
     }
     expect(fs.readFileSync(src.path, "utf8")).toBe("data");
+  });
+});
+
+describe("TTL + sweep", () => {
+  it("expired files read as missing (lazy) and the sweep removes rows, bytes, folders", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const c = ctx();
+    const stat = await put(c, "x", { slug: "fleeting", ttl: 60 });
+    vi.setSystemTime(Date.now() + 61_000);
+    expect(listFiles(c).entries).toEqual([]); // filtered while expired
+    sweepFiles(cfg);
+    expect(fs.existsSync(stat.path)).toBe(false);
+    expect(fs.existsSync(path.dirname(stat.path))).toBe(false);
+    expect(c.db.prepare("SELECT 1 FROM _lodekit_files WHERE slug = 'fleeting'").get()).toBeUndefined();
+  });
+
+  it("removes orphaned temp files older than one hour, keeps fresh ones", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const c = ctx();
+    await put(c, "x", { slug: "anchor" }); // ensures the date folder exists
+    const day = path.join(c.dir, dateFolder());
+    const stale = path.join(day, ".tmp-stale");
+    const fresh = path.join(day, ".tmp-fresh");
+    fs.writeFileSync(stale, "s");
+    fs.writeFileSync(fresh, "f");
+    const past = new Date(Date.now() - 2 * 3600_000);
+    fs.utimesSync(stale, past, past);
+    sweepFiles(cfg);
+    expect(fs.existsSync(stale)).toBe(false);
+    expect(fs.existsSync(fresh)).toBe(true);
   });
 });

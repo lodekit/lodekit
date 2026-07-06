@@ -12,6 +12,7 @@ import { buildAll, buildDashboard, getDashboardState } from "./build.js";
 import { configureWorkers, forwardToWorker, stopAllWorkers } from "./appWorker.js";
 import { every, stop } from "./scheduler.js";
 import { sweepAllAndBroadcast } from "./services/kv-store.js";
+import { sweepFiles } from "./services/file-store.js";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
@@ -81,7 +82,8 @@ export async function start(cfg: Config): Promise<Server> {
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
   const watcher = startWatcher(cfg);
   every("kv-store-sweep", 60_000, sweepAllAndBroadcast);
-  server.on("close", () => { void watcher.close(); stop("kv-store-sweep"); stopAllWorkers(); });
+  every("file-store-sweep", 60_000, () => sweepFiles(cfg));
+  server.on("close", () => { void watcher.close(); stop("kv-store-sweep"); stop("file-store-sweep"); stopAllWorkers(); });
   void buildAll(cfg);
   return server;
 }
