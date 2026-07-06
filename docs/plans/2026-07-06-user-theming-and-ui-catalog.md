@@ -660,7 +660,9 @@ git add packages/ui/.storybook
 git commit -m "feat(ui): Storybook live theming — runtime-served theme link + app-theme picker"
 ```
 
----### Task 6: Stories for every remaining component
+---
+
+### Task 6: Stories for every remaining component
 
 **Files:**
 - Create: `packages/ui/src/components/<name>.stories.tsx` for all 40 remaining
