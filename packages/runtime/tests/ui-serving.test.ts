@@ -14,6 +14,7 @@ function cfgFor(root: string, cache: string): Config {
     appsDir: path.join(root, "apps"),
     dataDir: path.join(root, "data"),
     cacheDir: cache,
+    stateDir: path.join(root, "state"),
     port: 0,
     baseUrl: "http://lodekit.localhost:0",
   };

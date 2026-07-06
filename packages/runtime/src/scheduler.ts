@@ -2,6 +2,8 @@
 // Tasks are error-isolated (a throw logs and continues) and never hold the
 // process open (unref).
 
+import { emitLog } from "./logger.js";
+
 const tasks = new Map<string, { run: () => void; timer: NodeJS.Timeout }>();
 
 export function every(name: string, intervalMs: number, fn: () => void): void {
@@ -10,7 +12,7 @@ export function every(name: string, intervalMs: number, fn: () => void): void {
     try {
       fn();
     } catch (e) {
-      console.error(`[scheduler] task "${name}" failed:`, e);
+      emitLog("error", "scheduler", `task "${name}" failed`, { stack: e instanceof Error ? e.stack ?? e.message : String(e) });
     }
   };
   const timer = setInterval(run, intervalMs);

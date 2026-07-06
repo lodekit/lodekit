@@ -13,7 +13,7 @@ describe("scheduler", () => {
   });
 
   it("a throwing task logs and does not propagate", () => {
-    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
     every("boom", 60_000, () => { throw new Error("nope"); });
     expect(() => tick("boom")).not.toThrow();
     expect(err).toHaveBeenCalled();

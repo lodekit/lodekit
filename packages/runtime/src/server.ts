@@ -15,6 +15,8 @@ import { configureWorkers, forwardToWorker, stopAllWorkers } from "./appWorker.j
 import { every, stop } from "./scheduler.js";
 import { sweepAllAndBroadcast } from "./services/kv-store.js";
 import { sweepFiles } from "./services/file-store.js";
+import { initLogStore, sweepLogStore } from "./logStore.js";
+import { createLogger } from "./logger.js";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
@@ -117,9 +119,11 @@ export function createServer(cfg: Config): Server {
 }
 
 export async function start(cfg: Config): Promise<Server> {
+  initLogStore(cfg.stateDir);
   const server = createServer(cfg);
   server.listen(cfg.port, () => {
     console.log(`Lodekit running at ${cfg.baseUrl}`);
+    createLogger("host").info(`listening on ${cfg.baseUrl}`, { port: cfg.port });
   });
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
   const addr = server.address();
@@ -128,9 +132,11 @@ export async function start(cfg: Config): Promise<Server> {
   const watcher = await startWatcher(cfg);
   every("kv-store-sweep", 60_000, sweepAllAndBroadcast);
   every("file-store-sweep", 60_000, () => sweepFiles(cfg));
+  every("log-sweep", 60_000, () => sweepLogStore());
   server.on("close", () => {
     stop("kv-store-sweep");
     stop("file-store-sweep");
+    stop("log-sweep");
     // Order matters: close the watcher (no new build triggers), let in-flight builds
     // finish — each may (re)start its app worker on success — and only THEN stop every
     // worker. Stopping first would let the drain resurrect a worker that outlives close;

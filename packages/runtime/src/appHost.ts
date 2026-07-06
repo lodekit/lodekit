@@ -6,6 +6,7 @@ import type { Config } from "./config.js";
 import { isValidAppId } from "./registry.js";
 import { getBuildState } from "./build.js";
 import { forwardToWorker, getServerState } from "./appWorker.js";
+import { emitLog } from "./logger.js";
 
 const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
 
@@ -66,11 +67,15 @@ export function appHost(cfg: Config): MiddlewareHandler {
     }
 
     // Everything else — pages, _serverFn — is the app worker's.
+    const started = Date.now();
     try {
-      return await forwardToWorker(appId, c.req.raw);
+      const res = await forwardToWorker(appId, c.req.raw);
+      emitLog("debug", "host", `${c.req.method} ${reqPath} ${res.status}`, { status: res.status, duration_ms: Date.now() - started }, appId);
+      return res;
     } catch (e) {
       const state = getServerState(appId);
       const message = state?.status === "error" ? state.message : e instanceof Error ? e.message : String(e);
+      emitLog("error", "host", `${c.req.method} ${reqPath} failed`, { stack: message }, appId);
       return c.html(serverErrorPage(appId, message), 502);
     }
   };

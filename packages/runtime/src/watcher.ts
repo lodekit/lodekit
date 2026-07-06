@@ -5,6 +5,7 @@ import type { Config } from "./config.js";
 import { broadcast } from "./sse.js";
 import { scanApps } from "./registry.js";
 import { buildAll, buildApp, buildDashboard, dropBuild } from "./build.js";
+import { createLogger } from "./logger.js";
 
 const DEBOUNCE_MS = 150;
 
@@ -15,6 +16,7 @@ export const isGeneratedPath = (p: string): boolean =>
 
 export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void> }> {
   fs.mkdirSync(cfg.appsDir, { recursive: true });
+  const log = createLogger("watcher");
   const timers = new Map<string, NodeJS.Timeout>();
 
   const appIdOf = (p: string): string | undefined => {
@@ -35,6 +37,7 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
         // rename/delete) — building it would fail on the now-missing rootDir and,
         // since build state is keyed by the bare app id, could clobber a same-named
         // app's fresh state elsewhere. Skip rather than build a folder that's gone.
+        log.debug(`rebuilding ${appId}`);
         if (fs.existsSync(path.join(cfg.appsDir, appId))) void buildApp(cfg, appId);
       }, DEBOUNCE_MS)
     );
@@ -68,6 +71,7 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
         clearTimeout(timers.get(rel));
         timers.delete(rel);
         dropBuild(cfg, rel);
+        log.info(`app folder removed: ${rel}`);
       }
     });
 

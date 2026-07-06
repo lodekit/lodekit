@@ -11,6 +11,7 @@ import { broadcast } from "./sse.js";
 import { scanApps } from "./registry.js";
 import { startAppWorker, stopAppWorker } from "./appWorker.js";
 import { getBuildInfo } from "./buildInfo.js";
+import { emitLog } from "./logger.js";
 
 const require = createRequire(import.meta.url);
 // Point Vite at the runtime's copy of each package so apps (which have no
@@ -45,6 +46,9 @@ function setState(appId: string, state: BuildState): void {
     state.status,
     state.status === "error" ? { appId, message: state.message } : { appId }
   );
+  if (state.status === "error") emitLog("error", "build", "build failed", { stack: state.message }, appId);
+  else if (state.status === "ready") emitLog("info", "build", "build ready", undefined, appId);
+  else emitLog("debug", "build", "build started", undefined, appId);
 }
 
 function appOutDir(cfg: Config, appId: string): string {

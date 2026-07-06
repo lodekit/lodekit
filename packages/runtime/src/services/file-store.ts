@@ -12,6 +12,7 @@ import { broadcast } from "../sse.js";
 import type { Config } from "../config.js";
 import { isValidAppId } from "../registry.js";
 import { validationHook } from "../validation.js";
+import { emitLog } from "../logger.js";
 
 export const CATALOG_NAME = "file-store";
 
@@ -516,7 +517,9 @@ export const filesRoutes = new Hono<FilesEnv>()
     c.header("Content-Length", String(r.stat.size));
     const bytes = fs.createReadStream(r.abs);
     // Headers are committed once streaming starts — log instead of vanishing on a reset.
-    bytes.on("error", (e) => console.error(`[file-store] serving ${c.var.files.appId}/${r.stat.slug} failed:`, e));
+    bytes.on("error", (e) =>
+      emitLog("error", "file-store", `serving ${c.var.files.appId}/${r.stat.slug} failed`, { stack: e instanceof Error ? e.stack ?? e.message : String(e) }, c.var.files.appId)
+    );
     return c.body(Readable.toWeb(bytes) as ReadableStream);
   })
   .put(
