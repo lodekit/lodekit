@@ -42,4 +42,18 @@ describe("mcp tool helpers", () => {
     expect(page.entries.map((e) => e.key)).toEqual(["recipe:1"]);
     expect(await kv.get("missing")).toBeUndefined();
   });
+
+  it("reads file metadata through the sdk core the files tools use", async () => {
+    await scaffold(base, { appId: "docs", name: "Docs" });
+    const files = createClient({ baseUrl: base, appId: "docs" }).files;
+    await files.put("report body", { title: "Q2 Report", contentType: "text/plain" });
+
+    // exactly what lodekit_files_list / lodekit_files_stat call:
+    const page = await files.list({ prefix: "q2-" });
+    expect(page.entries.map((e) => e.slug)).toEqual(["q2-report"]);
+    const stat = await files.stat("q2-report");
+    expect(stat!.url).toContain("/api/apps/docs/file-store/q2-report");
+    expect(stat!.path.startsWith("/")).toBe(true); // absolute path for agent file tools
+    expect(await files.stat("missing")).toBeUndefined();
+  });
 });

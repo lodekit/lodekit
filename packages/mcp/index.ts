@@ -51,6 +51,22 @@ server.tool(
   }
 );
 
+server.tool(
+  "lodekit_files_list",
+  { appId: z.string(), prefix: z.string().optional() },
+  async ({ appId, prefix }) =>
+    text(await createClient({ baseUrl: BASE, appId }).files.list({ prefix }))
+);
+
+server.tool(
+  "lodekit_files_stat",
+  { appId: z.string(), slug: z.string() },
+  async ({ appId, slug }) => {
+    const stat = await createClient({ baseUrl: BASE, appId }).files.stat(slug);
+    return text(stat === undefined ? { found: false } : { found: true, ...stat });
+  }
+);
+
 // Only connect stdio when run directly (not when imported by tests).
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const transport = new StdioServerTransport();
