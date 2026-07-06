@@ -90,7 +90,7 @@ One cloud battery — a capability the runtime provides to apps: storage, secret
 _Avoid_: capability, feature, component (components are UI), battery (marketing metaphor, not the domain word)
 
 **Service catalog**:
-The full set of services Lodekit offers, named AWS-style: kv-store (the Store), relational-store (the Database, currently parked), file-store (blobs), secret-store, task-queue and task-schedule (Tasks), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
+The full set of services Lodekit offers, named AWS-style: kv-store (the Store), relational-store (the Database, currently parked), file-store (Files), secret-store, task-queue and task-schedule (Tasks), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
 _Avoid_: the SDK (the SDK is the layer into the catalog, not the catalog), feature list
 
 The shipped and near-term services:
