@@ -20,3 +20,4 @@ packages/runtime/tests/fixtures/start-app/src/routeTree.gen.ts
 examples/apps/habit-tracker/src/routeTree.gen.ts
 examples/apps/expense-tracker/src/routeTree.gen.ts
 packages/runtime/dashboard/src/routeTree.gen.ts
+packages/ui/storybook-static/
