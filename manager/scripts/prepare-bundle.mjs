@@ -71,6 +71,9 @@ async function fetchNode() {
 }
 
 function buildPayload() {
+  // The /_ui preview ships as static files inside @lodekit/ui — build it before the
+  // deploy below copies the package into the payload.
+  run(`pnpm --filter @lodekit/ui build-storybook`);
   fs.rmSync(platformDir, { recursive: true, force: true });
   fs.mkdirSync(platformDir, { recursive: true });
   // --config.hoist=false: without it, pnpm's default hoist pattern ("*") hoists every
@@ -153,10 +156,22 @@ function assertSelfContainedTsconfigs() {
   }
 }
 
+// The /_ui preview must ship inside the payload's @lodekit/ui copy — a files/packing
+// change in the ui package would silently drop it.
+function assertUiPreviewInPayload() {
+  const index = path.join(
+    platformDir, "runtime", "node_modules", "@lodekit", "ui", "storybook-static", "index.html"
+  );
+  if (!fs.existsSync(index)) {
+    throw new Error(`Payload is missing the built ui preview: ${index}`);
+  }
+}
+
 assertNodeVersion();
 await fetchNode();
 buildPayload();
 assertNoEscapingSymlinks();
 assertNativeModule();
 assertSelfContainedTsconfigs();
+assertUiPreviewInPayload();
 console.log(`Bundle inputs ready: ${buildDir} (Node v${NODE_VERSION} + platform payload)`);
