@@ -18,7 +18,7 @@ const require = createRequire(import.meta.url);
 const pkgDir = (id: string) => path.dirname(require.resolve(`${id}/package.json`));
 // lucide-react is @lodekit/ui's dependency, not the runtime's — resolve the exact copy
 // the vendored components themselves use, so apps and components share one icon set.
-const uiDir = pkgDir("@lodekit/ui");
+export const uiDir = pkgDir("@lodekit/ui");
 const uiRequire = createRequire(path.join(uiDir, "package.json"));
 const lucideDir = path.dirname(uiRequire.resolve("lucide-react/package.json"));
 
