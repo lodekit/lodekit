@@ -41,11 +41,14 @@ export const getSummary = createServerFn().handler(async () => {
 // Server function: renders the expenses to CSV in the file-store with a 7-day TTL.
 // Derived slug ("Expenses 2026-07" -> "expenses-2026-07"); re-exports the same
 // month become expenses-2026-07-2, -3, ... (derive-collision suffixing).
+// RFC4180: quote the field, double any embedded quotes (JSON.stringify's \" is not CSV).
+const csvField = (v: string) => `"${v.replace(/"/g, '""')}"`;
+
 export const exportCsv = createServerFn().handler(async () => {
   const rows = await expenses.all();
   const month = new Date().toISOString().slice(0, 7);
   const lines = rows.map((r) =>
-    [r.value.created_at, r.value.category, JSON.stringify(r.value.note ?? ""), r.value.amount].join(",")
+    [r.value.created_at, r.value.category, csvField(r.value.note ?? ""), r.value.amount].join(",")
   );
   return await files.put(["date,category,note,amount", ...lines].join("\n"), {
     title: `Expenses ${month}`,
