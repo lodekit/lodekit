@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { scaffold, listApps } from "./client.js";
+import { scaffold, listApps, fetchLogs } from "./client.js";
 import { createClient } from "@lodekit/sdk";
 
 const BASE = process.env.LODEKIT_BASE_URL ?? "http://lodekit.localhost:7777";
@@ -34,6 +34,17 @@ server.tool("lodekit_open_app", { appId: z.string() }, async ({ appId }) => {
   openInBrowser(url);
   return text({ opened: url });
 });
+
+server.tool(
+  "lodekit_logs",
+  {
+    appId: z.string().optional().describe('filter to one app, or "platform" for the runtime\'s own records; omit for everything'),
+    level: z.enum(["debug", "info", "warn", "error"]).optional().describe("minimum level"),
+    limit: z.number().optional(),
+    q: z.string().optional().describe("substring match on the message"),
+  },
+  async (args) => text(await fetchLogs(BASE, args))
+);
 
 server.tool(
   "lodekit_kv_list",

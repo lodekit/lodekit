@@ -13,6 +13,7 @@ beforeEach(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-"));
   process.env.LODEKIT_ROOT = root;
   process.env.LODEKIT_PORT = "0";
+  process.env.LODEKIT_STATE_DIR = path.join(root, "state");
   server = await start(loadConfig());
   const addr = server.address();
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
@@ -22,6 +23,7 @@ afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
   delete process.env.LODEKIT_ROOT;
   delete process.env.LODEKIT_PORT;
+  delete process.env.LODEKIT_STATE_DIR;
 });
 
 describe("mcp tool helpers", () => {
@@ -55,5 +57,17 @@ describe("mcp tool helpers", () => {
     expect(stat!.url).toContain("/api/apps/docs/file-store/q2-report");
     expect(stat!.path.startsWith("/")).toBe(true); // absolute path for agent file tools
     expect(await files.stat("missing")).toBeUndefined();
+  });
+
+  it("reads app and platform logs through the helper the logs tool uses", async () => {
+    await scaffold(base, { appId: "diary", name: "Diary" });
+    const { logs } = createClient({ baseUrl: base, appId: "diary" });
+    logs.error("render failed", { stack: "TRACE" });
+    const { fetchLogs } = await import("../../mcp/client.js");
+    await expect.poll(async () => (await fetchLogs(base, { appId: "diary", level: "error" })).records).toHaveLength(1);
+    const app = await fetchLogs(base, { appId: "diary" });
+    expect(app.records[0]).toMatchObject({ source: "app", message: "render failed" });
+    const platform = await fetchLogs(base, { appId: "platform" });
+    expect(platform.records.length).toBeGreaterThan(0); // boot + scaffold activity
   });
 });
