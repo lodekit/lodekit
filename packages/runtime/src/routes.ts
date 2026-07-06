@@ -1,12 +1,17 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { streamSSE } from "hono/streaming";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import type { Config } from "./config.js";
 import { scanApps, isValidAppId } from "./registry.js";
 import { scaffoldApp } from "./scaffold.js";
 import { addClient } from "./sse.js";
+import { validationHook } from "./validation.js";
 import { kvRoutes, withDb, CATALOG_NAME } from "./services/kv-store.js";
 import { filesRoutes, withFiles, CATALOG_NAME as FILES } from "./services/file-store.js";
+import { logRoutes, withLogs, logsQuery, CATALOG_NAME as LOGS } from "./services/log-store.js";
+import { queryLogs } from "./logStore.js";
 
 // Holds the stream open until the client disconnects; the abort callback
 // removes the client from the SSE registry.
@@ -42,6 +47,14 @@ export function apiRoutes(cfg: Config) {
     })
     .use(`/apps/:appId/${CATALOG_NAME}/*`, withDb(cfg))
     .route(`/apps/:appId/${CATALOG_NAME}`, kvRoutes)
+    .use(`/apps/:appId/${LOGS}/*`, withLogs())
+    .route(`/apps/:appId/${LOGS}`, logRoutes)
+    // Global log read (dashboard + MCP). `app=platform` selects the runtime's own
+    // records — "platform" is a reserved app name on this endpoint.
+    .get("/logs", zValidator("query", logsQuery.extend({ app: z.string().optional() }), validationHook), (c) => {
+      const { app, level, source, before, limit, q } = c.req.valid("query");
+      return c.json(queryLogs({ app, level, source, before, limit, q }));
+    })
     .get("/events", (c) => sseHandler()(c))
     .get("/apps/:appId/events", (c) => {
       const appId = c.req.param("appId");
