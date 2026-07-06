@@ -92,6 +92,7 @@ export function startWatcher(cfg: Config): { close(): Promise<void> } {
 
   return {
     close: async () => {
+      clearTimeout(globalTimer);
       await Promise.all([watcher.close(), rootWatcher.close()]);
     },
   };
