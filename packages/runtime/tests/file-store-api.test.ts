@@ -5,6 +5,7 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { createServer } from "../src/server.js";
 import type { Config } from "../src/config.js";
+import { createClient } from "@lodekit/sdk";
 
 let root: string, server: Server, base: string;
 
@@ -132,5 +133,75 @@ describe("file-store HTTP surface", () => {
       body: JSON.stringify({ from: "ok", to: "Nope!" }),
     });
     expect(badCopy.status).toBe(400);
+  });
+});
+
+describe("sdk files handle (core) against the booted runtime", () => {
+  it("put/stat/get/list/copy/move/delete round-trip", async () => {
+    const files = createClient({ baseUrl: base, appId: "sdkapp" }).files;
+    const stat = await files.put("col1,col2\n1,2", {
+      title: "Expenses 2026-07",
+      contentType: "text/csv",
+      ttl: 3600,
+      metadata: { rows: 1 },
+    });
+    expect(stat.slug).toBe("expenses-2026-07");
+    expect(stat.metadata).toEqual({ rows: 1 });
+
+    expect(files.url(stat.slug)).toBe(`${base}/api/apps/sdkapp/file-store/expenses-2026-07`);
+    expect(files.url(stat.slug, { download: true })).toContain("?download=1");
+
+    const blob = await files.get(stat.slug);
+    expect(await blob!.text()).toBe("col1,col2\n1,2");
+    expect(await files.get("missing")).toBeUndefined();
+    expect(await files.stat("missing")).toBeUndefined();
+
+    const copied = await files.copy(stat.slug, "expenses-copy");
+    expect(copied.hash).toBe(stat.hash);
+    const moved = await files.move("expenses-copy", "expenses-final");
+    expect(moved.slug).toBe("expenses-final");
+
+    const page = await files.list({ prefix: "expenses-" });
+    expect(page.entries.map((e) => e.slug).sort()).toEqual(["expenses-2026-07", "expenses-final"]);
+
+    expect(await files.delete("expenses-final")).toBe(true);
+    expect(await files.delete("expenses-final")).toBe(false);
+  });
+
+  it("put streams a ReadableStream body", async () => {
+    const files = createClient({ baseUrl: base, appId: "sdkapp" }).files;
+    const body = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("streamed"));
+        controller.close();
+      },
+    });
+    const stat = await files.put(body, { slug: "streamed", contentType: "text/plain" });
+    expect(stat.size).toBe(8);
+  });
+
+  it("scoped SSE carries file-store-change and never leaks across apps", async () => {
+    const events: string[] = [];
+    const res = await fetch(`${base}/api/apps/appa/events`);
+    const reader = res.body!.getReader();
+    const drain = (async () => {
+      const dec = new TextDecoder();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) return;
+        events.push(dec.decode(value));
+      }
+    })();
+    const filesA = createClient({ baseUrl: base, appId: "appa" }).files;
+    const filesB = createClient({ baseUrl: base, appId: "appb" }).files;
+    await filesA.put("a", { slug: "mine" });
+    await filesB.put("b", { slug: "theirs" });
+    await new Promise((r) => setTimeout(r, 200));
+    await reader.cancel();
+    await drain.catch(() => {});
+    const stream = events.join("");
+    expect(stream).toContain("file-store-change");
+    expect(stream).toContain('"slug":"mine"');
+    expect(stream).not.toContain("theirs");
   });
 });

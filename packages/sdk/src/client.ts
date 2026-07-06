@@ -12,6 +12,38 @@ export interface KvEntry<T = unknown> {
 
 export type KvChange = { key: string; op: "set" | "del" | "expire" };
 
+export interface FileStat {
+  slug: string;
+  title: string | null;
+  contentType: string;
+  size: number;
+  hash: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: number;
+  updatedAt: number;
+  expiresAt: number | null;
+  url: string;
+  path: string;
+}
+
+export type FilesChange = { slug: string; op: "put" | "del" | "expire" };
+export type FilePutBody = string | Blob | ArrayBuffer | Uint8Array | ReadableStream;
+
+export interface Files {
+  put(
+    body: FilePutBody,
+    opts?: { slug?: string; title?: string; contentType?: string; ttl?: number; metadata?: Record<string, unknown> }
+  ): Promise<FileStat>;
+  get(slug: string): Promise<Blob | undefined>;
+  url(slug: string, opts?: { download?: boolean }): string;
+  stat(slug: string): Promise<FileStat | undefined>;
+  delete(slug: string): Promise<boolean>;
+  list(opts?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ entries: FileStat[]; nextCursor: string | null }>;
+  copy(from: string, to: string): Promise<FileStat>;
+  move(from: string, to: string): Promise<FileStat>;
+  watch(prefix: string, cb: (change: FilesChange) => void): () => void;
+}
+
 export interface Collection<T> {
   add(value: T): Promise<{ id: number; value: T }>;
   all(): Promise<{ id: number; value: T }[]>;
@@ -39,6 +71,7 @@ export interface Kv {
 
 export interface LodekitClient {
   kv: Kv;
+  files: Files;
 }
 
 // Preserves the hand-written transport's error semantics around the hc calls:
@@ -62,15 +95,65 @@ async function parse<R extends ClientResponse<unknown>>(res: R): Promise<Success
   return (await res.json()) as SuccessData<R>;
 }
 
+// Twin of `parse` for the raw-body/byte routes, which can't go through `hc`
+// (the hc-typed `parse` can't type raw `fetch` responses).
+async function parseJson<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const data = (await res.json()) as { error?: string };
+      if (data?.error) message = data.error;
+    } catch {
+      // non-JSON error body — keep statusText
+    }
+    throw new Error(message);
+  }
+  return (await res.json()) as T;
+}
+
+// One EventSource per client, shared by all watchers of either handle,
+// lazily opened on the first watcher and closed with the last.
+function createEventChannel(url: string) {
+  type Sub = { event: string; match: (data: never) => boolean; cb: (data: never) => void };
+  const subs = new Set<Sub>();
+  const bound = new Set<string>();
+  let es: EventSource | null = null;
+  return {
+    on<T>(event: string, match: (data: T) => boolean, cb: (data: T) => void): () => void {
+      if (typeof EventSource === "undefined") {
+        throw new Error("watch is client-only (no EventSource in this environment)");
+      }
+      if (!es) es = new EventSource(url);
+      if (!bound.has(event)) {
+        bound.add(event);
+        es.addEventListener(event, (e) => {
+          const data = JSON.parse((e as MessageEvent).data) as T;
+          for (const s of subs) {
+            if (s.event === event && (s.match as (d: T) => boolean)(data)) (s.cb as (d: T) => void)(data);
+          }
+        });
+      }
+      const sub = { event, match, cb } as Sub;
+      subs.add(sub);
+      return () => {
+        subs.delete(sub);
+        if (subs.size === 0 && es) {
+          es.close();
+          es = null;
+          bound.clear();
+        }
+      };
+    },
+  };
+}
+
 export function createClient({ baseUrl, appId }: { baseUrl: string; appId: string }): LodekitClient {
   const api = `${baseUrl}/api/apps/${appId}/kv-store`;
   // Any route/SDK mismatch (path, method, param, body shape) fails tsc at edit time.
   const rpc = hc<KvRoutes>(api);
   const key$ = rpc[":key"];
 
-  // One EventSource per client, shared by all watchers, closed with the last.
-  const watchers = new Set<{ prefix: string; cb: (c: KvChange) => void }>();
-  let es: { close(): void } | null = null;
+  const channel = createEventChannel(`${baseUrl}/api/apps/${appId}/events`);
 
   const kv: Kv = {
     async get<T>(key: string): Promise<T | undefined> {
@@ -139,30 +222,75 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
       };
     },
     watch(prefix, cb) {
-      if (typeof EventSource === "undefined") {
-        throw new Error("kv.watch is client-only (no EventSource in this environment)");
-      }
-      const watcher = { prefix, cb };
-      if (watchers.size === 0) {
-        const source = new EventSource(`${baseUrl}/api/apps/${appId}/events`);
-        source.addEventListener("kv-store-change", (e) => {
-          const change = JSON.parse((e as MessageEvent).data) as KvChange;
-          for (const w of watchers) {
-            if (change.key.startsWith(w.prefix)) w.cb(change);
-          }
-        });
-        es = source;
-      }
-      watchers.add(watcher);
-      return () => {
-        watchers.delete(watcher);
-        if (watchers.size === 0 && es) {
-          es.close();
-          es = null;
-        }
-      };
+      return channel.on<KvChange>("kv-store-change", (c) => c.key.startsWith(prefix), cb);
     },
   };
 
-  return { kv };
+  const filesApi = `${baseUrl}/api/apps/${appId}/${"file-store"}`;
+
+  const files: Files = {
+    async put(body, opts = {}) {
+      const qs = opts.ttl != null ? `?ttl=${opts.ttl}` : "";
+      const headers: Record<string, string> = {};
+      if (opts.contentType) headers["Content-Type"] = opts.contentType;
+      if (opts.title) headers["X-Lodekit-Title"] = opts.title;
+      if (opts.metadata) headers["X-Lodekit-Metadata"] = JSON.stringify(opts.metadata);
+      const init: RequestInit & { duplex?: "half" } = {
+        method: opts.slug ? "PUT" : "POST",
+        body: body as BodyInit,
+        headers,
+      };
+      // Streamed request bodies require half-duplex in fetch (Node and browsers).
+      if (typeof ReadableStream !== "undefined" && body instanceof ReadableStream) init.duplex = "half";
+      return parseJson<FileStat>(await fetch(opts.slug ? `${filesApi}/${opts.slug}${qs}` : `${filesApi}${qs}`, init));
+    },
+    async get(slug) {
+      const res = await fetch(`${filesApi}/${slug}`);
+      if (res.status === 404) return undefined;
+      if (!res.ok) throw new Error(res.statusText);
+      return res.blob();
+    },
+    url(slug, opts = {}) {
+      return `${filesApi}/${slug}${opts.download ? "?download=1" : ""}`;
+    },
+    async stat(slug) {
+      const res = await fetch(`${filesApi}/${slug}/stat`);
+      if (res.status === 404) return undefined;
+      return parseJson<FileStat>(res);
+    },
+    async delete(slug) {
+      return (await parseJson<{ deleted: boolean }>(await fetch(`${filesApi}/${slug}`, { method: "DELETE" }))).deleted;
+    },
+    async list(opts = {}) {
+      const query = new URLSearchParams();
+      if (opts.prefix !== undefined) query.set("prefix", opts.prefix);
+      if (opts.limit !== undefined) query.set("limit", String(opts.limit));
+      if (opts.cursor !== undefined) query.set("cursor", opts.cursor);
+      const q = query.toString();
+      return parseJson<{ entries: FileStat[]; nextCursor: string | null }>(await fetch(`${filesApi}${q ? `?${q}` : ""}`));
+    },
+    async copy(from, to) {
+      return parseJson<FileStat>(
+        await fetch(`${filesApi}/copy`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ from, to }),
+        })
+      );
+    },
+    async move(from, to) {
+      return parseJson<FileStat>(
+        await fetch(`${filesApi}/move`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ from, to }),
+        })
+      );
+    },
+    watch(prefix, cb) {
+      return channel.on<FilesChange>("file-store-change", (c) => c.slug.startsWith(prefix), cb);
+    },
+  };
+
+  return { kv, files };
 }
