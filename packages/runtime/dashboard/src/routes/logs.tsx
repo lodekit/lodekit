@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Card, CardHeader, CardTitle, Skeleton } from "@lodekit/ui";
 
 const LEVELS = ["debug", "info", "warn", "error"] as const;
@@ -64,41 +64,72 @@ function LogsView() {
   const [q, setQ] = useState("");
   const [records, setRecords] = useState<LogRecord[] | null>(null);
   const [nextBefore, setNextBefore] = useState<number | null>(null);
+  const [debouncedQ, setDebouncedQ] = useState("");
+
+  // Debounce the search box so it doesn't refire the backfill/live-filter on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 250);
+    return () => clearTimeout(t);
+  }, [q]);
 
   const filterQuery = useMemo(() => {
     const query = new URLSearchParams({ limit: "200" });
     if (app) query.set("app", app);
     if (level !== "debug") query.set("level", level);
-    if (q) query.set("q", q);
+    if (debouncedQ) query.set("q", debouncedQ);
     return query;
-  }, [app, level, q]);
+  }, [app, level, debouncedQ]);
+
+  // Current filters, readable from the persistent SSE handler without reopening the connection.
+  const filtersRef = useRef({ app, level, q: debouncedQ });
+  filtersRef.current = { app, level, q: debouncedQ };
+
+  // Records that arrived over SSE while a backfill was in flight (records === null); merged in
+  // once the backfill resolves so they aren't dropped.
+  const pendingRef = useRef<LogRecord[]>([]);
 
   useEffect(() => {
     let cancelled = false;
+    pendingRef.current = [];
     setRecords(null);
     void fetch(`/api/logs?${filterQuery}`)
       .then((r) => r.json())
       .then((d: { records: LogRecord[]; nextBefore: number | null }) => {
         if (cancelled) return;
-        setRecords(d.records);
+        // Pending records are newer than the backfill page, so they lead; dedupe real ids
+        // (id 0 marks a degraded/unpersisted record and is always kept).
+        const pending = pendingRef.current.filter(
+          (p) => p.id === 0 || !d.records.some((r) => r.id === p.id),
+        );
+        pendingRef.current = [];
+        setRecords([...pending, ...d.records].slice(0, MAX_LIVE_ROWS));
         setNextBefore(d.nextBefore);
       });
     return () => { cancelled = true; };
   }, [filterQuery]);
 
-  // Live tail: prepend matching records from the shared SSE stream.
+  // Live tail: a single persistent connection (filter changes must not tear it down), prepending
+  // matching records from the shared SSE stream.
   useEffect(() => {
     const es = new EventSource("/api/events");
     es.addEventListener("log", (e) => {
       const r = JSON.parse((e as MessageEvent).data) as LogRecord;
+      const { app, level, q } = filtersRef.current;
       const matches =
         (!app || (app === "platform" ? r.appId === null : r.appId === app)) &&
         LEVEL_RANK[r.level] >= LEVEL_RANK[level] &&
         (!q || r.message.toLowerCase().includes(q.toLowerCase()));
-      if (matches) setRecords((rs) => (rs ? [r, ...rs].slice(0, MAX_LIVE_ROWS) : rs));
+      if (!matches) return;
+      setRecords((rs) => {
+        if (rs === null) {
+          pendingRef.current = [...pendingRef.current, r];
+          return rs;
+        }
+        return [r, ...rs].slice(0, MAX_LIVE_ROWS);
+      });
     });
     return () => es.close();
-  }, [app, level, q]);
+  }, []);
 
   useEffect(() => {
     void fetch("/api/apps").then((r) => r.json()).then(setApps);
@@ -162,7 +193,7 @@ function LogsView() {
           {records.map((r) => (
             <Row key={r.id === 0 ? `${r.ts}-${r.message}` : r.id} r={r} />
           ))}
-          {nextBefore != null && (
+          {nextBefore != null && records.length < 1000 && (
             <Button variant="outline" size="sm" className="mt-3" onClick={() => void loadMore()}>
               Load more
             </Button>
