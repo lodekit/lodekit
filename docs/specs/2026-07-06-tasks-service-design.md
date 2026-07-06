@@ -6,7 +6,9 @@
 Tasks trigger on the Start-hosting substrate
 (`docs/specs/2026-07-03-tanstack-start-host-design.md`). Joins the service catalog beside
 kv-store (`2026-07-03-kv-store-v2-design.md`) and file-store
-(`2026-07-06-file-store-design.md`), whose patterns it deliberately mirrors.
+(`2026-07-06-file-store-design.md`), whose patterns it deliberately mirrors. Coordinates
+with the in-flight logging slice (`docs/specs/2026-07-06-logging-design.md`, `stack`
+branch) — see §8, Logging.
 
 ## 1. Purpose and v1 scope
 
@@ -190,12 +192,33 @@ dropped, and no attempt is consumed.
 **Defaults** (all to become settings later — roadmap §11): `retries` 3, `timeout` "5m",
 `catchUp` "1h", backoff 30s·2ⁿ capped 10m, dispatch poll 1s.
 
-## 8. Events and dashboard
+## 8. Events, logging, and dashboard
 
 Run-state transitions and definition changes (register/retire/config-change) broadcast
 **`tasks-change`** on the existing SSE bus, app-scoped, same shape family as
 `kv-store-change`: `{ task, runId?, state? }`. Durable state lives in SQLite and is
 queryable; SSE is only the live notification (the bus has no replay — established pattern).
+
+**Logging** — coordinates with the in-flight logging slice
+(`docs/specs/2026-07-06-logging-design.md`, `stack` branch); the division of labor:
+
+- The **runs table stays the durable run state** — bounded, queryable, driving the
+  dashboard panel and re-runs. Logs are diagnostic detail with their own retention.
+- The tasks engine logs through the platform logger under a **`tasks` source** (the
+  source column is free-form text — no logging-schema change): run start at `debug`,
+  retry at `warn`, terminal failure at `error`, app-tagged, with fields
+  `{ task, runId, attempt, duration_ms }` (the logging spec's conventional keys).
+- Handler `console.*` output is captured automatically as app `console` records by the
+  logging slice's worker capture — nothing for Tasks to build. A dispatcher-level
+  uncaught throw is likewise already covered by the logging slice's `scheduler`-source
+  error records.
+- The logging slice's `lodekit_logs` MCP tool is the failed-run debug loop (Claude reads
+  the app's logs), which is why Tasks defers its own MCP tools (§11).
+- Sequencing: whichever slice lands second wires the `tasks`-source log calls; until
+  then the engine's error path tees to stderr like the rest of the runtime. No naming
+  collisions: the internal-scheduler registrations are `log-sweep` (logging) vs
+  `tasks-dispatch`/`tasks-sweep` (this slice), and the worker postMessage types are
+  `log` (logging) vs `task-run` (this slice).
 
 Dashboard v1, per the umbrella's "schedule + last-run state": a per-app **Tasks panel**
 listing each task with its schedule, next-run time, and last-run state; expandable run
