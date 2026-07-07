@@ -4,8 +4,9 @@
 **Status:** Draft, pending review
 **Role:** Replaces the two example apps (habit-tracker, expense-tracker) with two apps that
 have real jobs: **Greenhouse**, the SDK showcase and permanent smoke-testing ground, and
-**Welcome to Lodekit**, a minimal second app that keeps `examples/` exercising multi-app
-hosting and reserves the slot for the future guided FTUX. Supersedes
+**Welcome to Lodekit**, a minimal second app that keeps the checked-in root exercising
+multi-app hosting and reserves the slot for the future guided FTUX. Renames `examples/`
+to **`root/`** — the directory *is* the shipped Lodekit root. Supersedes
 `2026-06-30-habit-tracker-design.md`. Coordinates with the in-flight events slice
 (`docs/specs/2026-07-07-events-design.md`, `stack` branch) — see §5 and §12.
 
@@ -18,7 +19,7 @@ The example apps have outgrown "proof the host works." This slice gives them thr
 2. **Smoke ground** — the app exercises the SDK end-to-end against a real UI. The
    **definition-of-done convention**: a new SDK/runtime capability is not done until
    Greenhouse exercises it. The coverage matrix (§11) is the living checklist, kept at
-   `examples/README.md`.
+   `root/readme.md`.
 3. **FTUX seed** — Welcome is deliberately tiny now; it grows into the guided first-time
    experience later (roadmap).
 
@@ -187,7 +188,7 @@ root/apps/data layout, the dashboard, and the build-with-your-agent loop — plu
 one live element, a `kv.incr` visit counter, proving it's a real running app rather than
 a static page. Deliberately no further SDK use: Greenhouse owns coverage; Welcome owns
 orientation. Its future as the guided FTUX (teaching the high-level concepts
-interactively) goes on the roadmap. Second job: keeps `examples/` a two-app root, so
+interactively) goes on the roadmap. Second job: keeps `root/` a two-app root, so
 multi-app hosting (per-app workers, data isolation, the dashboard app list) stays
 manually smoke-testable.
 
@@ -196,19 +197,26 @@ manually smoke-testable.
 Today the packaged manager creates an **empty** root on first run (`main.js` already
 computes `isFirstRun`). This slice makes first run land in a living app:
 
-- `scripts/prepare-bundle.mjs` copies `examples/apps/` into the payload
-  (`Resources/platform/showcase/`).
+- `scripts/prepare-bundle.mjs` copies `root/apps/` into the payload
+  (`Resources/platform/root/`) — the checked-in `root/` *is* the shipped root.
 - On first run only (root directory absent), after creating `apps/` + `data/`, the
   manager copies the showcase apps in. Never on later launches — a person deleting or
   editing them is final; updates never clobber a person's copy (an "update showcase"
   story is a roadmap item alongside auto-update).
+- **Deleting the showcase apps must leave a working empty platform** — the person is
+  free to let them go, and an empty root (no apps) is a supported state: the dashboard
+  renders its empty app list, the runtime stays healthy, nothing references the apps by
+  id. No showcase app may become load-bearing.
 - `data/` starts empty; the apps self-seed (§8), so no databases ship in the bundle.
 
-Dev mode is unchanged: `examples/` is the root, same two apps.
+Dev mode is unchanged in behavior: `root/` (renamed from `examples/`) is the dev
+Lodekit root, same two apps. The rename touches the root `package.json` dev script,
+`manager/src/paths.js`, the runtime e2e test paths, `CLAUDE.md`, and the pnpm-workspace
+note that the directory is not a workspace member.
 
 ## 11. SDK coverage matrix
 
-The living checklist (maintained at `examples/README.md`; this table is the launch
+The living checklist (maintained at `root/readme.md`; this table is the launch
 snapshot). *Every row must name a real feature; "Potting Shed corner" is the escape
 hatch, empty at launch.*
 
@@ -266,10 +274,11 @@ Welcome adds nothing to the matrix by design (`kv.incr` only).
 ## 13. Docs and bookkeeping
 
 - **Deletes:** `examples/apps/habit-tracker`, `examples/apps/expense-tracker` (their
-  `data/` is gitignored — nothing else to remove).
-- **`examples/README.md`:** new — what the two apps are for, the DoD convention, the
+  `data/` is gitignored — nothing else to remove); then `examples/` → `root/` (§10).
+- **`root/readme.md`:** new — what the two apps are for, the DoD convention, the
   coverage matrix (§11) as the living checklist.
-- **`CLAUDE.md`:** examples bullet updates (two showcase apps, their roles); add the DoD
+- **`CLAUDE.md`:** the examples bullet becomes the `root/` bullet (the checked-in
+  Lodekit root: two showcase apps, their roles, shipped by the manager); add the DoD
   line: new SDK/runtime capability includes exercising it in Greenhouse.
 - **`context.md`:** "Showcase app" term (Greenhouse — the SDK showcase and smoke ground,
   shipped with the manager) and "Welcome app" (orientation now, guided FTUX later).
