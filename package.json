@@ -8,6 +8,13 @@
     "test": "pnpm -r test"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["better-sqlite3", "esbuild", "electron", "@tailwindcss/oxide", "lightningcss"]
+    "onlyBuiltDependencies": [
+      "@tailwindcss/oxide",
+      "better-sqlite3",
+      "electron",
+      "esbuild",
+      "lightningcss",
+      "sharp"
+    ]
   }
 }
