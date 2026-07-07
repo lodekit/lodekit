@@ -183,9 +183,10 @@ function DashboardHome() {
         payload: Record<string, unknown> | null;
       };
       if (d.type === "apps-changed") return void load();
-      if (d.type === "building" || d.type === "ready" || d.type === "error") {
-        const message = typeof d.payload?.message === "string" ? d.payload.message : undefined;
-        return setStates((s) => ({ ...s, [d.ns]: { status: d.type as BuildStatus["status"], message } }));
+      if (d.type === "build-state") {
+        const p = d.payload as { status: BuildStatus["status"]; message?: string } | null;
+        if (p) setStates((s) => ({ ...s, [d.ns]: { status: p.status, message: p.message } }));
+        return;
       }
       if (d.type === "server-state") {
         const p = d.payload as { status: ServerStatus["status"]; message?: string } | null;

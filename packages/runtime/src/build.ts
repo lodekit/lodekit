@@ -42,12 +42,7 @@ export function getBuildState(appId: string): BuildState | undefined {
 
 function setState(appId: string, state: BuildState): void {
   states.set(appId, state);
-  emitEvent({
-    ns: appId,
-    source: PLATFORM_NS,
-    type: state.status,
-    payload: state.status === "error" ? { message: state.message } : undefined,
-  });
+  emitEvent({ ns: appId, source: PLATFORM_NS, type: "build-state", payload: { ...state } });
   if (state.status === "error") emitLog("error", "build", "build failed", { stack: state.message }, appId);
   else if (state.status === "ready") emitLog("info", "build", "build ready", undefined, appId);
   else emitLog("debug", "build", "build started", undefined, appId);
@@ -142,11 +137,11 @@ async function runDashboardBuild(cfg: Config): Promise<DashboardState> {
       themeOverrideFiles: [path.join(cfg.root, "theme.css")],
     });
     dashboardState = { status: "ready" };
-    emitEvent({ ns: "_dashboard", source: PLATFORM_NS, type: "ready" });
+    emitEvent({ ns: "_dashboard", source: PLATFORM_NS, type: "build-state", payload: { ...dashboardState } });
     startAppWorker(cfg, "_dashboard");
   } catch (e) {
     dashboardState = { status: "error", message: e instanceof Error ? e.message : String(e) };
-    emitEvent({ ns: "_dashboard", source: PLATFORM_NS, type: "error", payload: { message: dashboardState.message } });
+    emitEvent({ ns: "_dashboard", source: PLATFORM_NS, type: "build-state", payload: { ...dashboardState } });
   }
   return dashboardState;
 }

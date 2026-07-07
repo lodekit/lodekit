@@ -27,11 +27,11 @@ afterEach(() => {
 
 describe("emitEvent", () => {
   it("persists and broadcasts the envelope under the single 'event' wire name", () => {
-    const rec = emitEvent({ ns: "notes", source: PLATFORM_NS, type: "ready" })!;
+    const rec = emitEvent({ ns: "notes", source: PLATFORM_NS, type: "export-ready" })!;
     expect(rec.id).toBeGreaterThan(0);
-    expect(queryEvents({ ns: "notes" }).records[0]).toMatchObject({ type: "ready", source: "_platform" });
+    expect(queryEvents({ ns: "notes" }).records[0]).toMatchObject({ type: "export-ready", source: "_platform" });
     expect(received.global[0]).toContain("event: event\n");
-    expect(received.global[0]).toContain('"type":"ready"');
+    expect(received.global[0]).toContain('"type":"export-ready"');
     // ns is the scoping key: the app's channel got its own event…
     expect(received.scoped).toHaveLength(1);
   });

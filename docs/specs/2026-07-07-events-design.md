@@ -28,7 +28,7 @@ first-class capability:
 **Scope decisions made in review:**
 
 - **Events drive business logic; logs are telemetry.** That is the canonical line between
-  the two stores. The dashboard reacting to `ready`, an expense tracker surfacing a
+  the two stores. The dashboard reacting to a build turning ready, an expense tracker surfacing a
   finished CSV export, a polling task announcing a detected change — events. What
   happened, for observation — logs. The `log` SSE tail therefore stays log-store's
   surface (storing tail messages would double-store the log); everything else on the bus
@@ -123,7 +123,7 @@ CREATE INDEX events_ns ON events(ns, id);
 
 - **`ns` vs `source`** — mirrors log-store's `app_id` + `source` split. The platform
   emits app-relevant events *into the app's namespace* (`ns: "expenses", source:
-  "_platform", type: "ready"`), so an app's own feed carries its lifecycle without
+  "_platform", type: "build-state"`), so an app's own feed carries its lifecycle without
   exposing any sibling's. App emissions are `ns = source =` the app's id, set by the
   runtime — attribution cannot be forged by construction.
 - **Payloads carry identity, not values** — the keyspace-notification principle the
@@ -164,7 +164,7 @@ bus):
 
 | Event | Was | Becomes |
 | --- | --- | --- |
-| `building` / `ready` / `error` | `build.ts` `setState` broadcast | `{ns: <app id>, source: "_platform"}`; payload `{message}` on error. The dashboard's own builds emit as `ns: "_dashboard"`. |
+| `building` / `ready` / `error` | `build.ts` `setState` broadcast (one wire name per state) | One `build-state` type: `{ns: <app id>, source: "_platform"}`, payload `{status: "building" \| "ready" \| "error", message?}` — type names the kind of event, payload carries the state, mirroring `server-state` (normalized in review: per-state types made `error` meaningless cross-namespace and forced subscribers to enumerate the state set). The dashboard's own builds emit as `ns: "_dashboard"`. |
 | `server-state` | `appWorker.ts` broadcast | `{ns: <app id>, source: "_platform"}`, payload `{status, message?}`. Respawn churn is bounded by the existing backoff plus retention; the give-up latch stays a roadmap item. |
 | `apps-changed` | `watcher.ts` broadcast of the full registry scan | `{ns: "_platform", source: "_platform"}` with **no payload** — consumers refetch the app list (identity, not values). |
 

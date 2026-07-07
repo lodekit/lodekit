@@ -46,10 +46,10 @@ describe("event-store service", () => {
 
   it("scoped GET lists the app's stream (incl. _platform-sourced), never a sibling's", async () => {
     await post("notes", { type: "note-added" });
-    emitEvent({ ns: "notes", source: PLATFORM_NS, type: "ready" });
+    emitEvent({ ns: "notes", source: PLATFORM_NS, type: "build-state", payload: { status: "ready" } });
     await post("other", { type: "unrelated" });
     const body = await (await app.request("/api/apps/notes/event-store")).json();
-    expect(body.records.map((r: { type: string }) => r.type)).toEqual(["ready", "note-added"]);
+    expect(body.records.map((r: { type: string }) => r.type)).toEqual(["build-state", "note-added"]);
   });
 
   it("validates type grammar, payload size, ttl, and app id", async () => {

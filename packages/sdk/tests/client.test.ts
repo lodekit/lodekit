@@ -137,12 +137,12 @@ describe("events", () => {
     FakeEventSource.instances = [];
     const c = createClient({ baseUrl: "http://x", appId: "notes" });
     const seen: string[] = [];
-    const un = c.events.watch({ type: ["ready", "error"] }, (ev) => seen.push(ev.type));
+    const un = c.events.watch({ type: ["build-state", "server-state"] }, (ev) => seen.push(ev.type));
     const es = FakeEventSource.instances[0];
-    es.dispatch("event", envelope({ id: 2, source: "_platform", type: "ready" }));
+    es.dispatch("event", envelope({ id: 2, source: "_platform", type: "build-state", payload: { status: "ready" } }));
     es.dispatch("event", envelope({ id: 3, type: "note-added" }));
-    es.dispatch("event", envelope({ id: 4, source: "_platform", type: "error", payload: { message: "boom" } }));
-    expect(seen).toEqual(["ready", "error"]);
+    es.dispatch("event", envelope({ id: 4, source: "_platform", type: "server-state", payload: { status: "error", message: "boom" } }));
+    expect(seen).toEqual(["build-state", "server-state"]);
     un();
     delete (globalThis as { EventSource?: unknown }).EventSource;
   });

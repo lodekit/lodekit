@@ -82,7 +82,8 @@ Import: `import { events } from "@lodekit/sdk"`.
   `events.watch({ type: "kv-store-change" }, () => queryClient.invalidateQueries({ queryKey: ["kv"] }))`
   — this replaces the removed `kv.watch`/`files.watch`.
 - `await events.list({ type?, after?, before?, limit? })` — replay the app's stream (includes
-  platform events about the app: `building`/`ready`/`error`, `server-state`).
+  platform events about the app: `build-state` and `server-state`, each carrying the
+  state in `payload.status`).
 - **Via MCP**: `lodekit_events` (`appId`, `type`, `after`, `limit`) reads the history —
   use it to check whether an expected event actually fired.
 
