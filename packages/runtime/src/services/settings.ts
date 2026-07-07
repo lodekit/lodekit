@@ -18,6 +18,7 @@ import { validateFieldDef, validateValue, APP_KEY_RE, type SettingField } from "
 import { PLATFORM_SETTINGS, PLATFORM_KEY_RE } from "../platformSettings.js";
 import { validationHook } from "../validation.js";
 import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
+import { emitLog } from "../logger.js";
 
 export const CATALOG_NAME = "settings";
 
@@ -88,6 +89,21 @@ export function applySettingsManifest(db: Database.Database, fields: Record<stri
   });
   txn();
   invalidateSettingsCache();
+}
+
+// The onSettingsManifest callback: a worker booted and reported its declared
+// settings. A load error is NOT an empty manifest — previous defs survive it.
+export function registerSettingsManifest(cfg: Config, appId: string, fields: Record<string, unknown>, loadError?: string): void {
+  if (!isValidAppId(appId)) return; // _dashboard sits outside the app-id grammar
+  if (loadError) {
+    emitLog("error", "settings", "settings module failed to load", { stack: loadError }, appId);
+    emitSettingsChange(appId, "*");
+    return;
+  }
+  // Never materialize a data dir for an app that has never used settings.
+  if (Object.keys(fields).length === 0 && !fs.existsSync(path.join(cfg.dataDir, appId, "db.sqlite"))) return;
+  applySettingsManifest(getSettingsDb(cfg.dataDir, appId), fields, Date.now());
+  emitSettingsChange(appId, "*"); // defs changed — dashboard refetches
 }
 
 export function listAppDefs(db: Database.Database): { key: string; field: SettingField | null; error: string | null }[] {

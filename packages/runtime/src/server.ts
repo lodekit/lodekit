@@ -11,13 +11,13 @@ import { appHost } from "./appHost.js";
 import { startWatcher } from "./watcher.js";
 import { buildAll, buildDashboard, getDashboardState, idleBuilds, uiDir } from "./build.js";
 import { isValidAppId, scanApps } from "./registry.js";
-import { configureWorkers, forwardToWorker, stopAllWorkers, onTasksManifest } from "./appWorker.js";
+import { configureWorkers, forwardToWorker, stopAllWorkers, onTasksManifest, onSettingsManifest } from "./appWorker.js";
 import { every, stop } from "./scheduler.js";
 import { sweepAllAndBroadcast } from "./services/kv-store.js";
 import { sweepFiles } from "./services/file-store.js";
 import { initLogStore, sweepLogStore } from "./logStore.js";
 import { initEventStore, sweepEventStore } from "./eventStore.js";
-import { initSettingsStore } from "./services/settings.js";
+import { initSettingsStore, registerSettingsManifest } from "./services/settings.js";
 import { createLogger } from "./logger.js";
 import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskEngine.js";
 import { sweepAllTaskRuns } from "./services/tasks.js";
@@ -138,6 +138,7 @@ export async function start(cfg: Config): Promise<Server> {
   configureWorkers(`http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : cfg.port}`);
   initTaskEngine(cfg);
   onTasksManifest(registerManifest);
+  onSettingsManifest((appId, fields, error) => registerSettingsManifest(cfg, appId, fields, error));
   recoverInterruptedRuns();
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
   const watcher = await startWatcher(cfg);

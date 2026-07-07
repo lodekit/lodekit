@@ -291,5 +291,28 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
     });
   }
 
+  // The settings entry (settings spec §5): src/settings.ts becomes a separate
+  // self-contained ssr bundle beside server.js — same mechanism as tasks.js.
+  const settingsSource = path.join(fs.realpathSync(t.rootDir), "src", "settings.ts");
+  if (fs.existsSync(settingsSource)) {
+    await build({
+      configFile: false,
+      root: fs.realpathSync(t.rootDir),
+      logLevel: "silent",
+      define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
+      plugins: [deepImportResolver()],
+      resolve: { alias: appAliases(themeOverridesFile) },
+      ssr: { noExternal: true },
+      build: {
+        ssr: settingsSource,
+        outDir: path.join(t.outDir, "server"),
+        emptyOutDir: false,
+        rollupOptions: {
+          output: { entryFileNames: "settings.js", chunkFileNames: "assets/settings-[name]-[hash].js" },
+        },
+      },
+    });
+  }
+
   fs.writeFileSync(path.join(t.outDir, "package.json"), JSON.stringify({ type: "module" }));
 }

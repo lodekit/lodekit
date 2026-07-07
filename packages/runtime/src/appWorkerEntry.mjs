@@ -68,6 +68,29 @@ if (workerData.tasksEntry) {
   parentPort.postMessage({ type: "tasks-manifest", tasks: [] });
 }
 
+// Settings manifest from the app's built src/settings.ts (settings spec §5):
+// the DEFAULT export tagged by defineSettings(). Fields are plain data
+// (structured-clone-safe). An import failure is reported, never fatal —
+// the runtime keeps the previous defs.
+if (workerData.settingsEntry) {
+  try {
+    const mod = await import(workerData.settingsEntry);
+    const def = mod.default;
+    if (def && def.__lodekitSettings === true && def.fields && typeof def.fields === "object") {
+      parentPort.postMessage({ type: "settings-manifest", fields: { ...def.fields } });
+    } else {
+      parentPort.postMessage({
+        type: "settings-manifest", fields: {},
+        ...(def !== undefined ? { error: "src/settings.ts default export is not defineSettings(...)" } : {}),
+      });
+    }
+  } catch (e) {
+    parentPort.postMessage({ type: "settings-manifest", fields: {}, error: e?.stack ?? String(e) });
+  }
+} else {
+  parentPort.postMessage({ type: "settings-manifest", fields: {} });
+}
+
 parentPort.on("message", async (msg) => {
   if (msg.type === "task-run") {
     const run = taskHandlers.get(msg.name);

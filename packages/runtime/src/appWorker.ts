@@ -52,6 +52,13 @@ export function onTasksManifest(cb: (appId: string, tasks: unknown[], error?: st
   manifestCb = cb;
 }
 
+let settingsManifestCb: ((appId: string, fields: Record<string, unknown>, error?: string) => void) | undefined;
+
+/** Settings hook (single, last-wins): fired once per worker boot with the app's settings manifest. */
+export function onSettingsManifest(cb: (appId: string, fields: Record<string, unknown>, error?: string) => void): void {
+  settingsManifestCb = cb;
+}
+
 const managed = new Map<string, Managed>();
 const states = new Map<string, ServerState>();
 let baseUrl = "";
@@ -78,8 +85,13 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
   }
   setState(appId, { status: "starting" });
   const tasksEntry = path.join(cfg.cacheDir, appId, "server", "tasks.js");
+  const settingsEntry = path.join(cfg.cacheDir, appId, "server", "settings.js");
   const worker = new Worker(ENTRY, {
-    workerData: { serverEntry, tasksEntry: fs.existsSync(tasksEntry) ? tasksEntry : null },
+    workerData: {
+      serverEntry,
+      tasksEntry: fs.existsSync(tasksEntry) ? tasksEntry : null,
+      settingsEntry: fs.existsSync(settingsEntry) ? settingsEntry : null,
+    },
     env: { ...process.env, LODEKIT_BASE_URL: baseUrl },
   });
   let readyResolve!: () => void, readyReject!: (e: Error) => void;
@@ -97,6 +109,7 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
     if (msg.type === "ready") { m.attempts = 0; setState(appId, { status: "running" }); lifecycle.info("app server ready"); readyResolve(); return; }
     if (msg.type === "fatal") { setState(appId, { status: "error", message: msg.message }); lifecycle.error("app server failed to start", { stack: msg.message }); readyReject(new Error(msg.message)); return; }
     if (msg.type === "tasks-manifest") { manifestCb?.(appId, msg.tasks ?? [], msg.error); return; }
+    if (msg.type === "settings-manifest") { settingsManifestCb?.(appId, msg.fields ?? {}, msg.error); return; }
     if (msg.type === "task-result") {
       const t = m.pendingTasks.get(msg.id);
       if (!t) return;
