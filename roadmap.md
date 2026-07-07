@@ -49,11 +49,14 @@ remaining triggers are their own slices:
 - **Webhooks trigger** — replace the soft same-origin guard on `/<app-id>/_serverFn/*`
   with a real inbound story: auth, reachability (exposing the runtime beyond localhost),
   and signature verification.
-- **Server-side `watch`/signals** — `kv.watch` is client-only this slice (EventSource-based);
-  a server-side subscription story belongs with the Tasks design (task-queue/task-schedule),
-  invoking exported functions in the app worker. **Update (2026-07-06):** the Tasks v1
-  slice-spec (`docs/specs/2026-07-06-tasks-service-design.md` §11) defers this as
-  event-triggered tasks, gated on the events revamp.
+- **Server-side `watch`/signals** — `events.watch` is client-only (EventSource-based; the
+  events slice absorbed `kv.watch`/`files.watch` into it —
+  `docs/specs/2026-07-07-events-design.md`). The server-side subscription story is
+  **event-triggered tasks**: the Tasks v1 slice-spec deferred it as gated on the events
+  revamp (`docs/specs/2026-07-06-tasks-service-design.md` §11) — now unblocked by the
+  events slice: the event log's monotonic offsets are designed for it, and durable
+  consumer cursors (at-least-once trigger delivery) are a cursor table away, no schema
+  change.
 
 ## Guiding principle
 
@@ -306,7 +309,27 @@ above; the remainder:
 - **"platform" is a reserved app id but not rejected** — `GET /api/logs?app=platform`
   treats `app=platform` as the platform's own records, but `isValidAppId`/scaffold don't
   reject an actual app id of `platform` — such an app's log records would be invisible in
-  the global logs view. Reject it at scaffold/registry when convenient.
+  the global logs view. **Resolution specced (2026-07-07, events slice):** the sentinel
+  renames to `_platform` under the internal-namespace convention
+  (`docs/specs/2026-07-07-events-design.md` §8), which the app-id grammar already rejects —
+  no reserved-word check needed. Closes with that slice.
+- **Manager/dashboard event emission** — `_manager` and `_dashboard` are named on the event
+  bus but nothing emits as them yet (`docs/specs/2026-07-07-events-design.md` §1). Needs an
+  HTTP emit door for out-of-process/internal emitters (the manager announcing "runtime
+  restarting", "update available") plus its auth story — pairs with local door hardening
+  (Security). Until then, cross-namespace subscriptions for apps stay deliberately off the
+  table too (an app's feed is its own namespace); revisit only with a concrete use case.
+- **Event retention as settings** — the events slice ships constants (30 days / 50k rows;
+  change-feed events at a service-set 7-day ttl); make them dashboard-configurable and
+  app-overridable when the settings service lands
+  (`docs/specs/2026-07-07-events-design.md` §6). Same move as log retention below.
+- **Event emit over MCP** — `lodekit_events` is read-only; Claude emitting events (e.g.
+  announcing a finished background job) pairs with the MCP write-access guardrails
+  (Security).
+- **URL routing-precedence audit** — app ids like `api` or `dashboard` may shadow (or be
+  shadowed by) platform mounts; pre-existing, surfaced by the events slice's
+  internal-namespace review (underscore paths like `/_ui`, `/_dashboard` are grammar-safe;
+  bare names are not). Audit the routing order and decide the collision story.
 - **Manager log streams have no `'error'` listener** — `fs.createWriteStream` in
   `manager/src/logs.js` (now one fresh stream per uptime-day) attaches no `'error'`
   handler; a disk error would crash the Electron main process. Attach handlers / degrade
