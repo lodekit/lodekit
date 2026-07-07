@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
 const { getPaths } = require("./paths");
+const { installShowcase } = require("./firstRun");
 const { openDailyLogStream, stampLines } = require("./logs");
 const { Supervisor } = require("./supervisor");
 const { getIconStyle, setIconStyle } = require("./settings");
@@ -184,6 +185,10 @@ function ensureLodekitRoot() {
   const isFirstRun = !fs.existsSync(paths.lodekitRoot);
   fs.mkdirSync(path.join(paths.lodekitRoot, "apps"), { recursive: true });
   fs.mkdirSync(path.join(paths.lodekitRoot, "data"), { recursive: true });
+  if (isFirstRun) {
+    const installed = installShowcase(paths.showcaseAppsDir, paths.lodekitRoot);
+    if (installed.length) log(`first run: installed showcase apps ${installed.join(", ")}`);
+  }
   return isFirstRun;
 }
 

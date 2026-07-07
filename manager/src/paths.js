@@ -27,6 +27,7 @@ function getPaths({ packaged, homedir, resourcesPath, repoRoot }) {
       runtimeDir: path.join(platformDir, "runtime"),
       runtimeEntry: path.join(platformDir, "runtime", "src", "index.ts"),
       mcpEntry: path.join(platformDir, "mcp", "index.ts"),
+      showcaseAppsDir: path.join(platformDir, "root", "apps"),
     };
   }
   return {
@@ -39,6 +40,7 @@ function getPaths({ packaged, homedir, resourcesPath, repoRoot }) {
     runtimeDir: path.join(repoRoot, "packages", "runtime"),
     runtimeEntry: path.join(repoRoot, "packages", "runtime", "src", "index.ts"),
     mcpEntry: path.join(repoRoot, "packages", "mcp", "index.ts"),
+    showcaseAppsDir: null,
   };
 }
 

@@ -116,6 +116,12 @@ function buildPayload() {
       JSON.stringify({ commit }, null, 2) + "\n"
     );
   }
+  // The shipped Lodekit root's apps (showcase-apps spec §10): installed into
+  // ~/Documents/Lodekit/apps on the manager's first run.
+  fs.cpSync(path.join(repoRoot, "root", "apps"), path.join(platformDir, "root", "apps"), {
+    recursive: true,
+    filter: (src) => !src.includes("node_modules") && !src.endsWith("routeTree.gen.ts"),
+  });
 }
 
 // Relocatable means no symlink may resolve outside the payload (spec §3);
