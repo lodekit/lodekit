@@ -10,7 +10,6 @@
 //                   | { type:"log", level, message, fields }
 import { parentPort, workerData } from "node:worker_threads";
 import { inspect } from "node:util";
-import { readFileSync } from "node:fs";
 
 // Console capture (logging spec §5): app console output becomes structured log
 // records instead of untagged runtime stdout — keeping the text tier minimal.
@@ -50,17 +49,11 @@ const CONFIG_KEYS = ["cron", "every", "catchUp", "retries", "timeout"];
 if (workerData.tasksEntry) {
   try {
     const mod = await import(workerData.tasksEntry);
-    // A dynamic import() of an ES module returns a Module Namespace Object, whose
-    // own keys are spec-ordered alphabetically — never source declaration order.
-    // Re-derive declaration order from the built file's text so the manifest lists
-    // tasks the way the developer wrote them, not alphabetized.
-    const source = readFileSync(workerData.tasksEntry, "utf8");
-    const marked = Object.entries(mod).filter(
-      ([, val]) => val && val.__lodekitTask === true && typeof val.run === "function"
-    );
-    marked.sort((a, b) => source.indexOf(a[0]) - source.indexOf(b[0]));
+    // Module namespace object keys are code-point-sorted, not declaration order —
+    // manifest order carries no semantic meaning (applyManifest upserts by name).
     const tasks = [];
-    for (const [key, val] of marked) {
+    for (const [key, val] of Object.entries(mod)) {
+      if (!val || val.__lodekitTask !== true || typeof val.run !== "function") continue;
       const name = kebab(key);
       taskHandlers.set(name, val.run);
       const entry = { name };

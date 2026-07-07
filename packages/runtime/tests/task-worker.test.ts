@@ -53,11 +53,11 @@ describe("worker task protocol", () => {
     await waitFor(() => manifests.has("tasky"), 10_000);
     const { tasks, error } = manifests.get("tasky")!;
     expect(error).toBeUndefined();
-    expect(tasks).toEqual([
-      { name: "ping", cron: "0 9 * * *" },
+    expect([...(tasks as { name: string }[])].sort((a, b) => a.name.localeCompare(b.name))).toEqual([
       { name: "boom" },
-      { name: "slow" },
       { name: "echo-fail" },
+      { name: "ping", cron: "0 9 * * *" },
+      { name: "slow" },
     ]);
     await waitFor(() => getServerState("tasky")?.status === "running", 10_000);
   });
