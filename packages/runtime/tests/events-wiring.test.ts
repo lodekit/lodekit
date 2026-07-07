@@ -70,7 +70,7 @@ describe("platform emitters land on the bus", () => {
     const { Hono } = await import("hono");
     const { apiRoutes } = await import("../src/routes.js");
     const { getTasksDb, applyManifest } = await import("../src/services/tasks.js");
-    applyManifest(getTasksDb(cfg.dataDir, "notes"), [{ name: "resize" }], Date.now());
+    applyManifest(getTasksDb(cfg.dataDir, "notes"), [{ name: "resize" }], Date.now(), { minEveryMs: 60_000 });
     const app = new Hono().route("/api", apiRoutes(cfg));
     const res = await app.request("/api/apps/notes/tasks/resize/runs", {
       method: "POST",

@@ -53,3 +53,8 @@ is the living checklist — extend it with every new surface.
 `events.list` (`before`/`after`/server-side), `events.watch` with a type array, the
 Ledger, While You Were Away, and `weekly_gazette` (`cron` + `catchUp: "24h"` +
 `retries`/`timeout`).
+
+**Pending (settings slice, `2026-07-07-settings-design.md`):** `defineSettings()` in
+`src/settings.ts` (all five field types have a plausible Greenhouse home) and the typed
+`settings.get`/`all`/`watch` reads — landed in parallel with the showcase slice; needs a
+Greenhouse chapter of its own.
