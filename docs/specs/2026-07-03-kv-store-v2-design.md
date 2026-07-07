@@ -217,6 +217,11 @@ relational-store's return would naturally replace).
 
 ## 6. Pub/Sub — the SSE change feed
 
+> **Superseded (2026-07-07):** the change feed now rides the event bus as stored
+> `kv-store-change` events (7-day ttl) and `kv.watch` is replaced by `events.watch` —
+> `docs/specs/2026-07-07-events-design.md` §4. Wire event type and payload identity
+> (`key`, `op`) are unchanged.
+
 Keyspace-notification style: events carry **key + op, never values** — consumers refetch
 what they care about; the channel stays light regardless of value sizes.
 

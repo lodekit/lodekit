@@ -46,8 +46,7 @@ values, Files for bytes (reports, downloads, images). Import: `import { files } 
 - **Ingest pattern** (fetch and store): pipe the response straight through —
   `await files.put(res.body!, { slug: "latest", contentType: res.headers.get("content-type") ?? undefined })`.
 - `files.list({ prefix })`, `files.stat(slug)`, `files.delete(slug)`,
-  `files.copy(from, to)`, `files.move(from, to)`, and `files.watch(prefix, cb)`
-  (live change events) round out the API.
+  `files.copy(from, to)`, `files.move(from, to)`.
 - Files are real files on disk under the app's data folder — the person can browse
   them in Finder.
 - **Via MCP** you can inspect an app's files with `lodekit_files_list` /
@@ -69,6 +68,23 @@ doing at runtime. Import: `import { logs } from "@lodekit/sdk"`.
   the `lodekit_logs` MCP tool (`appId`, optional `level`/`q`). Build failures, server
   crashes with stacks, and request access logs all land there — read them before assuming
   a change worked.
+
+## Events (event-store)
+
+The platform event bus — durable, replayable messages that drive app behavior.
+Import: `import { events } from "@lodekit/sdk"`.
+
+- `await events.emit(type, payload?, { ttl? })` — announce something happened
+  (`type` matches `^[a-z0-9-]+$`; payload is a small JSON object — identity, not blobs).
+  Works in server functions and the browser; returns the stored event with its `id` offset.
+- `events.watch({ type? }, cb)` — client-only live subscription (keep it in `useEffect`).
+  The canonical live-data pattern:
+  `events.watch({ type: "kv-store-change" }, () => queryClient.invalidateQueries({ queryKey: ["kv"] }))`
+  — this replaces the removed `kv.watch`/`files.watch`.
+- `await events.list({ type?, after?, limit? })` — replay the app's stream (includes
+  platform events about the app: `building`/`ready`/`error`, `server-state`).
+- **Via MCP**: `lodekit_events` (`appId`, `type`, `after`, `limit`) reads the history —
+  use it to check whether an expected event actually fired.
 
 ## Design system classes
 

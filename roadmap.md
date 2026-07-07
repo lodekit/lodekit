@@ -306,13 +306,12 @@ above; the remainder:
   `~/Library/Caches/Lodekit` under the macOS-native paths canon
   (`docs/specs/2026-07-06-logging-design.md` §3); the old XDG-style dir is not migrated,
   safe to delete manually, regenerable by definition.
-- **"platform" is a reserved app id but not rejected** — `GET /api/logs?app=platform`
+- **"platform" is a reserved app id but not rejected** — ~~`GET /api/logs?app=platform`
   treats `app=platform` as the platform's own records, but `isValidAppId`/scaffold don't
   reject an actual app id of `platform` — such an app's log records would be invisible in
-  the global logs view. **Resolution specced (2026-07-07, events slice):** the sentinel
-  renames to `_platform` under the internal-namespace convention
-  (`docs/specs/2026-07-07-events-design.md` §8), which the app-id grammar already rejects —
-  no reserved-word check needed. Closes with that slice.
+  the global logs view.~~ **Resolved (2026-07-07, events slice):** the sentinel renamed to
+  `_platform` (internal-namespace convention, `docs/specs/2026-07-07-events-design.md` §8),
+  which the app-id grammar already rejects; the log-store reserved-id check is deleted.
 - **Manager/dashboard event emission** — `_manager` and `_dashboard` are named on the event
   bus but nothing emits as them yet (`docs/specs/2026-07-07-events-design.md` §1). Needs an
   HTTP emit door for out-of-process/internal emitters (the manager announcing "runtime

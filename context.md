@@ -90,7 +90,7 @@ One cloud battery — a capability the runtime provides to apps: storage, secret
 _Avoid_: capability, feature, component (components are UI), battery (marketing metaphor, not the domain word)
 
 **Service catalog**:
-The full set of services Lodekit offers, named AWS-style: kv-store (the Store), relational-store (the Database, currently parked), file-store (Files), log-store (Logs), secret-store, tasks (Tasks — one service; task-queue and task-schedule are its two capabilities), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
+The full set of services Lodekit offers, named AWS-style: kv-store (the Store), relational-store (the Database, currently parked), file-store (Files), log-store (Logs), event-store (Events), secret-store, tasks (Tasks — one service; task-queue and task-schedule are its two capabilities), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
 _Avoid_: the SDK (the SDK is the layer into the catalog, not the catalog), feature list
 
 The shipped and near-term services:
@@ -98,7 +98,7 @@ The shipped and near-term services:
 **Store**:
 An app's per-app key–value store of JSON values (the kv-store service), reached through the
 SDK as the `kv` handle (`import { kv } from "@lodekit/sdk"`; catalog-name → handle mapping:
-kv-store→kv, relational-store→db, file-store→files, secret-store→secrets, log-store→logs). The first storage
+kv-store→kv, relational-store→db, file-store→files, secret-store→secrets, log-store→logs, event-store→events). The first storage
 service; joined by Files (file-store) in 0.x. Its second iteration shipped as the v0.1 storage
 slice (`docs/specs/2026-07-03-kv-store-v2-design.md`). Distinct from the Cache and from
 Settings — see Flagged ambiguities.
@@ -118,6 +118,18 @@ warn/error, emitted via the `logs` handle or captured from app console output, s
 the platform State, retained 7 days / 200k records, viewable in the dashboard Logs view
 and over MCP (`lodekit_logs`) (`docs/specs/2026-07-06-logging-design.md`).
 _Avoid_: console, output, telemetry
+
+**Event**:
+A durable message on the platform's event bus that drives business logic: the platform announcing an app became ready, an app announcing an export finished, a task announcing a detected change. Every event is addressed (`ns` — whose stream it belongs to) and attributed (`source` — who emitted it), persisted to the event-store, and delivered live over SSE. Events are never the system of record: precious facts belong in the emitting app's own stores — the event announces and triggers (`docs/specs/2026-07-07-events-design.md`).
+_Avoid_: message, signal, notification
+
+**Events**:
+The platform-wide append-only event log (the event-store service), reached through the SDK as the `events` handle (`emit`/`watch`/`list`). One sqlite log at `data/_platform/events.sqlite` (precious — in the Backup tree), monotonic row id as the offset, retained 30 days / 50k records (change-feed events 7 days), viewable in the dashboard Events view and over MCP (`lodekit_events`).
+_Avoid_: message queue, broker, SSE (that's the transport)
+
+**Internal namespace**:
+An underscore-prefixed id (`_platform`, `_manager`, `_dashboard`) naming a platform citizen rather than an app. The app-id grammar has no underscore, so internal namespaces can never collide with an app id — no reserved-word list, no enforcement code. Internal namespaces are first-class in the id space, on the event bus (they emit and own streams), in the data tree (`data/_platform/` holds the bus), and as the log query sentinel (`app=_platform`). They are **not** Apps — no source folder, no contract.
+_Avoid_: reserved app, system app, internal app
 
 **Database**:
 An app's per-app SQL database (relational-store). **Parked**: retired in the v0.1 storage iteration; returns to the catalog once a schemas/migrations story exists.
@@ -142,7 +154,7 @@ The `apps/` directory under the Lodekit root — app _source_ only, carrying no 
 _Avoid_: source dir, workspace
 
 **Data tree**:
-The `data/` directory under the Lodekit root — each app's persistent storage, one namespace per app id.
+The `data/` directory under the Lodekit root — each app's persistent storage, one namespace per app id. Internal namespaces own data homes here too — data/_platform/ holds the event bus.
 _Avoid_: db dir, storage
 
 **Backup tree**:
@@ -159,6 +171,8 @@ database. Lives outside the Lodekit root (`~/Library/Application Support/Lodekit
 `LODEKIT_STATE_DIR`), never backed up. Unlike the Cache it isn't regenerable; unlike
 the Data tree it isn't precious — losing it costs history, never apps or data.
 _Avoid_: app data (that's the Data tree), cache, logs dir
+
+**Storage tiers** (the placement rule): place data by cost of loss — *precious* (Backup tree: the person would miss it restoring a backup), *operational history* (State: loss costs history, never apps or data), *regenerable* (Cache: loss costs a rebuild). A service never silently promotes tiers: if a record is precious to an app, the app writes the fact into its own store and an event announces it.
 
 ### Building & serving
 
@@ -224,6 +238,7 @@ _Avoid_: the endpoints, the REST API
 
 - **Lodekit vs Platform** — Lodekit is the whole product experience; the platform is its installed subset (runtime, SDK, UI library, dashboard, manager). "Download Lodekit" installs the platform.
 - **Store vs Cache** — both sound like "somewhere things are kept," but they are opposites in durability. The **Store** is per-app durable KV state (backed up, in the data tree); the **Cache** is disposable build output (never backed up). Never call the store a cache.
+- **Event vs Log** — logs are telemetry (what happened, for observation); events drive business logic (what happened, for reaction). The `log` SSE tail is log-store's live surface, not an event, and never touches the bus.
 - **Store vs Settings** — both hold small per-app values. **Settings** are declared by the app and edited by the person in the dashboard (the person's knobs); the **Store** is written by app code at runtime (the app's own memory). An app reads both, but only settings are meant for human hands.
 - **Docs vs Skill** — both teach how to use Lodekit, to different readers. **Docs** are the public site for people; the **Skill** is the instruction pack for agents. Content may overlap; the audiences never do.
 - **Skill** — `@lodekit/skill` is the Lodekit skill package (content an agent loads to use Lodekit), not to be confused with agent skills in general.

@@ -47,6 +47,11 @@ What survives is the core object model and the ergonomics around it.
 | Custom metadata (`x-amz-meta-*`) | One JSON `metadata` object per file (≤ 4 KB) |
 | ETag / If-None-Match | On the serving endpoint only — the stored content hash is a free, exact ETag; repeat browser loads cost a 304 |
 
+> **Superseded (2026-07-07):** the change feed now rides the event bus as stored
+> `file-store-change` events (7-day ttl) and `files.watch` is replaced by `events.watch` —
+> `docs/specs/2026-07-07-events-design.md` §4. Wire event type and payload identity
+> (`slug`) are unchanged.
+
 **Out, with reasons:**
 
 - **Multipart upload** — exists for flaky networks and parallelism; a local stream doesn't
