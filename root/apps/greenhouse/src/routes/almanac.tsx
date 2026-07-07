@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { tasks, type TaskInfo, type TaskRun, type TaskRunState } from "@lodekit/sdk";
+import { events, tasks, type TaskInfo, type TaskRun, type TaskRunState } from "@lodekit/sdk";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@lodekit/ui";
 
 export const getAlmanac = createServerFn().handler(async () => ({
@@ -46,8 +46,8 @@ function Almanac() {
   useEffect(() => void refetch(), [refetch]);
   useEffect(
     () =>
-      tasks.watch((change) => {
-        setLive(change.state === "running");
+      events.watch({ type: "tasks-change" }, (ev) => {
+        setLive(ev.payload?.state === "running");
         void refetch();
       }),
     [refetch]

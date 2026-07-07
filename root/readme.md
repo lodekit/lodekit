@@ -42,7 +42,7 @@ is the living checklist — extend it with every new surface.
 | `tasks.cancel` | skip next / re-care / reset |
 | `tasks.runs {task, state, limit}` | almanac care history |
 | `tasks.list` | almanac rota |
-| `tasks.watch` | almanac live indicator |
+| `events.watch {type: "tasks-change"}` | almanac live indicator |
 | `task() cron` + `catchUp: true` | morning_rounds |
 | `task() every` | compost_sweep |
 | `logs.debug` / `info` / `warn` / `error` | compost sweep / care & seed / wilting & reset / upload failures + Shed demo row |
