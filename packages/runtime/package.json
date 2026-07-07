@@ -7,7 +7,8 @@
     "./services/kv-store": "./src/services/kv-store.ts",
     "./services/log-store": "./src/services/log-store.ts",
     "./services/tasks": "./src/services/tasks.ts",
-    "./services/event-store": "./src/services/event-store.ts"
+    "./services/event-store": "./src/services/event-store.ts",
+    "./services/settings": "./src/services/settings.ts"
   },
   "scripts": {
     "start": "tsx src/index.ts",

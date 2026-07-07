@@ -15,9 +15,12 @@ export type {
   TaskRunState,
   Events,
   LodekitEvent,
+  Settings,
 } from "./client.js";
 export { task } from "./task.js";
 export type { TaskConfig, DefinedTask } from "./task.js";
+export { defineSettings, boolean, string, number, select, duration } from "./settings.js";
+export type { DefinedSettings, SettingsFields, AnySetting, SettingValue } from "./settings.js";
 
 // Injected per app by the runtime's Vite build (define). Absent (e.g. under
 // Node imports of this entry) it stays undefined and the singleton is inert.
@@ -38,6 +41,10 @@ export const files = client.files;
 export const logs = client.logs;
 export const tasks = client.tasks;
 export const events = client.events;
+
+import { _bindSettings } from "./settings.js";
+export const settings = client.settings;
+_bindSettings(client.settings);
 
 /** The app's own app id, injected by the toolchain at build time ("" outside an app build). */
 export const appId = injectedAppId;

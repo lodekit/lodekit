@@ -4,6 +4,7 @@ import type { KvRoutes } from "@lodekit/runtime/services/kv-store";
 import type { LogRoutes } from "@lodekit/runtime/services/log-store";
 import type { TasksRoutes } from "@lodekit/runtime/services/tasks";
 import type { EventRoutes } from "@lodekit/runtime/services/event-store";
+import type { SettingsRoutes } from "@lodekit/runtime/services/settings";
 
 export interface KvEntry<T = unknown> {
   key: string;
@@ -26,6 +27,12 @@ export interface Events {
   emit(type: string, payload?: Record<string, unknown>, opts?: { ttl?: number }): Promise<LodekitEvent>;
   watch(filter: { type?: string | string[] }, cb: (event: LodekitEvent) => void): () => void;
   list(opts?: { type?: string; after?: number; before?: number; limit?: number }): Promise<{ records: LodekitEvent[]; next: number | null }>;
+}
+
+export interface Settings {
+  get<T = unknown>(key: string): Promise<T | undefined>;
+  all(): Promise<Record<string, unknown>>;
+  watch(cb: (change: { key: string }) => void): () => void;
 }
 
 export interface FileStat {
@@ -130,6 +137,7 @@ export interface LodekitClient {
   logs: Logs;
   tasks: Tasks;
   events: Events;
+  settings: Settings;
 }
 
 // Preserves the hand-written transport's error semantics around the hc calls:
@@ -426,5 +434,26 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
     },
   };
 
-  return { kv, files, logs, tasks, events };
+  const settingsRpc = hc<SettingsRoutes>(`${baseUrl}/api/apps/${appId}/settings`);
+  const settings: Settings = {
+    async get<T = unknown>(key: string): Promise<T | undefined> {
+      const r = await parse(await settingsRpc[":key"].$get({ param: { key } }));
+      return r.found ? (r.value as T) : undefined;
+    },
+    async all() {
+      const doc = await parse(await settingsRpc.index.$get());
+      return Object.fromEntries(
+        doc.declared.filter((d) => d.field !== null).map((d) => [d.key, d.effective])
+      );
+    },
+    watch(cb) {
+      return channel.on<{ type: string; payload: { key: string } | null }>(
+        "event",
+        (ev) => ev.type === "settings-change",
+        (ev) => cb({ key: ev.payload?.key ?? "" })
+      );
+    },
+  };
+
+  return { kv, files, logs, tasks, events, settings };
 }
