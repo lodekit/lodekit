@@ -52,4 +52,18 @@ describe("loadConfig", () => {
     expect(loadConfig().stateDir).toBe(path.resolve("/tmp/lk-state"));
     delete process.env.LODEKIT_STATE_DIR;
   });
+
+  it("defaults secretsKeyProvider by platform", () => {
+    delete process.env.LODEKIT_SECRETS_KEY_PROVIDER;
+    const cfg = loadConfig();
+    expect(cfg.secretsKeyProvider).toBe(process.platform === "darwin" ? "keychain" : "file");
+  });
+
+  it("honors LODEKIT_SECRETS_KEY_PROVIDER=file and ignores junk values", () => {
+    process.env.LODEKIT_SECRETS_KEY_PROVIDER = "file";
+    expect(loadConfig().secretsKeyProvider).toBe("file");
+    process.env.LODEKIT_SECRETS_KEY_PROVIDER = "vault9000";
+    expect(loadConfig().secretsKeyProvider).toBe(process.platform === "darwin" ? "keychain" : "file");
+    delete process.env.LODEKIT_SECRETS_KEY_PROVIDER;
+  });
 });

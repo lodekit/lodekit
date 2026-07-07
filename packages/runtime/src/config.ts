@@ -9,6 +9,7 @@ export interface Config {
   stateDir: string;
   port: number;
   baseUrl: string;
+  secretsKeyProvider: "keychain" | "file";
 }
 
 // macOS-native canon (spec §3): Caches for regenerable built output, Application
@@ -32,6 +33,13 @@ export function loadConfig(): Config {
   const stateDir = process.env.LODEKIT_STATE_DIR
     ? path.resolve(process.env.LODEKIT_STATE_DIR)
     : defaults.stateDir;
+  // Secret-store master-key provider (secret-store spec §4): keychain on darwin,
+  // 0600 key file elsewhere; tests force "file" to never touch the real Keychain.
+  const envProvider = process.env.LODEKIT_SECRETS_KEY_PROVIDER;
+  const secretsKeyProvider: "keychain" | "file" =
+    envProvider === "keychain" || envProvider === "file"
+      ? envProvider
+      : process.platform === "darwin" ? "keychain" : "file";
   return {
     root,
     appsDir: path.join(root, "apps"),
@@ -40,5 +48,6 @@ export function loadConfig(): Config {
     stateDir,
     port,
     baseUrl: `http://lodekit.localhost:${port}`,
+    secretsKeyProvider,
   };
 }
