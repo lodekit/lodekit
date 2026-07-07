@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { createBuilder } from "vite";
+import { createBuilder, build } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -266,5 +266,31 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
     },
   });
   await builder.buildApp();
+
+  // The tasks entry (spec §4): src/tasks.ts becomes a separate self-contained ssr
+  // bundle beside server.js. A separate small build rather than an extra rollup
+  // input — the tanstackStart plugin owns the main ssr input, and the SDK talks
+  // to the runtime over loopback HTTP anyway, so the bundles share no state.
+  const tasksSource = path.join(fs.realpathSync(t.rootDir), "src", "tasks.ts");
+  if (fs.existsSync(tasksSource)) {
+    await build({
+      configFile: false,
+      root: fs.realpathSync(t.rootDir),
+      logLevel: "silent",
+      define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
+      plugins: [deepImportResolver()],
+      resolve: { alias: appAliases(themeOverridesFile) },
+      ssr: { noExternal: true },
+      build: {
+        ssr: tasksSource,
+        outDir: path.join(t.outDir, "server"),
+        emptyOutDir: false, // server.js from the main build lives here
+        rollupOptions: {
+          output: { entryFileNames: "tasks.js", chunkFileNames: "assets/tasks-[name]-[hash].js" },
+        },
+      },
+    });
+  }
+
   fs.writeFileSync(path.join(t.outDir, "package.json"), JSON.stringify({ type: "module" }));
 }
