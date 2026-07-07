@@ -88,11 +88,11 @@ surface (`cron` vs `every`, `catchUp` string vs `true`, explicit `retries`/`time
 - **`weekly_gazette`** — `cron: "0 18 * * 0"` (Sunday evening), `catchUp: "24h"`, `retries: 1`,
   `timeout: "1m"`. Composes the week's issue — care given, streaks, mood changes — by
   reading the app's own event stream (**server-side `events.list`**), writes markdown
-  via **server-side `files.put`** to `gazette/<iso-week>.md`, emits `gazette-published`.
+  via **server-side `files.put`** to `gazette-<iso-week>`, emits `gazette-published`.
   Tasks writing files and reading events proves the SDK is the same on both sides of
   the wire.
 - **`compost_sweep`** — `every: "12h"` (the `every` variant). Housekeeping: prunes
-  `archive/` photos older than 90 days and trims each plant's journal beyond 200 entries
+  `archive-` photos older than 90 days and trims each plant's journal beyond 200 entries
   (server-side `files.list`/`files.delete`, `kv.list`/`kv.del`), `debug`-logging what it
   swept.
 
@@ -135,10 +135,11 @@ expense-tracker migration the events spec estimates — budget accordingly).
 
 ## 6. Photos and files
 
-Slug layout: `photos/<plantId>/<ts>` (upload with `title` = caption and `metadata:
-{plantId}`, explicit `contentType`), `covers/<plantId>` (**`files.copy`** — "set as cover
-photo"), `archive/<plantId>/<ts>` (**`files.move`** — archive a photo out of the
-timeline), `gazette/<iso-week>.md` (task-written, §4), `exports/snapshot-<ts>.json` — the
+Slug layout (file-store slugs are `^[a-z0-9-]{1,128}$` — no path separators; "folders"
+are dash prefixes): `photo-<plantId>-<ts>` (upload with `title` = caption and `metadata:
+{plantId}`, explicit `contentType`), `cover-<plantId>` (**`files.copy`** — "set as cover
+photo"), `archive-<plantId>-<ts>` (**`files.move`** — archive a photo out of the
+timeline), `gazette-<iso-week>` (task-written markdown, §4), `snapshot-<ts>` — the
 "share a snapshot" action exports the conservatory as JSON with a **`ttl`** (a
 self-expiring file) and offers `files.url(slug, {download: true})`. Timelines read with
 `files.list({prefix, limit, cursor})` ("load more"); the photo detail sheet shows
@@ -156,7 +157,7 @@ Five routes (multi-route apps are themselves host coverage — deep links, share
    remind-me-later / skip-next, care-schedule editing, let-go (remove).
 3. **Almanac** (`/almanac`) — care history (`tasks.runs` with filter chips), upcoming
    care (queued runs + `nextRun`), and the Ledger tab (§5).
-4. **Gazette** (`/gazette`) — issue list from `files.list({prefix: "gazette/"})`,
+4. **Gazette** (`/gazette`) — issue list from `files.list({prefix: "gazette-"})`,
    rendered markdown, download link.
 5. **The Potting Shed** (`/shed`) — the honest seams page, utility styled in-fiction:
    reseed / reset-conservatory, the registered-task manifest, a log-level demo row
