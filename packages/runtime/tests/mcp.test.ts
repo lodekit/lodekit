@@ -7,14 +7,17 @@ import { start } from "../src/server.js";
 import { loadConfig } from "../src/config.js";
 import { scaffold, listApps } from "../../mcp/client.js";
 import { createClient } from "@lodekit/sdk";
+import { getSettingsDb, applySettingsManifest } from "../src/services/settings.js";
 
-let root: string, server: Server, base: string;
+let root: string, server: Server, base: string, dataDir: string;
 beforeEach(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-"));
   process.env.LODEKIT_ROOT = root;
   process.env.LODEKIT_PORT = "0";
   process.env.LODEKIT_STATE_DIR = path.join(root, "state");
-  server = await start(loadConfig());
+  const cfg = loadConfig();
+  dataDir = cfg.dataDir;
+  server = await start(cfg);
   const addr = server.address();
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
 }, 60000);
@@ -99,5 +102,21 @@ describe("mcp tool helpers", () => {
     expect(Array.isArray(appSettings.declared)).toBe(true);
     expect(appSettings.overrides).toBeDefined();
     expect(Array.isArray(appSettings.overrides)).toBe(true);
+  });
+
+  it("reads app settings through the sdk core the settings tools use", async () => {
+    await scaffold(base, { appId: "settings-test", name: "Settings Test" });
+    // Declare settings for the test app
+    const db = getSettingsDb(dataDir, "settings-test");
+    applySettingsManifest(db, {
+      show_archived: { type: "boolean", label: "Show archived", description: "Include archived items.", default: false },
+      max_items: { type: "number", label: "Max items", description: "Maximum number of items.", default: 100 },
+    }, Date.now());
+    const settings = createClient({ baseUrl: base, appId: "settings-test" }).settings;
+    // Test found case: declared key with default value
+    expect(await settings.get("show_archived")).toBe(false);
+    expect(await settings.get("max_items")).toBe(100);
+    // Test not-found case: undeclared key
+    expect(await settings.get("missing_key")).toBeUndefined();
   });
 });
