@@ -17,6 +17,7 @@ import { sweepAllAndBroadcast } from "./services/kv-store.js";
 import { sweepFiles } from "./services/file-store.js";
 import { initLogStore, sweepLogStore } from "./logStore.js";
 import { initEventStore, sweepEventStore } from "./eventStore.js";
+import { initSettingsStore } from "./services/settings.js";
 import { createLogger } from "./logger.js";
 import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskEngine.js";
 import { sweepAllTaskRuns } from "./services/tasks.js";
@@ -123,6 +124,7 @@ export function createServer(cfg: Config): Server {
 
 export async function start(cfg: Config): Promise<Server> {
   initLogStore(cfg.stateDir);
+  initSettingsStore(cfg.dataDir);
   if (!initEventStore(cfg.dataDir)) {
     createLogger("event-store").error("events.sqlite unavailable — event bus degrades to live-only");
   }

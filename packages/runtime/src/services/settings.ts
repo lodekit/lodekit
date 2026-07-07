@@ -7,12 +7,17 @@ import fs from "node:fs";
 import path from "node:path";
 import type Database from "better-sqlite3";
 import BetterSqlite3 from "better-sqlite3";
+import { Hono, type MiddlewareHandler } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { getAppDb } from "../db.js";
 import { isValidAppId, scanApps } from "../registry.js";
 import type { Config } from "../config.js";
 import { parseDuration } from "../duration.js";
 import { validateFieldDef, validateValue, APP_KEY_RE, type SettingField } from "../settingsSchema.js";
 import { PLATFORM_SETTINGS, PLATFORM_KEY_RE } from "../platformSettings.js";
+import { validationHook } from "../validation.js";
+import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
 
 export const CATALOG_NAME = "settings";
 
@@ -240,3 +245,160 @@ export function collectAppOverrides(cfg: Config, key: string): Map<string, unkno
   }
   return out;
 }
+
+// ---------- HTTP surface (spec §7) ----------
+
+const EVENT = `${CATALOG_NAME}-change`;
+
+// Identity-only change feed on the bus, kv-store's emit pattern: durable ≠ forever.
+export function emitSettingsChange(ns: string, key: string): void {
+  emitEvent({ ns, source: PLATFORM_NS, type: EVENT, payload: { key }, ttl: CHANGE_FEED_TTL_S });
+}
+
+const keyParam = z.object({ key: z.string().regex(/^[a-z0-9_.]+$/).max(128) });
+const hasValue = { message: "missing value" };
+const valueBody = z.object({ value: z.unknown() }).refine((b) => "value" in b, hasValue);
+
+// drifted = a stored value no longer validates (schema drift) — the default is
+// in effect and the dashboard shows a notice (spec §7); any edit clears it.
+function isDrifted(field: SettingField, stored: unknown): boolean {
+  if (stored === undefined || stored === null) return false;
+  try { validateValue(field, stored); return false; } catch { return true; }
+}
+
+const toPlatformEntry = (key: string) => {
+  const s = PLATFORM_SETTINGS[key];
+  const value = getPlatformValue(key) ?? null;
+  return {
+    key,
+    section: s.section,
+    scope: s.scope,
+    advanced: s.field.advanced ?? false,
+    field: s.field,
+    value,
+    effective: getEffective(key),
+    drifted: isDrifted(s.field, value),
+  };
+};
+
+export const platformSettingsRoutes = new Hono()
+  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, err instanceof SettingsError ? 400 : 500))
+  .get("/", (c) => c.json({ settings: Object.keys(PLATFORM_SETTINGS).map(toPlatformEntry) }))
+  .put("/:key", zValidator("param", keyParam, validationHook), zValidator("json", valueBody, validationHook), (c) => {
+    const { key } = c.req.valid("param");
+    const setting = PLATFORM_SETTINGS[key];
+    if (!setting) return c.json({ error: `unknown setting "${key}"` }, 404);
+    let value;
+    try {
+      value = validateValue(setting.field, c.req.valid("json").value);
+    } catch (e) {
+      throw new SettingsError(`${key}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    setPlatformValue(key, value);
+    notifySettingsWrite(key);
+    emitSettingsChange(PLATFORM_NS, key);
+    return c.json({ ok: true as const });
+  })
+  .delete("/:key", zValidator("param", keyParam, validationHook), (c) => {
+    const { key } = c.req.valid("param");
+    if (!PLATFORM_SETTINGS[key]) return c.json({ error: `unknown setting "${key}"` }, 404);
+    deletePlatformValue(key);
+    notifySettingsWrite(key);
+    emitSettingsChange(PLATFORM_NS, key);
+    return c.json({ ok: true as const });
+  });
+
+export type PlatformSettingsRoutes = typeof platformSettingsRoutes;
+
+export type SettingsEnv = { Variables: { settingsDb: Database.Database; appId: string } };
+
+export function withSettings(cfg: Config): MiddlewareHandler<SettingsEnv> {
+  return async (c, next) => {
+    const appId = c.req.param("appId");
+    if (!appId || !isValidAppId(appId)) return c.json({ error: "invalid app id" }, 400);
+    c.set("settingsDb", getSettingsDb(cfg.dataDir, appId));
+    c.set("appId", appId);
+    await next();
+  };
+}
+
+// The effective value of one declared setting (the SDK read path).
+function readDeclared(db: Database.Database, key: string): { found: boolean; value?: unknown } {
+  const def = getAppDef(db, key);
+  if (!def || !def.field) return { found: false };
+  const stored = getValue(db, key);
+  if (stored !== undefined) {
+    try { return { found: true, value: validateValue(def.field, stored) }; } catch { /* drift */ }
+  }
+  return { found: true, value: def.field.default };
+}
+
+export const settingsRoutes = new Hono<SettingsEnv>()
+  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
+  .get("/", (c) => {
+    const db = c.var.settingsDb;
+    const declared = listAppDefs(db).map((d) => {
+      const value = getValue(db, d.key) ?? null;
+      return {
+        key: d.key,
+        field: d.field,
+        error: d.error,
+        value,
+        effective: d.field ? readDeclared(db, d.key).value : null,
+        drifted: d.field ? isDrifted(d.field, value) : false,
+      };
+    });
+    const overrides = Object.entries(PLATFORM_SETTINGS)
+      .filter(([, s]) => s.scope === "per-app")
+      .map(([key, s]) => ({
+        key,
+        section: s.section,
+        advanced: s.field.advanced ?? false,
+        field: s.field,
+        platformEffective: getEffective(key),
+        override: getValue(db, key) ?? null,
+      }));
+    return c.json({ declared, overrides });
+  })
+  .get("/:key", zValidator("param", keyParam, validationHook), (c) => {
+    return c.json(readDeclared(c.var.settingsDb, c.req.valid("param").key));
+  })
+  .put("/:key", zValidator("param", keyParam, validationHook), zValidator("json", valueBody, validationHook), (c) => {
+    const { key } = c.req.valid("param");
+    const raw = c.req.valid("json").value;
+    const field = fieldForAppWrite(c.var.settingsDb, key);
+    let value;
+    try {
+      value = validateValue(field, raw);
+    } catch (e) {
+      throw new SettingsError(`${key}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+    setValue(c.var.settingsDb, key, value);
+    notifySettingsWrite(key, c.var.appId);
+    emitSettingsChange(c.var.appId, key);
+    return c.json({ ok: true as const });
+  })
+  .delete("/:key", zValidator("param", keyParam, validationHook), (c) => {
+    const { key } = c.req.valid("param");
+    fieldForAppWrite(c.var.settingsDb, key); // 400 on unknown/global — deletes are gated like writes
+    deleteValue(c.var.settingsDb, key);
+    notifySettingsWrite(key, c.var.appId);
+    emitSettingsChange(c.var.appId, key);
+    return c.json({ ok: true as const });
+  });
+
+// Bare key → the app's declared field; dotted key → a per-app platform setting.
+function fieldForAppWrite(db: Database.Database, key: string): SettingField {
+  if (key.includes(".")) {
+    const s = PLATFORM_SETTINGS[key];
+    if (!s) throw new SettingsError(`unknown setting "${key}"`);
+    if (s.scope !== "per-app") throw new SettingsError(`"${key}" applies to all apps and cannot be overridden`);
+    return s.field;
+  }
+  const def = getAppDef(db, key);
+  if (!def) throw new SettingsError(`unknown setting "${key}"`);
+  if (!def.field) throw new SettingsError(`"${key}" has a declaration error: ${def.error}`);
+  return def.field;
+}
+
+export type SettingsRoutes = typeof settingsRoutes;

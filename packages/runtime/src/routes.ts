@@ -16,6 +16,7 @@ import { tasksRoutes, withTasks, CATALOG_NAME as TASKS } from "./services/tasks.
 import { eventRoutes, withEvents, eventsQuery, CATALOG_NAME as EVENTS } from "./services/event-store.js";
 import { queryEvents } from "./eventStore.js";
 import { NS_RE } from "./events.js";
+import { platformSettingsRoutes, settingsRoutes, withSettings, CATALOG_NAME as SETTINGS } from "./services/settings.js";
 
 // Holds the stream open until the client disconnects; the abort callback
 // removes the client from the SSE registry.
@@ -35,6 +36,7 @@ export function apiRoutes(cfg: Config) {
     .route(`/apps/:appId/${FILES}`, filesRoutes)
     // Express's express.json() default (100 kb), preserved explicitly.
     .use(bodyLimit({ maxSize: 100 * 1024 }))
+    .route("/settings", platformSettingsRoutes)
     .get("/apps", (c) => c.json(scanApps(cfg.appsDir)))
     .post("/apps", async (c) => {
       let body: { appId?: string; name?: string; description?: string; icon?: string } = {};
@@ -63,6 +65,8 @@ export function apiRoutes(cfg: Config) {
     })
     .use(`/apps/:appId/${TASKS}/*`, withTasks(cfg))
     .route(`/apps/:appId/${TASKS}`, tasksRoutes)
+    .use(`/apps/:appId/${SETTINGS}/*`, withSettings(cfg))
+    .route(`/apps/:appId/${SETTINGS}`, settingsRoutes)
     // Global event history (dashboard + MCP); /api/events itself stays the SSE feed.
     .get(
       "/events/history",
