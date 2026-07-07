@@ -18,8 +18,6 @@ web/*/.astro/
 # are ignored deliberately: this repo's runtime rebuilds them at dev/test time, so committing
 # them here would just churn diffs. Apps in the wild commit theirs.
 packages/runtime/tests/fixtures/start-app/src/routeTree.gen.ts
-root/apps/habit-tracker/src/routeTree.gen.ts
-root/apps/expense-tracker/src/routeTree.gen.ts
 root/apps/greenhouse/src/routeTree.gen.ts
 root/apps/welcome/src/routeTree.gen.ts
 packages/runtime/dashboard/src/routeTree.gen.ts

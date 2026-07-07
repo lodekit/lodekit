@@ -45,12 +45,12 @@ beforeEach(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-root-"));
   cache = fs.mkdtempSync(path.join(os.tmpdir(), "lk-cache-"));
   copyDir(
-    path.join(__dirname, "../../../root/apps/expense-tracker"),
-    path.join(root, "apps", "expense-tracker")
+    path.join(__dirname, "../../../root/apps/greenhouse"),
+    path.join(root, "apps", "greenhouse")
   );
   copyDir(
-    path.join(__dirname, "../../../root/apps/habit-tracker"),
-    path.join(root, "apps", "habit-tracker")
+    path.join(__dirname, "../../../root/apps/welcome"),
+    path.join(root, "apps", "welcome")
   );
   // The loopback round-trip proof: a route whose loader calls the fixture's `bump` server
   // function, which round-trips through the SDK's server-side loopback door to kv-store.
@@ -67,8 +67,8 @@ beforeEach(async () => {
   server = await start(loadConfig());
   const addr = server.address();
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
-  await waitReady(base, "expense-tracker", 60000);
-  await waitReady(base, "habit-tracker", 60000);
+  await waitReady(base, "greenhouse", 60000);
+  await waitReady(base, "welcome", 60000);
   await waitReady(base, "start-app", 60000);
 }, 120000); // hook builds three real Start apps; well above vitest's 10s default
 afterEach(async () => {
@@ -89,37 +89,55 @@ afterEach(async () => {
   delete process.env.LODEKIT_PORT;
 });
 
-describe("example apps e2e (Start)", () => {
-  it("habit-tracker / is server-rendered with loader content, and is registered", async () => {
+describe("showcase apps e2e (Start)", () => {
+  it("greenhouse / is server-rendered with seeded content, and is registered", async () => {
     const list = await (await fetch(base + "/api/apps")).json();
-    expect(list.map((a: { appId: string }) => a.appId)).toContain("habit-tracker");
-    const html = await (await fetch(base + "/habit-tracker/")).text();
-    // SSR'd: the loader/query-driven empty state renders without any client JS running.
-    expect(html).toContain("No habits yet");
-    expect(html).toContain("Today");
+    expect(list.map((a: { appId: string }) => a.appId)).toContain("greenhouse");
+    const html = await (await fetch(base + "/greenhouse/")).text();
+    // SSR'd: the loader seeds on first fetch and renders the demo plants.
+    expect(html).toContain("Fernando");
+    expect(html).toContain("Conservatory");
   }, 45000);
 
-  it("habit-tracker /manage is a working deep link (multi-route)", async () => {
-    const res = await fetch(base + "/habit-tracker/manage");
+  it("greenhouse seeding wrote the flag and queued care reminders", async () => {
+    await (await fetch(base + "/greenhouse/")).text(); // ensure the loader ran
+    const seeded = await (await fetch(base + "/api/apps/greenhouse/kv-store/seeded")).json();
+    expect(seeded.found).toBe(true);
+    const body = await (
+      await fetch(base + "/api/apps/greenhouse/tasks/runs?state=queued")
+    ).json();
+    // Deviation from brief: the endpoint returns { runs: [...] }, not a bare array.
+    expect(Array.isArray(body.runs)).toBe(true);
+    expect(body.runs.length).toBeGreaterThan(0);
+  }, 45000);
+
+  it("greenhouse /almanac is a working deep link (multi-route)", async () => {
+    const res = await fetch(base + "/greenhouse/almanac");
     expect(res.status).toBe(200);
     const html = await res.text();
-    expect(html).toContain("New habit");
+    expect(html).toContain("Almanac");
   }, 45000);
 
   it("emits app-prefixed /_build/ asset URLs that resolve as written in the shell", async () => {
-    const html = await (await fetch(base + "/habit-tracker/")).text();
+    const html = await (await fetch(base + "/greenhouse/")).text();
     const src = html.match(/src="([^"]+\.js)"/)?.[1];
     expect(src).toBeTruthy();
-    expect(src!.startsWith("/habit-tracker/_build/")).toBe(true);
+    expect(src!.startsWith("/greenhouse/_build/")).toBe(true);
     expect((await fetch(base + src!)).status).toBe(200);
   }, 45000);
 
-  it("expense-tracker / is server-rendered", async () => {
-    const res = await fetch(base + "/expense-tracker/");
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    expect(html).toContain("Expense Tracker");
-    expect(html).toContain("Total:");
+  it("welcome / is server-rendered and its visit counter increments across fetches", async () => {
+    const countOf = async () => {
+      const html = await (await fetch(base + "/welcome/")).text();
+      const m = html.match(/id="visit-count">(\d+)</);
+      if (!m) throw new Error(`visit count not found in page: ${html.slice(0, 300)}`);
+      return Number(m[1]);
+    };
+    const html = await (await fetch(base + "/welcome/")).text();
+    expect(html).toContain("Welcome to Lodekit");
+    const first = await countOf();
+    const second = await countOf();
+    expect(second).toBe(first + 1);
   }, 45000);
 });
 

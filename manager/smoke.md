@@ -8,9 +8,10 @@ fail). Build the artifact first: `pnpm --filter @lodekit/manager make`.
        "Lodekit — running".
 3. [ ] First run: `~/Documents/Lodekit/apps` + `data` were created; the dashboard opened
        in the browser by itself (empty app grid).
-4. [ ] An app builds and serves: copy `examples/apps/habit-tracker` into
+4. [ ] An app builds and serves: copy `root/apps/greenhouse` into
        `~/Documents/Lodekit/apps/`, watch the dashboard go `building… → ready`, open the
-       app, interact with it.
+       app — it renders the Greenhouse conservatory page (e.g. "Fernando") — and interact
+       with it.
 5. [ ] MCP: paste the README snippet into an agent's MCP config; the agent lists Lodekit
        tools and can call them. (Headless check:
        `echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' | <command + args from the README snippet>`
