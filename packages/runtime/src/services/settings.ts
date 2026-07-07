@@ -334,7 +334,7 @@ function readDeclared(db: Database.Database, key: string): { found: boolean; val
 }
 
 export const settingsRoutes = new Hono<SettingsEnv>()
-  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
+  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, err instanceof SettingsError ? 400 : 500))
   .get("/", (c) => {
     const db = c.var.settingsDb;
     const declared = listAppDefs(db).map((d) => {
