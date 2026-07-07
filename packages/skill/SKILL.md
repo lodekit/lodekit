@@ -104,6 +104,49 @@ The person's knobs: declare them, read them — never write them from app code.
 - Boundaries: **Settings** = person writes, app reads. **Store (`kv`)** = the app's own memory — app writes at runtime. **Secrets** = credentials, server-side only (coming) — never put credentials in Settings or the Store.
 - Inspect over MCP: `lodekit_settings_list`, `lodekit_settings_get`.
 
+## Secrets
+
+Credentials (API keys, auth tokens) live in the **secret-store** — never in
+Settings, never in the Store. The person owns a platform-wide secret catalog;
+your app declares **slots** it needs, and the person **links** a secret to each
+slot in the dashboard. Server-side code reads linked values; browser code never
+can.
+
+Declare slots in `src/secrets.ts`:
+
+```ts
+import { defineSecrets, secret } from "@lodekit/sdk";
+
+export default defineSecrets({
+  weather_api_key: secret({
+    label: "Weather API key",
+    description: "Used by the watering forecast to fetch local weather.",
+  }),
+});
+```
+
+Read them **only in server functions** (never in components):
+
+```ts
+import { secrets, SecretUnavailableError } from "@lodekit/sdk";
+
+const key = await secrets.get("weather_api_key"); // throws SecretUnavailableError
+```
+
+Handle `SecretUnavailableError` (`reason: "unlinked" | "unavailable"`) by
+rendering a "configure me" state pointing the person at the dashboard's
+Secrets page.
+
+Hard rules:
+
+- **Never ask the person to paste a secret value into chat.** Direct them to
+  the dashboard → Secrets (or the app's settings page, which shows pending
+  slots with a link/create affordance).
+- **Never log, echo, or store a secret value** — not in `kv`, not in `files`,
+  not in events, not in console output.
+- The three-store boundary: **Settings** = the person's knobs; **Store (kv)**
+  = the app's own memory; **Secrets** = credentials the person provides.
+
 ## Design system classes
 
 `lk-container` (page wrapper), `lk-h1`, `lk-muted`, `lk-card`, `lk-grid`, `lk-row`,

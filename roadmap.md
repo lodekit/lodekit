@@ -18,11 +18,14 @@ pointed here):
 - **Harden app/dashboard rendering** — the dashboard is React now (escapes by default;
   resolved by the @lodekit/ui slice). Remaining: apps are user-trusted local code, but
   before any multi-user or shared exposure, audit app-side rendering guidance in the skill.
-- **Real secrets storage** — back the `lodekit.secrets.get()` stub with actual encrypted
+- **Real secrets storage** — ~~back the `lodekit.secrets.get()` stub with actual encrypted
   storage + a UI to manage secrets (the secret-store service; design with the lens of
-  powering integrations). **Unblocked** by the tanstack-start-host substrate — server
-  functions reach the SDK, so secrets have a server-side door
-  (`docs/specs/2026-07-03-tanstack-start-host-design.md`); still its own slice.
+  powering integrations).~~ **Shipped (2026-07-07):**
+  `docs/specs/2026-07-07-secret-store-design.md` — encrypted catalog (master key in the
+  Keychain), slots/links, worker-token server-only reads, dashboard + MCP (names only).
+  Deferred from the slice (spec §12): master-key rotation, non-darwin key providers,
+  secret expiry, read-audit log, MCP write/link tools, import; the worker-token door
+  covers only the secrets value route — extending it stays with "Local door hardening".
 - **App-id-existence check** — the kv router (and the scoped events endpoint) materialize
   `data/<app-id>/db.sqlite` for any well-formed app id without checking the app registry —
   inherited from the old `withDb` (now the Hono `withDb` middleware); tighten with this body
@@ -334,7 +337,9 @@ above; the remainder:
 - **Showcase update on manager update** — first-run install never clobbers a person's
   copy; an "update showcase apps" story belongs with auto-update (showcase-apps spec §10).
 - **Greenhouse integrations chapter** — when the integrations layer lands, weather-aware
-  watering is the first integration demo (showcase-apps spec §13).
+  watering is the first integration demo (showcase-apps spec §13); it also carries the
+  **secret-store DoD coverage** deferred from that slice (spec
+  2026-07-07-secret-store-design.md §11): declare a `weather_api_key` slot, link, read.
 - **Greenhouse showcase Part 2 — events integration** — the deferred half of the showcase
   slice, needs its own plan: `events.emit` (client + server, per-emission `ttl`),
   `events.list` (`before`/`after` cursors + server-side), `events.watch` with a type

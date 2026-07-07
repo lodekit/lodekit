@@ -58,3 +58,7 @@ Ledger, While You Were Away, and `weekly_gazette` (`cron` + `catchUp: "24h"` +
 `src/settings.ts` (all five field types have a plausible Greenhouse home) and the typed
 `settings.get`/`all`/`watch` reads — landed in parallel with the showcase slice; needs a
 Greenhouse chapter of its own.
+
+**Pending (secret-store slice, `2026-07-07-secret-store-design.md` §11):** declare a
+`weather_api_key` slot + linked server-side read — deferred to the Greenhouse
+integrations chapter (roadmap.md).
