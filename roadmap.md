@@ -352,3 +352,14 @@ above; the remainder:
   copy; an "update showcase apps" story belongs with auto-update (showcase-apps spec §10).
 - **Greenhouse integrations chapter** — when the integrations layer lands, weather-aware
   watering is the first integration demo (showcase-apps spec §13).
+- **Greenhouse showcase Part 2 — events integration** — the deferred half of the showcase
+  slice, needs its own plan: `events.emit` (client + server, per-emission `ttl`),
+  `events.list` (`before`/`after` cursors + server-side), `events.watch` with a type
+  array, the Ledger (Almanac activity feed), While You Were Away (last-seen offset
+  replay), and the `weekly_gazette` task (`cron` + `catchUp: "24h"` + `retries`/`timeout`,
+  composing from the event stream). Spec §5 + the plan's Part 2 section list the work;
+  `root/readme.md`'s Pending block is the coverage checklist to drain.
+- **`events-wiring.test.ts` flakes intermittently** — fails ~1-in-3 full-suite runs on a
+  pristine master checkout (and `mcp.test.ts` was seen flaking once under load);
+  pre-existing from the events slice, surfaced during the showcase-apps rebase. Diagnose
+  the timing assumption and deflake.
