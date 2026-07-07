@@ -346,3 +346,16 @@ above; the remainder:
   pristine master checkout (and `mcp.test.ts` was seen flaking once under load);
   pre-existing from the events slice, surfaced during the showcase-apps rebase. Diagnose
   the timing assumption and deflake.
+- **Per-page SSE connection count** — the injected theme resolver (`themeResolverJs` in
+  `packages/runtime/src/server.ts`, served on every app page as `/_ui/theme.js`) opens its
+  own `EventSource("/api/events")`, separate from the one the SDK's `watch()` opens per
+  client (`packages/sdk/src/client.ts`) — two connections for a single app page that uses
+  `watch`. All apps share one origin (`lodekit.localhost:7777`), and HTTP/1.1 caps
+  concurrent connections per origin at ~6; consolidate onto a shared channel (or lift the
+  per-origin connection concern) before enough app tabs are open at once to matter.
+- **Manager `runtimeSettings` subscribe hygiene** — `manager/src/runtimeSettings.js`'s
+  `defaultSubscribe` reads the `/api/events` SSE response without `res.setEncoding("utf8")`
+  (multi-byte UTF-8 split across chunk boundaries could corrupt a frame), and `start()`/
+  `stop()` have no guard against a double `start()` (leaks the prior `unsubscribe`) or a
+  `stop()` racing an in-flight `start()`. Leak-only today (single caller in `main.js`); fix
+  before `runtimeSettings` gets a second caller or a restart-loop path.

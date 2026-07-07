@@ -183,7 +183,7 @@ instead).
 
 | Key | Type | Default | Scope | Advanced |
 |---|---|---|---|---|
-| `tasks.default_retries` | number (int, ≥0) | 3 | per-app | |
+| `tasks.default_retries` | number (int, 0–20) | 3 | per-app | |
 | `tasks.default_timeout` | duration | 5m | per-app | |
 | `tasks.default_catch_up` | duration | 1h | per-app | |
 | `tasks.run_retention_count` | number (int, ≥1) | 100 | per-app | |
