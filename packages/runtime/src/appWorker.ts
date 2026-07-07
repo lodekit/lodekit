@@ -2,6 +2,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { Worker } from "node:worker_threads";
 import { fileURLToPath } from "node:url";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import type { Config } from "./config.js";
 import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "./events.js";
 import { emitLog, createLogger } from "./logger.js";
@@ -58,6 +59,25 @@ export function onSettingsManifest(cb: (appId: string, fields: Record<string, un
 }
 
 const managed = new Map<string, Managed>();
+
+// Per-spawn worker tokens (secret-store spec §7): the server-only door's
+// credential. In-memory only — never persisted, never logged.
+const workerTokens = new Map<string, string>();
+
+export function verifyWorkerToken(appId: string, token: string | undefined): boolean {
+  const expected = workerTokens.get(appId);
+  if (!expected || !token) return false;
+  const a = Buffer.from(expected);
+  const b = Buffer.from(token);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/** Test hook — routes tests mint a token without spawning a real worker. */
+export function setWorkerTokenForTest(appId: string, token: string | null): void {
+  if (token === null) workerTokens.delete(appId);
+  else workerTokens.set(appId, token);
+}
+
 const states = new Map<string, ServerState>();
 let baseUrl = "";
 
@@ -84,13 +104,15 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
   setState(appId, { status: "starting" });
   const tasksEntry = path.join(cfg.cacheDir, appId, "server", "tasks.js");
   const settingsEntry = path.join(cfg.cacheDir, appId, "server", "settings.js");
+  const workerToken = randomBytes(32).toString("hex");
+  workerTokens.set(appId, workerToken);
   const worker = new Worker(ENTRY, {
     workerData: {
       serverEntry,
       tasksEntry: fs.existsSync(tasksEntry) ? tasksEntry : null,
       settingsEntry: fs.existsSync(settingsEntry) ? settingsEntry : null,
     },
-    env: { ...process.env, LODEKIT_BASE_URL: baseUrl },
+    env: { ...process.env, LODEKIT_BASE_URL: baseUrl, LODEKIT_WORKER_TOKEN: workerToken },
   });
   let readyResolve!: () => void, readyReject!: (e: Error) => void;
   const ready = new Promise<void>((res, rej) => { readyResolve = res; readyReject = rej; });
@@ -169,6 +191,7 @@ export function stopAppWorker(appId: string): void {
   void m.worker.terminate();
   managed.delete(appId);
   states.delete(appId);
+  workerTokens.delete(appId);
 }
 
 export function stopAllWorkers(): void { for (const appId of [...managed.keys()]) stopAppWorker(appId); }
