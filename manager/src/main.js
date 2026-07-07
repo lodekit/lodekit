@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
 const { getPaths } = require("./paths");
-const { openDailyLogStream } = require("./logs");
+const { openDailyLogStream, stampLines } = require("./logs");
 const { Supervisor } = require("./supervisor");
 const { getIconStyle, setIconStyle } = require("./settings");
 
@@ -38,8 +38,10 @@ function spawnRuntime() {
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
-  child.stdout.pipe(runtimeLogStream, { end: false });
-  child.stderr.pipe(runtimeLogStream, { end: false });
+  // One stamper per source: line-buffered, so stdout/stderr can't interleave
+  // mid-line, and every runtime.log line carries a timestamp like manager.log.
+  child.stdout.pipe(stampLines()).pipe(runtimeLogStream, { end: false });
+  child.stderr.pipe(stampLines()).pipe(runtimeLogStream, { end: false });
   return child;
 }
 

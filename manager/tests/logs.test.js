@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { dateStamp, openDailyLogStream, sweepLogs } from "../src/logs.js";
+import { dateStamp, openDailyLogStream, stampLines, sweepLogs } from "../src/logs.js";
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), "lodekit-logs-"));
 const end = (s) => new Promise((r) => s.end(r));
@@ -50,5 +50,38 @@ describe("dated log files", () => {
     const stream = openDailyLogStream(dir, "manager", { now: () => new Date("2026-07-07T10:00:00Z") });
     await end(stream);
     expect(fs.existsSync(path.join(dir, "manager-20260707.log"))).toBe(true);
+  });
+});
+
+describe("stampLines", () => {
+  const collect = (stream) =>
+    new Promise((resolve) => {
+      let out = "";
+      stream.on("data", (c) => (out += c.toString()));
+      stream.on("end", () => resolve(out));
+    });
+
+  it("prefixes each complete line with an ISO timestamp", async () => {
+    const now = () => new Date("2026-07-07T10:00:00.000Z");
+    const s = stampLines({ now });
+    const done = collect(s);
+    s.write("Lodekit running at http://lodekit.localhost:7777\n[build:notes] build failed\n");
+    s.end();
+    expect(await done).toBe(
+      "2026-07-07T10:00:00.000Z Lodekit running at http://lodekit.localhost:7777\n" +
+        "2026-07-07T10:00:00.000Z [build:notes] build failed\n"
+    );
+  });
+
+  it("buffers a line split across chunks and stamps it once", async () => {
+    const now = () => new Date("2026-07-07T10:00:00.000Z");
+    const s = stampLines({ now });
+    const done = collect(s);
+    s.write("partial ");
+    s.write("line\nnext");
+    s.end(); // trailing partial flushed with a stamp
+    expect(await done).toBe(
+      "2026-07-07T10:00:00.000Z partial line\n2026-07-07T10:00:00.000Z next\n"
+    );
   });
 });

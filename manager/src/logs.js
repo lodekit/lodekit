@@ -1,7 +1,7 @@
 "use strict";
 const fs = require("node:fs");
 const path = require("node:path");
-const { Writable } = require("node:stream");
+const { Transform, Writable } = require("node:stream");
 
 const DEFAULT_DAYS = 7;
 
@@ -63,4 +63,23 @@ function openDailyLogStream(logsDir, base, { days = DEFAULT_DAYS, now = () => ne
   });
 }
 
-module.exports = { dateStamp, openDailyLogStream, sweepLogs };
+// Line-buffered Transform prefixing each line with an ISO timestamp — the system
+// stream is forensic evidence, and evidence needs time. Sits between the runtime
+// child's stdout/stderr and the dated log file; one instance per source stream so
+// chunks can't interleave mid-line. A trailing partial line is stamped on end.
+function stampLines({ now = () => new Date() } = {}) {
+  let buf = "";
+  return new Transform({
+    transform(chunk, encoding, callback) {
+      buf += chunk.toString();
+      const lines = buf.split("\n");
+      buf = lines.pop();
+      callback(null, lines.map((l) => `${now().toISOString()} ${l}\n`).join(""));
+    },
+    flush(callback) {
+      callback(null, buf ? `${now().toISOString()} ${buf}\n` : "");
+    },
+  });
+}
+
+module.exports = { dateStamp, openDailyLogStream, stampLines, sweepLogs };
