@@ -323,6 +323,14 @@ above; the remainder:
   restarting", "update available") plus its auth story — pairs with local door hardening
   (Security). Until then, cross-namespace subscriptions for apps stay deliberately off the
   table too (an app's feed is its own namespace); revisit only with a concrete use case.
+- **`tasks-change` feed onto the event bus** — the Tasks v1 slice landed in parallel with
+  the events slice, so its change feed (`broadcast("tasks-change", …)` in
+  `services/tasks.ts` + SDK `tasks.watch`/`TasksChange`) still rides a plain SSE
+  broadcast — the pre-bus pattern kv/file-store migrated away from. Works fine (the
+  transport is shared), but it's the one service feed that isn't a stored, replayable
+  event. Migrate it like the other change feeds (emitEvent, service ttl, identity-only
+  payload) and fold `tasks.watch` into `events.watch`; pairs naturally with
+  event-triggered tasks above — both make the bus the tasks service's spine.
 - **Event retention as settings** — the events slice ships constants (30 days / 50k rows;
   change-feed events at a service-set 7-day ttl); make them dashboard-configurable and
   app-overridable when the settings service lands
