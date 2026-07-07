@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { scaffold, listApps, fetchLogs, fetchEvents } from "./client.js";
+import { scaffold, listApps, fetchLogs, fetchEvents, fetchSettings } from "./client.js";
 import { createClient } from "@lodekit/sdk";
 
 const BASE = process.env.LODEKIT_BASE_URL ?? "http://lodekit.localhost:7777";
@@ -69,6 +69,21 @@ server.tool(
   { appId: z.string(), key: z.string() },
   async ({ appId, key }) => {
     const value = await createClient({ baseUrl: BASE, appId }).kv.get(key);
+    return text(value === undefined ? { found: false } : { found: true, value });
+  }
+);
+
+server.tool(
+  "lodekit_settings_list",
+  { appId: z.string().optional() },
+  async ({ appId }) => text(await fetchSettings(BASE, appId))
+);
+
+server.tool(
+  "lodekit_settings_get",
+  { appId: z.string(), key: z.string() },
+  async ({ appId, key }) => {
+    const value = await createClient({ baseUrl: BASE, appId }).settings.get(key);
     return text(value === undefined ? { found: false } : { found: true, value });
   }
 );

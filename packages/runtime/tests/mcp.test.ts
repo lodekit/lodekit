@@ -87,4 +87,17 @@ describe("mcp tool helpers", () => {
       .poll(async () => (await fetchEvents(base, { appId: "_platform", type: "apps-changed" })).records.length, { timeout: 5000 })
       .toBeGreaterThan(0); // the scaffold's registry churn
   });
+
+  it("reads settings through the helper the settings tools use", async () => {
+    await scaffold(base, { appId: "notes", name: "Notes" });
+    const { fetchSettings } = await import("../../mcp/client.js");
+    const platformSettings = await fetchSettings(base);
+    expect(platformSettings.settings).toBeDefined();
+    expect(platformSettings.settings.some((s: { key: string }) => s.key === "appearance.theme")).toBe(true);
+    const appSettings = await fetchSettings(base, "notes");
+    expect(appSettings.declared).toBeDefined();
+    expect(Array.isArray(appSettings.declared)).toBe(true);
+    expect(appSettings.overrides).toBeDefined();
+    expect(Array.isArray(appSettings.overrides)).toBe(true);
+  });
 });

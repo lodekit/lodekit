@@ -45,3 +45,10 @@ export async function fetchEvents(
   if (!r.ok) throw new Error(`events fetch failed: ${r.status}`);
   return r.json();
 }
+
+export async function fetchSettings(base: string, appId?: string) {
+  const url = appId ? `${base}/api/apps/${appId}/settings` : `${base}/api/settings`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`settings fetch failed: ${r.status}`);
+  return r.json();
+}
