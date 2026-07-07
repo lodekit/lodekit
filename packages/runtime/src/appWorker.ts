@@ -58,6 +58,13 @@ export function onSettingsManifest(cb: (appId: string, fields: Record<string, un
   settingsManifestCb = cb;
 }
 
+let secretsManifestCb: ((appId: string, slots: Record<string, unknown>, error?: string) => void) | undefined;
+
+/** Secrets hook (single, last-wins): fired once per worker boot with the app's declared slots. */
+export function onSecretsManifest(cb: (appId: string, slots: Record<string, unknown>, error?: string) => void): void {
+  secretsManifestCb = cb;
+}
+
 const managed = new Map<string, Managed>();
 
 // Per-spawn worker tokens (secret-store spec §7): the server-only door's
@@ -104,6 +111,7 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
   setState(appId, { status: "starting" });
   const tasksEntry = path.join(cfg.cacheDir, appId, "server", "tasks.js");
   const settingsEntry = path.join(cfg.cacheDir, appId, "server", "settings.js");
+  const secretsEntry = path.join(cfg.cacheDir, appId, "server", "secrets.js");
   const workerToken = randomBytes(32).toString("hex");
   workerTokens.set(appId, workerToken);
   const worker = new Worker(ENTRY, {
@@ -111,6 +119,7 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
       serverEntry,
       tasksEntry: fs.existsSync(tasksEntry) ? tasksEntry : null,
       settingsEntry: fs.existsSync(settingsEntry) ? settingsEntry : null,
+      secretsEntry: fs.existsSync(secretsEntry) ? secretsEntry : null,
     },
     env: { ...process.env, LODEKIT_BASE_URL: baseUrl, LODEKIT_WORKER_TOKEN: workerToken },
   });
@@ -130,6 +139,7 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
     if (msg.type === "fatal") { setState(appId, { status: "error", message: msg.message }); lifecycle.error("app server failed to start", { stack: msg.message }); readyReject(new Error(msg.message)); return; }
     if (msg.type === "tasks-manifest") { manifestCb?.(appId, msg.tasks ?? [], msg.error); return; }
     if (msg.type === "settings-manifest") { settingsManifestCb?.(appId, msg.fields ?? {}, msg.error); return; }
+    if (msg.type === "secrets-manifest") { secretsManifestCb?.(appId, msg.slots ?? {}, msg.error); return; }
     if (msg.type === "task-result") {
       const t = m.pendingTasks.get(msg.id);
       if (!t) return;

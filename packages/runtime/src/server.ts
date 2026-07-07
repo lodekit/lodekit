@@ -11,7 +11,7 @@ import { appHost } from "./appHost.js";
 import { startWatcher } from "./watcher.js";
 import { buildAll, buildDashboard, getDashboardState, idleBuilds, uiDir } from "./build.js";
 import { isValidAppId, scanApps } from "./registry.js";
-import { configureWorkers, forwardToWorker, stopAllWorkers, onTasksManifest, onSettingsManifest } from "./appWorker.js";
+import { configureWorkers, forwardToWorker, stopAllWorkers, onTasksManifest, onSettingsManifest, onSecretsManifest } from "./appWorker.js";
 import { every, stop } from "./scheduler.js";
 import { sweepAllAndBroadcast } from "./services/kv-store.js";
 import { sweepFiles } from "./services/file-store.js";
@@ -21,6 +21,8 @@ import {
   initSettingsStore, registerSettingsManifest,
   effectiveMs, effectiveNumber, effectiveString, onSettingsWrite, collectAppOverrides,
 } from "./services/settings.js";
+import { initSecretStore } from "./secretsStore.js";
+import { registerSecretsManifest } from "./services/secret-store.js";
 import { parseDuration } from "./duration.js";
 import { createLogger } from "./logger.js";
 import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskEngine.js";
@@ -159,6 +161,7 @@ export function createServer(cfg: Config): Server {
 export async function start(cfg: Config): Promise<Server> {
   initLogStore(cfg.stateDir);
   initSettingsStore(cfg.dataDir);
+  initSecretStore(cfg);
   if (!initEventStore(cfg.dataDir)) {
     createLogger("event-store").error("events.sqlite unavailable — event bus degrades to live-only");
   }
@@ -173,6 +176,7 @@ export async function start(cfg: Config): Promise<Server> {
   initTaskEngine(cfg);
   onTasksManifest(registerManifest);
   onSettingsManifest((appId, fields, error) => registerSettingsManifest(cfg, appId, fields, error));
+  onSecretsManifest((appId, slots, error) => registerSecretsManifest(cfg, appId, slots, error));
   recoverInterruptedRuns();
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
   const watcher = await startWatcher(cfg);

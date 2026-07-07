@@ -314,5 +314,28 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
     });
   }
 
+  // The secrets entry (secret-store spec §5): src/secrets.ts becomes a separate
+  // self-contained ssr bundle beside server.js — same mechanism as settings.js.
+  const secretsSource = path.join(fs.realpathSync(t.rootDir), "src", "secrets.ts");
+  if (fs.existsSync(secretsSource)) {
+    await build({
+      configFile: false,
+      root: fs.realpathSync(t.rootDir),
+      logLevel: "silent",
+      define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
+      plugins: [deepImportResolver()],
+      resolve: { alias: appAliases(themeOverridesFile) },
+      ssr: { noExternal: true },
+      build: {
+        ssr: secretsSource,
+        outDir: path.join(t.outDir, "server"),
+        emptyOutDir: false,
+        rollupOptions: {
+          output: { entryFileNames: "secrets.js", chunkFileNames: "assets/secrets-[name]-[hash].js" },
+        },
+      },
+    });
+  }
+
   fs.writeFileSync(path.join(t.outDir, "package.json"), JSON.stringify({ type: "module" }));
 }

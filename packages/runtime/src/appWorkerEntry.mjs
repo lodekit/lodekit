@@ -4,6 +4,7 @@
 //                   | { type:"task-run", id, name, payload }
 //   worker -> main  { type:"ready" } | { type:"fatal", message }
 //                   | { type:"tasks-manifest", tasks:[{name,...config}], error? }
+//                   | { type:"secrets-manifest", slots:{...}, error? }
 //                   | { type:"response", id, status, headers:[[k,v]], body:ReadableStream|null }
 //                   | { type:"response-error", id, message }
 //                   | { type:"task-result", id, ok, message? }
@@ -91,6 +92,28 @@ if (workerData.settingsEntry) {
   }
 } else {
   parentPort.postMessage({ type: "settings-manifest", fields: {} });
+}
+
+// Secrets manifest from the app's built src/secrets.ts (secret-store spec §5):
+// the DEFAULT export tagged by defineSecrets(). Slots are plain data. An
+// import failure is reported, never fatal — the runtime keeps previous slots.
+if (workerData.secretsEntry) {
+  try {
+    const mod = await import(workerData.secretsEntry);
+    const def = mod.default;
+    if (def && def.__lodekitSecrets === true && def.slots && typeof def.slots === "object") {
+      parentPort.postMessage({ type: "secrets-manifest", slots: { ...def.slots } });
+    } else {
+      parentPort.postMessage({
+        type: "secrets-manifest", slots: {},
+        error: "src/secrets.ts has no defineSecrets(...) default export",
+      });
+    }
+  } catch (e) {
+    parentPort.postMessage({ type: "secrets-manifest", slots: {}, error: e?.stack ?? String(e) });
+  }
+} else {
+  parentPort.postMessage({ type: "secrets-manifest", slots: {} });
 }
 
 parentPort.on("message", async (msg) => {
