@@ -95,14 +95,21 @@ function TasksPanel({ appId }: { appId: string }) {
   const queryClient = useQueryClient();
   const defs = useQuery({ queryKey: ["tasks", appId], queryFn: () => tasks.list() });
   const runs = useQuery({ queryKey: ["task-runs", appId], queryFn: () => tasks.runs({ limit: 15 }) });
+  const [runError, setRunError] = useState<string | null>(null);
 
   // Run now / Re-run — source "manual" (spec §8); invalidation arrives over SSE.
   async function runNow(name: string, payload?: unknown) {
-    await fetch(`/api/apps/${appId}/tasks/${name}/runs`, {
+    const res = await fetch(`/api/apps/${appId}/tasks/${name}/runs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload === undefined ? { source: "manual" } : { source: "manual", payload }),
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      setRunError(body?.error ?? res.statusText);
+      return;
+    }
+    setRunError(null);
     void queryClient.invalidateQueries({ queryKey: ["task-runs", appId] });
   }
 
@@ -111,6 +118,7 @@ function TasksPanel({ appId }: { appId: string }) {
   const list = (defs.data ?? []).filter((t: TaskInfo) => !t.retired);
   return (
     <div className="mt-2 space-y-2 border-t pt-2 text-sm">
+      {runError && <p className="text-destructive">{runError}</p>}
       {list.length === 0 ? (
         <p className="text-muted-foreground">No tasks declared.</p>
       ) : (

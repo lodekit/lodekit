@@ -44,7 +44,7 @@ try {
 // kebab-case of the export identifier. An import failure is reported, never
 // fatal — the app keeps serving HTTP; the runtime keeps the previous defs.
 const taskHandlers = new Map();
-const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, "$1-$2").replace(/_/g, "-").toLowerCase();
 const CONFIG_KEYS = ["cron", "every", "catchUp", "retries", "timeout"];
 if (workerData.tasksEntry) {
   try {

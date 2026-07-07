@@ -38,6 +38,7 @@ export const boom = { __lodekitTask: true, run: async () => { throw new Error("k
 export const slow = { __lodekitTask: true, run: () => new Promise((r) => setTimeout(r, 60_000)) };
 export const echoFail = { __lodekitTask: true, run: async (p) => { throw new Error("got:" + JSON.stringify(p)); } };
 export const notATask = { run: async () => {} };
+export const snake_case_task = { __lodekitTask: true, run: async () => {} };
 `);
   writeApp("bare", null);
   writeApp("busted", `throw new Error("bad module");\n`);
@@ -58,6 +59,7 @@ describe("worker task protocol", () => {
       { name: "echo-fail" },
       { name: "ping", cron: "0 9 * * *" },
       { name: "slow" },
+      { name: "snake-case-task" },
     ]);
     await waitFor(() => getServerState("tasky")?.status === "running", 10_000);
   });
@@ -69,6 +71,7 @@ describe("worker task protocol", () => {
     expect((fail as { message: string }).message).toContain("kaboom");
     const echoed = await runTaskInWorker("tasky", "echo-fail", { n: 7 }, 5_000);
     expect((echoed as { message: string }).message).toContain('got:{"n":7}');
+    expect(await runTaskInWorker("tasky", "snake-case-task", undefined, 5_000)).toEqual({ ok: true });
   });
 
   it("unknown task and timeout resolve ok:false", async () => {

@@ -57,7 +57,8 @@ export interface TaskInfo {
   lastRun: { runId: number; state: TaskRunState; finishedAt: number | null; error: string | null } | null;
 }
 
-export type TasksChange = { task: string; runId?: number; state?: TaskRunState };
+// `task: "*"` is the defs-changed/load-error wildcard (no single task is implicated).
+export type TasksChange = { task: string; runId?: number; state?: TaskRunState; error?: string };
 
 export interface Tasks {
   /** Queue a run now (or delayed); resolves to the run id. */
