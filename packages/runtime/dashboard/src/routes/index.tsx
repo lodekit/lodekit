@@ -108,13 +108,13 @@ function TasksPanel({ appId }: { appId: string }) {
 
   if (defs.isLoading) return <Skeleton className="mt-2 h-4" />;
   if (defs.isError) return <p className="mt-2 text-sm text-muted-foreground">Failed to load tasks.</p>;
-  const list = defs.data ?? [];
+  const list = (defs.data ?? []).filter((t: TaskInfo) => !t.retired);
   return (
     <div className="mt-2 space-y-2 border-t pt-2 text-sm">
       {list.length === 0 ? (
         <p className="text-muted-foreground">No tasks declared.</p>
       ) : (
-        list.filter((t: TaskInfo) => !t.retired).map((t: TaskInfo) => (
+        list.map((t: TaskInfo) => (
           <div key={t.name} className="flex items-center gap-2">
             <code className="shrink-0">{t.name}</code>
             {t.schedule && <Badge variant="outline">{t.schedule.expr}</Badge>}
