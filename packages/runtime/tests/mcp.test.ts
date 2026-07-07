@@ -72,4 +72,19 @@ describe("mcp tool helpers", () => {
     const platform = await fetchLogs(base, { appId: "_platform" });
     expect(platform.records.length).toBeGreaterThan(0); // boot + scaffold activity
   });
+
+  it("reads events through the helper the events tool uses", async () => {
+    await scaffold(base, { appId: "pantry", name: "Pantry" });
+    const kv = createClient({ baseUrl: base, appId: "pantry" }).kv;
+    await kv.set("item:1", { n: "rice" });
+    const { fetchEvents } = await import("../../mcp/client.js");
+    await expect
+      .poll(async () => (await fetchEvents(base, { appId: "pantry", type: "kv-store-change" })).records, { timeout: 5000 })
+      .toHaveLength(1);
+    // apps-changed only fires once the watcher's fs-change debounce elapses, unlike
+    // kv-store-change above (emitted synchronously by the kv route) — poll for it too.
+    await expect
+      .poll(async () => (await fetchEvents(base, { appId: "_platform", type: "apps-changed" })).records.length, { timeout: 5000 })
+      .toBeGreaterThan(0); // the scaffold's registry churn
+  });
 });

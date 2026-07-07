@@ -30,3 +30,18 @@ export async function fetchLogs(
   if (!r.ok) throw new Error(`logs fetch failed: ${r.status}`);
   return r.json();
 }
+
+export async function fetchEvents(
+  base: string,
+  params: { appId?: string; type?: string; after?: number; limit?: number } = {}
+) {
+  const query = new URLSearchParams();
+  if (params.appId) query.set("ns", params.appId);
+  if (params.type) query.set("type", params.type);
+  if (params.after != null) query.set("after", String(params.after));
+  if (params.limit != null) query.set("limit", String(params.limit));
+  const qs = query.toString();
+  const r = await fetch(`${base}/api/events/history${qs ? `?${qs}` : ""}`);
+  if (!r.ok) throw new Error(`events fetch failed: ${r.status}`);
+  return r.json();
+}

@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { scaffold, listApps, fetchLogs } from "./client.js";
+import { scaffold, listApps, fetchLogs, fetchEvents } from "./client.js";
 import { createClient } from "@lodekit/sdk";
 
 const BASE = process.env.LODEKIT_BASE_URL ?? "http://lodekit.localhost:7777";
@@ -44,6 +44,17 @@ server.tool(
     q: z.string().optional().describe("substring match on the message"),
   },
   async (args) => text(await fetchLogs(BASE, args))
+);
+
+server.tool(
+  "lodekit_events",
+  {
+    appId: z.string().optional().describe('filter to one namespace — an app id, or "_platform" for the runtime; omit for everything'),
+    type: z.string().optional().describe('event type, e.g. "kv-store-change" or an app-defined type'),
+    after: z.number().optional().describe("replay ascending from this event id (offset); omit for newest-first"),
+    limit: z.number().optional(),
+  },
+  async (args) => text(await fetchEvents(BASE, args))
 );
 
 server.tool(
