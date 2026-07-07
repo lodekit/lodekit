@@ -77,7 +77,7 @@ function EventsView() {
   filtersRef.current = { ns, type: debounced.type, q: debounced.q };
   const matchesQ = (r: EventRecord, needle: string) =>
     !needle ||
-    r.type.includes(needle.toLowerCase()) ||
+    r.type.toLowerCase().includes(needle.toLowerCase()) ||
     (r.payload !== null && JSON.stringify(r.payload).toLowerCase().includes(needle.toLowerCase()));
 
   const pendingRef = useRef<EventRecord[]>([]);
@@ -99,6 +99,14 @@ function EventsView() {
         setRecords([...pending.slice().reverse(), ...d.records].slice(0, MAX_LIVE_ROWS));
         hasRecordsRef.current = true;
         setNext(d.next);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        const pending = pendingRef.current;
+        pendingRef.current = [];
+        setRecords(pending.slice().reverse().slice(0, MAX_LIVE_ROWS));
+        hasRecordsRef.current = true;
+        setNext(null);
       });
     return () => { cancelled = true; };
   }, [filterQuery]);
