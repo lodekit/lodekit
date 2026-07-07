@@ -16,7 +16,11 @@ interface LogRecord {
   fields: Record<string, unknown> | null;
 }
 
+// MAX_LIVE_ROWS: live tail is allowed to grow the displayed list up to this many rows before it
+// starts displacing the oldest row per arrival. MAX_ROWS: hard ceiling past which "Load more" is
+// hidden regardless of how many more the server has.
 const MAX_LIVE_ROWS = 500;
+const MAX_ROWS = 1000;
 
 export const Route = createFileRoute("/logs")({
   validateSearch: (s: Record<string, unknown>): { app?: string } =>
@@ -87,22 +91,28 @@ function LogsView() {
   // Records that arrived over SSE while a backfill was in flight (records === null); merged in
   // once the backfill resolves so they aren't dropped.
   const pendingRef = useRef<LogRecord[]>([]);
+  // Whether `records` currently holds a resolved backfill (as opposed to being mid-flight/null).
+  // Read by the persistent SSE handler to decide between buffering and live-prepending.
+  const hasRecordsRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     pendingRef.current = [];
+    hasRecordsRef.current = false;
     setRecords(null);
     void fetch(`/api/logs?${filterQuery}`)
       .then((r) => r.json())
       .then((d: { records: LogRecord[]; nextBefore: number | null }) => {
         if (cancelled) return;
         // Pending records are newer than the backfill page, so they lead; dedupe real ids
-        // (id 0 marks a degraded/unpersisted record and is always kept).
+        // (id 0 marks a degraded/unpersisted record and is always kept). Pending buffers
+        // oldest-to-newest, so reverse it to match the newest-first display order.
         const pending = pendingRef.current.filter(
           (p) => p.id === 0 || !d.records.some((r) => r.id === p.id),
         );
         pendingRef.current = [];
-        setRecords([...pending, ...d.records].slice(0, MAX_LIVE_ROWS));
+        setRecords([...pending.slice().reverse(), ...d.records].slice(0, MAX_LIVE_ROWS));
+        hasRecordsRef.current = true;
         setNextBefore(d.nextBefore);
       });
     return () => { cancelled = true; };
@@ -120,13 +130,14 @@ function LogsView() {
         LEVEL_RANK[r.level] >= LEVEL_RANK[level] &&
         (!q || r.message.toLowerCase().includes(q.toLowerCase()));
       if (!matches) return;
-      setRecords((rs) => {
-        if (rs === null) {
-          pendingRef.current = [...pendingRef.current, r];
-          return rs;
-        }
-        return [r, ...rs].slice(0, MAX_LIVE_ROWS);
-      });
+      if (!hasRecordsRef.current) {
+        pendingRef.current.push(r);
+        return;
+      }
+      // Non-shrinking: grows freely up to MAX_LIVE_ROWS; beyond that (user has paginated further)
+      // the length holds steady and each arrival displaces the oldest displayed row, so the
+      // paginated tail stays contiguous instead of getting chopped back down.
+      setRecords((rs) => (rs ? [r, ...rs].slice(0, Math.max(MAX_LIVE_ROWS, rs.length)) : rs));
     });
     return () => es.close();
   }, []);
@@ -137,8 +148,12 @@ function LogsView() {
 
   async function loadMore() {
     if (nextBefore == null) return;
+    // Cursor is the smallest real id currently displayed, not the stale stored `nextBefore` —
+    // live prepends can advance past what the backfill/previous page saw. `nextBefore` itself
+    // stays purely the has-more signal (null = server said no more).
+    const bottom = [...records ?? []].reverse().find((r) => r.id !== 0)?.id ?? nextBefore;
     const query = new URLSearchParams(filterQuery);
-    query.set("before", String(nextBefore));
+    query.set("before", String(bottom));
     const d = (await (await fetch(`/api/logs?${query}`)).json()) as { records: LogRecord[]; nextBefore: number | null };
     setRecords((rs) => [...(rs ?? []), ...d.records]);
     setNextBefore(d.nextBefore);
@@ -193,7 +208,7 @@ function LogsView() {
           {records.map((r) => (
             <Row key={r.id === 0 ? `${r.ts}-${r.message}` : r.id} r={r} />
           ))}
-          {nextBefore != null && records.length < 1000 && (
+          {nextBefore != null && records.length < MAX_ROWS && (
             <Button variant="outline" size="sm" className="mt-3" onClick={() => void loadMore()}>
               Load more
             </Button>
