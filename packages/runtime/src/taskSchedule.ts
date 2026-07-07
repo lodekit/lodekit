@@ -5,14 +5,7 @@ import { parseDuration } from "./duration.js";
 
 export type ScheduleKind = "cron" | "every";
 
-// Dispatch-latency floor for the catch-up window: an occurrence within GRACE_MS of
-// `now` always fires, even with catchUp disabled — otherwise a window of 0 could
-// never fire (every dispatch is at least poll-latency late).
-export const GRACE_MS = 30_000;
-
-const MIN_EVERY_MS = 60_000;
-
-export function validateSchedule(kind: ScheduleKind, expr: string): void {
+export function validateSchedule(kind: ScheduleKind, expr: string, minEveryMs: number): void {
   if (kind === "cron") {
     if (expr.trim().split(/\s+/).length !== 5) {
       throw new Error(`cron "${expr}" must have exactly 5 fields`);
@@ -20,8 +13,8 @@ export function validateSchedule(kind: ScheduleKind, expr: string): void {
     new Cron(expr); // throws on a bad expression
     return;
   }
-  if (parseDuration(expr) < MIN_EVERY_MS) {
-    throw new Error(`every "${expr}" is below the minimum interval (at least "1m")`);
+  if (parseDuration(expr) < minEveryMs) {
+    throw new Error(`every "${expr}" is below the minimum interval`);
   }
 }
 
@@ -33,10 +26,11 @@ export function dueOccurrence(opts: {
   expr: string;
   anchor: number;
   highWater: number;
-  catchUpMs: number | null; // null = disabled (GRACE_MS floor only); Infinity = unbounded window (always catch up)
+  catchUpMs: number; // 0 = disabled (grace floor only); Infinity = unbounded window (always catch up)
+  graceMs: number;   // dispatch-latency floor: an occurrence this close to `now` always fires
   now: number;
 }): { occurrence: number | null; highWater: number } {
-  const { kind, expr, anchor, highWater, catchUpMs, now } = opts;
+  const { kind, expr, anchor, highWater, catchUpMs, graceMs, now } = opts;
   let latest: number | null = null;
   if (kind === "every") {
     const interval = parseDuration(expr);
@@ -54,7 +48,7 @@ export function dueOccurrence(opts: {
     }
   }
   if (latest === null) return { occurrence: null, highWater };
-  const window = Math.max(catchUpMs ?? 0, GRACE_MS);
+  const window = Math.max(catchUpMs, graceMs);
   return { occurrence: now - latest <= window ? latest : null, highWater: latest };
 }
 

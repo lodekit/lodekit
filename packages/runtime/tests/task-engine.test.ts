@@ -7,9 +7,13 @@ import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks
 import { initLogStore, queryLogs, closeLogStoreForTest } from "../src/logStore.js";
 import {
   getTasksDb, applyManifest, insertRun, claimNextDue, getRun, getDef, listRuns,
-  BACKOFF_BASE_MS,
 } from "../src/services/tasks.js";
+import {
+  initSettingsStore, closeSettingsStoreForTest, getSettingsDb, setValue, invalidateSettingsCache,
+} from "../src/services/settings.js";
 import type { TaskRunResult } from "../src/appWorker.js";
+
+const BACKOFF_BASE_MS = 30_000; // tasks.backoff_base default (catalog); no longer exported
 
 const T0 = 1_700_000_000_000;
 let root: string, cfg: Config, clock: number;
@@ -53,7 +57,10 @@ beforeEach(() => {
     },
   });
 });
-afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
+afterEach(() => {
+  closeSettingsStoreForTest();
+  fs.rmSync(root, { recursive: true, force: true });
+});
 
 describe("taskEngine", () => {
   it("runs an enqueued task with the def's timeout and records success", async () => {
@@ -154,7 +161,7 @@ describe("taskEngine", () => {
   it("recoverInterruptedRuns requeues running rows and re-registers the app", async () => {
     makeApp("alpha");
     const db = getTasksDb(cfg.dataDir, "alpha");
-    applyManifest(db, [{ name: "job", retries: 3 }], clock);
+    applyManifest(db, [{ name: "job", retries: 3 }], clock, { minEveryMs: 60_000 });
     insertRun(db, { task: "job", notBefore: clock, source: "enqueue", now: clock });
     const claimed = claimNextDue(db, clock)!; // simulate death mid-run
     initTaskEngine(cfg, { now: () => clock, workerRunning: () => workerUp, invoke: async (a, n, p, t) => { invocations.push({ appId: a, name: n, payload: p, timeoutMs: t }); return { ok: true }; } });
@@ -180,6 +187,20 @@ describe("taskEngine", () => {
   it("apps without tasks never get a data dir", () => {
     registerManifest("plain", []);
     expect(fs.existsSync(path.join(cfg.dataDir, "plain"))).toBe(false);
+  });
+
+  it("an app's tasks.default_retries override changes the retry budget of unspecified tasks", async () => {
+    initSettingsStore(cfg.dataDir);
+    registerManifest("alpha", [{ name: "job" }]); // no retries declared → resolves the effective default
+    const db = getTasksDb(cfg.dataDir, "alpha");
+    setValue(getSettingsDb(cfg.dataDir, "alpha"), "tasks.default_retries", 0);
+    invalidateSettingsCache();
+    const { runId } = insertRun(db, { task: "job", notBefore: clock, source: "enqueue", now: clock });
+    script = [{ ok: false, message: "boom" }];
+    dispatchTasks();
+    // budget 0: the first failed attempt is terminal — no retry queued.
+    await vi.waitFor(() => expect(getRun(db, runId)!.state).toBe("failed"));
+    expect(invocations.length).toBe(1);
   });
 
   it("run lifecycle lands as tasks-source log records (logging spec §8 wiring)", async () => {

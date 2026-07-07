@@ -10,10 +10,23 @@ import { getServerState, runTaskInWorker, type TaskRunResult } from "./appWorker
 import {
   getTasksDb, applyManifest, listDefs, getDef, setHighWater, hasTasks, hasQueuedScheduleRun,
   insertRun, claimNextDue, finishRun, markInterrupted, emitTasksChange,
-  type ManifestTask, type TaskRunRow,
+  type ManifestTask, type TaskDefRow, type TaskRunRow,
 } from "./services/tasks.js";
 import { dueOccurrence } from "./taskSchedule.js";
+import { effectiveMs, effectiveNumber } from "./services/settings.js";
 import { emitLog } from "./logger.js";
+
+// Resolve a run's execution policy at use: the def's explicit value, else the
+// app's effective platform default (spec §6 liveness). An unknown/absent def is
+// treated as retired (no retry budget) — a run whose def vanished never requeues.
+function policyFor(appId: string, def: TaskDefRow | undefined) {
+  return {
+    retries: def?.retries ?? effectiveNumber("tasks.default_retries", appId),
+    backoffBaseMs: effectiveMs("tasks.backoff_base", appId),
+    backoffCapMs: effectiveMs("tasks.backoff_cap", appId),
+    retired: def?.retired ?? true,
+  };
+}
 
 export interface EngineDeps {
   now(): number;
@@ -54,7 +67,7 @@ export function registerManifest(appId: string, rawTasks: unknown[], loadError?:
   // Never materialize a data dir for an app that has never used tasks.
   if (rawTasks.length === 0 && !fs.existsSync(path.join(cfg.dataDir, appId, "db.sqlite"))) return;
   const db = getTasksDb(cfg.dataDir, appId);
-  const { canceled } = applyManifest(db, rawTasks as ManifestTask[], deps.now());
+  const { canceled } = applyManifest(db, rawTasks as ManifestTask[], deps.now(), { minEveryMs: effectiveMs("tasks.min_every", appId) });
   if (hasTasks(db)) apps.add(appId);
   emitTasksChange(appId, { task: "*" }); // defs changed — dashboard refetches
   for (const c of canceled) emitTasksChange(appId, { task: c.task, runId: c.runId, state: "canceled" });
@@ -71,7 +84,7 @@ export function recoverInterruptedRuns(): void {
     const db = getTasksDb(cfg.dataDir, app.appId);
     if (!hasTasks(db)) continue;
     apps.add(app.appId);
-    for (const t of markInterrupted(db, deps.now())) {
+    for (const t of markInterrupted(db, deps.now(), (def) => policyFor(app.appId, def))) {
       emitTasksChange(app.appId, { task: t.task, runId: t.runId, state: t.state });
     }
   }
@@ -103,7 +116,8 @@ function dispatchApp(appId: string): void {
       expr: def.scheduleExpr!,
       anchor: def.registeredAt,
       highWater: prevHighWater,
-      catchUpMs: def.catchUpMs,
+      catchUpMs: def.catchUpMs ?? effectiveMs("tasks.default_catch_up", appId),
+      graceMs: effectiveMs("tasks.schedule_grace", appId),
       now,
     });
     if (highWater !== prevHighWater) setHighWater(db, def.name, highWater);
@@ -135,12 +149,12 @@ async function executeRun(appId: string, run: TaskRunRow): Promise<void> {
         appId,
         run.task,
         run.payload === null ? undefined : (JSON.parse(run.payload) as unknown),
-        def.timeoutMs
+        def.timeoutMs ?? effectiveMs("tasks.default_timeout", appId)
       );
     } catch (e) {
       result = { ok: false, message: e instanceof Error ? (e.stack ?? e.message) : String(e) };
     }
-    const outcome = finishRun(db, run, result, def, deps.now());
+    const outcome = finishRun(db, run, result, policyFor(appId, def), deps.now());
     emitTasksChange(appId, { task: run.task, runId: run.id, state: outcome.state });
     const duration_ms = run.startedAt != null ? deps.now() - run.startedAt : undefined;
     if (outcome.state === "succeeded") {

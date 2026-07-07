@@ -1,26 +1,28 @@
 import { describe, it, expect } from "vitest";
-import { dueOccurrence, nextOccurrence, validateSchedule, GRACE_MS } from "../src/taskSchedule.js";
+import { dueOccurrence, nextOccurrence, validateSchedule } from "../src/taskSchedule.js";
 
 const HOUR = 3_600_000;
+const GRACE_MS = 30_000; // tasks.schedule_grace default (catalog); passed explicitly now
+const MIN_EVERY = 60_000; // tasks.min_every default
 // Anchor all cron tests at a fixed local-midnight so "0 9 * * *" is deterministic.
 const midnight = new Date(2026, 0, 5, 0, 0, 0, 0).getTime(); // Mon Jan 5 2026, local
 const nineAm = new Date(2026, 0, 5, 9, 0, 0, 0).getTime();
 
 describe("validateSchedule", () => {
   it("accepts 5-field cron and >=1m every", () => {
-    validateSchedule("cron", "0 9 * * *");
-    validateSchedule("every", "30m");
+    validateSchedule("cron", "0 9 * * *", MIN_EVERY);
+    validateSchedule("every", "30m", MIN_EVERY);
   });
   it("rejects bad cron, bad duration, sub-minute every", () => {
-    expect(() => validateSchedule("cron", "not a cron")).toThrow();
-    expect(() => validateSchedule("every", "nope")).toThrow(/invalid duration/);
-    expect(() => validateSchedule("every", "30s")).toThrow(/at least/);
-    expect(() => validateSchedule("cron", "*/30 * * * * *")).toThrow(/5 fields/);
+    expect(() => validateSchedule("cron", "not a cron", MIN_EVERY)).toThrow();
+    expect(() => validateSchedule("every", "nope", MIN_EVERY)).toThrow(/invalid duration/);
+    expect(() => validateSchedule("every", "30s", MIN_EVERY)).toThrow(/below the minimum/);
+    expect(() => validateSchedule("cron", "*/30 * * * * *", MIN_EVERY)).toThrow(/5 fields/);
   });
 });
 
 describe("dueOccurrence — cron", () => {
-  const base = { kind: "cron" as const, expr: "0 9 * * *", anchor: midnight, catchUpMs: HOUR };
+  const base = { kind: "cron" as const, expr: "0 9 * * *", anchor: midnight, catchUpMs: HOUR, graceMs: GRACE_MS };
 
   it("no occurrence yet: null, high-water unchanged", () => {
     const r = dueOccurrence({ ...base, highWater: midnight, now: nineAm - 1 });
@@ -44,11 +46,11 @@ describe("dueOccurrence — cron", () => {
     expect(r).toEqual({ occurrence: nineAm + 24 * HOUR, highWater: nineAm + 24 * HOUR });
   });
 
-  it("catchUp disabled (null): only fires within the grace floor", () => {
-    const late = dueOccurrence({ ...base, catchUpMs: null, highWater: midnight, now: nineAm + GRACE_MS + 1 });
+  it("catchUp disabled (0): only fires within the grace floor", () => {
+    const late = dueOccurrence({ ...base, catchUpMs: 0, highWater: midnight, now: nineAm + GRACE_MS + 1 });
     expect(late.occurrence).toBeNull();
     expect(late.highWater).toBe(nineAm);
-    const onTime = dueOccurrence({ ...base, catchUpMs: null, highWater: midnight, now: nineAm + 1_000 });
+    const onTime = dueOccurrence({ ...base, catchUpMs: 0, highWater: midnight, now: nineAm + 1_000 });
     expect(onTime.occurrence).toBe(nineAm);
   });
 
@@ -61,7 +63,7 @@ describe("dueOccurrence — cron", () => {
 });
 
 describe("dueOccurrence — every", () => {
-  const base = { kind: "every" as const, expr: "1h", anchor: midnight, catchUpMs: HOUR };
+  const base = { kind: "every" as const, expr: "1h", anchor: midnight, catchUpMs: HOUR, graceMs: GRACE_MS };
 
   it("fires at anchor + k*interval, never at the anchor itself", () => {
     expect(dueOccurrence({ ...base, highWater: midnight, now: midnight + HOUR - 1 }).occurrence).toBeNull();

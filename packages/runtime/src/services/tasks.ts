@@ -3,6 +3,7 @@ import { getAppDb, openDbs } from "../db.js";
 import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
 import { parseDuration } from "../duration.js";
 import { validateSchedule, type ScheduleKind } from "../taskSchedule.js";
+import { effectiveMs, effectiveNumber } from "./settings.js";
 import { Hono, type MiddlewareHandler } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -14,22 +15,13 @@ import { nextOccurrence } from "../taskSchedule.js";
 
 export const CATALOG_NAME = "tasks";
 
-// Defaults and thresholds (spec §7/§9; roadmap: become settings later).
-export const DEFAULT_RETRIES = 3;
-export const DEFAULT_TIMEOUT_MS = 300_000;      // "5m"
-export const DEFAULT_CATCH_UP_MS = 3_600_000;   // "1h"
-export const BACKOFF_BASE_MS = 30_000;
-export const BACKOFF_CAP_MS = 600_000;          // 10m
-export const RETENTION_KEEP = 100;
-export const RETENTION_MAX_AGE_MS = 30 * 86_400_000;
-
 export interface TaskDefRow {
   name: string;
   scheduleKind: ScheduleKind | null;
   scheduleExpr: string | null;
-  catchUpMs: number | null;   // null = disabled (catchUp: false); Infinity = always (catchUp: true)
-  retries: number;
-  timeoutMs: number;
+  catchUpMs: number | null;   // null = unspecified; 0 = disabled (catchUp: false); Infinity = always (catchUp: true)
+  retries: number | null;     // null = unspecified — the engine resolves the effective default
+  timeoutMs: number | null;   // null = unspecified
   retired: boolean;
   error: string | null;       // config error — the def is visible but never runs
   registeredAt: number;       // anchor for "every"; reset when the schedule changes
@@ -84,14 +76,22 @@ export function getTasksDb(dataDir: string, appId: string): Database.Database {
 }
 
 export function ensureSchema(db: Database.Database): void {
+  // v0 → v1 (settings spec §6 liveness): config columns become NULL-able
+  // ("app did not specify — resolve the effective default at use"). Defs are
+  // reconstructed from the manifest on every worker boot, so a rebuild only
+  // resets schedule anchors; the runs table (the durable history) is untouched.
+  if ((db.pragma("user_version", { simple: true }) as number) < 1) {
+    db.exec("DROP TABLE IF EXISTS _lodekit_task_defs");
+    db.pragma("user_version = 1");
+  }
   db.exec(
     `CREATE TABLE IF NOT EXISTS _lodekit_task_defs (
       name          TEXT PRIMARY KEY,
       schedule_kind TEXT,
       schedule_expr TEXT,
-      catch_up_ms   INTEGER, -- NULL = disabled, -1 = always (Infinity)
-      retries       INTEGER NOT NULL,
-      timeout_ms    INTEGER NOT NULL,
+      catch_up_ms   INTEGER, -- NULL = unspecified, 0 = disabled, -1 = always (Infinity)
+      retries       INTEGER, -- NULL = unspecified
+      timeout_ms    INTEGER, -- NULL = unspecified
       retired       INTEGER NOT NULL DEFAULT 0,
       error         TEXT,
       registered_at INTEGER NOT NULL,
@@ -119,7 +119,7 @@ export function ensureSchema(db: Database.Database): void {
 
 interface DefDbRow {
   name: string; schedule_kind: string | null; schedule_expr: string | null;
-  catch_up_ms: number | null; retries: number; timeout_ms: number; retired: number;
+  catch_up_ms: number | null; retries: number | null; timeout_ms: number | null; retired: number;
   error: string | null; registered_at: number; high_water: number | null;
 }
 interface RunDbRow {
@@ -150,26 +150,29 @@ const toRun = (r: RunDbRow): TaskRunRow => ({
 
 const NAME_RE = /^[a-z0-9-]+$/;
 
-// Resolves one manifest task's config; throws on any invalid piece.
-function resolveConfig(t: ManifestTask): {
+// Resolves one manifest task's config; throws on any invalid piece. Stores only
+// what the app explicitly declared — NULL for anything unspecified, so the engine
+// resolves the effective default at use (spec §6 liveness).
+function resolveConfig(t: ManifestTask, minEveryMs: number): {
   scheduleKind: ScheduleKind | null; scheduleExpr: string | null;
-  catchUpMs: number | null; retries: number; timeoutMs: number;
+  catchUpMs: number | null; retries: number | null; timeoutMs: number | null;
 } {
   if (t.cron != null && t.every != null) throw new Error("cron and every are mutually exclusive");
   const scheduleKind: ScheduleKind | null = t.cron != null ? "cron" : t.every != null ? "every" : null;
   const scheduleExpr = t.cron ?? t.every ?? null;
-  if (scheduleKind) validateSchedule(scheduleKind, scheduleExpr!);
-  const retries = t.retries ?? DEFAULT_RETRIES;
-  if (!Number.isInteger(retries) || retries < 0 || retries > 20) throw new Error(`invalid retries ${t.retries}`);
+  if (scheduleKind) validateSchedule(scheduleKind, scheduleExpr!, minEveryMs);
+  const retries = t.retries ?? null;
+  if (retries !== null && (!Number.isInteger(retries) || retries < 0 || retries > 20)) throw new Error(`invalid retries ${t.retries}`);
   return {
     scheduleKind,
     scheduleExpr,
     catchUpMs:
-      t.catchUp === false ? null
+      t.catchUp === undefined ? null
+      : t.catchUp === false ? 0
       : t.catchUp === true ? Number.POSITIVE_INFINITY
-      : parseDuration(t.catchUp ?? "1h"),
+      : parseDuration(t.catchUp),
     retries,
-    timeoutMs: parseDuration(t.timeout ?? "5m"),
+    timeoutMs: t.timeout === undefined ? null : parseDuration(t.timeout),
   };
 }
 
@@ -180,7 +183,8 @@ function resolveConfig(t: ManifestTask): {
 export function applyManifest(
   db: Database.Database,
   tasks: ManifestTask[],
-  now: number
+  now: number,
+  limits: { minEveryMs: number }
 ): { canceled: { task: string; runId: number }[] } {
   const canceled: { task: string; runId: number }[] = [];
   const txn = db.transaction(() => {
@@ -191,10 +195,10 @@ export function applyManifest(
       const prev = getDef(db, t.name);
       let resolved, error: string | null = null;
       try {
-        resolved = resolveConfig(t);
+        resolved = resolveConfig(t, limits.minEveryMs);
       } catch (e) {
         error = e instanceof Error ? e.message : String(e);
-        resolved = { scheduleKind: null, scheduleExpr: null, catchUpMs: DEFAULT_CATCH_UP_MS, retries: DEFAULT_RETRIES, timeoutMs: DEFAULT_TIMEOUT_MS };
+        resolved = { scheduleKind: null, scheduleExpr: null, catchUpMs: null, retries: null, timeoutMs: null };
       }
       const scheduleChanged =
         !prev || prev.scheduleKind !== resolved.scheduleKind || prev.scheduleExpr !== resolved.scheduleExpr;
@@ -314,7 +318,7 @@ export function finishRun(
   db: Database.Database,
   run: TaskRunRow,
   result: { ok: boolean; message?: string },
-  def: TaskDefRow,
+  policy: { retries: number; backoffBaseMs: number; backoffCapMs: number; retired: boolean },
   now: number
 ): { state: "succeeded" | "failed" | "queued"; notBefore?: number } {
   if (result.ok) {
@@ -324,8 +328,8 @@ export function finishRun(
     return { state: "succeeded" };
   }
   const error = (result.message ?? "task failed").slice(0, 4_000);
-  if (run.attempt <= def.retries && !def.retired) {
-    const notBefore = now + Math.min(BACKOFF_BASE_MS * 2 ** (run.attempt - 1), BACKOFF_CAP_MS);
+  if (run.attempt <= policy.retries && !policy.retired) {
+    const notBefore = now + Math.min(policy.backoffBaseMs * 2 ** (run.attempt - 1), policy.backoffCapMs);
     db.prepare(
       "UPDATE _lodekit_task_runs SET state = 'queued', not_before = ?, started_at = NULL, error = ? WHERE id = ?"
     ).run(notBefore, error, run.id);
@@ -341,18 +345,13 @@ export function finishRun(
 // a consumed, failed attempt (spec §7).
 export function markInterrupted(
   db: Database.Database,
-  now: number
+  now: number,
+  policy: (def: TaskDefRow | undefined) => { retries: number; backoffBaseMs: number; backoffCapMs: number; retired: boolean }
 ): { task: string; runId: number; state: "queued" | "failed" }[] {
   const rows = (db.prepare("SELECT * FROM _lodekit_task_runs WHERE state = 'running'").all() as RunDbRow[]).map(toRun);
   const out: { task: string; runId: number; state: "queued" | "failed" }[] = [];
   for (const run of rows) {
-    const def = getDef(db, run.task);
-    const fallback: TaskDefRow = def ?? {
-      name: run.task, scheduleKind: null, scheduleExpr: null, catchUpMs: null,
-      retries: 0, timeoutMs: DEFAULT_TIMEOUT_MS, retired: true, error: null,
-      registeredAt: now, highWater: null,
-    };
-    const r = finishRun(db, run, { ok: false, message: "interrupted by runtime shutdown" }, fallback, now);
+    const r = finishRun(db, run, { ok: false, message: "interrupted by runtime shutdown" }, policy(getDef(db, run.task)), now);
     out.push({ task: run.task, runId: run.id, state: r.state === "queued" ? "queued" : "failed" });
   }
   return out;
@@ -400,8 +399,8 @@ export function cancelRun(db: Database.Database, id: number, now: number): { tas
 }
 
 // Retention (spec §9): delete terminal runs that are BOTH beyond the newest
-// RETENTION_KEEP per task AND older than RETENTION_MAX_AGE_MS. Never queued/running.
-export function sweepRuns(db: Database.Database, now: number): number {
+// `keep` per task AND older than `maxAgeMs`. Never queued/running.
+export function sweepRuns(db: Database.Database, now: number, keep: number, maxAgeMs: number): number {
   return db
     .prepare(
       `DELETE FROM _lodekit_task_runs WHERE id IN (
@@ -411,19 +410,20 @@ export function sweepRuns(db: Database.Database, now: number): number {
          ) WHERE rn > ? AND finished_at < ?
        )`
     )
-    .run(RETENTION_KEEP, now - RETENTION_MAX_AGE_MS).changes;
+    .run(keep, now - maxAgeMs).changes;
 }
 
 // openDbs pattern (kv-store sweepAll): only connections opened through
-// getTasksDb are guaranteed the schema — ensure idempotently.
+// getTasksDb are guaranteed the schema — ensure idempotently. Retention knobs
+// resolve per app (effective settings), so a per-app override is honored.
 export function sweepAllTaskRuns(): void {
   const now = Date.now();
-  for (const { db } of openDbs()) {
+  for (const { appId, db } of openDbs()) {
     if (!ensured.has(db)) {
       ensureSchema(db);
       ensured.add(db);
     }
-    sweepRuns(db, now);
+    sweepRuns(db, now, effectiveNumber("tasks.run_retention_count", appId), effectiveMs("tasks.run_retention_age", appId));
   }
 }
 
@@ -504,7 +504,8 @@ export const tasksRoutes = new Hono<TasksEnv>()
     });
   })
   .get("/runs", zValidator("query", runsQuery, validationHook), (c) => {
-    return c.json({ runs: listRuns(c.var.tasksDb, c.req.valid("query")).map(toApiRun) });
+    const q = c.req.valid("query");
+    return c.json({ runs: listRuns(c.var.tasksDb, { ...q, limit: q.limit ?? effectiveNumber("tasks.list_limit", c.var.appId) }).map(toApiRun) });
   })
   .get("/runs/:id", zValidator("param", idParam, validationHook), (c) => {
     const run = getRun(c.var.tasksDb, c.req.valid("param").id);

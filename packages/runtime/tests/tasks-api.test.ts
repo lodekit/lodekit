@@ -30,12 +30,12 @@ beforeEach(async () => {
     { name: "digest", cron: "0 9 * * *" },
     { name: "resize", retries: 1 },
     { name: "broken", cron: "not a cron" },
-  ], Date.now());
+  ], Date.now(), { minEveryMs: 60_000 });
   applyManifest(getTasksDb(cfg.dataDir, "app"), [
     { name: "digest", cron: "0 9 * * *" },
     { name: "resize", retries: 1 },
     { name: "broken", cron: "not a cron" },
-  ], Date.now()); // idempotent re-apply must not disturb anything
+  ], Date.now(), { minEveryMs: 60_000 }); // idempotent re-apply must not disturb anything
 });
 afterEach(() => {
   server.close();
