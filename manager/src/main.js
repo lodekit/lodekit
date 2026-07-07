@@ -8,6 +8,7 @@ const { installShowcase } = require("./firstRun");
 const { openDailyLogStream, stampLines } = require("./logs");
 const { Supervisor } = require("./supervisor");
 const { getIconStyle, setIconStyle } = require("./settings");
+const { createRuntimeSettings } = require("./runtimeSettings");
 
 if (!app.requestSingleInstanceLock()) {
   // Second instance: leave before touching the primary's log files —
@@ -64,6 +65,15 @@ function checkHealth() {
 }
 
 const supervisor = new Supervisor({ spawnRuntime, checkHealth, pidFile: paths.pidFile });
+const runtimeSettings = createRuntimeSettings({
+  port: paths.port,
+  log,
+  onIconStyle: (style) => applyIconStyle(style),
+  cacheIconStyle: (style) => { try { setIconStyle(paths.settingsFile, style); } catch (e) { log(`settings cache: ${e.message}`); } },
+  getLoginItem: () => app.getLoginItemSettings().openAtLogin,
+  setLoginItem: (v) => app.setLoginItemSettings({ openAtLogin: v }),
+  canSetLogin: app.isPackaged,
+});
 
 let tray = null;
 let bootError = null; // e.g. Lodekit root creation failed (spec §10)
@@ -79,7 +89,6 @@ const STATE_LABEL = {
 
 // Monochrome template glyphs (macOS tints them for light/dark automatically). Files ship
 // as jar-cloud-{style}-{state}-18.png with @2x siblings; nativeImage picks the retina one.
-const ICON_STYLE_LABEL = { a: "Solid", b: "Knockout", c: "Outline" };
 const iconsDir = path.join(__dirname, "..", "assets", "menubar-icons");
 const iconCache = new Map();
 function trayIcon(frame) {
@@ -121,16 +130,11 @@ function updateTrayIcon() {
   tray.setImage(trayIcon(state));
 }
 
-function selectIconStyle(style) {
+function applyIconStyle(style) {
   if (style === iconStyle) return;
   iconStyle = style;
-  try {
-    setIconStyle(paths.settingsFile, style);
-  } catch (e) {
-    log(`settings: ${e.message}`);
-  }
   stopAnim(); // drop the running animation so it re-renders in the new style
-  rebuildMenu(); // updates the radio selection and re-renders the tray icon
+  rebuildMenu(); // re-renders the tray icon
 }
 
 function rebuildMenu() {
@@ -156,22 +160,11 @@ function rebuildMenu() {
       },
       ...action,
       { type: "separator" },
-      {
-        label: "Start at Login",
-        type: "checkbox",
-        enabled: app.isPackaged,
-        checked: app.getLoginItemSettings().openAtLogin,
-        click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked }),
-      },
       { label: "Open Logs", click: () => shell.openPath(paths.logsDir) },
       {
-        label: "Icon Style",
-        submenu: ["b", "a", "c"].map((style) => ({
-          label: ICON_STYLE_LABEL[style],
-          type: "radio",
-          checked: iconStyle === style,
-          click: () => selectIconStyle(style),
-        })),
+        label: "Settings…",
+        enabled: state === "running",
+        click: () => shell.openExternal(`${paths.dashboardUrl}/_dashboard/settings`),
       },
       { type: "separator" },
       { label: "Quit Lodekit", click: quit },
@@ -211,6 +204,8 @@ app.whenReady().then(() => {
   supervisor.on("state", (state, msg) => {
     log(`state: ${state}${msg ? ` — ${msg}` : ""}`);
     rebuildMenu();
+    if (state === "running") runtimeSettings.start().catch((e) => log(`runtimeSettings: ${e.message}`));
+    else runtimeSettings.stop();
   });
 
   let firstRun = false;
