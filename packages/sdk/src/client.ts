@@ -70,9 +70,6 @@ export interface TaskInfo {
   lastRun: { runId: number; state: TaskRunState; finishedAt: number | null; error: string | null } | null;
 }
 
-// `task: "*"` is the defs-changed/load-error wildcard (no single task is implicated).
-export type TasksChange = { task: string; runId?: number; state?: TaskRunState; error?: string };
-
 export interface Tasks {
   /** Queue a run now (or delayed); resolves to the run id. */
   enqueue(name: string, payload?: unknown, opts?: { delay?: string; at?: number; dedupeKey?: string }): Promise<number>;
@@ -80,7 +77,6 @@ export interface Tasks {
   cancel(runId: number): Promise<boolean>;
   runs(opts?: { task?: string; state?: TaskRunState; limit?: number }): Promise<TaskRun[]>;
   list(): Promise<TaskInfo[]>;
-  watch(cb: (change: TasksChange) => void): () => void;
 }
 
 export interface Files {
@@ -394,9 +390,6 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
     },
     async list() {
       return (await parse(await tasksRpc.index.$get())).tasks as TaskInfo[];
-    },
-    watch(cb) {
-      return channel.on<TasksChange>("tasks-change", () => true, cb);
     },
   };
 

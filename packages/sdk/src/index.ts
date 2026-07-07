@@ -13,7 +13,6 @@ export type {
   TaskRun,
   TaskInfo,
   TaskRunState,
-  TasksChange,
   Events,
   LodekitEvent,
 } from "./client.js";
