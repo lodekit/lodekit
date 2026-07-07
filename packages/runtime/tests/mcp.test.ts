@@ -5,7 +5,7 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { start } from "../src/server.js";
 import { loadConfig } from "../src/config.js";
-import { scaffold, listApps } from "../../mcp/client.js";
+import { scaffold, listApps, fetchSecrets } from "../../mcp/client.js";
 import { createClient } from "@lodekit/sdk";
 import { getSettingsDb, applySettingsManifest } from "../src/services/settings.js";
 
@@ -15,6 +15,7 @@ beforeEach(async () => {
   process.env.LODEKIT_ROOT = root;
   process.env.LODEKIT_PORT = "0";
   process.env.LODEKIT_STATE_DIR = path.join(root, "state");
+  process.env.LODEKIT_SECRETS_KEY_PROVIDER = "file";
   const cfg = loadConfig();
   dataDir = cfg.dataDir;
   server = await start(cfg);
@@ -27,6 +28,7 @@ afterEach(() => {
   delete process.env.LODEKIT_ROOT;
   delete process.env.LODEKIT_PORT;
   delete process.env.LODEKIT_STATE_DIR;
+  delete process.env.LODEKIT_SECRETS_KEY_PROVIDER;
 });
 
 describe("mcp tool helpers", () => {
@@ -118,5 +120,17 @@ describe("mcp tool helpers", () => {
     expect(await settings.get("max_items")).toBe(100);
     // Test not-found case: undeclared key
     expect(await settings.get("missing_key")).toBeUndefined();
+  });
+
+  it("fetchSecrets lists the catalog and app slots — never values", async () => {
+    const created = await fetch(`${base}/api/secrets`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: "MCP probe key", value: "mcp-probe-plaintext" }),
+    });
+    expect(created.status).toBe(201);
+    const catalog = await fetchSecrets(base);
+    expect(JSON.stringify(catalog)).toContain("mcp-probe-key");
+    expect(JSON.stringify(catalog)).not.toContain("mcp-probe-plaintext");
   });
 });

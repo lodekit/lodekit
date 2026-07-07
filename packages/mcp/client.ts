@@ -52,3 +52,10 @@ export async function fetchSettings(base: string, appId?: string) {
   if (!r.ok) throw new Error(`settings fetch failed: ${r.status}`);
   return r.json();
 }
+
+export async function fetchSecrets(base: string, appId?: string) {
+  const url = appId ? `${base}/api/apps/${appId}/secrets` : `${base}/api/secrets`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`secrets fetch failed: ${r.status}`);
+  return r.json();
+}

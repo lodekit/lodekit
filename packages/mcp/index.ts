@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { scaffold, listApps, fetchLogs, fetchEvents, fetchSettings } from "./client.js";
+import { scaffold, listApps, fetchLogs, fetchEvents, fetchSettings, fetchSecrets } from "./client.js";
 import { createClient } from "@lodekit/sdk";
 
 const BASE = process.env.LODEKIT_BASE_URL ?? "http://lodekit.localhost:7777";
@@ -86,6 +86,15 @@ server.tool(
     const value = await createClient({ baseUrl: BASE, appId }).settings.get(key);
     return text(value === undefined ? { found: false } : { found: true, value });
   }
+);
+
+// Existence and wiring only (spec §10): the catalog's slugs/labels/links, or an
+// app's slots with link status. No value-read tool exists — values never reach
+// the agent; the person enters and links them in the dashboard.
+server.tool(
+  "lodekit_secrets_list",
+  { appId: z.string().optional().describe("an app's declared slots + link status; omit for the person's secret catalog") },
+  async ({ appId }) => text(await fetchSecrets(BASE, appId))
 );
 
 server.tool(
