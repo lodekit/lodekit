@@ -18,6 +18,7 @@ import { eventRoutes, withEvents, eventsQuery, CATALOG_NAME as EVENTS } from "./
 import { queryEvents } from "./eventStore.js";
 import { NS_RE } from "./events.js";
 import { platformSettingsRoutes, settingsRoutes, withSettings, CATALOG_NAME as SETTINGS } from "./services/settings.js";
+import { platformSecretsRoutes, appSecretsRoutes, withSecrets } from "./services/secret-store.js";
 
 // Holds the stream open until the client disconnects; the abort callback
 // removes the client from the SSE registry.
@@ -68,6 +69,9 @@ export function apiRoutes(cfg: Config) {
     .route(`/apps/:appId/${TASKS}`, tasksRoutes)
     .use(`/apps/:appId/${SETTINGS}/*`, withSettings(cfg))
     .route(`/apps/:appId/${SETTINGS}`, settingsRoutes)
+    .route("/secrets", platformSecretsRoutes)
+    .use("/apps/:appId/secrets/*", withSecrets(cfg))
+    .route("/apps/:appId/secrets", appSecretsRoutes)
     // Global event history (dashboard + MCP); /api/events itself stays the SSE feed.
     .get(
       "/events/history",

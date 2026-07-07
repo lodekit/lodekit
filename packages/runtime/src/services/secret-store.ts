@@ -7,12 +7,21 @@
 import fs from "node:fs";
 import path from "node:path";
 import type Database from "better-sqlite3";
+import { Hono, type MiddlewareHandler } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { getAppDb } from "../db.js";
 import { isValidAppId } from "../registry.js";
 import type { Config } from "../config.js";
 import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
 import { emitLog } from "../logger.js";
-import { pruneLinks, SecretsError } from "../secretsStore.js";
+import { validationHook } from "../validation.js";
+import { verifyWorkerToken } from "../appWorker.js";
+import {
+  pruneLinks, SecretsError, SecretsNotFoundError, SecretUnlinkedError, SecretsUnavailableError,
+  createSecret, updateSecret, deleteSecret, listSecrets,
+  setLink, deleteLink, getLinkedSecret, readValue, VALUE_MAX_BYTES,
+} from "../secretsStore.js";
 
 export const CATALOG_NAME = "secret-store";
 // The change feed is named for the SDK handle (spec §8), not the catalog name.
@@ -121,3 +130,118 @@ export function listSlots(db: Database.Database): { slot: string; def: SlotDef |
     { slot: string; def: string | null; error: string | null }[];
   return rows.map((r) => ({ slot: r.slot, def: r.def ? (JSON.parse(r.def) as SlotDef) : null, error: r.error }));
 }
+
+// ---------- HTTP surface (spec §8) ----------
+
+// Spec §8 error mapping, shared by both routers (settings' onError pattern).
+function errStatus(err: unknown): 400 | 404 | 409 | 500 | 503 {
+  if (err instanceof SecretsUnavailableError) return 503;
+  if (err instanceof SecretUnlinkedError) return 409;
+  if (err instanceof SecretsNotFoundError) return 404;
+  if (err instanceof SecretsError) return 400;
+  return 500;
+}
+
+const slugParam = z.object({ slug: z.string().regex(/^[a-z0-9][a-z0-9-]*$/).max(128) });
+const slotParam = z.object({ slot: z.string().regex(SLOT_RE).max(64) });
+const createBody = z.object({
+  label: z.string().min(1).max(200),
+  description: z.string().max(500).optional(),
+  value: z.string().min(1).max(VALUE_MAX_BYTES),
+});
+const updateBody = z
+  .object({
+    label: z.string().min(1).max(200).optional(),
+    description: z.string().max(500).optional(),
+    value: z.string().min(1).max(VALUE_MAX_BYTES).optional(),
+  })
+  .refine((b) => b.label !== undefined || b.description !== undefined || b.value !== undefined, {
+    message: "nothing to update",
+  });
+const linkBody = z.object({ slug: z.string().regex(/^[a-z0-9][a-z0-9-]*$/).max(128) });
+
+export const platformSecretsRoutes = new Hono()
+  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, errStatus(err)))
+  .get("/", (c) => c.json({ secrets: listSecrets() }))
+  .post("/", zValidator("json", createBody, validationHook), (c) => {
+    const meta = createSecret(c.req.valid("json"));
+    emitSecretsChange(PLATFORM_NS, meta.slug);
+    return c.json(meta, 201);
+  })
+  .put("/:slug", zValidator("param", slugParam, validationHook), zValidator("json", updateBody, validationHook), (c) => {
+    const { slug } = c.req.valid("param");
+    const meta = updateSecret(slug, c.req.valid("json"));
+    emitSecretsChange(PLATFORM_NS, slug);
+    return c.json(meta);
+  })
+  .delete("/:slug", zValidator("param", slugParam, validationHook), (c) => {
+    const { slug } = c.req.valid("param");
+    const { removedLinks } = deleteSecret(slug);
+    emitSecretsChange(PLATFORM_NS, slug);
+    for (const l of removedLinks) emitSecretsChange(l.appId, l.slot); // cascaded → pending
+    return c.json({ ok: true as const });
+  });
+
+export type PlatformSecretsRoutes = typeof platformSecretsRoutes;
+
+export type SecretsEnv = { Variables: { slotsDb: Database.Database; appId: string } };
+
+export function withSecrets(cfg: Config): MiddlewareHandler<SecretsEnv> {
+  return async (c, next) => {
+    const appId = c.req.param("appId");
+    if (!appId || !isValidAppId(appId)) return c.json({ error: "invalid app id" }, 400);
+    c.set("slotsDb", getSlotsDb(cfg.dataDir, appId));
+    c.set("appId", appId);
+    await next();
+  };
+}
+
+// 404 gate shared by the slot routes: the slot must be declared.
+function requireSlot(db: Database.Database, slot: string): void {
+  if (!db.prepare("SELECT 1 FROM _lodekit_secret_slots WHERE slot = ?").get(slot)) {
+    throw new SecretsNotFoundError(`unknown slot "${slot}"`);
+  }
+}
+
+export const appSecretsRoutes = new Hono<SecretsEnv>()
+  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, errStatus(err)))
+  .get("/", (c) => {
+    const slots = listSlots(c.var.slotsDb).map((s) => {
+      const secret = s.def ? getLinkedSecret(c.var.appId, s.slot) ?? null : null;
+      return {
+        slot: s.slot,
+        label: s.def?.label ?? null,
+        description: s.def?.description ?? null,
+        error: s.error,
+        status: secret ? ("linked" as const) : ("pending" as const),
+        secret,
+      };
+    });
+    return c.json({ slots });
+  })
+  .put("/:slot/link", zValidator("param", slotParam, validationHook), zValidator("json", linkBody, validationHook), (c) => {
+    const { slot } = c.req.valid("param");
+    requireSlot(c.var.slotsDb, slot);
+    setLink(c.var.appId, slot, c.req.valid("json").slug);
+    emitSecretsChange(c.var.appId, slot);
+    return c.json({ ok: true as const });
+  })
+  .delete("/:slot/link", zValidator("param", slotParam, validationHook), (c) => {
+    const { slot } = c.req.valid("param");
+    requireSlot(c.var.slotsDb, slot);
+    deleteLink(c.var.appId, slot);
+    emitSecretsChange(c.var.appId, slot);
+    return c.json({ ok: true as const });
+  })
+  // The ONLY value-bearing route in the whole service (spec §8). Token first —
+  // no oracle for probing link state without server-side standing (spec §7).
+  .get("/:slot/value", zValidator("param", slotParam, validationHook), (c) => {
+    if (!verifyWorkerToken(c.var.appId, c.req.header("x-lodekit-worker-token"))) {
+      return c.json({ error: "secrets are server-only" }, 401);
+    }
+    const { slot } = c.req.valid("param");
+    requireSlot(c.var.slotsDb, slot);
+    return c.json({ value: readValue(c.var.appId, slot) });
+  });
+
+export type SecretsRoutes = typeof appSecretsRoutes;
