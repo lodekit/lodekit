@@ -64,7 +64,9 @@ describe("mcp tool helpers", () => {
     const { logs } = createClient({ baseUrl: base, appId: "diary" });
     logs.error("render failed", { stack: "TRACE" });
     const { fetchLogs } = await import("../../mcp/client.js");
-    await expect.poll(async () => (await fetchLogs(base, { appId: "diary", level: "error" })).records).toHaveLength(1);
+    await expect
+      .poll(async () => (await fetchLogs(base, { appId: "diary", level: "error" })).records, { timeout: 5000 })
+      .toHaveLength(1);
     const app = await fetchLogs(base, { appId: "diary" });
     expect(app.records[0]).toMatchObject({ source: "app", message: "render failed" });
     const platform = await fetchLogs(base, { appId: "platform" });

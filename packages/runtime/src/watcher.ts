@@ -37,8 +37,10 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
         // rename/delete) — building it would fail on the now-missing rootDir and,
         // since build state is keyed by the bare app id, could clobber a same-named
         // app's fresh state elsewhere. Skip rather than build a folder that's gone.
-        log.debug(`rebuilding ${appId}`);
-        if (fs.existsSync(path.join(cfg.appsDir, appId))) void buildApp(cfg, appId);
+        if (fs.existsSync(path.join(cfg.appsDir, appId))) {
+          log.debug(`rebuilding ${appId}`);
+          void buildApp(cfg, appId);
+        }
       }, DEBOUNCE_MS)
     );
   };

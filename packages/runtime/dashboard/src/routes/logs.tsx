@@ -137,7 +137,13 @@ function LogsView() {
       // Non-shrinking: grows freely up to MAX_LIVE_ROWS; beyond that (user has paginated further)
       // the length holds steady and each arrival displaces the oldest displayed row, so the
       // paginated tail stays contiguous instead of getting chopped back down.
-      setRecords((rs) => (rs ? [r, ...rs].slice(0, Math.max(MAX_LIVE_ROWS, rs.length)) : rs));
+      // Cross-connection arrival order between the backfill fetch and this SSE stream isn't
+      // guaranteed, so skip a real record (id !== 0) already present from backfill.
+      setRecords((rs) =>
+        rs && !(r.id !== 0 && rs.some((x) => x.id === r.id))
+          ? [r, ...rs].slice(0, Math.max(MAX_LIVE_ROWS, rs.length))
+          : rs
+      );
     });
     return () => es.close();
   }, []);

@@ -59,7 +59,8 @@ export function initLogStore(stateDir: string): boolean {
         fields  TEXT
       );
       CREATE INDEX IF NOT EXISTS logs_app ON logs(app_id, id);
-      CREATE INDEX IF NOT EXISTS logs_level ON logs(level, id);`
+      CREATE INDEX IF NOT EXISTS logs_level ON logs(level, id);
+      CREATE INDEX IF NOT EXISTS logs_ts ON logs(ts);`
     );
     return true;
   } catch (e) {

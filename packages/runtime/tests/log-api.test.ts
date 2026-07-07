@@ -51,6 +51,10 @@ describe("log-store service", () => {
     expect((await post("Not-Valid!", { level: "info", message: "x" })).status).toBe(400);
   });
 
+  it("rejects the reserved platform app id", async () => {
+    expect((await post("platform", { level: "info", message: "x" })).status).toBe(400);
+  });
+
   it("app-scoped GET honors level/limit and never leaks other apps", async () => {
     await post("notes", { level: "debug", message: "d" });
     await post("notes", { level: "error", message: "e" });

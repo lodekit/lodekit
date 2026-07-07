@@ -140,12 +140,15 @@ but state transitions also get logged, including the worker's fatal stack, which
 is lost when the exit handler overwrites it (closes that roadmap item as a side effect).
 
 **Worker console capture** (`appWorkerEntry.mjs` + `appWorker.ts`): the worker entry
-patches `console.debug/log/warn/error` (mapping `log`→info) and installs
-`uncaughtException`/`unhandledRejection` handlers, sending
+patches `console.debug/log/warn/error` (mapping `log`→info), sending
 `{type: "log", level, message, fields}` over the existing postMessage protocol; the host
-stamps `app_id` and writes. Zero-effort logs for any app code — including the dashboard
-itself (`_dashboard` is an app worker too). Console arguments are formatted
-`util.inspect`-style into `message`; an `Error` argument contributes `fields.stack`.
+stamps `app_id` and writes. Deliberately no in-worker `uncaughtException`/
+`unhandledRejection` handlers: an uncaught error crashes the worker, and the host's
+existing `'error'`/`'exit'` handlers persist the stack as a lifecycle error record via
+`fail()` — crash-and-respawn semantics stay untouched. Zero-effort logs for any app code —
+including the dashboard itself (`_dashboard` is an app worker too). Console arguments are
+formatted `util.inspect`-style into `message`; an `Error` argument contributes
+`fields.stack`.
 
 **SDK `logs` handle — the log-store service.** New catalog entry **log-store → `logs`**
 (mapping table pattern: `file-store→files`, `secret-store→secrets`), following the
