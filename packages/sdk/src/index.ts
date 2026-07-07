@@ -3,12 +3,10 @@ export { createClient } from "./client.js";
 export type {
   Kv,
   KvEntry,
-  KvChange,
   Collection,
   LodekitClient,
   Files,
   FileStat,
-  FilesChange,
   FilePutBody,
   Logs,
   Tasks,
@@ -16,6 +14,8 @@ export type {
   TaskInfo,
   TaskRunState,
   TasksChange,
+  Events,
+  LodekitEvent,
 } from "./client.js";
 export { task } from "./task.js";
 export type { TaskConfig, DefinedTask } from "./task.js";
@@ -38,6 +38,7 @@ export const kv = client.kv;
 export const files = client.files;
 export const logs = client.logs;
 export const tasks = client.tasks;
+export const events = client.events;
 
 /** The app's own app id, injected by the toolchain at build time ("" outside an app build). */
 export const appId = injectedAppId;

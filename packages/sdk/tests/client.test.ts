@@ -94,7 +94,7 @@ describe("collection", () => {
   });
 });
 
-describe("watch", () => {
+describe("events", () => {
   class FakeEventSource {
     static instances: FakeEventSource[] = [];
     listeners = new Map<string, ((e: { data: string }) => void)[]>();
@@ -108,20 +108,23 @@ describe("watch", () => {
       for (const cb of this.listeners.get(type) ?? []) cb({ data: JSON.stringify(data) });
     }
   }
+  const envelope = (over: Record<string, unknown>) => ({
+    id: 1, ts: 1, ns: "notes", source: "notes", type: "note-added", payload: null, ...over,
+  });
 
-  it("filters by prefix, shares one EventSource, closes on last unsubscribe", () => {
+  it("watch filters by type, shares one EventSource, closes on last unsubscribe", () => {
     (globalThis as unknown as { EventSource: unknown }).EventSource = FakeEventSource;
     FakeEventSource.instances = [];
-    const kv = client();
+    const c = createClient({ baseUrl: "http://x", appId: "notes" });
     const seen: string[] = [];
-    const un1 = kv.watch("e:", (c) => seen.push(`1:${c.key}`));
-    const un2 = kv.watch("", (c) => seen.push(`2:${c.key}`));
+    const un1 = c.events.watch({ type: "kv-store-change" }, (ev) => seen.push(`kv:${(ev.payload as { key: string }).key}`));
+    const un2 = c.events.watch({}, (ev) => seen.push(`any:${ev.type}`));
     expect(FakeEventSource.instances).toHaveLength(1);
     const es = FakeEventSource.instances[0];
     expect(es.url).toBe("http://x/api/apps/notes/events");
-    es.dispatch("kv-store-change", { appId: "notes", key: "e:1", op: "set" });
-    es.dispatch("kv-store-change", { appId: "notes", key: "other", op: "del" });
-    expect(seen).toEqual(["1:e:1", "2:e:1", "2:other"]);
+    es.dispatch("event", envelope({ id: 2, source: "_platform", type: "kv-store-change", payload: { key: "k1", op: "set" } }));
+    es.dispatch("event", envelope({ id: 3, type: "export-ready" }));
+    expect(seen).toEqual(["kv:k1", "any:kv-store-change", "any:export-ready"]);
     un1();
     expect(es.closed).toBe(false);
     un2();
@@ -129,30 +132,46 @@ describe("watch", () => {
     delete (globalThis as { EventSource?: unknown }).EventSource;
   });
 
-  it("kv.watch and files.watch share one EventSource across handles", () => {
+  it("watch accepts an array of types", () => {
     (globalThis as unknown as { EventSource: unknown }).EventSource = FakeEventSource;
     FakeEventSource.instances = [];
     const c = createClient({ baseUrl: "http://x", appId: "notes" });
     const seen: string[] = [];
-    const unKv = c.kv.watch("", (ch) => seen.push(`kv:${ch.key}`));
-    const unFiles = c.files.watch("", (ch) => seen.push(`files:${ch.slug}`));
-    expect(FakeEventSource.instances).toHaveLength(1);
+    const un = c.events.watch({ type: ["ready", "error"] }, (ev) => seen.push(ev.type));
     const es = FakeEventSource.instances[0];
-    es.dispatch("kv-store-change", { appId: "notes", key: "k1", op: "set" });
-    es.dispatch("file-store-change", { appId: "notes", slug: "f1", op: "put" });
-    expect(seen).toEqual(["kv:k1", "files:f1"]);
-    unKv();
-    expect(es.closed).toBe(false);
-    unFiles();
-    expect(es.closed).toBe(true);
+    es.dispatch("event", envelope({ id: 2, source: "_platform", type: "ready" }));
+    es.dispatch("event", envelope({ id: 3, type: "note-added" }));
+    es.dispatch("event", envelope({ id: 4, source: "_platform", type: "error", payload: { message: "boom" } }));
+    expect(seen).toEqual(["ready", "error"]);
+    un();
     delete (globalThis as { EventSource?: unknown }).EventSource;
+  });
+
+  it("emit POSTs to the scoped event-store and returns the envelope", async () => {
+    const c = createClient({ baseUrl: "http://x", appId: "notes" });
+    fetchMock.mockResolvedValueOnce(okJson(envelope({ id: 9, type: "export-ready", payload: { slug: "s" } })));
+    const rec = await c.events.emit("export-ready", { slug: "s" }, { ttl: 60 });
+    expect(rec.id).toBe(9);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://x/api/apps/notes/event-store");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ type: "export-ready", payload: { slug: "s" }, ttl: 60 });
+  });
+
+  it("list builds query params and returns records + next", async () => {
+    const c = createClient({ baseUrl: "http://x", appId: "notes" });
+    fetchMock.mockResolvedValueOnce(okJson({ records: [], next: null }));
+    await c.events.list({ type: "kv-store-change", after: 5, limit: 10 });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "http://x/api/apps/notes/event-store?type=kv-store-change&after=5&limit=10"
+    );
   });
 });
 
 describe("server context", () => {
   it("watch throws a clear client-only error where EventSource is missing", () => {
     const kvClient = createClient({ baseUrl: "http://127.0.0.1:9", appId: "x" });
-    expect(() => kvClient.kv.watch("", () => {})).toThrow(/client-only/);
+    expect(() => kvClient.events.watch({}, () => {})).toThrow(/client-only/);
   });
 
   it("kv singleton uses LODEKIT_BASE_URL outside a browser", async () => {

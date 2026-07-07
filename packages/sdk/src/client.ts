@@ -3,6 +3,7 @@ import type { ClientResponse } from "hono/client";
 import type { KvRoutes } from "@lodekit/runtime/services/kv-store";
 import type { LogRoutes } from "@lodekit/runtime/services/log-store";
 import type { TasksRoutes } from "@lodekit/runtime/services/tasks";
+import type { EventRoutes } from "@lodekit/runtime/services/event-store";
 
 export interface KvEntry<T = unknown> {
   key: string;
@@ -12,7 +13,20 @@ export interface KvEntry<T = unknown> {
   expiresAt: number | null;
 }
 
-export type KvChange = { key: string; op: "set" | "del" | "expire" };
+export interface LodekitEvent<T extends Record<string, unknown> = Record<string, unknown>> {
+  id: number;
+  ts: number;
+  ns: string;
+  source: string;
+  type: string;
+  payload: T | null;
+}
+
+export interface Events {
+  emit(type: string, payload?: Record<string, unknown>, opts?: { ttl?: number }): Promise<LodekitEvent>;
+  watch(filter: { type?: string | string[] }, cb: (event: LodekitEvent) => void): () => void;
+  list(opts?: { type?: string; after?: number; before?: number; limit?: number }): Promise<{ records: LodekitEvent[]; next: number | null }>;
+}
 
 export interface FileStat {
   slug: string;
@@ -28,7 +42,6 @@ export interface FileStat {
   path: string;
 }
 
-export type FilesChange = { slug: string; op: "put" | "del" | "expire" };
 export type FilePutBody = string | Blob | ArrayBuffer | Uint8Array | ReadableStream;
 
 export type TaskRunState = "queued" | "running" | "succeeded" | "failed" | "canceled";
@@ -82,7 +95,6 @@ export interface Files {
   list(opts?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ entries: FileStat[]; nextCursor: string | null }>;
   copy(from: string, to: string): Promise<FileStat>;
   move(from: string, to: string): Promise<FileStat>;
-  watch(prefix: string, cb: (change: FilesChange) => void): () => void;
 }
 
 export interface Logs {
@@ -114,7 +126,6 @@ export interface Kv {
   getMany<T = unknown>(keys: string[]): Promise<KvEntry<T>[]>;
   setMany(entries: { key: string; value: unknown }[], opts?: { ttl?: number }): Promise<void>;
   collection<T>(name: string): Collection<T>;
-  watch(prefix: string, cb: (change: KvChange) => void): () => void;
 }
 
 export interface LodekitClient {
@@ -122,6 +133,7 @@ export interface LodekitClient {
   files: Files;
   logs: Logs;
   tasks: Tasks;
+  events: Events;
 }
 
 // Preserves the hand-written transport's error semantics around the hc calls:
@@ -273,9 +285,6 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
         remove: (id) => kv.del(itemKey(id)),
       };
     },
-    watch(prefix, cb) {
-      return channel.on<KvChange>("kv-store-change", (c) => c.key.startsWith(prefix), cb);
-    },
   };
 
   const filesApi = `${baseUrl}/api/apps/${appId}/file-store`;
@@ -339,9 +348,6 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
         })
       );
     },
-    watch(prefix, cb) {
-      return channel.on<FilesChange>("file-store-change", (c) => c.slug.startsWith(prefix), cb);
-    },
   };
 
   // Fire-and-forget by contract (spec §5/§7): emitting a log must never throw
@@ -394,5 +400,38 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
     },
   };
 
-  return { kv, files, logs, tasks };
+  // The event bus (event-store service): emit anywhere (plain POST), watch client-only
+  // over the shared EventSource channel, list for replay/history.
+  const eventsRpc = hc<EventRoutes>(`${baseUrl}/api/apps/${appId}/event-store`);
+  const events: Events = {
+    async emit(type, payload, opts = {}) {
+      return (await parse(
+        await eventsRpc.index.$post({
+          json: {
+            type,
+            ...(payload !== undefined ? { payload } : {}),
+            ...(opts.ttl != null ? { ttl: opts.ttl } : {}),
+          },
+        })
+      )) as LodekitEvent;
+    },
+    watch(filter, cb) {
+      const types =
+        filter.type === undefined ? undefined : Array.isArray(filter.type) ? filter.type : [filter.type];
+      return channel.on<LodekitEvent>("event", (ev) => !types || types.includes(ev.type), cb);
+    },
+    async list(opts = {}) {
+      const query: Record<string, string> = {};
+      if (opts.type !== undefined) query.type = opts.type;
+      if (opts.after !== undefined) query.after = String(opts.after);
+      if (opts.before !== undefined) query.before = String(opts.before);
+      if (opts.limit !== undefined) query.limit = String(opts.limit);
+      return (await parse(await eventsRpc.index.$get({ query }))) as {
+        records: LodekitEvent[];
+        next: number | null;
+      };
+    },
+  };
+
+  return { kv, files, logs, tasks, events };
 }
