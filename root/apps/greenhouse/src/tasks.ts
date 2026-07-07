@@ -88,8 +88,8 @@ export const compost_sweep = task({
         keys.push(...page.entries.map((e) => e.key));
         kc = page.nextCursor;
       } while (kc);
-      // Keys sort chronologically (zero-padded ms) — drop the oldest beyond 200.
-      for (const key of keys.sort().slice(0, Math.max(0, keys.length - 200))) {
+      // Keys sort newest-first (inverted ms) — drop everything past the newest 200.
+      for (const key of keys.sort().slice(200)) {
         await kv.del(key);
         sweptKeys++;
       }

@@ -6,7 +6,7 @@ import {
   CARE_VERB,
   plants,
   parseEvery,
-  padTs,
+  invTs,
   stateKey,
   streakKey,
   countKey,
@@ -98,7 +98,7 @@ export async function seedIfNeeded(): Promise<boolean> {
       title: `${seed.plant.name}'s portrait`,
     });
     await files.put(portraitSvg(seed.plant.icon, id + 1), {
-      slug: `photo-${id}-${padTs(adoptedAt)}`,
+      slug: `photo-${id}-${invTs(adoptedAt)}`,
       contentType: "image/svg+xml",
       title: "Adoption day",
       metadata: { plantId: id },

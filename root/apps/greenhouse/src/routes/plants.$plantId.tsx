@@ -12,7 +12,7 @@ import {
   type Plant,
   moodFor,
   plants,
-  padTs,
+  invTs,
   stateKey,
   streakKey,
   countKey,
@@ -223,7 +223,7 @@ function PhotoTimeline({
               if (!file) return;
               try {
                 await files.put(file, {
-                  slug: `photo-${id}-${padTs(Date.now())}`,
+                  slug: `photo-${id}-${invTs(Date.now())}`,
                   title: caption || file.name,
                   contentType: file.type || "application/octet-stream",
                   metadata: { plantId: id },
@@ -305,7 +305,7 @@ function JournalCard({
               if (!text.trim()) return;
               const at = Date.now();
               await kv.set(journalKey(id, at), { at, text: text.trim() });
-              setEntries((cur) => [...cur, { key: journalKey(id, at), value: { at, text: text.trim() } }]);
+              setEntries((cur) => [{ key: journalKey(id, at), value: { at, text: text.trim() } }, ...cur]);
               setText("");
             }}
           >
@@ -313,7 +313,7 @@ function JournalCard({
           </Button>
         </div>
         <ul className="space-y-1 text-sm">
-          {[...entries].reverse().map((e) => (
+          {entries.map((e) => (
             <li key={e.key}>
               <span className="text-muted-foreground">{fmtDate(e.value.at)}</span> — {e.value.text}
             </li>

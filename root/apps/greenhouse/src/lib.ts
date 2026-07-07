@@ -40,9 +40,11 @@ export const streakKey = (id: number) => `streak:${id}`;
 export const countKey = (id: number, kind: CareKind) => `count:${kind}:${id}`;
 export const snoozeKey = (id: number) => `snooze:${id}`;
 export const journalPrefix = (id: number) => `journal:${id}:`;
-/** Zero-padded epoch ms — keys sort chronologically under prefix listing. */
-export const padTs = (ms: number) => String(ms).padStart(14, "0");
-export const journalKey = (id: number, at: number) => `${journalPrefix(id)}${padTs(at)}`;
+/** Inverted zero-padded epoch ms — newer stamps sort FIRST under the stores'
+ *  ascending prefix listing, so timeline pages read newest-first. */
+export const invTs = (ms: number) => String(99_999_999_999_999 - ms).padStart(14, "0");
+/** Keys sort reverse-chronologically (newest first) under prefix listing. */
+export const journalKey = (id: number, at: number) => `${journalPrefix(id)}${invTs(at)}`;
 
 /** "3d" / "12h" → milliseconds. Throws on anything else. */
 export function parseEvery(every: string): number {
