@@ -5,7 +5,7 @@ import { z } from "zod";
 import { getAppDb, openDbs } from "../db.js";
 import type { Config } from "../config.js";
 import { isValidAppId } from "../registry.js";
-import { broadcast } from "../sse.js";
+import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
 import { validationHook } from "../validation.js";
 
 export const CATALOG_NAME = "kv-store";
@@ -198,8 +198,10 @@ export function sweepAll(): { appId: string; keys: string[] }[] {
 
 const EVENT = `${CATALOG_NAME}-change`;
 
+// Change-feed events: identity + op, never values (spec §4); service-set ttl keeps
+// the bus's noisiest tenant from bloating the backed-up file.
 function emit(appId: string, key: string, op: "set" | "del" | "expire"): void {
-  broadcast(EVENT, { appId, key, op }, appId);
+  emitEvent({ ns: appId, source: PLATFORM_NS, type: EVENT, payload: { key, op }, ttl: CHANGE_FEED_TTL_S });
 }
 
 export function sweepAllAndBroadcast(): void {

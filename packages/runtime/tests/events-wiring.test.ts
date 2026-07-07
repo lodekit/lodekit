@@ -51,4 +51,18 @@ describe("platform emitters land on the bus", () => {
     expect(queryEvents({ ns: "_platform", type: "apps-changed" }).records.length).toBeLessThanOrEqual(2);
     await watcher.close();
   });
+
+  it("kv writes store change events with identity-only payloads and a service ttl", async () => {
+    const { Hono } = await import("hono");
+    const { apiRoutes } = await import("../src/routes.js");
+    const app = new Hono().route("/api", apiRoutes(cfg));
+    await app.request("/api/apps/notes/kv-store/greeting", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: "hi" }),
+    });
+    const { records } = queryEvents({ ns: "notes", type: "kv-store-change" });
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({ source: "_platform", payload: { key: "greeting", op: "set" } });
+  });
 });

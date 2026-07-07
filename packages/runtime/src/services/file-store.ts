@@ -8,7 +8,7 @@ import { Hono, type Context, type MiddlewareHandler } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { getAppDb, openDbs } from "../db.js";
-import { broadcast } from "../sse.js";
+import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
 import type { Config } from "../config.js";
 import { isValidAppId } from "../registry.js";
 import { validationHook } from "../validation.js";
@@ -148,8 +148,9 @@ export function dateFolder(d = new Date()): string {
 
 const EVENT = `${CATALOG_NAME}-change`;
 
+// Change-feed events: identity + op, never bytes (spec §4); service-set ttl as kv-store.
 function emit(appId: string, slug: string, op: "put" | "del" | "expire"): void {
-  broadcast(EVENT, { appId, slug, op }, appId);
+  emitEvent({ ns: appId, source: PLATFORM_NS, type: EVENT, payload: { slug, op }, ttl: CHANGE_FEED_TTL_S });
 }
 
 function toStat(ctx: FilesCtx, r: Row): FileStat {
