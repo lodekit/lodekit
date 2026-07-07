@@ -141,9 +141,14 @@ There is exactly one emission path and one writer to `events.sqlite`.
 **Emit facade** (`packages/runtime/src/events.ts`): `emitEvent({ns, source, type,
 payload?, ttl?})` — validate (grammar on `ns`/`source`/`type`, payload cap, ttl bounds) →
 insert via prepared statement → `broadcast` over the untouched `sse.ts`. **Wire shape:**
-the SSE `event:` field is the *type* (so `addEventListener("ready")` patterns survive);
-`data:` is the full stored envelope `{id, ts, ns, source, type, payload}` — the offset
-travels with every live event. SSE scoping keeps today's rule with `ns` as the key: the
+every bus event goes out under one SSE name, `event: event`, with `data:` the full
+stored envelope `{id, ts, ns, source, type, payload}` — the offset travels with every
+live event and consumers filter on the envelope's `type`. One name, not per-type names:
+EventSource has no catch-all listener, so generic consumers (the dashboard Events view,
+`events.watch` with arbitrary filters) could never subscribe to types they don't know —
+and since every existing consumer updates for the envelope anyway, per-type names
+preserve nothing. The `log` tail keeps its own `log` wire name — bus and telemetry stay
+separable at the transport too. SSE scoping keeps today's rule with `ns` as the key: the
 scoped feed (`/api/apps/:appId/events`) receives ns-matched events, the global feed
 (`/api/events`) receives everything. If the insert fails, the facade logs an error
 (log-store) and broadcasts anyway — live consumers keep working and emitters are never
