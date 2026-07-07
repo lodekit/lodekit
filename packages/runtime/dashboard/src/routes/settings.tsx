@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Badge, Button, Card, CardContent, CardHeader, CardTitle,
@@ -49,19 +49,29 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
     );
   }
   if (field.type === "number") {
+    const [draft, setDraft] = useState(String(value));
+    const commit = () => {
+      const n = Number(draft);
+      if (draft.trim() !== "" && Number.isFinite(n)) { onChange(n); return; }
+      setDraft(String(value)); // emptied/invalid input: no-op, never write 0
+    };
     return (
       <Input
-        type="number" className="w-32" value={String(value)}
+        type="number" className="w-32" value={draft}
         min={field.min as number | undefined} max={field.max as number | undefined} step={field.step ?? (field.integer ? 1 : undefined)}
-        onChange={(e) => { const n = Number(e.target.value); if (Number.isFinite(n)) onChange(n); }}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
       />
     );
   }
   // string + duration: text input; the server validates the duration grammar.
+  const [draft, setDraft] = useState(String(value));
+  const commit = () => onChange(draft);
   return (
     <Input
-      className="w-40" value={String(value)} placeholder={field.placeholder}
-      maxLength={field.maxLength} onChange={(e) => onChange(e.target.value)}
+      className="w-40" value={draft} placeholder={field.placeholder}
+      maxLength={field.maxLength} onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
     />
   );
 }
@@ -72,6 +82,10 @@ function SettingRow(props: {
   onWrite: (v: unknown | undefined) => Promise<void>;
 }) {
   const modified = props.value !== null && props.value !== undefined;
+  const [error, setError] = useState<string | null>(null);
+  const commit = (v: unknown | undefined) => {
+    props.onWrite(v).then(() => setError(null)).catch((e) => setError(e instanceof Error ? e.message : String(e)));
+  };
   return (
     <div className="flex items-start justify-between gap-6 border-b py-3 last:border-b-0">
       <div className="min-w-0">
@@ -81,14 +95,15 @@ function SettingRow(props: {
           {props.drifted && <Badge variant="outline">was reset to default</Badge>}
         </Label>
         <p className="mt-1 text-sm text-muted-foreground">{props.field.description}</p>
+        {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
         {props.inheritedLabel && !modified && (
           <p className="mt-0.5 text-xs text-muted-foreground">{props.inheritedLabel}</p>
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <FieldControl field={props.field} value={props.effective} onChange={(v) => void props.onWrite(v)} />
+        <FieldControl key={String(props.effective)} field={props.field} value={props.effective} onChange={commit} />
         {modified && (
-          <Button variant="ghost" size="sm" onClick={() => void props.onWrite(undefined)}>Reset</Button>
+          <Button variant="ghost" size="sm" onClick={() => commit(undefined)}>Reset</Button>
         )}
       </div>
     </div>
