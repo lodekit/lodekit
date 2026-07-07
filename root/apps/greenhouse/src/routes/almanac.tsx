@@ -20,19 +20,27 @@ const fmt = (ms: number | null) => (ms == null ? "—" : new Date(ms).toLocaleSt
 function Almanac() {
   const initial = Route.useLoaderData();
   const [runs, setRuns] = useState<TaskRun[]>(initial.runs);
-  const [defs] = useState<TaskInfo[]>(initial.defs);
+  const [upcoming, setUpcoming] = useState<TaskRun[]>(
+    initial.runs.filter((r) => r.state === "queued").sort((a, b) => a.notBefore - b.notBefore)
+  );
+  const [defs, setDefs] = useState<TaskInfo[]>(initial.defs);
   const [state, setState] = useState<TaskRunState | "all">("all");
   const [task, setTask] = useState<string | "all">("all");
   const [live, setLive] = useState(false);
 
   const refetch = useCallback(async () => {
-    setRuns(
-      await tasks.runs({
+    const [filteredRuns, queuedRuns, taskDefs] = await Promise.all([
+      tasks.runs({
         limit: 50,
         ...(state !== "all" ? { state } : {}),
         ...(task !== "all" ? { task } : {}),
-      })
-    );
+      }),
+      tasks.runs({ state: "queued", limit: 50 }),
+      tasks.list(),
+    ]);
+    setRuns(filteredRuns);
+    setUpcoming(queuedRuns.sort((a, b) => a.notBefore - b.notBefore));
+    setDefs(taskDefs);
   }, [state, task]);
 
   useEffect(() => void refetch(), [refetch]);
@@ -44,8 +52,6 @@ function Almanac() {
       }),
     [refetch]
   );
-
-  const upcoming = runs.filter((r) => r.state === "queued").sort((a, b) => a.notBefore - b.notBefore);
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-4">
