@@ -51,7 +51,7 @@ Package manager is **pnpm** (workspaces). From the repo root:
   (`node-linker=hoisted`, needed only for Forge's dev-start check) would rewrite the whole
   workspace to hoisted layout and silently break runtime Vite/Tailwind builds. Install from
   the repo root; recover with a root-level node_modules wipe + `pnpm install`.
-- `pnpm dev` — run the runtime against the example apps
+- `pnpm dev` — run the runtime against the showcase apps
   (`LODEKIT_ROOT=$(pwd)/root pnpm --filter @lodekit/runtime start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
 - `pnpm test` — runs `pnpm -r test`: `@lodekit/runtime` (vitest, incl. the runtime↔MCP

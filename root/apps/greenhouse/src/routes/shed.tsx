@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { kv, files, tasks, logs } from "@lodekit/sdk";
+import { kv, files, tasks, logs, appId } from "@lodekit/sdk";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@lodekit/ui";
 import { plants, stateKey, streakKey } from "../lib";
 import { seedIfNeeded } from "../seed";
@@ -53,6 +53,7 @@ function Shed() {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [snapshot, setSnapshot] = useState<string | null>(null);
+  const [roundTrip, setRoundTrip] = useState<string | null>(null);
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-4">
@@ -99,7 +100,15 @@ function Shed() {
           </p>
           <Button
             onClick={async () => {
-              setSnapshot(await exportSnapshot());
+              const slug = await exportSnapshot();
+              setSnapshot(slug);
+              const blob = await files.get(slug);
+              if (blob) {
+                setRoundTrip(`${(blob.size / 1024).toFixed(1)} KB`);
+              } else {
+                setRoundTrip("round-trip failed");
+                logs.error("snapshot round-trip check failed", { slug });
+              }
             }}
           >
             Export snapshot
@@ -110,6 +119,7 @@ function Shed() {
                 Download {snapshot}
               </a>{" "}
               (expires in an hour)
+              {roundTrip && <> · Round-trip check: {roundTrip}</>}
             </p>
           )}
         </CardContent>
@@ -146,7 +156,12 @@ function Shed() {
         <CardContent>
           <p className="text-sm text-muted-foreground">
             Reserved for SDK methods that lose their natural home as the platform grows.
-            Currently empty — every method has a real feature (see <code>root/readme.md</code>).
+            Almost empty — the <code>appId</code> export lives here; every other method has
+            a real feature (see <code>root/readme.md</code>).
+          </p>
+          <p className="text-sm text-muted-foreground">
+            This page belongs to app "<code>{appId}</code>" — the SDK's <code>appId</code>{" "}
+            export.
           </p>
         </CardContent>
       </Card>

@@ -120,7 +120,11 @@ function buildPayload() {
   // ~/Documents/Lodekit/apps on the manager's first run.
   fs.cpSync(path.join(repoRoot, "root", "apps"), path.join(platformDir, "root", "apps"), {
     recursive: true,
-    filter: (src) => !src.includes("node_modules") && !src.endsWith("routeTree.gen.ts"),
+    filter: (src) =>
+      !src.includes("node_modules") &&
+      !src.endsWith("routeTree.gen.ts") &&
+      !src.includes(".tanstack") &&
+      !src.endsWith(".DS_Store"),
   });
 }
 

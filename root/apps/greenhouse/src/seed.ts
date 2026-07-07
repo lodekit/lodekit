@@ -105,6 +105,7 @@ export async function seedIfNeeded(): Promise<boolean> {
     });
     const state: CareState = {};
     const backdated: { key: string; value: unknown }[] = [];
+    let i = 0;
     for (const [kind, cfg] of Object.entries(seed.plant.care) as [CareKind, { every: string }][]) {
       const every = parseEvery(cfg.every);
       // Stagger due times per the seed's story: an overdue plant is past due, a
@@ -116,6 +117,11 @@ export async function seedIfNeeded(): Promise<boolean> {
             ? now + Math.floor(Math.min(every, 86_400_000) / 4)
             : now + every;
       const lastAt = dueAt - every;
+      // Stagger the backdated journal entry's timestamp per kind (independent of
+      // lastAt, which drives the care state) so same-ms entries don't collide and
+      // collapse in the kv.setMany below.
+      const stampAt = lastAt - i * 60_000;
+      i++;
       const reminderRunId = await tasks.enqueue(
         "care-reminder",
         { plantId: id, kind },
@@ -123,8 +129,8 @@ export async function seedIfNeeded(): Promise<boolean> {
       );
       state[kind] = { lastAt, dueAt, reminderRunId };
       backdated.push({
-        key: journalKey(id, lastAt),
-        value: { at: lastAt, text: `${CARE_VERB[kind]} ${seed.plant.name}.` },
+        key: journalKey(id, stampAt),
+        value: { at: stampAt, text: `${CARE_VERB[kind]} ${seed.plant.name}.` },
       });
     }
     backdated.push({

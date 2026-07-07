@@ -31,7 +31,8 @@ is the living checklist — extend it with every new surface.
 | `files.put {title, metadata, contentType}` | photo upload with caption |
 | `files.put {ttl}` | self-expiring snapshot export |
 | `files.put` (server-side) | seeded SVG portraits |
-| `files.get` / `url` / `url {download}` / `stat` / `delete` | photo display & management, export download |
+| `files.url` / `url {download}` / `stat` / `delete` | photo display & management, export download |
+| `files.get` | snapshot round-trip check (Potting Shed) |
 | `files.list {prefix, cursor}` | timeline "load more", compost sweep, reset |
 | `files.copy` | set cover photo |
 | `files.move` | archive photo |
@@ -45,7 +46,8 @@ is the living checklist — extend it with every new surface.
 | `task() cron` + `catchUp: true` | morning_rounds |
 | `task() every` | compost_sweep |
 | `logs.debug` / `info` / `warn` / `error` | compost sweep / care & seed / wilting & reset / upload failures + Shed demo row |
-| `appId` export, `@lodekit/ui`, `theme.css` | throughout |
+| `appId` export | Potting Shed's SDK exercises card |
+| `@lodekit/ui`, `theme.css` | throughout |
 
 **Pending (events slice, spec §5):** `events.emit` (client+server, `{ttl}`), `events.list`
 (`before`/`after`/server-side), `events.watch` (string + array types), the Ledger, While

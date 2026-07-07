@@ -91,6 +91,7 @@ function PlantPage() {
       <Button
         variant="destructive"
         onClick={async () => {
+          if (!window.confirm(`Let ${plant.name} go? Their photos and journal go too — for good.`)) return;
           await letGo({ data: { plantId: id } });
           void router.navigate({ to: "/" });
         }}
