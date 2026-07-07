@@ -178,7 +178,10 @@ payload, with the task's own `timeout` (default 5m) instead of the HTTP 30s. The
 entry resolves the handler from the loaded `src/tasks.ts` module and runs it; handlers have
 full SDK access (loopback HTTP), per umbrella §2.12. If the app's worker is down (build
 error, respawn backoff), due runs simply wait in `queued` — visible, never silently
-dropped, and no attempt is consumed.
+dropped, and no attempt is consumed. A timed-out attempt is failed by the runtime but NOT
+aborted inside the worker (no cancellation in v1) — a long-running handler may still be
+executing when its retry starts, so serial-per-app holds at the engine level, not inside
+the worker.
 
 **Completion and retries — at-least-once.**
 
@@ -226,9 +229,9 @@ queryable; SSE is only the live notification (the bus has no replay — establis
   `log` (logging) vs `task-run` (this slice).
 
 Dashboard v1, per the umbrella's "schedule + last-run state": a per-app **Tasks panel**
-listing each task with its schedule, next-run time, and last-run state; expandable run
-history (state, timing, duration, error); **Run now** (= enqueue with source `manual`) and
-**Re-run** on failed runs. Live via `tasks-change`.
+listing each task with its schedule, next-run time, and last-run state; a recent-runs list
+(state, error); **Run now** (= enqueue with source `manual`) and **Re-run** on failed runs.
+Live via `tasks-change`.
 
 ## 9. Housekeeping and guardrails
 

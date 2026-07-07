@@ -179,7 +179,12 @@ above; the remainder:
   handle, the `src/tasks.ts` + `task()` declaration contract, and the catch-up/retry
   semantics.
 - **Internal scheduler vs the Tasks service** — ~~packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.~~ **Resolved (2026-07-06, Tasks slice-spec §2):** layered, not conflated — the scheduler stays the internal heartbeat; the Tasks dispatcher is its third consumer (`docs/specs/2026-07-06-tasks-service-design.md`).
-- **Tasks — deferred from the v1 slice-spec** (`docs/specs/2026-07-06-tasks-service-design.md` §11): event-triggered tasks (after the events revamp; closes the server-side `watch`/signals gap), step-based durable execution (`step.run`/`sleep`/`waitForEvent`), signals, dynamic schedule API, per-task concurrency/rate limits/priorities, MCP task tools (read-only first), and optionally consolidating the kv/file TTL sweeps onto Tasks.
+- **Tasks — deferred from the v1 slice-spec** (`docs/specs/2026-07-06-tasks-service-design.md` §11): event-triggered tasks (after the events revamp; closes the server-side `watch`/signals gap), step-based durable execution (`step.run`/`sleep`/`waitForEvent`), signals, dynamic schedule API, per-task concurrency/rate limits/priorities, MCP task tools (read-only first), and optionally consolidating the kv/file TTL sweeps onto Tasks. Accepted at personal scale (final review): dueOccurrence's occurrence-by-occurrence cron walk after long offline gaps (worst ~tens of ms, once) — bound it only if it ever bites.
+- **Task-engine app-set eviction on app deletion** — deleting an app (`dropBuild`) stops its
+  worker but the tasks engine keeps polling its per-app db each dispatch tick (schedule runs
+  materialize into one absorbed queued row per task; SSE events for a gone app). Bounded and
+  self-healing on restart (`recoverInterruptedRuns` re-seeds from `scanApps`); evict from the
+  engine's app set on unlinkDir when it first matters.
 - **Service defaults/thresholds → settings** — every hard-coded default and threshold across the catalog becomes a setting when the settings service lands: the Tasks defaults (`catchUp` "1h", `retries` 3, `timeout` "5m", backoff curve, dispatch poll interval, run retention "last 100 runs or 30 days") and equivalents in other services (e.g. sweep intervals, kv/file TTL behavior).
 - **Dashboard startup-build freshness skip** — `buildDashboard` runs on every start. Raised
   relevance since the tanstack-start-host slice: the Start build (~2–5s) is heavier than the
