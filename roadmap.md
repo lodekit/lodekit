@@ -184,6 +184,13 @@ above; the remainder:
   (stop-during-poll, spawnRuntime throw); a Retry item for the root-creation-failure boot
   error (today: fix permissions, relaunch); transient "exited unexpectedly" log line during
   a startup-timeout kill.
+- **Electron `userData` would collide with the State dir if the manager is ever renamed** —
+  Electron derives its Chromium-profile location from `productName`/`name`, which today is
+  the scoped `@lodekit/manager` → `~/Library/Application Support/@lodekit/manager`. Setting
+  `productName: "Lodekit"` (a natural packaging polish step) would silently dump that
+  profile (Cache, Cookies, GPUCache, …) into `~/Library/Application Support/Lodekit` —
+  the platform State dir holding `logs.sqlite`. If renaming, repoint `userData` explicitly
+  (`app.setPath("userData", …)`) before anything else touches it.
 - **MCP uses deprecated `server.tool`** — `mcp/index.ts` registers tools via the
   SDK's `server.tool()`, deprecated in `@modelcontextprotocol/sdk` 1.12 in favor of
   `registerTool`. Works fine; migrate when convenient.
