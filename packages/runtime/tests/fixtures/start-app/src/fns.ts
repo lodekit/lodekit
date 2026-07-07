@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { kv } from "@lodekit/sdk";
+import { kv, secrets, SecretUnavailableError } from "@lodekit/sdk";
 
 export const ping = createServerFn()
   .inputValidator(z.object({ echo: z.string() }))
@@ -16,4 +16,17 @@ export const bump = createServerFn().handler(async () => {
 // Kills the worker mid-request — Task 2's crash-containment case.
 export const crash = createServerFn().handler(async () => {
   process.exit(1);
+});
+
+// Reads a secret slot through the worker-token door — secrets-e2e's probe.
+export const readSecret = createServerFn().handler(async () => {
+  try {
+    return { ok: true as const, value: await secrets.get("api_key") };
+  } catch (e) {
+    return {
+      ok: false as const,
+      reason: e instanceof SecretUnavailableError ? e.reason : "other",
+      message: e instanceof Error ? e.message : String(e),
+    };
+  }
 });
