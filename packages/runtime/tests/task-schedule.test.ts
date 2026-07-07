@@ -51,6 +51,13 @@ describe("dueOccurrence — cron", () => {
     const onTime = dueOccurrence({ ...base, catchUpMs: null, highWater: midnight, now: nineAm + 1_000 });
     expect(onTime.occurrence).toBe(nineAm);
   });
+
+  it("catchUp always (Infinity): an arbitrarily late miss still fires the latest occurrence", () => {
+    const now = nineAm + 100 * HOUR;
+    const r = dueOccurrence({ ...base, catchUpMs: Number.POSITIVE_INFINITY, highWater: midnight, now });
+    expect(r.occurrence).toBe(nineAm + 96 * HOUR);
+    expect(r.highWater).toBe(nineAm + 96 * HOUR);
+  });
 });
 
 describe("dueOccurrence — every", () => {

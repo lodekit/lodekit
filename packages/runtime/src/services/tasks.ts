@@ -27,7 +27,7 @@ export interface TaskDefRow {
   name: string;
   scheduleKind: ScheduleKind | null;
   scheduleExpr: string | null;
-  catchUpMs: number | null;   // null = catch-up disabled (catchUp: false)
+  catchUpMs: number | null;   // null = disabled (catchUp: false); Infinity = always (catchUp: true)
   retries: number;
   timeoutMs: number;
   retired: boolean;
@@ -59,7 +59,7 @@ export interface ManifestTask {
   name: string;
   cron?: string;
   every?: string;
-  catchUp?: string | false;
+  catchUp?: string | boolean;
   retries?: number;
   timeout?: string;
 }
@@ -89,7 +89,7 @@ export function ensureSchema(db: Database.Database): void {
       name          TEXT PRIMARY KEY,
       schedule_kind TEXT,
       schedule_expr TEXT,
-      catch_up_ms   INTEGER,
+      catch_up_ms   INTEGER, -- NULL = disabled, -1 = always (Infinity)
       retries       INTEGER NOT NULL,
       timeout_ms    INTEGER NOT NULL,
       retired       INTEGER NOT NULL DEFAULT 0,
@@ -132,7 +132,7 @@ const toDef = (r: DefDbRow): TaskDefRow => ({
   name: r.name,
   scheduleKind: r.schedule_kind as ScheduleKind | null,
   scheduleExpr: r.schedule_expr,
-  catchUpMs: r.catch_up_ms,
+  catchUpMs: r.catch_up_ms === -1 ? Number.POSITIVE_INFINITY : r.catch_up_ms,
   retries: r.retries,
   timeoutMs: r.timeout_ms,
   retired: r.retired === 1,
@@ -164,7 +164,10 @@ function resolveConfig(t: ManifestTask): {
   return {
     scheduleKind,
     scheduleExpr,
-    catchUpMs: t.catchUp === false ? null : parseDuration(t.catchUp ?? "1h"),
+    catchUpMs:
+      t.catchUp === false ? null
+      : t.catchUp === true ? Number.POSITIVE_INFINITY
+      : parseDuration(t.catchUp ?? "1h"),
     retries,
     timeoutMs: parseDuration(t.timeout ?? "5m"),
   };
@@ -208,7 +211,8 @@ export function applyManifest(
            registered_at = excluded.registered_at, high_water = excluded.high_water`
       ).run({
         name: t.name, kind: resolved.scheduleKind, expr: resolved.scheduleExpr,
-        catchUp: resolved.catchUpMs, retries: resolved.retries, timeout: resolved.timeoutMs,
+        catchUp: resolved.catchUpMs === Number.POSITIVE_INFINITY ? -1 : resolved.catchUpMs,
+        retries: resolved.retries, timeout: resolved.timeoutMs,
         error, registeredAt, highWater,
       });
     }

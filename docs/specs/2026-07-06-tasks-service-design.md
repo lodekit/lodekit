@@ -51,7 +51,9 @@ multi-step durable execution — is exactly what v1 defers.
   `now − scheduledAt ≤ catchUp`, coalesced to at most one run; older occurrences drop.
   Temporal's *catchup window* / Kubernetes' `startingDeadlineSeconds` / Quartz's *misfire
   threshold*. Applies uniformly to startup and any late dispatch — a local runtime is often
-  off (laptop asleep, manager quit), so this is where local differs most from cloud.
+  off (laptop asleep, manager quit), so this is where local differs most from cloud. The
+  field still accepts booleans for the endpoints of the spectrum: true = an unbounded window
+  (always catch up, coalesced), false = on-time only.
 - **Enqueue by name, not by reference.** A function reference can't cross the HTTP boundary;
   the `task()` wrapper carries declaration config, not identity.
 - **One service, two capabilities.** One engine, one router, one SDK handle (`tasks`).
@@ -80,7 +82,7 @@ import { task } from "@lodekit/sdk";
 
 export const dailyDigest = task({
   cron: "0 9 * * *",   // 5-field cron, machine-local timezone
-  catchUp: "6h",       // duration; false disables; default "1h"
+  catchUp: "6h",     // duration; true = always; false disables; default "1h"
   run: async () => { /* full SDK access */ },
 });
 
@@ -98,7 +100,8 @@ export const resizeImage = task({
   evaluated in the machine's local timezone (personal tool, person-local time). Parsing and
   next-occurrence math use `croner` (zero-dependency, maintained), never hand-rolled.
 - Durations everywhere (`catchUp`, `timeout`, `every`, `delay`) use the same short-duration
-  string grammar (`"30s"`, `"10m"`, `"6h"`), one shared parser in the SDK/runtime.
+  string grammar (`"30s"`, `"10m"`, `"6h"`), one shared parser in the SDK/runtime. `catchUp`
+  additionally accepts `true` (always catch up, unbounded window) and `false` (disabled).
 - The Start build includes `src/tasks.ts` as an additional server-bundle entry. On worker
   boot, the worker loads it and posts a **task manifest** (names + config) to the runtime,
   which upserts durable definitions into the app's SQLite. Definitions therefore survive a

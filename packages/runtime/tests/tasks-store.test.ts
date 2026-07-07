@@ -44,6 +44,13 @@ describe("applyManifest", () => {
     expect(getDef(db, "ok")!.error).toBeNull();
   });
 
+  it("catchUp true stores Infinity, round-tripping through the -1 row sentinel on re-apply", () => {
+    applyManifest(db, [{ name: "eager", every: "1h", catchUp: true }], T0);
+    expect(getDef(db, "eager")!.catchUpMs).toBe(Number.POSITIVE_INFINITY);
+    applyManifest(db, [{ name: "eager", every: "1h", catchUp: true }], T0);
+    expect(getDef(db, "eager")!.catchUpMs).toBe(Number.POSITIVE_INFINITY);
+  });
+
   it("preserves high-water when the schedule is unchanged, resets it when changed", () => {
     applyManifest(db, manifest(), T0);
     setHighWater(db, "digest", T0 + 1000);

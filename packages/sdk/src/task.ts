@@ -6,8 +6,9 @@ export interface TaskConfig<P = unknown> {
   cron?: string;
   /** Interval sugar ("30m", "1h"), minimum "1m". Mutually exclusive with `cron`. */
   every?: string;
-  /** Catch-up window for missed occurrences ("6h"); false disables. Default "1h". */
-  catchUp?: string | false;
+  /** Catch-up window for missed occurrences ("6h"); true = always catch up (still
+   *  coalesced to one run); false disables (on-time only). Default "1h". */
+  catchUp?: string | boolean;
   /** Retries after the first attempt. Default 3. */
   retries?: number;
   /** Per-attempt timeout ("5m" default). */

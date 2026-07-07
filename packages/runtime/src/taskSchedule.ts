@@ -33,7 +33,7 @@ export function dueOccurrence(opts: {
   expr: string;
   anchor: number;
   highWater: number;
-  catchUpMs: number | null;
+  catchUpMs: number | null; // null = disabled (GRACE_MS floor only); Infinity = unbounded window (always catch up)
   now: number;
 }): { occurrence: number | null; highWater: number } {
   const { kind, expr, anchor, highWater, catchUpMs, now } = opts;

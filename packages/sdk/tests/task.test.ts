@@ -9,6 +9,11 @@ describe("task()", () => {
     expect(typeof t.run).toBe("function");
   });
 
+  it("passes catchUp: true through untouched", () => {
+    const t = task({ cron: "0 9 * * *", catchUp: true, run: async () => {} });
+    expect(t.catchUp).toBe(true);
+  });
+
   it("rejects cron+every together and a missing run", () => {
     expect(() => task({ cron: "0 9 * * *", every: "1h", run: async () => {} })).toThrow(/mutually exclusive/);
     // @ts-expect-error run is required
