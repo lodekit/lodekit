@@ -31,8 +31,10 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
   `Resources/`, spawning the runtime as a single direct child Node process (so
   `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
   app supervising the workspace runtime against `root/` on the system Node.
-- **`root/`** — the checked-in Lodekit root: showcase Start apps (no per-app dependencies)
-  used in dev via `LODEKIT_ROOT=./root` and shipped by the manager on first run.
+- **`root/`** — the checked-in Lodekit root: the Greenhouse showcase app (the SDK's
+  smoke-testing ground — see `root/readme.md` for the definition-of-done convention) and
+  the Welcome app. Used in dev via `LODEKIT_ROOT=./root`; the packaged manager installs
+  its apps into a fresh `~/Documents/Lodekit` on first run.
 
 Deferred subsystems (designed-in, not built): docs content/theming/deploy and packaging
 polish (Developer ID signing/notarization, auto-update). See `roadmap.md`.
@@ -105,3 +107,5 @@ Simplicity never means cutting safety.
     `git rebase <fork-point>` — it drops merge commits and replays the rest linearly.
   - Regenerate `pnpm-lock.yaml` conflicts with `pnpm install --lockfile-only` rather than hand-merging.
 - **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
+- **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
+  showcase app exercises it (`root/readme.md` holds the living coverage checklist).

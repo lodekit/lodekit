@@ -1,5 +1,8 @@
 # Habit Tracker — Design
 
+> **Superseded** by `2026-07-07-showcase-apps-design.md` — the example apps were replaced
+> by the Greenhouse and Welcome showcase apps. Kept as history.
+
 **Date:** 2026-06-30
 **Status:** Approved, pre-implementation
 

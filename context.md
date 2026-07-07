@@ -83,6 +83,17 @@ _Avoid_: sandbox, per-app server, process
 To generate a new app's starter files conforming to the app contract.
 _Avoid_: create, init, bootstrap, generate
 
+**Showcase app**:
+The Greenhouse app in the checked-in root (`root/apps/greenhouse`) — the SDK showcase and
+permanent smoke-testing ground, shipped by the manager on first run. Definition-of-done:
+new SDK/runtime capability isn't done until Greenhouse exercises it.
+_Avoid_: example app, demo app, sample app
+
+**Welcome app**:
+The orientation app in the checked-in root (`root/apps/welcome`) — deliberately tiny (one
+page, one `kv.incr` counter); reserved to become the guided first-time experience.
+_Avoid_: FTUX app (until it is one)
+
 ### Services
 
 **Service**:

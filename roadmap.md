@@ -346,3 +346,9 @@ above; the remainder:
   `manager/src/logs.js` (now one fresh stream per uptime-day) attaches no `'error'`
   handler; a disk error would crash the Electron main process. Attach handlers / degrade
   gracefully.
+- **Welcome → guided FTUX** — grow `root/apps/welcome` into the interactive first-time
+  experience teaching the high-level concepts (showcase-apps spec §9).
+- **Showcase update on manager update** — first-run install never clobbers a person's
+  copy; an "update showcase apps" story belongs with auto-update (showcase-apps spec §10).
+- **Greenhouse integrations chapter** — when the integrations layer lands, weather-aware
+  watering is the first integration demo (showcase-apps spec §13).
