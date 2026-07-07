@@ -16,6 +16,7 @@ import { every, stop } from "./scheduler.js";
 import { sweepAllAndBroadcast } from "./services/kv-store.js";
 import { sweepFiles } from "./services/file-store.js";
 import { initLogStore, sweepLogStore } from "./logStore.js";
+import { initEventStore, sweepEventStore } from "./eventStore.js";
 import { createLogger } from "./logger.js";
 import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskEngine.js";
 import { sweepAllTaskRuns } from "./services/tasks.js";
@@ -122,6 +123,9 @@ export function createServer(cfg: Config): Server {
 
 export async function start(cfg: Config): Promise<Server> {
   initLogStore(cfg.stateDir);
+  if (!initEventStore(cfg.dataDir)) {
+    createLogger("event-store").error("events.sqlite unavailable — event bus degrades to live-only");
+  }
   const server = createServer(cfg);
   server.listen(cfg.port, () => {
     console.log(`Lodekit running at ${cfg.baseUrl}`);
@@ -138,12 +142,14 @@ export async function start(cfg: Config): Promise<Server> {
   every("kv-store-sweep", 60_000, sweepAllAndBroadcast);
   every("file-store-sweep", 60_000, () => sweepFiles(cfg));
   every("log-sweep", 60_000, () => sweepLogStore());
+  every("event-sweep", 60_000, () => sweepEventStore());
   every("tasks-dispatch", 1_000, dispatchTasks);
   every("tasks-sweep", 60_000, sweepAllTaskRuns);
   server.on("close", () => {
     stop("kv-store-sweep");
     stop("file-store-sweep");
     stop("log-sweep");
+    stop("event-sweep");
     stop("tasks-dispatch");
     stop("tasks-sweep");
     // Order matters: close the watcher (no new build triggers), let in-flight builds

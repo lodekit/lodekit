@@ -2,8 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import chokidar from "chokidar";
 import type { Config } from "./config.js";
-import { broadcast } from "./sse.js";
-import { scanApps, isValidAppId } from "./registry.js";
+import { emitEvent, PLATFORM_NS } from "./events.js";
+import { isValidAppId } from "./registry.js";
 import { buildAll, buildApp, buildDashboard, dropBuild } from "./build.js";
 import { createLogger } from "./logger.js";
 
@@ -25,7 +25,13 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
     return rel.split(path.sep)[0] || undefined;
   };
 
-  const notify = () => broadcast("apps-changed", scanApps(cfg.appsDir));
+  let notifyTimer: NodeJS.Timeout | undefined;
+  const notify = () => {
+    clearTimeout(notifyTimer);
+    notifyTimer = setTimeout(() => {
+      emitEvent({ ns: PLATFORM_NS, source: PLATFORM_NS, type: "apps-changed" });
+    }, DEBOUNCE_MS);
+  };
 
   const rebuild = (appId: string) => {
     clearTimeout(timers.get(appId));
@@ -110,6 +116,7 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
   return {
     close: async () => {
       clearTimeout(globalTimer);
+      clearTimeout(notifyTimer);
       // Cancel any in-flight per-app debounce so it can't fire buildApp after close —
       // against a root a caller is about to remove (ENOENT) and clobbering a same-named
       // app's fresh state. The unlinkDir handler clears these per app; close clears the rest.

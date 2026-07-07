@@ -1,0 +1,54 @@
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { initEventStore, queryEvents, closeEventStoreForTest } from "../src/eventStore.js";
+import { initLogStore, closeLogStoreForTest } from "../src/logStore.js";
+import { startAppWorker, stopAllWorkers } from "../src/appWorker.js";
+import { startWatcher } from "../src/watcher.js";
+import type { Config } from "../src/config.js";
+
+let root: string, cfg: Config;
+beforeEach(() => {
+  root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-evwire-"));
+  cfg = {
+    root,
+    appsDir: path.join(root, "apps"),
+    dataDir: path.join(root, "data"),
+    cacheDir: path.join(root, "cache"),
+    stateDir: path.join(root, "state"),
+    port: 0,
+    baseUrl: "http://lodekit.localhost:0",
+  };
+  initLogStore(cfg.stateDir);
+  initEventStore(cfg.dataDir);
+});
+afterEach(() => {
+  stopAllWorkers();
+  closeEventStoreForTest();
+  closeLogStoreForTest();
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+describe("platform emitters land on the bus", () => {
+  it("worker lifecycle: a missing server bundle stores a server-state error event in the app's ns", () => {
+    startAppWorker(cfg, "ghost");
+    const { records } = queryEvents({ ns: "ghost", type: "server-state" });
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({ source: "_platform", payload: { status: "error" } });
+  });
+
+  it("watcher: app-folder churn stores one debounced apps-changed event in _platform", async () => {
+    const watcher = await startWatcher(cfg);
+    const dir = path.join(cfg.appsDir, "newapp");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({ name: "New", appId: "newapp" }));
+    await expect
+      .poll(() => queryEvents({ ns: "_platform", type: "apps-changed" }).records.length, { timeout: 5000 })
+      .toBeGreaterThanOrEqual(1);
+    // Debounced: the burst of add/addDir events collapsed (allow the mkdir/write pair
+    // to straddle one debounce boundary, but never one event per raw fs event).
+    expect(queryEvents({ ns: "_platform", type: "apps-changed" }).records.length).toBeLessThanOrEqual(2);
+    await watcher.close();
+  });
+});

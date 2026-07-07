@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { Worker } from "node:worker_threads";
 import { fileURLToPath } from "node:url";
 import type { Config } from "./config.js";
-import { broadcast } from "./sse.js";
+import { emitEvent, PLATFORM_NS } from "./events.js";
 import { emitLog, createLogger } from "./logger.js";
 
 export type ServerState =
@@ -49,7 +49,7 @@ export function getServerState(appId: string): ServerState | undefined { return 
 
 function setState(appId: string, state: ServerState): void {
   states.set(appId, state);
-  broadcast("server-state", { appId, ...state });
+  emitEvent({ ns: appId, source: PLATFORM_NS, type: "server-state", payload: { ...state } });
 }
 
 export function startAppWorker(cfg: Config, appId: string): void {

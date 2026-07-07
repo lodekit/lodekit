@@ -7,7 +7,7 @@ import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import type { Config } from "./config.js";
-import { broadcast } from "./sse.js";
+import { emitEvent, PLATFORM_NS } from "./events.js";
 import { scanApps } from "./registry.js";
 import { startAppWorker, stopAppWorker } from "./appWorker.js";
 import { getBuildInfo } from "./buildInfo.js";
@@ -42,10 +42,12 @@ export function getBuildState(appId: string): BuildState | undefined {
 
 function setState(appId: string, state: BuildState): void {
   states.set(appId, state);
-  broadcast(
-    state.status,
-    state.status === "error" ? { appId, message: state.message } : { appId }
-  );
+  emitEvent({
+    ns: appId,
+    source: PLATFORM_NS,
+    type: state.status,
+    payload: state.status === "error" ? { message: state.message } : undefined,
+  });
   if (state.status === "error") emitLog("error", "build", "build failed", { stack: state.message }, appId);
   else if (state.status === "ready") emitLog("info", "build", "build ready", undefined, appId);
   else emitLog("debug", "build", "build started", undefined, appId);
@@ -140,9 +142,11 @@ async function runDashboardBuild(cfg: Config): Promise<DashboardState> {
       themeOverrideFiles: [path.join(cfg.root, "theme.css")],
     });
     dashboardState = { status: "ready" };
+    emitEvent({ ns: "_dashboard", source: PLATFORM_NS, type: "ready" });
     startAppWorker(cfg, "_dashboard");
   } catch (e) {
     dashboardState = { status: "error", message: e instanceof Error ? e.message : String(e) };
+    emitEvent({ ns: "_dashboard", source: PLATFORM_NS, type: "error", payload: { message: dashboardState.message } });
   }
   return dashboardState;
 }

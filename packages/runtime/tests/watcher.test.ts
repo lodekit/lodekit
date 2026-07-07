@@ -92,7 +92,10 @@ afterEach(async () => {
 
 describe("watcher", () => {
   it("emits building then ready when a valid app appears", async () => {
-    const done = collectEvents(base, "event: building", 30000);
+    // Events now ride the shared "event" bus envelope (spec §4) — the wire's
+    // SSE `event:` field is always "event"; the build state lives in the
+    // JSON payload's `"type"` field, so assertions match on that instead.
+    const done = collectEvents(base, '"type":"building"', 30000);
     // give the SSE reader a tick to attach before writing files
     await new Promise((r) => setTimeout(r, 100));
     writeApp(
@@ -100,10 +103,10 @@ describe("watcher", () => {
       `import { createFileRoute } from "@tanstack/react-router";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>ok</h1>,\n});\n`
     );
     const buf = await done;
-    expect(buf).toContain("event: building");
+    expect(buf).toContain('"type":"building"');
     // wait for the ready event specifically
-    const ready = await collectEvents(base, "event: ready", 30000);
-    expect(ready).toContain("event: ready");
+    const ready = await collectEvents(base, '"type":"ready"', 30000);
+    expect(ready).toContain('"type":"ready"');
   }, 40000);
 
   it("emits an error event for a broken app", async () => {
@@ -112,8 +115,8 @@ describe("watcher", () => {
       "wbad",
       `import { createFileRoute } from "@tanstack/react-router";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>x</h1>  // missing brace\n`
     );
-    const buf = await collectEvents(base, "event: error", 30000);
-    expect(buf).toContain("event: error");
+    const buf = await collectEvents(base, '"type":"error"', 30000);
+    expect(buf).toContain('"type":"error"');
   }, 40000);
 
   it("ignores stray files in apps/ — .DS_Store and any non-directory never trigger a build", async () => {
@@ -124,28 +127,28 @@ describe("watcher", () => {
     fs.writeFileSync(path.join(root, "apps", "stray"), "junk");
     const buf = await collectEventsFor(base, 4000);
     expect(buf).toContain("apps-changed"); // the watcher did see the writes…
-    expect(buf).not.toContain("event: building"); // …and refused to build them
+    expect(buf).not.toContain('"type":"building"'); // …and refused to build them
   }, 15000);
 
   it("triggers a rebuild when only a route file changes (the canonical editing surface)", async () => {
-    const done = collectEvents(base, "event: building", 30000);
+    const done = collectEvents(base, '"type":"building"', 30000);
     await new Promise((r) => setTimeout(r, 100));
     writeApp(
       "wroute",
       `import { createFileRoute } from "@tanstack/react-router";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>v1</h1>,\n});\n`
     );
     await done;
-    await collectEvents(base, "event: ready", 30000);
+    await collectEvents(base, '"type":"ready"', 30000);
 
     // Edit ONLY the route file — no manifest/router touch — and confirm a rebuild fires.
-    const rebuildDone = collectEvents(base, "event: building", 30000);
+    const rebuildDone = collectEvents(base, '"type":"building"', 30000);
     await new Promise((r) => setTimeout(r, 100));
     fs.writeFileSync(
       path.join(root, "apps", "wroute", "src", "routes", "index.tsx"),
       `import { createFileRoute } from "@tanstack/react-router";\nexport const Route = createFileRoute("/")({\n  component: () => <h1>v2</h1>,\n});\n`
     );
     const buf = await rebuildDone;
-    expect(buf).toContain("event: building");
+    expect(buf).toContain('"type":"building"');
   }, 60000);
 
   it("rebuilds apps and dashboard when the global theme.css changes", async () => {
@@ -166,9 +169,9 @@ describe("watcher", () => {
       path.join(root, "apps", "gt", "src", "routes", "__root.tsx"),
       `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";\nimport appCss from "../index.css?url";\n\nexport const Route = createRootRoute({\n  head: () => ({ meta: [{ title: "gt" }], links: [{ rel: "stylesheet", href: appCss }] }),\n  component: () => (\n    <html>\n      <head><HeadContent /></head>\n      <body><Outlet /><Scripts /></body>\n    </html>\n  ),\n});\n`
     );
-    await collectEvents(base, `event: ready`, 90000); // initial build settles
+    await collectEvents(base, `"type":"ready"`, 90000); // initial build settles
     fs.writeFileSync(path.join(root, "theme.css"), ":root { --primary: #ff3456; }\n");
-    await collectEvents(base, `event: ready`, 90000); // theme-triggered rebuild
+    await collectEvents(base, `"type":"ready"`, 90000); // theme-triggered rebuild
     const assets = fs.readdirSync(path.join(cache, "gt", "client", "assets"));
     const cssFile = assets.find((f) => f.endsWith(".css"));
     const css = fs.readFileSync(path.join(cache, "gt", "client", "assets", cssFile!), "utf8");
@@ -190,7 +193,7 @@ describe("watcher", () => {
       path.join(root, "apps", "pt", "src", "routes", "__root.tsx"),
       `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";\nimport appCss from "../index.css?url";\n\nexport const Route = createRootRoute({\n  head: () => ({ meta: [{ title: "pt" }], links: [{ rel: "stylesheet", href: appCss }] }),\n  component: () => (\n    <html>\n      <head><HeadContent /></head>\n      <body><Outlet /><Scripts /></body>\n    </html>\n  ),\n});\n`
     );
-    await collectEvents(base, `event: ready`, 90000); // initial build settles
+    await collectEvents(base, `"type":"ready"`, 90000); // initial build settles
     fs.writeFileSync(path.join(root, "apps", "pt", "theme.css"), ":root { --primary: #22cc78; }\n");
 
     // Poll the built CSS rather than a second collectEvents — unambiguous vs. racing the
