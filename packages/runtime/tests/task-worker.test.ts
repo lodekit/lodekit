@@ -29,7 +29,7 @@ async function waitFor(pred: () => boolean, ms: number) {
 
 beforeAll(() => {
   cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "lk-taskworker-"));
-  cfg = { root: "", appsDir: "", dataDir: "", cacheDir, stateDir: "", port: 0, baseUrl: "" };
+  cfg = { root: "", appsDir: "", dataDir: "", cacheDir, stateDir: "", port: 0, baseUrl: "", secretsKeyProvider: "file" };
   configureWorkers("http://127.0.0.1:9");
   onTasksManifest((appId, tasks, error) => manifests.set(appId, { tasks, error }));
   writeApp("tasky", `

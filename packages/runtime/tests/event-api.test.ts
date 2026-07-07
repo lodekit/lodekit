@@ -18,7 +18,7 @@ beforeEach(() => {
     cacheDir: path.join(root, "cache"),
     stateDir: path.join(root, "state"),
     port: 0,
-    baseUrl: "http://lodekit.localhost:0",
+    baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
   };
   initEventStore(cfg.dataDir);
   app = new Hono().route("/api", apiRoutes(cfg));

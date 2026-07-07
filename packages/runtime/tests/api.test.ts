@@ -17,7 +17,7 @@ beforeEach(async () => {
     cacheDir: path.join(root, ".cache"),
     stateDir: path.join(root, ".state"),
     port: 0,
-    baseUrl: "http://lodekit.localhost:0",
+    baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
   };
   await new Promise<void>((resolve) => {
     server = createServer(cfg).listen(0, () => resolve());

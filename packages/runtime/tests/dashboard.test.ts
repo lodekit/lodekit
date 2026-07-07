@@ -21,7 +21,7 @@ beforeEach(() => {
     cacheDir: cache,
     stateDir: path.join(root, ".state"),
     port: 0,
-    baseUrl: "http://lodekit.localhost:0",
+    baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
   };
 });
 afterEach(() => {

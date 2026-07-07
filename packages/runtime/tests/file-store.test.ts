@@ -33,7 +33,7 @@ beforeEach(() => {
     cacheDir: path.join(root, ".cache"),
     stateDir: path.join(root, ".state"),
     port: 0,
-    baseUrl: "http://lodekit.localhost:7777",
+    baseUrl: "http://lodekit.localhost:7777", secretsKeyProvider: "file",
   };
 });
 afterEach(() => {

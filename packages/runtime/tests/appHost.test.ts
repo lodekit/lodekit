@@ -47,7 +47,7 @@ beforeEach(async () => {
   cache = fs.mkdtempSync(path.join(os.tmpdir(), "lk-cache-"));
   cfg = {
     root, appsDir: path.join(root, "apps"), dataDir: path.join(root, "data"),
-    cacheDir: cache, stateDir: path.join(root, ".state"), port: 0, baseUrl: "http://lodekit.localhost:0",
+    cacheDir: cache, stateDir: path.join(root, ".state"), port: 0, baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
   };
   await new Promise<void>((r) => { server = createServer(cfg).listen(0, () => r()); });
   const addr = server.address();

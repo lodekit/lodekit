@@ -16,7 +16,7 @@ beforeEach(() => {
   cfg = {
     root, appsDir: path.join(root, "apps"), dataDir: path.join(root, "data"),
     cacheDir: path.join(root, ".cache"), stateDir: path.join(root, ".state"),
-    port: 0, baseUrl: "http://lodekit.localhost:0",
+    port: 0, baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
   };
   initSettingsStore(cfg.dataDir);
 });

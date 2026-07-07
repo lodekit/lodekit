@@ -24,7 +24,7 @@ function cfgFor(root: string): Config {
     cacheDir: path.join(root, ".cache"),
     stateDir: path.join(root, ".state"),
     port: 0,
-    baseUrl: "http://lodekit.localhost:0",
+    baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
   };
 }
 

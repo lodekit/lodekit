@@ -41,7 +41,7 @@ beforeEach(() => {
     cacheDir: path.join(root, ".cache"),
     stateDir: path.join(root, ".state"),
     port: 0,
-    baseUrl: "",
+    baseUrl: "", secretsKeyProvider: "file",
   };
   clock = T0;
   workerUp = true;
