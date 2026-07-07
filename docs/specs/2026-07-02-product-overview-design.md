@@ -85,7 +85,7 @@ persistence in the data tree where applicable:
 | relational-store | Database (SQLite via `better-sqlite3`) | **Parked** by kv-store v2 (surface deleted) — returns once a schemas/migrations story exists |
 | file-store | Blobs (files/images per app) | Shipped (docs/specs/2026-07-06-file-store-design.md): slug-identity blobs, TTL, SSE feed, serving URLs; SDK handle files |
 | secret-store | Secrets (encrypted; designed with the lens of powering integrations) | Future |
-| task-queue / task-schedule | Tasks (queued + scheduled background work) | Future (§2.12) |
+| Tasks | v1 shipped (`docs/specs/2026-07-06-tasks-service-design.md`): queue + schedule + retries + run history on the §2.12 substrate | Event triggers (after the events revamp), steps/signals, MCP task tools |
 | settings | Settings (declared, person-editable in the dashboard) | Future |
 
 - **Invariant:** every service is provided by the runtime, reached by apps only through the
@@ -241,9 +241,9 @@ On the substrate, **triggers** arrive as their own slices:
   called by the app's client. A soft same-origin guard on `/<app-id>/_serverFn/*` makes
   "webhooks are unsupported" a stated fact until a real inbound story (auth, reachability,
   signatures) gets its own slice (roadmap).
-- **Tasks** (task-queue, task-schedule) — later, invoking exported functions in the same
-  app worker: queueing, scheduling, hooks, signals, and schedule + last-run state in the
-  dashboard.
+- **Tasks** (task-queue, task-schedule) — **shipped** (`docs/specs/2026-07-06-tasks-service-design.md`):
+  queueing, scheduling, retries, and run history, invoking exported functions in the same
+  app worker; hooks/signals deferred to the roadmap.
 
 Sequencing consumers: **secret-store**'s app door depends on this substrate (server
 functions read secrets; values never reach browser code — see the roadmap's Security

@@ -107,7 +107,7 @@ Big-picture context that shaped the slice-1 SDK design but was explicitly **not*
 - **Persistence, per-app (inside the data folder):** blob storage, real encrypted secrets, schemas/migrations, and data initialization/fixtures.
 - **Integrations** — gateways, outbound connections, rate limiting.
 - **Tasks** — ~~task-queue/task-schedule, durable execution, hooks, signals; design
-  holistically (umbrella spec §2.12).~~ **Specced (2026-07-06):**
+  holistically (umbrella spec §2.12).~~ **Shipped (2026-07-07):**
   `docs/specs/2026-07-06-tasks-service-design.md` — queue + schedule + retries + history at
   v1; durable execution/hooks/signals deferred (see "Tasks — deferred from the v1
   slice-spec" under Other deferred items).
@@ -175,7 +175,9 @@ above; the remainder:
   two contract shapes (single-page expense-tracker, two-page habit-tracker); teach the
   pattern's caveats eyes-open: a write inside a queryFn plus a coarse `kv.watch("")`
   invalidation causes one redundant self-invalidate refetch per write, and collection
-  removal does not cascade (e.g. deleting a habit orphans its checkin keys).
+  removal does not cascade (e.g. deleting a habit orphans its checkin keys); the `tasks`
+  handle, the `src/tasks.ts` + `task()` declaration contract, and the catch-up/retry
+  semantics.
 - **Internal scheduler vs the Tasks service** — ~~packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.~~ **Resolved (2026-07-06, Tasks slice-spec §2):** layered, not conflated — the scheduler stays the internal heartbeat; the Tasks dispatcher is its third consumer (`docs/specs/2026-07-06-tasks-service-design.md`).
 - **Tasks — deferred from the v1 slice-spec** (`docs/specs/2026-07-06-tasks-service-design.md` §11): event-triggered tasks (after the events revamp; closes the server-side `watch`/signals gap), step-based durable execution (`step.run`/`sleep`/`waitForEvent`), signals, dynamic schedule API, per-task concurrency/rate limits/priorities, MCP task tools (read-only first), and optionally consolidating the kv/file TTL sweeps onto Tasks.
 - **Service defaults/thresholds → settings** — every hard-coded default and threshold across the catalog becomes a setting when the settings service lands: the Tasks defaults (`catchUp` "1h", `retries` 3, `timeout` "5m", backoff curve, dispatch poll interval, run retention "last 100 runs or 30 days") and equivalents in other services (e.g. sweep intervals, kv/file TTL behavior).

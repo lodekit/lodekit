@@ -128,7 +128,7 @@ Configuration an app declares so the person can view and edit it in the dashboar
 _Avoid_: preferences, config, options
 
 **Task**:
-Background work an app hands to the runtime to run on the app's behalf — queued (task-queue) or triggered on a time schedule (task-schedule; a **scheduled task**). Declared in the app's `src/tasks.ts`; the task name is the kebab-case of its export. Each execution is a **run** (queued → running → succeeded/failed/canceled). Tasks are listed with their schedule and last-run state in the dashboard. Specced: `docs/specs/2026-07-06-tasks-service-design.md` (v1 = queue + schedule + retries + history; hooks/signals deferred).
+Background work an app hands to the runtime to run on the app's behalf — queued (task-queue) or triggered on a time schedule (task-schedule; a **scheduled task**). Declared in the app's `src/tasks.ts`; the task name is the kebab-case of its export. Each execution is a **run** (queued → running → succeeded/failed/canceled). Tasks are listed with their schedule and last-run state in the dashboard. Shipped: `docs/specs/2026-07-06-tasks-service-design.md` (v1 = queue + schedule + retries + history; hooks/signals deferred).
 _Avoid_: job, cron, worker, workflow
 
 ### Storage & filesystem
