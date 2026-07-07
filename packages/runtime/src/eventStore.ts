@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
+import { emitLog } from "./logger.js";
 
 export interface EventRecord {
   id: number;
@@ -86,6 +87,7 @@ export function insertEvent(w: EventWrite): EventRecord | null {
     return { id: Number(info.lastInsertRowid), ts, ns: w.ns, source: w.source, type: w.type, payload: w.payload ?? null };
   } catch (e) {
     process.stderr.write(`[events] event write failed: ${e}\n`);
+    emitLog("error", "event-store", "event write failed — history gap", { stack: String(e) });
     return null;
   }
 }

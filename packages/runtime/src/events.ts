@@ -27,7 +27,7 @@ export interface EmitInput {
 // broadcasts (id 0): the gap is history, never delivery. Never throws into its caller.
 export function emitEvent(e: EmitInput): EventRecord | null {
   if (!NS_RE.test(e.ns) || !NS_RE.test(e.source) || !TYPE_RE.test(e.type)) return null;
-  if (e.payload && JSON.stringify(e.payload).length > PAYLOAD_MAX_BYTES) return null;
+  if (e.payload && Buffer.byteLength(JSON.stringify(e.payload)) > PAYLOAD_MAX_BYTES) return null;
   if (e.ttl != null && (!Number.isInteger(e.ttl) || e.ttl <= 0 || e.ttl > TTL_MAX_S)) return null;
   const record = insertEvent(e) ?? {
     id: 0,

@@ -131,7 +131,7 @@ function EventsView() {
   }, []);
 
   useEffect(() => {
-    void fetch("/api/apps").then((r) => r.json()).then(setApps);
+    void fetch("/api/apps").then((r) => r.json()).then(setApps).catch(() => {});
   }, []);
 
   async function loadMore() {
@@ -139,9 +139,13 @@ function EventsView() {
     const bottom = [...records ?? []].reverse().find((r) => r.id !== 0)?.id ?? next;
     const query = new URLSearchParams(filterQuery);
     query.set("before", String(bottom));
-    const d = (await (await fetch(`/api/events/history?${query}`)).json()) as { records: EventRecord[]; next: number | null };
-    setRecords((rs) => [...(rs ?? []), ...d.records]);
-    setNext(d.next);
+    try {
+      const d = (await (await fetch(`/api/events/history?${query}`)).json()) as { records: EventRecord[]; next: number | null };
+      setRecords((rs) => [...(rs ?? []), ...d.records]);
+      setNext(d.next);
+    } catch {
+      // degraded state: leave records/next unchanged, button stays available for retry
+    }
   }
 
   const shown = (records ?? []).filter((r) => matchesQ(r, debounced.q));

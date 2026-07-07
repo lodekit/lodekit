@@ -232,6 +232,11 @@ above; the remainder:
   longer gets overwritten — it now persists as a `lifecycle` error log record
   (`docs/specs/2026-07-06-logging-design.md` §5). Still open: add a give-up-after-N or
   wait-for-next-build latch.
+  Raised stakes since the events slice: each crash cycle now stores durable `server-state`
+  events (no ttl) — a permanent crash loop at the 10s backoff cap writes ~17k events/day,
+  and the event store's 50k row-cap trim is oldest-first across ALL namespaces, so a
+  broken app can evict other apps' event history well before the 30-day window. The
+  give-up latch (or a service ttl on lifecycle events) closes this.
 - **`forwardToWorker` buffers request bodies with no size cap** — the scoped API's 100kb
   `bodyLimit` doesn't apply to app-worker forwards. Enforce a cap when the webhooks
   trigger lands.

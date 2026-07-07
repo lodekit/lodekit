@@ -169,9 +169,13 @@ describe("watcher", () => {
       path.join(root, "apps", "gt", "src", "routes", "__root.tsx"),
       `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";\nimport appCss from "../index.css?url";\n\nexport const Route = createRootRoute({\n  head: () => ({ meta: [{ title: "gt" }], links: [{ rel: "stylesheet", href: appCss }] }),\n  component: () => (\n    <html>\n      <head><HeadContent /></head>\n      <body><Outlet /><Scripts /></body>\n    </html>\n  ),\n});\n`
     );
-    await collectEvents(base, `"type":"ready"`, 90000); // initial build settles
+    // Anchor to this app's own ns — runDashboardBuild also emits a "ready" event (ns
+    // "_dashboard") on the same theme change, and JSON key order (ns,source,type) is
+    // stable, so a plain '"type":"ready"' substring could match the dashboard's event
+    // instead of this app's.
+    await collectEvents(base, `"ns":"gt","source":"_platform","type":"ready"`, 90000); // initial build settles
     fs.writeFileSync(path.join(root, "theme.css"), ":root { --primary: #ff3456; }\n");
-    await collectEvents(base, `"type":"ready"`, 90000); // theme-triggered rebuild
+    await collectEvents(base, `"ns":"gt","source":"_platform","type":"ready"`, 90000); // theme-triggered rebuild
     const assets = fs.readdirSync(path.join(cache, "gt", "client", "assets"));
     const cssFile = assets.find((f) => f.endsWith(".css"));
     const css = fs.readFileSync(path.join(cache, "gt", "client", "assets", cssFile!), "utf8");
@@ -193,7 +197,9 @@ describe("watcher", () => {
       path.join(root, "apps", "pt", "src", "routes", "__root.tsx"),
       `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";\nimport appCss from "../index.css?url";\n\nexport const Route = createRootRoute({\n  head: () => ({ meta: [{ title: "pt" }], links: [{ rel: "stylesheet", href: appCss }] }),\n  component: () => (\n    <html>\n      <head><HeadContent /></head>\n      <body><Outlet /><Scripts /></body>\n    </html>\n  ),\n});\n`
     );
-    await collectEvents(base, `"type":"ready"`, 90000); // initial build settles
+    // Same ns-scoping as the global-theme test above — anchor to "pt" so a dashboard
+    // ready (ns "_dashboard") can't satisfy this wait.
+    await collectEvents(base, `"ns":"pt","source":"_platform","type":"ready"`, 90000); // initial build settles
     fs.writeFileSync(path.join(root, "apps", "pt", "theme.css"), ":root { --primary: #22cc78; }\n");
 
     // Poll the built CSS rather than a second collectEvents — unambiguous vs. racing the

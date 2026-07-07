@@ -81,7 +81,7 @@ Import: `import { events } from "@lodekit/sdk"`.
   The canonical live-data pattern:
   `events.watch({ type: "kv-store-change" }, () => queryClient.invalidateQueries({ queryKey: ["kv"] }))`
   — this replaces the removed `kv.watch`/`files.watch`.
-- `await events.list({ type?, after?, limit? })` — replay the app's stream (includes
+- `await events.list({ type?, after?, before?, limit? })` — replay the app's stream (includes
   platform events about the app: `building`/`ready`/`error`, `server-state`).
 - **Via MCP**: `lodekit_events` (`appId`, `type`, `after`, `limit`) reads the history —
   use it to check whether an expected event actually fired.

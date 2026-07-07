@@ -27,7 +27,7 @@ const emitBody = z
     payload: z.record(z.string(), z.unknown()).optional(),
     ttl: z.number().int().positive().max(TTL_MAX_S).optional(),
   })
-  .refine((b) => b.payload === undefined || JSON.stringify(b.payload).length <= PAYLOAD_MAX_BYTES, {
+  .refine((b) => b.payload === undefined || Buffer.byteLength(JSON.stringify(b.payload)) <= PAYLOAD_MAX_BYTES, {
     message: "payload too large (8 KB max)",
     path: ["payload"],
   });
