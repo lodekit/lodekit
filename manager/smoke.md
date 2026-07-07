@@ -11,7 +11,7 @@ fail). Build the artifact first: `pnpm --filter @lodekit/manager make`.
        itself, showing both apps go `building… → ready`.
 4. [ ] An app builds and serves: open Greenhouse from the dashboard — it renders the
        seeded conservatory page (e.g. "Fernando") — and interact with it (e.g. edit
-       `root/apps/greenhouse` source, watch the installed copy rebuild).
+       `~/Documents/Lodekit/apps/greenhouse` source, watch it rebuild).
 5. [ ] Never-clobber / delete-to-empty: delete both `~/Documents/Lodekit/apps/greenhouse`
        and `~/Documents/Lodekit/apps/welcome`, relaunch Lodekit.app — the app grid is
        empty and stays empty (no reinstall on this or any later launch).

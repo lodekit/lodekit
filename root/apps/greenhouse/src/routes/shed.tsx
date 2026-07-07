@@ -100,6 +100,7 @@ function Shed() {
           </p>
           <Button
             onClick={async () => {
+              setRoundTrip(null);
               const slug = await exportSnapshot();
               setSnapshot(slug);
               const blob = await files.get(slug);
