@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { kv, files } from "@lodekit/sdk";
+import { kv, files, events } from "@lodekit/sdk";
 import {
   Button,
   Input,
@@ -70,9 +70,9 @@ function ExpenseTrackerPage() {
   const [note, setNote] = useState("");
 
   // Canonical live-data pattern: store change events invalidate queries; Query refetches.
-  // useEffect (not module scope) keeps kv.watch off the SSR path — it's client-only.
+  // useEffect (not module scope) keeps events.watch off the SSR path — it's client-only.
   useEffect(
-    () => kv.watch("", () => void queryClient.invalidateQueries({ queryKey: ["kv"] })),
+    () => events.watch({ type: "kv-store-change" }, () => void queryClient.invalidateQueries({ queryKey: ["kv"] })),
     [queryClient]
   );
 
