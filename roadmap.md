@@ -226,17 +226,17 @@ above; the remainder:
   and a multi-instance setup would need per-instance registries. Since the Hono migration
   (stack-refresh slice), the registry holds writer callbacks, not Express `Response`
   objects — the facts above are unchanged.
-- **App worker respawn has no give-up** — a permanently-fatal server bundle respawns
-  forever at the 10s backoff cap (states/SSE churn error→starting→error). **Partially
-  addressed (2026-07-06, logging slice):** the `exit` handler's informative fatal stack no
-  longer gets overwritten — it now persists as a `lifecycle` error log record
-  (`docs/specs/2026-07-06-logging-design.md` §5). Still open: add a give-up-after-N or
-  wait-for-next-build latch.
-  Raised stakes since the events slice: each crash cycle now stores durable `server-state`
-  events (no ttl) — a permanent crash loop at the 10s backoff cap writes ~17k events/day,
-  and the event store's 50k row-cap trim is oldest-first across ALL namespaces, so a
-  broken app can evict other apps' event history well before the 30-day window. The
-  give-up latch (or a service ttl on lifecycle events) closes this.
+- **App worker respawn has no give-up** — ~~a permanently-fatal server bundle respawns
+  forever at the 10s backoff cap (states/SSE churn error→starting→error), and since the
+  events slice each crash cycle stores durable no-ttl `server-state` events (~17k/day at
+  the cap) that can evict other apps' history via the 50k oldest-first trim.~~
+  **Resolved (2026-07-07):** `fail()` latches after 5 consecutive crashes (the next
+  build restarts with a fresh counter — the watcher-rebuild path is the retry), and
+  `server-state` events carry the 7-day service ttl. Note the counter resets on `ready`,
+  so a boots-then-crashes-later loop never latches — acceptable for v1 (the roadmap
+  scenario was fatal-at-boot). Earlier partial fix (2026-07-06, logging slice): the
+  fatal stack persists as a `lifecycle` error log record
+  (`docs/specs/2026-07-06-logging-design.md` §5).
 - **`forwardToWorker` buffers request bodies with no size cap** — the scoped API's 100kb
   `bodyLimit` doesn't apply to app-worker forwards. Enforce a cap when the webhooks
   trigger lands.

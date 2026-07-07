@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { Worker } from "node:worker_threads";
 import { fileURLToPath } from "node:url";
 import type { Config } from "./config.js";
-import { emitEvent, PLATFORM_NS } from "./events.js";
+import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "./events.js";
 import { emitLog, createLogger } from "./logger.js";
 
 export type ServerState =
@@ -15,6 +15,19 @@ const ENTRY = path.join(path.dirname(fileURLToPath(import.meta.url)), "appWorker
 const REQUEST_TIMEOUT_MS = 30_000;
 const BACKOFF_BASE_MS = 1_000;
 const BACKOFF_CAP_MS = 10_000;
+// Give-up latch: a permanently-fatal bundle would otherwise respawn forever at the
+// backoff cap, churning states and durable server-state events. After this many
+// consecutive crashes, stay in error until the next build restarts the worker
+// (build.ts calls startAppWorker after every successful rebuild, resetting the count).
+const MAX_CONSECUTIVE_CRASHES = 5;
+
+let backoffBaseMs = BACKOFF_BASE_MS;
+let backoffCapMs = BACKOFF_CAP_MS;
+/** Test hook — shrink the respawn backoff so crash-loop tests run fast. */
+export function setBackoffForTest(baseMs = BACKOFF_BASE_MS, capMs = BACKOFF_CAP_MS): void {
+  backoffBaseMs = baseMs;
+  backoffCapMs = capMs;
+}
 
 interface Managed {
   worker: Worker;
@@ -49,7 +62,7 @@ export function getServerState(appId: string): ServerState | undefined { return 
 
 function setState(appId: string, state: ServerState): void {
   states.set(appId, state);
-  emitEvent({ ns: appId, source: PLATFORM_NS, type: "server-state", payload: { ...state } });
+  emitEvent({ ns: appId, source: PLATFORM_NS, type: "server-state", payload: { ...state }, ttl: CHANGE_FEED_TTL_S });
 }
 
 export function startAppWorker(cfg: Config, appId: string): void {
@@ -112,9 +125,18 @@ function fail(appId: string, m: Managed, message: string): void {
   m.pending.clear();
   for (const [, t] of m.pendingTasks) { clearTimeout(t.timer); t.resolve({ ok: false, message }); }
   m.pendingTasks.clear();
-  setState(appId, { status: "error", message });
+  const crashes = m.attempts + 1;
+  const latched = crashes >= MAX_CONSECUTIVE_CRASHES;
+  setState(appId, {
+    status: "error",
+    message: latched ? `${message}\n(gave up after ${crashes} consecutive crashes — the next build retries)` : message,
+  });
   emitLog("error", "lifecycle", message, undefined, appId);
-  const delay = Math.min(BACKOFF_BASE_MS * 2 ** m.attempts, BACKOFF_CAP_MS);
+  if (latched) {
+    emitLog("error", "lifecycle", `gave up after ${crashes} consecutive crashes; the next build retries`, undefined, appId);
+    return;
+  }
+  const delay = Math.min(backoffBaseMs * 2 ** m.attempts, backoffCapMs);
   m.respawn = setTimeout(() => {
     if (managed.get(appId) === m && !m.stopped) spawn(m.cfg, appId, m.attempts + 1);
   }, delay);

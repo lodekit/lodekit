@@ -3,11 +3,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import Database from "better-sqlite3";
 import { buildStart } from "../src/build.js";
 import {
   configureWorkers, startAppWorker, stopAppWorker, stopAllWorkers, forwardToWorker,
-  getServerState, workerForTest,
+  getServerState, workerForTest, setBackoffForTest,
 } from "../src/appWorker.js";
+import { CHANGE_FEED_TTL_S } from "../src/events.js";
+import { initEventStore, queryEvents, closeEventStoreForTest } from "../src/eventStore.js";
 import type { Config } from "../src/config.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -19,6 +22,7 @@ let cfg: Config;
 beforeAll(async () => {
   cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "lodekit-worker-"));
   cfg = { root: "", appsDir: "", dataDir: "", cacheDir, stateDir: "", port: 0, baseUrl: "" };
+  initEventStore(path.join(cacheDir, "data")); // capture server-state events durably
   await buildStart({
     rootDir: fixture, outDir: path.join(cacheDir, "start-app"),
     urlBase: "/start-app", appId: "start-app",
@@ -28,6 +32,7 @@ beforeAll(async () => {
 
 afterAll(() => {
   stopAllWorkers();
+  closeEventStoreForTest();
   fs.rmSync(cacheDir, { recursive: true, force: true });
 });
 
@@ -93,5 +98,40 @@ describe("appWorker", () => {
       message: "server bundle missing (not built)",
     });
     expect(workerForTest("not-built")).toBeUndefined();
+  });
+
+  it("gives up respawning after 5 consecutive boot failures; the next build retries", async () => {
+    // A bundle that throws at import is permanently fatal — every boot crashes.
+    const dir = path.join(cacheDir, "crash-app", "server");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "server.js"), 'throw new Error("boom");\nexport default {};\n');
+    setBackoffForTest(50, 100);
+    try {
+      const boots = () =>
+        queryEvents({ ns: "crash-app", type: "server-state", limit: 1000 })
+          .records.filter((r) => r.payload?.status === "starting").length;
+      startAppWorker(cfg, "crash-app");
+      await waitFor(() => boots() >= 5, 15_000);
+      // Latched: past the backoff cap, no 6th spawn happens.
+      await new Promise((r) => setTimeout(r, 1_000));
+      expect(boots()).toBe(5);
+      expect(getServerState("crash-app")?.status).toBe("error");
+      // A rebuild restarts the worker with a fresh counter — the latch clears.
+      startAppWorker(cfg, "crash-app");
+      await waitFor(() => boots() >= 6, 5_000);
+    } finally {
+      setBackoffForTest();
+      stopAppWorker("crash-app");
+    }
+  }, 30_000);
+
+  it("server-state events carry the 7-day service ttl", () => {
+    startAppWorker(cfg, "not-built-ttl"); // missing bundle → emits an error server-state event
+    const db = new Database(path.join(cacheDir, "data", "_platform", "events.sqlite"), { readonly: true });
+    const row = db
+      .prepare("SELECT ts, expires_at FROM events WHERE ns = ? AND type = 'server-state' ORDER BY id DESC LIMIT 1")
+      .get("not-built-ttl") as { ts: number; expires_at: number | null };
+    db.close();
+    expect(row.expires_at).toBe(row.ts + CHANGE_FEED_TTL_S * 1000);
   });
 });

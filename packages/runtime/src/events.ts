@@ -10,7 +10,8 @@ export const TYPE_RE = /^[a-z0-9-]+$/;
 export const PAYLOAD_MAX_BYTES = 8 * 1024;
 export const TTL_MAX_S = 30 * 24 * 60 * 60;
 // Change-feed events (kv/file-store) are the bus's noisiest tenant — a service-set
-// shorter ttl keeps the backed-up file lean (durable ≠ forever, spec §4).
+// shorter ttl keeps the backed-up file lean (durable ≠ forever, spec §4). Lifecycle
+// server-state events ride the same ttl (crash cycles are churn of the same kind).
 export const CHANGE_FEED_TTL_S = 7 * 24 * 60 * 60;
 
 export interface EmitInput {
