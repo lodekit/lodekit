@@ -194,11 +194,10 @@ function DashboardHome() {
         return;
       }
       if (d.type === "kv-store-change") void queryClient.invalidateQueries({ queryKey: ["kv", d.ns] });
-    });
-    es.addEventListener("tasks-change", (e) => {
-      const d = JSON.parse((e as MessageEvent).data) as { appId: string };
-      void queryClient.invalidateQueries({ queryKey: ["tasks", d.appId] });
-      void queryClient.invalidateQueries({ queryKey: ["task-runs", d.appId] });
+      if (d.type === "tasks-change") {
+        void queryClient.invalidateQueries({ queryKey: ["tasks", d.ns] });
+        void queryClient.invalidateQueries({ queryKey: ["task-runs", d.ns] });
+      }
     });
     return () => es.close();
   }, [queryClient]);
