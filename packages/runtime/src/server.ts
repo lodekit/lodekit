@@ -11,12 +11,14 @@ import { appHost } from "./appHost.js";
 import { startWatcher } from "./watcher.js";
 import { buildAll, buildDashboard, getDashboardState, idleBuilds, uiDir } from "./build.js";
 import { isValidAppId, scanApps } from "./registry.js";
-import { configureWorkers, forwardToWorker, stopAllWorkers } from "./appWorker.js";
+import { configureWorkers, forwardToWorker, stopAllWorkers, onTasksManifest } from "./appWorker.js";
 import { every, stop } from "./scheduler.js";
 import { sweepAllAndBroadcast } from "./services/kv-store.js";
 import { sweepFiles } from "./services/file-store.js";
 import { initLogStore, sweepLogStore } from "./logStore.js";
 import { createLogger } from "./logger.js";
+import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskEngine.js";
+import { sweepAllTaskRuns } from "./services/tasks.js";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
@@ -128,15 +130,22 @@ export async function start(cfg: Config): Promise<Server> {
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
   const addr = server.address();
   configureWorkers(`http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : cfg.port}`);
+  initTaskEngine(cfg);
+  onTasksManifest(registerManifest);
+  recoverInterruptedRuns();
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
   const watcher = await startWatcher(cfg);
   every("kv-store-sweep", 60_000, sweepAllAndBroadcast);
   every("file-store-sweep", 60_000, () => sweepFiles(cfg));
   every("log-sweep", 60_000, () => sweepLogStore());
+  every("tasks-dispatch", 1_000, dispatchTasks);
+  every("tasks-sweep", 60_000, sweepAllTaskRuns);
   server.on("close", () => {
     stop("kv-store-sweep");
     stop("file-store-sweep");
     stop("log-sweep");
+    stop("tasks-dispatch");
+    stop("tasks-sweep");
     // Order matters: close the watcher (no new build triggers), let in-flight builds
     // finish — each may (re)start its app worker on success — and only THEN stop every
     // worker. Stopping first would let the drain resurrect a worker that outlives close;
