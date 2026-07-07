@@ -8,6 +8,7 @@ node_modules/
 data/
 root/data/
 .cache/
+.tanstack/
 manager/out/
 manager/.vite/
 pnpm-debug.log*
