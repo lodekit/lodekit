@@ -182,8 +182,8 @@ export async function forwardToWorker(appId: string, request: Request): Promise<
   await m.ready; // rejects on fatal, but only while pending — a no-op once already resolved
   // A worker that crashed *after* becoming ready leaves `m` in place (respawn replaces the
   // managed entry later, on its backoff timer) with `ready` already settled — re-check here
-  // or postMessage would silently go to a dead Worker and hang until the 30s timeout instead
-  // of failing fast.
+  // or postMessage would silently go to a dead Worker and hang until the request timeout
+  // instead of failing fast.
   if (m.failed || m.stopped) throw new Error(`app worker for ${appId} is down`);
   const id = m.nextId++;
   const body =

@@ -30,6 +30,14 @@ export class SettingsError extends Error {
   }
 }
 
+/** Unknown-key error — mapped to HTTP 404 by the router (spec §7). */
+export class SettingsNotFoundError extends SettingsError {
+  constructor(message?: string) {
+    super(message);
+    this.name = "SettingsNotFoundError";
+  }
+}
+
 // ---------- per-app storage (defs + values) ----------
 
 const ensured = new WeakSet<Database.Database>();
@@ -184,7 +192,8 @@ export function getPlatformValue(key: string): unknown {
 }
 
 export function setPlatformValue(key: string, value: unknown): void {
-  if (!platformDb) throw new SettingsError("settings store unavailable");
+  // Not a client error — an internal fault (routes 500, per initSettingsStore's promise).
+  if (!platformDb) throw new Error("settings store unavailable");
   platformDb.prepare(
     `INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
@@ -193,7 +202,7 @@ export function setPlatformValue(key: string, value: unknown): void {
 }
 
 export function deletePlatformValue(key: string): void {
-  if (!platformDb) throw new SettingsError("settings store unavailable");
+  if (!platformDb) throw new Error("settings store unavailable");
   platformDb.prepare("DELETE FROM settings WHERE key = ?").run(key);
   invalidateSettingsCache();
 }
@@ -219,7 +228,7 @@ export function getEffective(key: string, appId?: string): unknown {
   if (platform !== undefined) {
     try { resolved = validateValue(setting.field, platform); } catch { /* drift → keep default */ }
   }
-  if (scopedApp && dataDirRef) {
+  if (scopedApp && dataDirRef && fs.existsSync(path.join(dataDirRef, scopedApp, "db.sqlite"))) {
     const override = getValue(getSettingsDb(dataDirRef, scopedApp), key);
     if (override !== undefined) {
       try { resolved = validateValue(setting.field, override); } catch { /* drift → keep platform/default */ }
@@ -350,7 +359,10 @@ function readDeclared(db: Database.Database, key: string): { found: boolean; val
 }
 
 export const settingsRoutes = new Hono<SettingsEnv>()
-  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, err instanceof SettingsError ? 400 : 500))
+  .onError((err, c) => c.json(
+    { error: err instanceof Error ? err.message : String(err) },
+    err instanceof SettingsNotFoundError ? 404 : err instanceof SettingsError ? 400 : 500
+  ))
   .get("/", (c) => {
     const db = c.var.settingsDb;
     const declared = listAppDefs(db).map((d) => {
@@ -396,7 +408,7 @@ export const settingsRoutes = new Hono<SettingsEnv>()
   })
   .delete("/:key", zValidator("param", keyParam, validationHook), (c) => {
     const { key } = c.req.valid("param");
-    fieldForAppWrite(c.var.settingsDb, key); // 400 on unknown/global — deletes are gated like writes
+    fieldForAppWrite(c.var.settingsDb, key); // 404 on unknown, 400 on global — deletes are gated like writes
     deleteValue(c.var.settingsDb, key);
     notifySettingsWrite(key, c.var.appId);
     emitSettingsChange(c.var.appId, key);
@@ -407,12 +419,12 @@ export const settingsRoutes = new Hono<SettingsEnv>()
 function fieldForAppWrite(db: Database.Database, key: string): SettingField {
   if (key.includes(".")) {
     const s = PLATFORM_SETTINGS[key];
-    if (!s) throw new SettingsError(`unknown setting "${key}"`);
+    if (!s) throw new SettingsNotFoundError(`unknown setting "${key}"`);
     if (s.scope !== "per-app") throw new SettingsError(`"${key}" applies to all apps and cannot be overridden`);
     return s.field;
   }
   const def = getAppDef(db, key);
-  if (!def) throw new SettingsError(`unknown setting "${key}"`);
+  if (!def) throw new SettingsNotFoundError(`unknown setting "${key}"`);
   if (!def.field) throw new SettingsError(`"${key}" has a declaration error: ${def.error}`);
   return def.field;
 }

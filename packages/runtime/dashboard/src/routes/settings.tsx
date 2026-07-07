@@ -34,7 +34,11 @@ async function write(url: string, value: unknown | undefined) {
 }
 
 // One schema-driven control per field type (spec §4's type → component table).
+// The draft/commit-on-blur state (number/string/duration) must be an unconditional
+// hook — SettingRow remounts this component (key'd on type+effective) on every
+// external change, so every render here calls the same hooks regardless of branch.
 function FieldControl({ field, value, onChange }: { field: Field; value: unknown; onChange: (v: unknown) => void }) {
+  const [draft, setDraft] = useState(String(value));
   if (field.type === "boolean") {
     return <Switch checked={Boolean(value)} onCheckedChange={(v) => onChange(v)} />;
   }
@@ -49,7 +53,6 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
     );
   }
   if (field.type === "number") {
-    const [draft, setDraft] = useState(String(value));
     const commit = () => {
       const n = Number(draft);
       if (draft.trim() !== "" && Number.isFinite(n)) { onChange(n); return; }
@@ -65,7 +68,6 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
     );
   }
   // string + duration: text input; the server validates the duration grammar.
-  const [draft, setDraft] = useState(String(value));
   const commit = () => onChange(draft);
   return (
     <Input
@@ -101,7 +103,7 @@ function SettingRow(props: {
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <FieldControl key={String(props.effective)} field={props.field} value={props.effective} onChange={commit} />
+        <FieldControl key={`${props.field.type}:${String(props.effective)}`} field={props.field} value={props.effective} onChange={commit} />
         {modified && (
           <Button variant="ghost" size="sm" onClick={() => commit(undefined)}>Reset</Button>
         )}

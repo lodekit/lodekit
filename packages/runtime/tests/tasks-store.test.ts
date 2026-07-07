@@ -5,7 +5,7 @@ import path from "node:path";
 import Database from "better-sqlite3";
 import { getAppDb } from "../src/db.js";
 import {
-  ensureSchema, applyManifest, listDefs, getDef, setHighWater, hasTasks,
+  ensureSchema, applyManifest, getDef, setHighWater, hasTasks,
   insertRun, claimNextDue, finishRun, markInterrupted, listRuns, getRun, lastRunOf,
   cancelRun, sweepRuns, getTasksDb,
   type TaskDefRow,

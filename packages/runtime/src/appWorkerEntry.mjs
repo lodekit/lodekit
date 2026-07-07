@@ -79,9 +79,11 @@ if (workerData.settingsEntry) {
     if (def && def.__lodekitSettings === true && def.fields && typeof def.fields === "object") {
       parentPort.postMessage({ type: "settings-manifest", fields: { ...def.fields } });
     } else {
+      // Missing/mistagged default export is an error, not an empty manifest —
+      // an empty manifest would wholesale-prune previously stored values.
       parentPort.postMessage({
         type: "settings-manifest", fields: {},
-        ...(def !== undefined ? { error: "src/settings.ts default export is not defineSettings(...)" } : {}),
+        error: "src/settings.ts has no defineSettings(...) default export",
       });
     }
   } catch (e) {

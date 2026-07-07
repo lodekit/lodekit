@@ -9,7 +9,7 @@ import {
   getTasksDb, applyManifest, insertRun, claimNextDue, getRun, getDef, listRuns,
 } from "../src/services/tasks.js";
 import {
-  initSettingsStore, closeSettingsStoreForTest, getSettingsDb, setValue, invalidateSettingsCache,
+  initSettingsStore, closeSettingsStoreForTest, getSettingsDb, setValue, invalidateSettingsCache, getEffective,
 } from "../src/services/settings.js";
 import type { TaskRunResult } from "../src/appWorker.js";
 
@@ -187,6 +187,11 @@ describe("taskEngine", () => {
   it("apps without tasks never get a data dir", () => {
     registerManifest("plain", []);
     expect(fs.existsSync(path.join(cfg.dataDir, "plain"))).toBe(false);
+    // Same invariant for settings' per-app effective reads (services/settings.ts
+    // getEffective): resolving an unset per-app override must not mkdir the app's data dir.
+    initSettingsStore(cfg.dataDir);
+    getEffective("hosting.request_timeout", "plain");
+    expect(fs.existsSync(path.join(cfg.dataDir, "plain", "db.sqlite"))).toBe(false);
   });
 
   it("an app's tasks.default_retries override changes the retry budget of unspecified tasks", async () => {

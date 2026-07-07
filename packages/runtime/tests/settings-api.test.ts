@@ -95,7 +95,7 @@ describe("app settings API", () => {
     expect(doc.overrides.find((o: { key: string }) => o.key === "tasks.default_retries").override).toBe(1);
     expect((await put(api("/tasks.default_retries"), 99)).status).toBe(400);  // max 20
     expect((await put(api("/tasks.dispatch_poll"), "5s")).status).toBe(400);  // global scope
-    expect((await put(api("/nope.nope"), 1)).status).toBe(400);
+    expect((await put(api("/nope.nope"), 1)).status).toBe(404);
     expect((await fetch(api("/tasks.default_retries"), { method: "DELETE" })).status).toBe(200);
   });
 
