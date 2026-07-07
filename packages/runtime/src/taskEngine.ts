@@ -120,22 +120,29 @@ function dispatchApp(appId: string): void {
 
 async function executeRun(appId: string, run: TaskRunRow): Promise<void> {
   inflight.add(appId);
-  emitTasksChange(appId, { task: run.task, runId: run.id, state: "running" });
-  const db = getTasksDb(cfg!.dataDir, appId);
-  const def = getDef(db, run.task)!; // claimNextDue joins on a live def
-  let result: TaskRunResult;
   try {
-    result = await deps.invoke(
-      appId,
-      run.task,
-      run.payload === null ? undefined : (JSON.parse(run.payload) as unknown),
-      def.timeoutMs
-    );
+    emitTasksChange(appId, { task: run.task, runId: run.id, state: "running" });
+    const db = getTasksDb(cfg!.dataDir, appId);
+    const def = getDef(db, run.task)!; // claimNextDue joins on a live def
+    let result: TaskRunResult;
+    try {
+      result = await deps.invoke(
+        appId,
+        run.task,
+        run.payload === null ? undefined : (JSON.parse(run.payload) as unknown),
+        def.timeoutMs
+      );
+    } catch (e) {
+      result = { ok: false, message: e instanceof Error ? (e.stack ?? e.message) : String(e) };
+    }
+    const outcome = finishRun(db, run, result, def, deps.now());
+    emitTasksChange(appId, { task: run.task, runId: run.id, state: outcome.state });
   } catch (e) {
-    result = { ok: false, message: e instanceof Error ? (e.stack ?? e.message) : String(e) };
+    // A throw here (finishRun write failure, broadcast error) leaves the row
+    // 'running' — boot recovery reconciles it. Never let it wedge dispatch.
+    console.error(`[tasks] run #${run.id} (${appId}/${run.task}) failed to record:`, e);
+  } finally {
+    inflight.delete(appId);
+    dispatchTasks(); // chain the app's next due run without waiting for the poll
   }
-  const outcome = finishRun(db, run, result, def, deps.now());
-  emitTasksChange(appId, { task: run.task, runId: run.id, state: outcome.state });
-  inflight.delete(appId);
-  dispatchTasks(); // chain the app's next due run without waiting for the poll
 }
