@@ -56,6 +56,20 @@ values, Files for bytes (reports, downloads, images). Import: `import { files } 
   writes go through `files.put`). Use `url` to verify what's served or to hand
   the person a link.
 
+## Logs (log-store)
+
+Per-app and platform structured log records — use these to debug what an app is actually
+doing at runtime. Import: `import { logs } from "@lodekit/sdk"`.
+
+- `logs.info(message, fields?)` — and `debug`/`warn`/`error` — fire-and-forget; works in
+  server functions and in the browser.
+- `console.log`/`warn`/`error`/`debug` in server code is captured automatically — no
+  explicit call needed for ordinary debugging output.
+- **Debugging step:** after building or changing an app, check its runtime behavior with
+  the `lodekit_logs` MCP tool (`appId`, optional `level`/`q`). Build failures, server
+  crashes with stacks, and request access logs all land there — read them before assuming
+  a change worked.
+
 ## Design system classes
 
 `lk-container` (page wrapper), `lk-h1`, `lk-muted`, `lk-card`, `lk-grid`, `lk-row`,

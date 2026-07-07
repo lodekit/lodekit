@@ -194,8 +194,10 @@ above; the remainder:
   (stack-refresh slice), the registry holds writer callbacks, not Express `Response`
   objects — the facts above are unchanged.
 - **App worker respawn has no give-up** — a permanently-fatal server bundle respawns
-  forever at the 10s backoff cap (states/SSE churn error→starting→error; the `exit`
-  handler also overwrites the informative fatal stack). Add a give-up-after-N or
+  forever at the 10s backoff cap (states/SSE churn error→starting→error). **Partially
+  addressed (2026-07-06, logging slice):** the `exit` handler's informative fatal stack no
+  longer gets overwritten — it now persists as a `lifecycle` error log record
+  (`docs/specs/2026-07-06-logging-design.md` §5). Still open: add a give-up-after-N or
   wait-for-next-build latch.
 - **`forwardToWorker` buffers request bodies with no size cap** — the scoped API's 100kb
   `bodyLimit` doesn't apply to app-worker forwards. Enforce a cap when the webhooks
@@ -260,3 +262,22 @@ above; the remainder:
 - **Runtime auto-install** — Lodekit checks for / installs Node and other runtime deps.
 - **Image/file app icons** — beyond emoji in `lodekit.json`.
 - **Monorepo init** — `lodekit init` to set up a pre-existing Lodekit-apps git monorepo.
+- **Log retention as dashboard settings** — retention values (platform log: 7 days / 200k
+  rows; manager's dated text logs: 7 days) are constants for the logging slice; make them
+  dashboard-configurable (`docs/specs/2026-07-06-logging-design.md` §7).
+- **Derived metrics from the log schema** — request counts, error rates, and build times
+  are derivable from the log schema's conventional `fields` keys (`duration_ms`, `status`)
+  via plain SQL; deferred by the logging spec (`docs/specs/2026-07-06-logging-design.md`
+  §1) — no schema change, no pipeline now.
+- **`~/.cache/lodekit` abandoned** — the runtime's cache moved to
+  `~/Library/Caches/Lodekit` under the macOS-native paths canon
+  (`docs/specs/2026-07-06-logging-design.md` §3); the old XDG-style dir is not migrated,
+  safe to delete manually, regenerable by definition.
+- **"platform" is a reserved app id but not rejected** — `GET /api/logs?app=platform`
+  treats `app=platform` as the platform's own records, but `isValidAppId`/scaffold don't
+  reject an actual app id of `platform` — such an app's log records would be invisible in
+  the global logs view. Reject it at scaffold/registry when convenient.
+- **Manager log streams have no `'error'` listener** — `fs.createWriteStream` in
+  `manager/src/logs.js` (now one fresh stream per uptime-day) attaches no `'error'`
+  handler; a disk error would crash the Electron main process. Attach handlers / degrade
+  gracefully.

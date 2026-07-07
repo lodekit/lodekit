@@ -90,7 +90,7 @@ One cloud battery — a capability the runtime provides to apps: storage, secret
 _Avoid_: capability, feature, component (components are UI), battery (marketing metaphor, not the domain word)
 
 **Service catalog**:
-The full set of services Lodekit offers, named AWS-style: kv-store (the Store), relational-store (the Database, currently parked), file-store (Files), secret-store, task-queue and task-schedule (Tasks), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
+The full set of services Lodekit offers, named AWS-style: kv-store (the Store), relational-store (the Database, currently parked), file-store (Files), log-store (Logs), secret-store, task-queue and task-schedule (Tasks), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
 _Avoid_: the SDK (the SDK is the layer into the catalog, not the catalog), feature list
 
 The shipped and near-term services:
@@ -98,7 +98,7 @@ The shipped and near-term services:
 **Store**:
 An app's per-app key–value store of JSON values (the kv-store service), reached through the
 SDK as the `kv` handle (`import { kv } from "@lodekit/sdk"`; catalog-name → handle mapping:
-kv-store→kv, relational-store→db, file-store→files, secret-store→secrets). The first storage
+kv-store→kv, relational-store→db, file-store→files, secret-store→secrets, log-store→logs). The first storage
 service; joined by Files (file-store) in 0.x. Its second iteration shipped as the v0.1 storage
 slice (`docs/specs/2026-07-03-kv-store-v2-design.md`). Distinct from the Cache and from
 Settings — see Flagged ambiguities.
@@ -111,6 +111,13 @@ live as real, Finder-browsable files under the app's data tree, date-foldered, w
 the per-app database holds the authoritative index
 (`docs/specs/2026-07-06-file-store-design.md`).
 _Avoid_: blobs (the retired working name), uploads, attachments, assets
+
+**Logs**:
+Per-app and platform structured log records (the log-store service), levels debug/info/
+warn/error, emitted via the `logs` handle or captured from app console output, stored in
+the platform State, retained 7 days / 200k records, viewable in the dashboard Logs view
+and over MCP (`lodekit_logs`).
+_Avoid_: console, output, telemetry
 
 **Database**:
 An app's per-app SQL database (relational-store). **Parked**: retired in the v0.1 storage iteration; returns to the catalog once a schemas/migrations story exists.
@@ -145,6 +152,13 @@ _Avoid_: the project, the data
 **Cache**:
 Regenerable built output, kept outside the Lodekit root and never backed up. Deleting it costs only a rebuild.
 _Avoid_: build dir, dist, output, storage
+
+**State**:
+Machine-local operational data the platform keeps about itself — currently the logs
+database. Lives outside the Lodekit root (`~/Library/Application Support/Lodekit`,
+`LODEKIT_STATE_DIR`), never backed up. Unlike the Cache it isn't regenerable; unlike
+the Data tree it isn't precious — losing it costs history, never apps or data.
+_Avoid_: app data (that's the Data tree), cache, logs dir
 
 ### Building & serving
 
