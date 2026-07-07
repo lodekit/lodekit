@@ -65,6 +65,18 @@ describe("logStore", () => {
     expect(records.map((r) => r.message)).toEqual(["new4", "new3", "new2"]);
   });
 
+  it("appAges: an app's own retention age wins over the global age", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1_000_000);
+    insertLog({ level: "info", source: "t", message: "p" });
+    insertLog({ level: "info", source: "t", appId: "a", message: "a" });
+    insertLog({ level: "info", source: "t", appId: "b", message: "b" });
+    vi.setSystemTime(1_000_000 + 3 * 86_400_000); // all three now 3 days old
+    sweepLogStore({ maxAgeMs: 2 * 86_400_000, appAges: new Map([["a", 7 * 86_400_000]]) });
+    const left = queryLogs({}).records.map((r) => r.appId);
+    expect(left).toEqual(["a"]); // platform + "b" swept by the 2d global age; "a" kept by its 7d override
+  });
+
   it("degrades instead of throwing when the state dir is unusable", () => {
     closeLogStoreForTest();
     const err = vi.spyOn(process.stderr, "write").mockImplementation(() => true);

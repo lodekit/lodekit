@@ -121,13 +121,21 @@ export function queryEvents(opts: EventQuery = {}): { records: EventRecord[]; ne
   }
 }
 
-export function sweepEventStore(opts: { maxAgeMs?: number; maxRows?: number } = {}): number {
+export function sweepEventStore(opts: { maxAgeMs?: number; maxRows?: number; nsAges?: Map<string, number> } = {}): number {
   if (!db) return 0;
   const maxAgeMs = opts.maxAgeMs ?? RETENTION_MAX_AGE_MS;
   const maxRows = opts.maxRows ?? RETENTION_MAX_ROWS;
+  const nsAges = opts.nsAges ?? new Map<string, number>();
   try {
     let deleted = db.prepare("DELETE FROM events WHERE expires_at IS NOT NULL AND expires_at <= ?").run(Date.now()).changes;
-    deleted += db.prepare("DELETE FROM events WHERE ts < ?").run(Date.now() - maxAgeMs).changes;
+    // Per-ns override ages first, then the global age for every other ns.
+    for (const [ns, ageMs] of nsAges) {
+      deleted += db.prepare("DELETE FROM events WHERE ns = ? AND ts < ?").run(ns, Date.now() - ageMs).changes;
+    }
+    const skip = [...nsAges.keys()];
+    deleted += db
+      .prepare(`DELETE FROM events WHERE ts < ? AND ns NOT IN (${skip.map(() => "?").join(",") || "''"})`)
+      .run(Date.now() - maxAgeMs, ...skip).changes;
     // Row at OFFSET maxRows (newest-first) is the first over the cap; NULL subselect (under cap) deletes nothing.
     deleted += db
       .prepare("DELETE FROM events WHERE id <= (SELECT id FROM events ORDER BY id DESC LIMIT 1 OFFSET ?)")

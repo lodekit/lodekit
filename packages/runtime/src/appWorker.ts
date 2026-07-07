@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { Config } from "./config.js";
 import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "./events.js";
 import { emitLog, createLogger } from "./logger.js";
+import { effectiveMs } from "./services/settings.js";
 
 export type ServerState =
   | { status: "starting" }
@@ -12,21 +13,18 @@ export type ServerState =
   | { status: "error"; message: string };
 
 const ENTRY = path.join(path.dirname(fileURLToPath(import.meta.url)), "appWorkerEntry.mjs");
-const REQUEST_TIMEOUT_MS = 30_000;
-const BACKOFF_BASE_MS = 1_000;
-const BACKOFF_CAP_MS = 10_000;
 // Give-up latch: a permanently-fatal bundle would otherwise respawn forever at the
 // backoff cap, churning states and durable server-state events. After this many
 // consecutive crashes, stay in error until the next build restarts the worker
 // (build.ts calls startAppWorker after every successful rebuild, resetting the count).
 const MAX_CONSECUTIVE_CRASHES = 5;
 
-let backoffBaseMs = BACKOFF_BASE_MS;
-let backoffCapMs = BACKOFF_CAP_MS;
+// Backoff comes from the effective hosting.restart_backoff_* settings per app;
+// the test hook pins it so crash-loop tests run fast (no args = back to settings).
+let backoffForTest: { baseMs: number; capMs: number } | null = null;
 /** Test hook — shrink the respawn backoff so crash-loop tests run fast. */
-export function setBackoffForTest(baseMs = BACKOFF_BASE_MS, capMs = BACKOFF_CAP_MS): void {
-  backoffBaseMs = baseMs;
-  backoffCapMs = capMs;
+export function setBackoffForTest(baseMs?: number, capMs?: number): void {
+  backoffForTest = baseMs === undefined ? null : { baseMs, capMs: capMs ?? baseMs };
 }
 
 interface Managed {
@@ -149,7 +147,9 @@ function fail(appId: string, m: Managed, message: string): void {
     emitLog("error", "lifecycle", `gave up after ${crashes} consecutive crashes; the next build retries`, undefined, appId);
     return;
   }
-  const delay = Math.min(backoffBaseMs * 2 ** m.attempts, backoffCapMs);
+  const delay = backoffForTest
+    ? Math.min(backoffForTest.baseMs * 2 ** m.attempts, backoffForTest.capMs)
+    : Math.min(effectiveMs("hosting.restart_backoff_base", appId) * 2 ** m.attempts, effectiveMs("hosting.restart_backoff_cap", appId));
   m.respawn = setTimeout(() => {
     if (managed.get(appId) === m && !m.stopped) spawn(m.cfg, appId, m.attempts + 1);
   }, delay);
@@ -190,11 +190,12 @@ export async function forwardToWorker(appId: string, request: Request): Promise<
     request.method === "GET" || request.method === "HEAD"
       ? null
       : new Uint8Array(await request.arrayBuffer()); // bodies are small (100kb-class); streams come back, not in
+  const timeoutMs = effectiveMs("hosting.request_timeout", appId);
   return await new Promise<Response>((resolve, reject) => {
     const timer = setTimeout(() => {
       m.pending.delete(id);
-      reject(new Error(`app worker request timed out after ${REQUEST_TIMEOUT_MS / 1000}s`));
-    }, REQUEST_TIMEOUT_MS);
+      reject(new Error(`app worker request timed out after ${Math.round(timeoutMs / 1000)}s`));
+    }, timeoutMs);
     timer.unref();
     m.pending.set(id, { resolve, reject, timer });
     m.worker.postMessage(

@@ -17,7 +17,11 @@ import { sweepAllAndBroadcast } from "./services/kv-store.js";
 import { sweepFiles } from "./services/file-store.js";
 import { initLogStore, sweepLogStore } from "./logStore.js";
 import { initEventStore, sweepEventStore } from "./eventStore.js";
-import { initSettingsStore, registerSettingsManifest } from "./services/settings.js";
+import {
+  initSettingsStore, registerSettingsManifest,
+  effectiveMs, effectiveNumber, onSettingsWrite, collectAppOverrides,
+} from "./services/settings.js";
+import { parseDuration } from "./duration.js";
 import { createLogger } from "./logger.js";
 import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskEngine.js";
 import { sweepAllTaskRuns } from "./services/tasks.js";
@@ -142,12 +146,33 @@ export async function start(cfg: Config): Promise<Server> {
   recoverInterruptedRuns();
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
   const watcher = await startWatcher(cfg);
-  every("kv-store-sweep", 60_000, sweepAllAndBroadcast);
-  every("file-store-sweep", 60_000, () => sweepFiles(cfg));
-  every("log-sweep", 60_000, () => sweepLogStore());
-  every("event-sweep", 60_000, () => sweepEventStore());
-  every("tasks-dispatch", 1_000, dispatchTasks);
-  every("tasks-sweep", 60_000, sweepAllTaskRuns);
+  // Loop intervals and retention are settings (spec §6): every() is last-wins by
+  // name, so re-arming on a relevant write is a plain re-registration. Retention
+  // inputs are resolved per sweep call, not at arm time.
+  const armLoops = () => {
+    every("kv-store-sweep", effectiveMs("kv.sweep_interval"), sweepAllAndBroadcast);
+    every("file-store-sweep", effectiveMs("files.sweep_interval"), () => sweepFiles(cfg));
+    every("log-sweep", effectiveMs("logs.sweep_interval"), () =>
+      sweepLogStore({
+        maxAgeMs: effectiveMs("logs.retention_age"),
+        maxRows: effectiveNumber("logs.retention_max_rows"),
+        appAges: new Map([...collectAppOverrides(cfg, "logs.retention_age")].map(([a, v]) => [a, parseDuration(v as string)])),
+      })
+    );
+    every("event-sweep", effectiveMs("events.sweep_interval"), () =>
+      sweepEventStore({
+        maxAgeMs: effectiveMs("events.retention_age"),
+        maxRows: effectiveNumber("events.retention_max_rows"),
+        nsAges: new Map([...collectAppOverrides(cfg, "events.retention_age")].map(([a, v]) => [a, parseDuration(v as string)])),
+      })
+    );
+    every("tasks-dispatch", effectiveMs("tasks.dispatch_poll"), dispatchTasks);
+    every("tasks-sweep", effectiveMs("tasks.sweep_interval"), sweepAllTaskRuns);
+  };
+  armLoops();
+  onSettingsWrite((key) => {
+    if (key.endsWith(".sweep_interval") || key === "tasks.dispatch_poll") armLoops();
+  });
   server.on("close", () => {
     stop("kv-store-sweep");
     stop("file-store-sweep");

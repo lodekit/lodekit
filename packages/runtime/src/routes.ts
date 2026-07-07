@@ -12,6 +12,7 @@ import { kvRoutes, withDb, CATALOG_NAME } from "./services/kv-store.js";
 import { filesRoutes, withFiles, CATALOG_NAME as FILES } from "./services/file-store.js";
 import { logRoutes, withLogs, logsQuery, CATALOG_NAME as LOGS } from "./services/log-store.js";
 import { queryLogs } from "./logStore.js";
+import { effectiveNumber } from "./services/settings.js";
 import { tasksRoutes, withTasks, CATALOG_NAME as TASKS } from "./services/tasks.js";
 import { eventRoutes, withEvents, eventsQuery, CATALOG_NAME as EVENTS } from "./services/event-store.js";
 import { queryEvents } from "./eventStore.js";
@@ -61,7 +62,7 @@ export function apiRoutes(cfg: Config) {
     // records — the internal-namespace sentinel (spec 2026-07-07-events §2/§8).
     .get("/logs", zValidator("query", logsQuery.extend({ app: z.string().optional() }), validationHook), (c) => {
       const { app, level, source, before, limit, q } = c.req.valid("query");
-      return c.json(queryLogs({ app, level, source, before, limit, q }));
+      return c.json(queryLogs({ app, level, source, before, q, limit: limit ?? effectiveNumber("logs.list_limit", app !== "_platform" ? app : undefined) }));
     })
     .use(`/apps/:appId/${TASKS}/*`, withTasks(cfg))
     .route(`/apps/:appId/${TASKS}`, tasksRoutes)

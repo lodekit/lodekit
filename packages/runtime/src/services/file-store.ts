@@ -13,6 +13,7 @@ import type { Config } from "../config.js";
 import { isValidAppId } from "../registry.js";
 import { validationHook } from "../validation.js";
 import { emitLog } from "../logger.js";
+import { effectiveNumber } from "./settings.js";
 
 export const CATALOG_NAME = "file-store";
 
@@ -480,9 +481,10 @@ function requestBody(c: Context<FilesEnv>): NodeJS.ReadableStream {
 // every thrown error (FilesError included) maps to 400 { error }.
 export const filesRoutes = new Hono<FilesEnv>()
   .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
-  .get("/", zValidator("query", listQuery, validationHook), (c) =>
-    c.json(listFiles(c.var.files, c.req.valid("query")))
-  )
+  .get("/", zValidator("query", listQuery, validationHook), (c) => {
+    const { prefix, limit, cursor } = c.req.valid("query");
+    return c.json(listFiles(c.var.files, { prefix, cursor, limit: limit ?? effectiveNumber("files.list_limit", c.var.files.appId) }));
+  })
   .post("/", zValidator("query", ttlQuery, validationHook), async (c) => {
     const { ttl } = c.req.valid("query");
     return c.json(await putFile(c.var.files, requestBody(c), uploadOpts(c, ttl)), 201);

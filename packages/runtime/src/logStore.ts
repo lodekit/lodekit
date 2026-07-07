@@ -134,12 +134,22 @@ export function queryLogs(opts: LogQuery = {}): { records: LogRecord[]; nextBefo
   }
 }
 
-export function sweepLogStore(opts: { maxAgeMs?: number; maxRows?: number } = {}): number {
+export function sweepLogStore(opts: { maxAgeMs?: number; maxRows?: number; appAges?: Map<string, number> } = {}): number {
   if (!db) return 0;
   const maxAgeMs = opts.maxAgeMs ?? RETENTION_MAX_AGE_MS;
   const maxRows = opts.maxRows ?? RETENTION_MAX_ROWS;
+  const appAges = opts.appAges ?? new Map<string, number>();
   try {
-    let deleted = db.prepare("DELETE FROM logs WHERE ts < ?").run(Date.now() - maxAgeMs).changes;
+    // Per-app override ages first, then the global age for everyone else
+    // (app_id IS NULL — the platform — always uses the global age).
+    let deleted = 0;
+    for (const [appId, ageMs] of appAges) {
+      deleted += db.prepare("DELETE FROM logs WHERE app_id = ? AND ts < ?").run(appId, Date.now() - ageMs).changes;
+    }
+    const skip = [...appAges.keys()];
+    deleted += db
+      .prepare(`DELETE FROM logs WHERE ts < ? AND (app_id IS NULL OR app_id NOT IN (${skip.map(() => "?").join(",") || "''"}))`)
+      .run(Date.now() - maxAgeMs, ...skip).changes;
     // Row at OFFSET maxRows (newest-first) is the first over the cap; NULL subselect (under cap) deletes nothing.
     deleted += db
       .prepare("DELETE FROM logs WHERE id <= (SELECT id FROM logs ORDER BY id DESC LIMIT 1 OFFSET ?)")

@@ -83,6 +83,18 @@ describe("eventStore", () => {
     expect(queryEvents({}).records).toHaveLength(2);
   });
 
+  it("nsAges: a namespace's own retention age wins over the global age", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(1_000_000);
+    write({ ns: "p" });
+    write({ ns: "a" });
+    write({ ns: "b" });
+    vi.setSystemTime(1_000_000 + 3 * 24 * 60 * 60 * 1000); // all three now 3 days old
+    sweepEventStore({ maxAgeMs: 2 * 24 * 60 * 60 * 1000, nsAges: new Map([["a", 7 * 24 * 60 * 60 * 1000]]) });
+    const left = queryEvents({}).records.map((r) => r.ns);
+    expect(left).toEqual(["a"]); // "p" and "b" swept by the 2d global age; "a" kept by its 7d override
+  });
+
   it("degrades to null/empty when the store cannot open", () => {
     closeEventStoreForTest();
     const blocked = path.join(dataDir, "blocked");

@@ -5,7 +5,10 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { createServer } from "../src/server.js";
 import type { Config } from "../src/config.js";
-import { getSettingsDb, applySettingsManifest, initSettingsStore, closeSettingsStoreForTest } from "../src/services/settings.js";
+import {
+  getSettingsDb, applySettingsManifest, initSettingsStore, closeSettingsStoreForTest,
+  setValue, invalidateSettingsCache,
+} from "../src/services/settings.js";
 import { initEventStore, queryEvents, closeEventStoreForTest } from "../src/eventStore.js";
 
 let root: string, server: Server, base: string, cfg: Config;
@@ -100,5 +103,18 @@ describe("app settings API", () => {
     await put(api("/show_archived"), true);
     const events = queryEvents({ ns: "app", type: "settings-change" }).records;
     expect(events[0].payload).toEqual({ key: "show_archived" });
+  });
+
+  it("an app kv.list_limit override changes the default page size", async () => {
+    const db = getSettingsDb(cfg.dataDir, "app");
+    setValue(db, "kv.list_limit", 2);
+    invalidateSettingsCache();
+    for (const k of ["a", "b", "c"]) {
+      await fetch(`${base}/api/apps/app/kv-store/${k}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ value: 1 }),
+      });
+    }
+    const { entries } = await (await fetch(`${base}/api/apps/app/kv-store`)).json();
+    expect(entries).toHaveLength(2);
   });
 });

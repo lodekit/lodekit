@@ -5,6 +5,7 @@ import { isValidAppId } from "../registry.js";
 import { validationHook } from "../validation.js";
 import { emitLog } from "../logger.js";
 import { queryLogs } from "../logStore.js";
+import { effectiveNumber } from "./settings.js";
 
 export const CATALOG_NAME = "log-store";
 
@@ -45,7 +46,7 @@ export const logRoutes = new Hono<LogsEnv>()
   })
   .get("/", zValidator("query", logsQuery, validationHook), (c) => {
     const { level, source, before, limit, q } = c.req.valid("query");
-    return c.json(queryLogs({ app: c.var.appId, level, source, before, limit, q }));
+    return c.json(queryLogs({ app: c.var.appId, level, source, before, q, limit: limit ?? effectiveNumber("logs.list_limit", c.var.appId) }));
   });
 
 export type LogRoutes = typeof logRoutes;

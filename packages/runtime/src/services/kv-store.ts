@@ -7,6 +7,7 @@ import type { Config } from "../config.js";
 import { isValidAppId } from "../registry.js";
 import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
 import { validationHook } from "../validation.js";
+import { effectiveNumber } from "./settings.js";
 
 export const CATALOG_NAME = "kv-store";
 
@@ -250,7 +251,7 @@ export const kvRoutes = new Hono<KvEnv>()
   .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
   .get("/", zValidator("query", listQuery, validationHook), (c) => {
     const { prefix, limit, cursor } = c.req.valid("query");
-    return c.json(list(c.var.db, { prefix, limit, cursor }));
+    return c.json(list(c.var.db, { prefix, cursor, limit: limit ?? effectiveNumber("kv.list_limit", c.var.appId) }));
   })
   .post("/incr", zValidator("json", incrBody, validationHook), (c) => {
     const { key, by } = c.req.valid("json");
