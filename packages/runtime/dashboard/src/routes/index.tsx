@@ -213,6 +213,7 @@ function DashboardHome() {
           <span className="text-muted-foreground">
             {apps ? `${apps.length} ${apps.length === 1 ? "app" : "apps"}` : ""}
           </span>
+          <Link to="/settings" className="text-sm text-muted-foreground hover:underline">Settings</Link>
           <Link to="/logs" className="text-sm text-muted-foreground hover:underline">Logs</Link>
           <Link to="/events" className="text-sm text-muted-foreground hover:underline">Events</Link>
         </div>
@@ -257,6 +258,7 @@ function DashboardHome() {
                   >
                     {openTasks[a.appId] ? "Hide tasks" : "Tasks"}
                   </Button>
+                  <Link to="/settings" search={{ section: a.appId }} className="text-sm text-muted-foreground hover:underline">Settings</Link>
                   <Link to="/logs" search={{ app: a.appId }} className="text-sm text-muted-foreground hover:underline">Logs</Link>
                 </div>
                 {openPanels[a.appId] && <StorePanel appId={a.appId} />}
