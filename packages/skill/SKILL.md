@@ -87,6 +87,23 @@ Import: `import { events } from "@lodekit/sdk"`.
 - **Via MCP**: `lodekit_events` (`appId`, `type`, `after`, `limit`) reads the history —
   use it to check whether an expected event actually fired.
 
+## Settings
+
+The person's knobs: declare them, read them — never write them from app code.
+
+- Declare in `src/settings.ts`:
+  ```ts
+  import { defineSettings, boolean, select, duration } from "@lodekit/sdk";
+  export default defineSettings({
+    show_archived: boolean({ label: "Show archived", description: "Include archived items in the list.", default: false }),
+  });
+  ```
+  Every setting needs `label`, `description` (one line — shown under the control), and `default`. Types: `boolean`, `string`, `number`, `select`, `duration`. Keys are snake_case.
+- Read (typed) by importing your own schema: `import settings from "../settings"; const v = await settings.get("show_archived");` — plus `settings.all()` and `settings.watch(cb)`.
+- The person edits values in the dashboard Settings page; the dashboard renders your schema automatically.
+- Boundaries: **Settings** = person writes, app reads. **Store (`kv`)** = the app's own memory — app writes at runtime. **Secrets** = credentials, server-side only (coming) — never put credentials in Settings or the Store.
+- Inspect over MCP: `lodekit_settings_list`, `lodekit_settings_get`.
+
 ## Design system classes
 
 `lk-container` (page wrapper), `lk-h1`, `lk-muted`, `lk-card`, `lk-grid`, `lk-row`,

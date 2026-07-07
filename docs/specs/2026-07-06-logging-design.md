@@ -204,7 +204,9 @@ launch and at each roll deletes dated files older than **7 days** and removes th
 is minimal by design, and the platform log's row cap bounds error spam at the source.
 
 All retention values are constants in this slice; the roadmap notes they become dashboard
-settings later (both tiers).
+settings later (both tiers) — superseded 2026-07-07: these are settings
+(`logs.retention_age` / `logs.retention_max_rows`; `2026-07-07-settings-design.md` §6);
+defs store only explicit config, effective values resolve at use.
 
 Logging never takes down its caller:
 

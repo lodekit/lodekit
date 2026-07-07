@@ -109,7 +109,7 @@ The shipped and near-term services:
 **Store**:
 An app's per-app key–value store of JSON values (the kv-store service), reached through the
 SDK as the `kv` handle (`import { kv } from "@lodekit/sdk"`; catalog-name → handle mapping:
-kv-store→kv, relational-store→db, file-store→files, secret-store→secrets, log-store→logs, event-store→events). The first storage
+kv-store→kv, relational-store→db, file-store→files, secret-store→secrets, log-store→logs, event-store→events, settings→settings). The first storage
 service; joined by Files (file-store) in 0.x. Its second iteration shipped as the v0.1 storage
 slice (`docs/specs/2026-07-03-kv-store-v2-design.md`). Distinct from the Cache and from
 Settings — see Flagged ambiguities.
@@ -147,7 +147,7 @@ An app's per-app SQL database (relational-store). **Parked**: retired in the v0.
 _Avoid_: store (the store is the KV; the two differ), sql
 
 **Settings**:
-Configuration an app declares so the person can view and edit it in the dashboard; the app reads it through the SDK. Distinct from the Store — see Flagged ambiguities.
+Configuration the person views and edits in the dashboard Settings page: **platform settings** declared by the runtime (General/Appearance plus every service default, dot-namespaced keys like `tasks.default_retries`) and **app settings** declared in an app's `src/settings.ts` via `defineSettings()` (snake_case keys); the app reads its own through the SDK (`settings` handle — read + watch, never write). Per-app–scoped service settings can be **overridden** per app; resolution is app override → platform value → declared default (the **effective value**). Shipped: `docs/specs/2026-07-07-settings-design.md`. Distinct from the Store — see Flagged ambiguities.
 _Avoid_: preferences, config, options
 
 **Task**:
@@ -252,6 +252,6 @@ _Avoid_: the endpoints, the REST API
 - **Lodekit vs Platform** — Lodekit is the whole product experience; the platform is its installed subset (runtime, SDK, UI library, dashboard, manager). "Download Lodekit" installs the platform.
 - **Store vs Cache** — both sound like "somewhere things are kept," but they are opposites in durability. The **Store** is per-app durable KV state (backed up, in the data tree); the **Cache** is disposable build output (never backed up). Never call the store a cache.
 - **Event vs Log** — logs are telemetry (what happened, for observation); events drive business logic (what happened, for reaction). The `log` SSE tail is log-store's live surface, not an event, and never touches the bus.
-- **Store vs Settings** — both hold small per-app values. **Settings** are declared by the app and edited by the person in the dashboard (the person's knobs); the **Store** is written by app code at runtime (the app's own memory). An app reads both, but only settings are meant for human hands.
+- **Store vs Settings** — both hold small per-app values. **Settings** are declared by the app and edited by the person in the dashboard (the person's knobs); the **Store** is written by app code at runtime (the app's own memory). An app reads both, but only settings are meant for human hands. Credentials are neither: **Secrets** (secret-store, future) hold sensitive values the person provides, read only by server-side app code — never Settings, never the Store.
 - **Docs vs Skill** — both teach how to use Lodekit, to different readers. **Docs** are the public site for people; the **Skill** is the instruction pack for agents. Content may overlap; the audiences never do.
 - **Skill** — `@lodekit/skill` is the Lodekit skill package (content an agent loads to use Lodekit), not to be confused with agent skills in general.

@@ -114,7 +114,6 @@ Big-picture context that shaped the slice-1 SDK design but was explicitly **not*
   `docs/specs/2026-07-06-tasks-service-design.md` — queue + schedule + retries + history at
   v1; durable execution/hooks/signals deferred (see "Tasks — deferred from the v1
   slice-spec" under Other deferred items).
-- **Settings** — apps register settings surfaced and editable in the dashboard.
 - **Business-logic structure** — app-folder conventions that keep app logic from sprawling.
 - **Stale build-cache GC** — apps removed while the runtime is down leave orphaned `cacheDir/<app-id>/`
   output (`dropBuild` only runs on a live `unlinkDir`; startup `buildAll` only builds existing apps and
@@ -197,7 +196,6 @@ above; the remainder:
   materialize into one absorbed queued row per task; SSE events for a gone app). Bounded and
   self-healing on restart (`recoverInterruptedRuns` re-seeds from `scanApps`); evict from the
   engine's app set on unlinkDir when it first matters.
-- **Service defaults/thresholds → settings** — every hard-coded default and threshold across the catalog becomes a setting when the settings service lands: the Tasks defaults (`catchUp` "1h", `retries` 3, `timeout` "5m", backoff curve, dispatch poll interval, run retention "last 100 runs or 30 days") and equivalents in other services (e.g. sweep intervals, kv/file TTL behavior).
 - **Dashboard startup-build freshness skip** — `buildDashboard` runs on every start. Raised
   relevance since the tanstack-start-host slice: the Start build (~2–5s) is heavier than the
   old bundled build (~1s), per
@@ -300,9 +298,6 @@ above; the remainder:
 - **Runtime auto-install** — Lodekit checks for / installs Node and other runtime deps.
 - **Image/file app icons** — beyond emoji in `lodekit.json`.
 - **Monorepo init** — `lodekit init` to set up a pre-existing Lodekit-apps git monorepo.
-- **Log retention as dashboard settings** — retention values (platform log: 7 days / 200k
-  rows; manager's dated text logs: 7 days) are constants for the logging slice; make them
-  dashboard-configurable (`docs/specs/2026-07-06-logging-design.md` §7).
 - **Derived metrics from the log schema** — request counts, error rates, and build times
   are derivable from the log schema's conventional `fields` keys (`duration_ms`, `status`)
   via plain SQL; deferred by the logging spec (`docs/specs/2026-07-06-logging-design.md`
@@ -323,10 +318,6 @@ above; the remainder:
   restarting", "update available") plus its auth story — pairs with local door hardening
   (Security). Until then, cross-namespace subscriptions for apps stay deliberately off the
   table too (an app's feed is its own namespace); revisit only with a concrete use case.
-- **Event retention as settings** — the events slice ships constants (30 days / 50k rows;
-  change-feed events at a service-set 7-day ttl); make them dashboard-configurable and
-  app-overridable when the settings service lands
-  (`docs/specs/2026-07-07-events-design.md` §6). Same move as log retention below.
 - **Event emit over MCP** — `lodekit_events` is read-only; Claude emitting events (e.g.
   announcing a finished background job) pairs with the MCP write-access guardrails
   (Security).

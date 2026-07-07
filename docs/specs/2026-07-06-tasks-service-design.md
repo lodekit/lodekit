@@ -201,7 +201,9 @@ the worker.
   never claimable and the retire-time cancel only sees `queued` rows.
 
 **Defaults** (all to become settings later — roadmap §11): `retries` 3, `timeout` "5m",
-`catchUp` "1h", backoff 30s·2ⁿ capped 10m, dispatch poll 1s.
+`catchUp` "1h", backoff 30s·2ⁿ capped 10m, dispatch poll 1s — superseded 2026-07-07: these
+are settings (`2026-07-07-settings-design.md` §6); defs store only explicit config,
+effective values resolve at use.
 
 ## 8. Events, logging, and dashboard
 
@@ -251,7 +253,9 @@ Live via `tasks-change`.
 - **Retention:** a `tasks-sweep` internal-scheduler task (same pattern as the kv/file
   sweeps) prunes run history to *last 100 runs or 30 days per task, whichever keeps more*.
   Terminal states only; `queued`/`running` rows are never swept. (Thresholds → settings
-  later, roadmap §11.)
+  later, roadmap §11.) — superseded 2026-07-07: these are settings
+  (`2026-07-07-settings-design.md` §6); defs store only explicit config, effective values
+  resolve at use.
 - Payloads capped by the existing body limit; stored errors truncated (message + bounded
   stack).
 - Trust-boundary validation as everywhere in the catalog: `zValidator` on every route,

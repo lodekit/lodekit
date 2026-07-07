@@ -32,7 +32,9 @@ A is built first because B previews what A defines.
   docs/reference story. Nothing here blocks it: the build is static and theme-dumb; remote
   it would simply render the stock theme. Parked on the roadmap.
 - A dashboard theme-picker UI (presets, color pickers). Tokens are agent-edited files.
-- A person-facing dark/light toggle (system preference only, unchanged).
+- A person-facing dark/light toggle (system preference only, unchanged) — superseded
+  2026-07-07: `appearance.theme` (settings spec §8) owns the mode; theming still owns the
+  look.
 - Policing override contents. Tokens are the documented contract; the files are plain CSS.
 - The skill update that teaches theming (belongs to the skill slice).
 

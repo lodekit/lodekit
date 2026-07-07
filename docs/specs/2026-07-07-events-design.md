@@ -225,7 +225,10 @@ builds an app, wonders whether the export task fired — and reads the stream.
 - **Sweep** — on the existing 60s scheduler: delete rows past `expires_at`, delete rows
   older than **30 days**, then trim oldest-first beyond **50k rows**. Constants this
   slice; settings-service override on the roadmap. Per-emission `ttl` (seconds, positive,
-  ≤ the 30-day default) covers the app-driven case now.
+  ≤ the 30-day default) covers the app-driven case now — superseded 2026-07-07: these are
+  settings (`events.retention_age` / `events.retention_max_rows`;
+  `2026-07-07-settings-design.md` §6); defs store only explicit config, effective values
+  resolve at use.
 - **Emit never takes down its caller** — validation errors return 400 on the HTTP door
   and throw only there; internal emitters pass validated shapes. Insert failures: log +
   broadcast anyway (§4). The SDK handle surfaces HTTP errors on `emit` (an app may care
