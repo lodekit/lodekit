@@ -174,7 +174,8 @@ existing payloads (`{key, op}` / `{slug, op}`), emitted with a service-set **`tt
 days** (vs the 30-day default): durable ≠ forever, and the shorter window keeps the
 noisiest tenant from bloating the backed-up file while still buying replay and future
 task triggers. The TTL-expiry sweeps keep emitting their `expire` ops through the same
-path.
+path. `tasks-change` joined them in a fast-follow once the parallel-landed Tasks v1 slice
+reconciled (`2026-07-07-tasks-change-bus-migration-design.md`).
 
 **Not on the bus** — the `log` SSE tail keeps its plain broadcast in `logger.ts`
 (log-store's live surface; logs are telemetry). `sse.ts` itself is unchanged: shared

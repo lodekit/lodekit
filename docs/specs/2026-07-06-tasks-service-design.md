@@ -210,6 +210,14 @@ Run-state transitions and definition changes (register/retire/config-change) bro
 `kv-store-change`: `{ task, runId?, state? }`. Durable state lives in SQLite and is
 queryable; SSE is only the live notification (the bus has no replay — established pattern).
 
+> **Superseded (2026-07-07):** the change feed now rides the event bus as stored
+> `tasks-change` events (7-day service ttl) and `tasks.watch` is replaced by
+> `events.watch({type: "tasks-change"})` —
+> `docs/specs/2026-07-07-tasks-change-bus-migration-design.md`. Event type and payload
+> identity (`task`, `runId?`, `state?`) are unchanged; the load-error `error` field is
+> dropped (the stack lives in the adjacent `tasks`-source log record) and the bus now
+> does have replay.
+
 **Logging** — coordinates with the in-flight logging slice
 (`docs/specs/2026-07-06-logging-design.md`, `stack` branch); the division of labor:
 
