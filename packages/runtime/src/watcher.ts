@@ -3,7 +3,7 @@ import path from "node:path";
 import chokidar from "chokidar";
 import type { Config } from "./config.js";
 import { broadcast } from "./sse.js";
-import { scanApps } from "./registry.js";
+import { scanApps, isValidAppId } from "./registry.js";
 import { buildAll, buildApp, buildDashboard, dropBuild } from "./build.js";
 import { createLogger } from "./logger.js";
 
@@ -36,8 +36,9 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
         // The debounced folder may since have been removed entirely (e.g. a rapid
         // rename/delete) — building it would fail on the now-missing rootDir and,
         // since build state is keyed by the bare app id, could clobber a same-named
-        // app's fresh state elsewhere. Skip rather than build a folder that's gone.
-        if (fs.existsSync(path.join(cfg.appsDir, appId))) {
+        // app's fresh state elsewhere. Must also be a real directory: a stray FILE
+        // in apps/ with a valid-id shape is never an app root.
+        if (fs.statSync(path.join(cfg.appsDir, appId), { throwIfNoEntry: false })?.isDirectory()) {
           log.debug(`rebuilding ${appId}`);
           void buildApp(cfg, appId);
         }
@@ -48,7 +49,9 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
   const onChange = (p: string) => {
     notify();
     const appId = appIdOf(p);
-    if (appId) rebuild(appId);
+    // Invalid ids (Finder's .DS_Store, stray dotfiles) can never be apps — scanApps
+    // already excludes them; the rebuild path must too.
+    if (appId && isValidAppId(appId)) rebuild(appId);
   };
 
   const watcher = chokidar.watch(cfg.appsDir, {
@@ -66,7 +69,7 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
     .on("unlinkDir", (p) => {
       notify();
       const rel = path.relative(cfg.appsDir, p);
-      if (rel && !rel.includes(path.sep)) {
+      if (rel && !rel.includes(path.sep) && isValidAppId(rel)) {
         // Top-level app folder removed — cancel any rebuild the preceding file-unlink
         // events already debounced, or it fires later against a now-deleted rootDir
         // (Vite's build() throwing ENOENT) and clobbers a same-named app's fresh state.

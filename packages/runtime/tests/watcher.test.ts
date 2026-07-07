@@ -25,6 +25,26 @@ async function collectEvents(base: string, until: string, timeoutMs: number): Pr
   return buf;
 }
 
+// Absence variant: reads for the full window (reader.read() blocks when no events
+// arrive, so each read races a timer) and returns whatever came in.
+async function collectEventsFor(base: string, ms: number): Promise<string> {
+  const res = await fetch(base + "/api/events");
+  const reader = res.body!.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    const next = await Promise.race([
+      reader.read(),
+      new Promise<null>((r) => setTimeout(() => r(null), deadline - Date.now())),
+    ]);
+    if (next === null || next.done) break;
+    buf += dec.decode(next.value);
+  }
+  await reader.cancel();
+  return buf;
+}
+
 // Fixture-shaped Start app (see tests/fixtures/start-app): manifest + src/router.tsx +
 // src/routes/{__root,index}.tsx — no HTML entry, routeTree.gen.ts generated at build time.
 function writeApp(appId: string, indexRoute: string) {
@@ -48,6 +68,7 @@ beforeEach(async () => {
   cache = fs.mkdtempSync(path.join(os.tmpdir(), "lk-cache-"));
   process.env.LODEKIT_ROOT = root;
   process.env.LODEKIT_CACHE_DIR = cache;
+  process.env.LODEKIT_STATE_DIR = path.join(root, "state");
   process.env.LODEKIT_PORT = "0";
   server = await start(loadConfig());
   const addr = server.address();
@@ -65,6 +86,7 @@ afterEach(async () => {
   fs.rmSync(cache, { recursive: true, force: true });
   delete process.env.LODEKIT_ROOT;
   delete process.env.LODEKIT_CACHE_DIR;
+  delete process.env.LODEKIT_STATE_DIR;
   delete process.env.LODEKIT_PORT;
 });
 
@@ -93,6 +115,17 @@ describe("watcher", () => {
     const buf = await collectEvents(base, "event: error", 30000);
     expect(buf).toContain("event: error");
   }, 40000);
+
+  it("ignores stray files in apps/ — .DS_Store and any non-directory never trigger a build", async () => {
+    await new Promise((r) => setTimeout(r, 100));
+    // Finder drops .DS_Store when apps are copied in (invalid app id), and a
+    // valid-id-shaped plain FILE must not be treated as an app root either.
+    fs.writeFileSync(path.join(root, "apps", ".DS_Store"), "junk");
+    fs.writeFileSync(path.join(root, "apps", "stray"), "junk");
+    const buf = await collectEventsFor(base, 4000);
+    expect(buf).toContain("apps-changed"); // the watcher did see the writes…
+    expect(buf).not.toContain("event: building"); // …and refused to build them
+  }, 15000);
 
   it("triggers a rebuild when only a route file changes (the canonical editing surface)", async () => {
     const done = collectEvents(base, "event: building", 30000);

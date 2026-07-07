@@ -62,6 +62,7 @@ beforeEach(async () => {
   );
   process.env.LODEKIT_ROOT = root;
   process.env.LODEKIT_CACHE_DIR = cache;
+  process.env.LODEKIT_STATE_DIR = path.join(root, "state");
   process.env.LODEKIT_PORT = "0";
   server = await start(loadConfig());
   const addr = server.address();
@@ -84,6 +85,7 @@ afterEach(async () => {
   fs.rmSync(cache, { recursive: true, force: true });
   delete process.env.LODEKIT_ROOT;
   delete process.env.LODEKIT_CACHE_DIR;
+  delete process.env.LODEKIT_STATE_DIR;
   delete process.env.LODEKIT_PORT;
 });
 
