@@ -373,12 +373,10 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
       return r.runId;
     },
     async cancel(runId) {
-      try {
-        await parse(await tasksRpc.runs[":id"].$delete({ param: { id: String(runId) } }));
-        return true;
-      } catch {
-        return false; // 404 unknown / 409 not-queued
-      }
+      const res = await tasksRpc.runs[":id"].$delete({ param: { id: String(runId) } });
+      if (res.ok) return true;
+      if (res.status === 404 || res.status === 409) return false; // unknown run / not queued
+      return throwHttpError(res as unknown as Response);
     },
     async runs(opts = {}) {
       const query: Record<string, string> = {};
