@@ -49,6 +49,22 @@ function ServerStateBadge({ state }: { state: ServerStatus | undefined }) {
   );
 }
 
+// The "app needs a key" nudge (secret-store spec §9): pending slots, visible
+// without hunting. Clicking lands on the app's settings section (slots panel).
+function PendingSecretsBadge({ appId }: { appId: string }) {
+  const q = useQuery<{ slots: { status: string }[] }>({
+    queryKey: ["secrets", appId],
+    queryFn: async () => (await fetch(`/api/apps/${appId}/secrets`)).json(),
+  });
+  const pending = (q.data?.slots ?? []).filter((s) => s.status === "pending").length;
+  if (pending === 0) return null;
+  return (
+    <Link to="/settings" search={{ section: appId }}>
+      <Badge variant="outline">{pending} secret{pending === 1 ? "" : "s"} needed</Badge>
+    </Link>
+  );
+}
+
 function StorePanel({ appId }: { appId: string }) {
   const kv = createClient({ baseUrl: "", appId }).kv;
   const q = useInfiniteQuery({
@@ -198,6 +214,7 @@ function DashboardHome() {
         void queryClient.invalidateQueries({ queryKey: ["tasks", d.ns] });
         void queryClient.invalidateQueries({ queryKey: ["task-runs", d.ns] });
       }
+      if (d.type === "secrets-change") void queryClient.invalidateQueries({ queryKey: ["secrets", d.ns] });
     });
     return () => es.close();
   }, [queryClient]);
@@ -214,6 +231,7 @@ function DashboardHome() {
             {apps ? `${apps.length} ${apps.length === 1 ? "app" : "apps"}` : ""}
           </span>
           <Link to="/settings" className="text-sm text-muted-foreground hover:underline">Settings</Link>
+          <Link to="/secrets" className="text-sm text-muted-foreground hover:underline">Secrets</Link>
           <Link to="/logs" className="text-sm text-muted-foreground hover:underline">Logs</Link>
           <Link to="/events" className="text-sm text-muted-foreground hover:underline">Events</Link>
         </div>
@@ -244,6 +262,7 @@ function DashboardHome() {
                 <div className="flex items-center gap-2">
                   <StateBadge state={states[a.appId]} />
                   <ServerStateBadge state={serverStates[a.appId]} />
+                  <PendingSecretsBadge appId={a.appId} />
                   <Button
                     variant="ghost"
                     size="sm"

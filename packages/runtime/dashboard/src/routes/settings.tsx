@@ -24,6 +24,10 @@ interface Field {
 interface PlatformEntry { key: string; section: string; scope: "global" | "per-app"; advanced: boolean; field: Field; value: unknown; effective: unknown; drifted: boolean }
 interface DeclaredEntry { key: string; field: Field | null; error: string | null; value: unknown; effective: unknown; drifted: boolean }
 interface OverrideEntry { key: string; section: string; advanced: boolean; field: Field; platformEffective: unknown; override: unknown }
+interface SlotEntry {
+  slot: string; label: string | null; description: string | null; error: string | null;
+  status: "linked" | "pending"; secret: { slug: string; label: string } | null;
+}
 interface AppInfo { appId: string; name: string; icon?: string }
 
 async function write(url: string, value: unknown | undefined) {
@@ -149,6 +153,101 @@ function PlatformSection({ section, entries, invalidate }: { section: string; en
   );
 }
 
+// The app's declared secret slots (secret-store spec §9): linked → which secret
+// + Unlink; pending → link an existing secret or create one inline. Renders
+// nothing when the app declares no slots.
+function AppSecretsCard({ app }: { app: AppInfo }) {
+  const queryClient = useQueryClient();
+  const q = useQuery<{ slots: SlotEntry[] }>({
+    queryKey: ["secrets", app.appId],
+    queryFn: async () => (await fetch(`/api/apps/${app.appId}/secrets`)).json(),
+  });
+  const catalog = useQuery<{ secrets: { slug: string; label: string }[] }>({
+    queryKey: ["secrets", "_platform"],
+    queryFn: async () => (await fetch("/api/secrets")).json(),
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState<string | null>(null); // slot being created-for
+  const [newLabel, setNewLabel] = useState("");
+  const [newValue, setNewValue] = useState("");
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ["secrets", app.appId] });
+    void queryClient.invalidateQueries({ queryKey: ["secrets", "_platform"] });
+  };
+  const act = async (fn: () => Promise<Response>) => {
+    const res = await fn();
+    if (!res.ok) { setError((await res.json().catch(() => null))?.error ?? res.statusText); return; }
+    setError(null); setCreating(null); setNewLabel(""); setNewValue("");
+    invalidate();
+  };
+  const link = (slot: string, slug: string) =>
+    void act(() => fetch(`/api/apps/${app.appId}/secrets/${slot}/link`, {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug }),
+    }));
+  const createAndLink = async (slot: string) => {
+    const res = await fetch("/api/secrets", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: newLabel, value: newValue }),
+    });
+    setNewValue(""); // typed value never lingers, success or failure
+    if (!res.ok) { setError((await res.json().catch(() => null))?.error ?? res.statusText); return; }
+    link(slot, (await res.json()).slug);
+  };
+  const slots = q.data?.slots ?? [];
+  if (q.isLoading || slots.length === 0) return null;
+  return (
+    <Card>
+      <CardHeader><CardTitle>Secrets</CardTitle></CardHeader>
+      <CardContent>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        {slots.map((s) => (
+          <div key={s.slot} className="flex items-start justify-between gap-6 border-b py-3 last:border-b-0">
+            <div className="min-w-0">
+              <Label className="flex items-center gap-2">
+                {s.label ?? <code>{s.slot}</code>}
+                {s.error && <Badge variant="destructive">declaration error</Badge>}
+                {s.status === "pending" && !s.error && <Badge variant="outline">needs a secret</Badge>}
+              </Label>
+              <p className="mt-1 text-sm text-muted-foreground">{s.error ?? s.description}</p>
+            </div>
+            {!s.error && (
+              <div className="flex shrink-0 items-center gap-2">
+                {s.status === "linked" && s.secret ? (
+                  <>
+                    <Badge variant="secondary">{s.secret.label}</Badge>
+                    <Button variant="ghost" size="sm" onClick={() =>
+                      void act(() => fetch(`/api/apps/${app.appId}/secrets/${s.slot}/link`, { method: "DELETE" }))
+                    }>Unlink</Button>
+                  </>
+                ) : creating === s.slot ? (
+                  <>
+                    <Input className="w-32" placeholder="Label" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
+                    <Input type="password" autoComplete="off" className="w-36" placeholder="Value" value={newValue} onChange={(e) => setNewValue(e.target.value)} />
+                    <Button size="sm" disabled={!newLabel.trim() || !newValue} onClick={() => void createAndLink(s.slot)}>Save & link</Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setCreating(null); setNewValue(""); }}>Cancel</Button>
+                  </>
+                ) : (
+                  <>
+                    <Select value="" onValueChange={(slug) => link(s.slot, slug)}>
+                      <SelectTrigger className="w-44"><SelectValue placeholder="Link a secret…" /></SelectTrigger>
+                      <SelectContent>
+                        {(catalog.data?.secrets ?? []).map((c) => (
+                          <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="sm" onClick={() => setCreating(s.slot)}>New secret…</Button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 function AppSection({ app }: { app: AppInfo }) {
   const queryClient = useQueryClient();
   const q = useQuery<{ declared: DeclaredEntry[]; overrides: OverrideEntry[] }>({
@@ -180,6 +279,7 @@ function AppSection({ app }: { app: AppInfo }) {
           )}
         </CardContent>
       </Card>
+      <AppSecretsCard app={app} />
       <SettingsGroup
         title="Service overrides"
         entries={overrides}
@@ -213,8 +313,8 @@ function SettingsView() {
     const es = new EventSource("/api/events");
     es.addEventListener("event", (e) => {
       const d = JSON.parse((e as MessageEvent).data) as { ns: string; type: string };
-      if (d.type !== "settings-change") return;
-      void queryClient.invalidateQueries({ queryKey: ["settings", d.ns] });
+      if (d.type === "settings-change") void queryClient.invalidateQueries({ queryKey: ["settings", d.ns] });
+      if (d.type === "secrets-change") void queryClient.invalidateQueries({ queryKey: ["secrets", d.ns] });
     });
     return () => es.close();
   }, [queryClient]);
