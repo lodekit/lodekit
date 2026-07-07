@@ -116,7 +116,7 @@ _Avoid_: blobs (the retired working name), uploads, attachments, assets
 Per-app and platform structured log records (the log-store service), levels debug/info/
 warn/error, emitted via the `logs` handle or captured from app console output, stored in
 the platform State, retained 7 days / 200k records, viewable in the dashboard Logs view
-and over MCP (`lodekit_logs`).
+and over MCP (`lodekit_logs`) (`docs/specs/2026-07-06-logging-design.md`).
 _Avoid_: console, output, telemetry
 
 **Database**:
@@ -150,7 +150,7 @@ The apps tree and data tree together: the durable state worth preserving. Explic
 _Avoid_: the project, the data
 
 **Cache**:
-Regenerable built output, kept outside the Lodekit root and never backed up. Deleting it costs only a rebuild.
+Regenerable built output, kept outside the Lodekit root (`~/Library/Caches/Lodekit`, `LODEKIT_CACHE_DIR`) and never backed up. Deleting it costs only a rebuild.
 _Avoid_: build dir, dist, output, storage
 
 **State**:
