@@ -5,6 +5,7 @@ import type { LogRoutes } from "@lodekit/runtime/services/log-store";
 import type { TasksRoutes } from "@lodekit/runtime/services/tasks";
 import type { EventRoutes } from "@lodekit/runtime/services/event-store";
 import type { SettingsRoutes } from "@lodekit/runtime/services/settings";
+import { SecretUnavailableError } from "./secrets.js";
 
 export interface KvEntry<T = unknown> {
   key: string;
@@ -33,6 +34,12 @@ export interface Settings {
   get<T = unknown>(key: string): Promise<T | undefined>;
   all(): Promise<Record<string, unknown>>;
   watch(cb: (change: { key: string }) => void): () => void;
+}
+
+export interface Secrets {
+  /** Server-only: reads a linked secret's value. Throws SecretUnavailableError
+   * ("unlinked" | "unavailable") or a plain Error outside server context. */
+  get(slot: string): Promise<string>;
 }
 
 export interface FileStat {
@@ -138,6 +145,7 @@ export interface LodekitClient {
   tasks: Tasks;
   events: Events;
   settings: Settings;
+  secrets: Secrets;
 }
 
 // Preserves the hand-written transport's error semantics around the hc calls:
@@ -455,5 +463,27 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
     },
   };
 
-  return { kv, files, logs, tasks, events, settings };
+  // The secret-store's server-only door (spec §7): the worker token exists only
+  // in app-worker env — browser code fails fast before any request. Plain fetch
+  // (not hc): the token header decides access, and values must never be typed
+  // into any shared channel.
+  const secrets: Secrets = {
+    async get(slot: string): Promise<string> {
+      const token =
+        typeof window === "undefined" && typeof process !== "undefined"
+          ? process.env?.LODEKIT_WORKER_TOKEN
+          : undefined;
+      if (!token) throw new Error("secrets are server-only; call secrets.get() from a server function");
+      const r = await fetch(`${baseUrl}/api/apps/${appId}/secrets/${encodeURIComponent(slot)}/value`, {
+        headers: { "x-lodekit-worker-token": token },
+      });
+      if (r.ok) return ((await r.json()) as { value: string }).value;
+      const body = (await r.json().catch(() => null)) as { error?: string } | null;
+      if (r.status === 409) throw new SecretUnavailableError("unlinked", body?.error);
+      if (r.status === 503) throw new SecretUnavailableError("unavailable", body?.error);
+      throw new Error(body?.error ?? `secrets.get("${slot}") failed: ${r.status}`);
+    },
+  };
+
+  return { kv, files, logs, tasks, events, settings, secrets };
 }

@@ -16,6 +16,7 @@ export type {
   Events,
   LodekitEvent,
   Settings,
+  Secrets,
 } from "./client.js";
 export { task } from "./task.js";
 export type { TaskConfig, DefinedTask } from "./task.js";
@@ -45,6 +46,12 @@ export const events = client.events;
 import { _bindSettings } from "./settings.js";
 export const settings = client.settings;
 _bindSettings(client.settings);
+
+import { _bindSecrets } from "./secrets.js";
+export const secrets = client.secrets;
+_bindSecrets(client.secrets);
+export { defineSecrets, secret, SecretUnavailableError } from "./secrets.js";
+export type { DefinedSecrets, SecretSlots, SecretSlotDef } from "./secrets.js";
 
 /** The app's own app id, injected by the toolchain at build time ("" outside an app build). */
 export const appId = injectedAppId;
