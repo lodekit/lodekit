@@ -2,6 +2,7 @@ import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
 import type { KvRoutes } from "@lodekit/runtime/services/kv-store";
 import type { LogRoutes } from "@lodekit/runtime/services/log-store";
+import type { TasksRoutes } from "@lodekit/runtime/services/tasks";
 
 export interface KvEntry<T = unknown> {
   key: string;
@@ -29,6 +30,44 @@ export interface FileStat {
 
 export type FilesChange = { slug: string; op: "put" | "del" | "expire" };
 export type FilePutBody = string | Blob | ArrayBuffer | Uint8Array | ReadableStream;
+
+export type TaskRunState = "queued" | "running" | "succeeded" | "failed" | "canceled";
+
+export interface TaskRun {
+  id: number;
+  task: string;
+  state: TaskRunState;
+  source: "enqueue" | "schedule" | "manual";
+  attempt: number;
+  payload: unknown;
+  notBefore: number;
+  createdAt: number;
+  startedAt: number | null;
+  finishedAt: number | null;
+  durationMs: number | null;
+  error: string | null;
+}
+
+export interface TaskInfo {
+  name: string;
+  schedule: { kind: "cron" | "every"; expr: string } | null;
+  retired: boolean;
+  error: string | null;
+  nextRun: number | null;
+  lastRun: { runId: number; state: TaskRunState; finishedAt: number | null; error: string | null } | null;
+}
+
+export type TasksChange = { task: string; runId?: number; state?: TaskRunState };
+
+export interface Tasks {
+  /** Queue a run now (or delayed); resolves to the run id. */
+  enqueue(name: string, payload?: unknown, opts?: { delay?: string; at?: number; dedupeKey?: string }): Promise<number>;
+  /** Cancel a still-queued run; false when it already started/finished or doesn't exist. */
+  cancel(runId: number): Promise<boolean>;
+  runs(opts?: { task?: string; state?: TaskRunState; limit?: number }): Promise<TaskRun[]>;
+  list(): Promise<TaskInfo[]>;
+  watch(cb: (change: TasksChange) => void): () => void;
+}
 
 export interface Files {
   put(
@@ -81,6 +120,7 @@ export interface LodekitClient {
   kv: Kv;
   files: Files;
   logs: Logs;
+  tasks: Tasks;
 }
 
 // Preserves the hand-written transport's error semantics around the hc calls:
@@ -315,5 +355,45 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
     };
   const logs: Logs = { debug: sendLog("debug"), info: sendLog("info"), warn: sendLog("warn"), error: sendLog("error") };
 
-  return { kv, files, logs };
+  const tasksRpc = hc<TasksRoutes>(`${baseUrl}/api/apps/${appId}/tasks`);
+
+  const tasks: Tasks = {
+    async enqueue(name, payload, opts = {}) {
+      const r = await parse(
+        await tasksRpc[":name"].runs.$post({
+          param: { name },
+          json: {
+            ...(payload !== undefined ? { payload } : {}),
+            ...(opts.delay !== undefined ? { delay: opts.delay } : {}),
+            ...(opts.at !== undefined ? { at: opts.at } : {}),
+            ...(opts.dedupeKey !== undefined ? { dedupeKey: opts.dedupeKey } : {}),
+          },
+        })
+      );
+      return r.runId;
+    },
+    async cancel(runId) {
+      try {
+        await parse(await tasksRpc.runs[":id"].$delete({ param: { id: String(runId) } }));
+        return true;
+      } catch {
+        return false; // 404 unknown / 409 not-queued
+      }
+    },
+    async runs(opts = {}) {
+      const query: Record<string, string> = {};
+      if (opts.task !== undefined) query.task = opts.task;
+      if (opts.state !== undefined) query.state = opts.state;
+      if (opts.limit !== undefined) query.limit = String(opts.limit);
+      return (await parse(await tasksRpc.runs.$get({ query }))).runs as TaskRun[];
+    },
+    async list() {
+      return (await parse(await tasksRpc.index.$get())).tasks as TaskInfo[];
+    },
+    watch(cb) {
+      return channel.on<TasksChange>("tasks-change", () => true, cb);
+    },
+  };
+
+  return { kv, files, logs, tasks };
 }

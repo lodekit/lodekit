@@ -1,6 +1,24 @@
 import { createClient } from "./client.js";
 export { createClient } from "./client.js";
-export type { Kv, KvEntry, KvChange, Collection, LodekitClient, Files, FileStat, FilesChange, FilePutBody, Logs } from "./client.js";
+export type {
+  Kv,
+  KvEntry,
+  KvChange,
+  Collection,
+  LodekitClient,
+  Files,
+  FileStat,
+  FilesChange,
+  FilePutBody,
+  Logs,
+  Tasks,
+  TaskRun,
+  TaskInfo,
+  TaskRunState,
+  TasksChange,
+} from "./client.js";
+export { task } from "./task.js";
+export type { TaskConfig, DefinedTask } from "./task.js";
 
 // Injected per app by the runtime's Vite build (define). Absent (e.g. under
 // Node imports of this entry) it stays undefined and the singleton is inert.
@@ -19,6 +37,7 @@ const client = createClient({ baseUrl: serverBaseUrl, appId: injectedAppId });
 export const kv = client.kv;
 export const files = client.files;
 export const logs = client.logs;
+export const tasks = client.tasks;
 
 /** The app's own app id, injected by the toolchain at build time ("" outside an app build). */
 export const appId = injectedAppId;
