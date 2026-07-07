@@ -27,7 +27,7 @@ is the living checklist — extend it with every new surface.
 | `kv.setMany` | seeding |
 | `kv.list {prefix, cursor}` | journal pagination; compost sweep; reset |
 | `kv.collection` (all 5 ops) | plant records CRUD |
-| `kv.watch` | conservatory live refresh *(migrates to `events.watch` when events lands)* |
+| `events.watch {type: "kv-store-change"}` | conservatory live refresh |
 | `files.put {title, metadata, contentType}` | photo upload with caption |
 | `files.put {ttl}` | self-expiring snapshot export |
 | `files.put` (server-side) | seeded SVG portraits |
@@ -36,7 +36,7 @@ is the living checklist — extend it with every new surface.
 | `files.list {prefix, cursor}` | timeline "load more", compost sweep, reset |
 | `files.copy` | set cover photo |
 | `files.move` | archive photo |
-| `files.watch` | photo timeline live refresh *(migrates to `events.watch` when events lands)* |
+| `events.watch {type: "file-store-change"}` | photo timeline live refresh (slug filter in the callback) |
 | `tasks.enqueue {at, dedupeKey}` | care reminders |
 | `tasks.enqueue {delay}` | remind me in an hour |
 | `tasks.cancel` | skip next / re-care / reset |
@@ -49,7 +49,7 @@ is the living checklist — extend it with every new surface.
 | `appId` export | Potting Shed's SDK exercises card |
 | `@lodekit/ui`, `theme.css` | throughout |
 
-**Pending (events slice, spec §5):** `events.emit` (client+server, `{ttl}`), `events.list`
-(`before`/`after`/server-side), `events.watch` (string + array types), the Ledger, While
-You Were Away, `weekly_gazette` (`cron` + `catchUp: "24h"` + `retries`/`timeout`), and the
-kv/files watch migration.
+**Pending (showcase Part 2, spec §5):** `events.emit` (client+server, `{ttl}`),
+`events.list` (`before`/`after`/server-side), `events.watch` with a type array, the
+Ledger, While You Were Away, and `weekly_gazette` (`cron` + `catchUp: "24h"` +
+`retries`/`timeout`).

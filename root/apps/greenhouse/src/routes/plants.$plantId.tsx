@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { kv, files, logs } from "@lodekit/sdk";
+import { kv, files, logs, events } from "@lodekit/sdk";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@lodekit/ui";
 import {
   CARE_KINDS,
@@ -56,8 +56,16 @@ function PlantPage() {
   const { plant, state, streak, snoozed, counts, cover, mood } = data;
   const refresh = () => void router.invalidate();
 
-  // NOTE: migrates to events.watch({type: "file-store-change"}) when the events slice lands.
-  useEffect(() => files.watch(`photo-${id}-`, refresh), [id]);
+  // The file change feed rides the event bus; slug filtering happens in the callback
+  // (payloads carry identity, not values — {slug, op}).
+  useEffect(
+    () =>
+      events.watch({ type: "file-store-change" }, (ev) => {
+        const slug = (ev.payload as { slug?: string } | undefined)?.slug;
+        if (slug?.startsWith(`photo-${id}-`)) refresh();
+      }),
+    [id]
+  );
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-4">

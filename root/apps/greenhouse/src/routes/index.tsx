@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { kv, files } from "@lodekit/sdk";
+import { kv, files, events } from "@lodekit/sdk";
 import { Badge, Button, Card, CardContent, Input } from "@lodekit/ui";
 import {
   CARE_KINDS,
@@ -40,10 +40,10 @@ function Conservatory() {
   const cards = Route.useLoaderData();
   const router = useRouter();
 
-  // useEffect (not module scope) keeps kv.watch off the SSR path — it's client-only.
-  // NOTE: migrates to events.watch({type: "kv-store-change"}) when the events slice lands.
+  // useEffect (not module scope) keeps the watch off the SSR path — it's client-only.
+  // The kv change feed rides the event bus: any kv write in this app refreshes the grid.
   useEffect(
-    () => kv.watch("", () => void router.invalidate()),
+    () => events.watch({ type: "kv-store-change" }, () => void router.invalidate()),
     [router]
   );
 
