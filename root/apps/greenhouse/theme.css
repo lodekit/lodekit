@@ -1,0 +1,15 @@
+/* Per-app theme — applies only to greenhouse, layered after the root's global
+   theme.css (so these values win over its indigo). Green primary, of course. */
+:root {
+  --primary: oklch(0.6 0.17 150);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.68 0.13 150);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: oklch(0.72 0.17 150);
+    --primary-foreground: oklch(0.22 0.05 150);
+    --ring: oklch(0.58 0.11 150);
+  }
+}
