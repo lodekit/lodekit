@@ -15,9 +15,6 @@ export function withLogs(): MiddlewareHandler<LogsEnv> {
   return async (c, next) => {
     const appId = c.req.param("appId");
     if (!appId || !isValidAppId(appId)) return c.json({ error: "invalid app id" }, 400);
-    // "platform" is the global endpoint's sentinel for the runtime's own records — an app
-    // named platform would read the runtime's records via the scoped GET.
-    if (appId === "platform") return c.json({ error: "reserved app id" }, 400);
     c.set("appId", appId);
     await next();
   };

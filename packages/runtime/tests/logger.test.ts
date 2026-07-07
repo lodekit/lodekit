@@ -49,7 +49,7 @@ describe("logger", () => {
   it("createLogger stamps source/appId on every level", () => {
     const log = createLogger("watcher");
     log.debug("d"); log.warn("w");
-    const { records } = queryLogs({ app: "platform" });
+    const { records } = queryLogs({ app: "_platform" });
     expect(records.map((r) => [r.level, r.source])).toEqual([["warn", "watcher"], ["debug", "watcher"]]);
   });
 

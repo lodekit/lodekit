@@ -35,7 +35,7 @@ describe("logStore", () => {
     insertLog({ level: "warn", source: "console", appId: "a", message: "low disk" });
     insertLog({ level: "info", source: "watcher", message: "app changed" });
     expect(queryLogs({ app: "a" }).records).toHaveLength(2);
-    expect(queryLogs({ app: "platform" }).records.map((r) => r.source)).toEqual(["watcher"]);
+    expect(queryLogs({ app: "_platform" }).records.map((r) => r.source)).toEqual(["watcher"]);
     expect(queryLogs({ level: "warn" }).records.map((r) => r.message)).toEqual(["low disk"]);
     expect(queryLogs({ source: "console" }).records).toHaveLength(1);
     expect(queryLogs({ q: "disk" }).records).toHaveLength(1);

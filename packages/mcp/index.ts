@@ -38,7 +38,7 @@ server.tool("lodekit_open_app", { appId: z.string() }, async ({ appId }) => {
 server.tool(
   "lodekit_logs",
   {
-    appId: z.string().optional().describe('filter to one app, or "platform" for the runtime\'s own records; omit for everything'),
+    appId: z.string().optional().describe('filter to one app, or "_platform" for the runtime\'s own records; omit for everything'),
     level: z.enum(["debug", "info", "warn", "error"]).optional().describe("minimum level"),
     limit: z.number().optional(),
     q: z.string().optional().describe("substring match on the message"),

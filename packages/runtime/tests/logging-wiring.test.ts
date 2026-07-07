@@ -22,7 +22,7 @@ describe("subsystem logging", () => {
     const err = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
     every("boom-task", 60_000, () => { throw new Error("task exploded"); });
     tick("boom-task");
-    const { records } = queryLogs({ app: "platform", source: "scheduler", level: "error" });
+    const { records } = queryLogs({ app: "_platform", source: "scheduler", level: "error" });
     expect(records).toHaveLength(1);
     expect(records[0].message).toContain("boom-task");
     expect(String(records[0].fields?.stack)).toContain("task exploded");

@@ -25,7 +25,7 @@ export interface LogWrite {
 }
 
 export interface LogQuery {
-  app?: string; // app id, or "platform" for app_id IS NULL
+  app?: string; // app id, or "_platform" for app_id IS NULL
   level?: LevelName; // minimum
   source?: string;
   before?: number; // id cursor
@@ -109,7 +109,7 @@ export function queryLogs(opts: LogQuery = {}): { records: LogRecord[]; nextBefo
   const limit = Math.min(Math.max(1, Math.floor(opts.limit ?? 100)), 1000);
   const where: string[] = [];
   const params: unknown[] = [];
-  if (opts.app === "platform") where.push("app_id IS NULL");
+  if (opts.app === "_platform") where.push("app_id IS NULL");
   else if (opts.app) { where.push("app_id = ?"); params.push(opts.app); }
   if (opts.level) { where.push("level >= ?"); params.push(LEVELS[opts.level]); }
   if (opts.source) { where.push("source = ?"); params.push(opts.source); }

@@ -51,8 +51,10 @@ describe("log-store service", () => {
     expect((await post("Not-Valid!", { level: "info", message: "x" })).status).toBe(400);
   });
 
-  it("rejects the reserved platform app id", async () => {
-    expect((await post("platform", { level: "info", message: "x" })).status).toBe(400);
+  it("an app named 'platform' is a normal app under the internal-namespace convention", async () => {
+    expect((await post("platform", { level: "info", message: "mine" })).status).toBe(201);
+    const own = await (await app.request("/api/logs?app=platform")).json();
+    expect(own.records.map((r: { message: string }) => r.message)).toEqual(["mine"]);
   });
 
   it("app-scoped GET honors level/limit and never leaks other apps", async () => {
@@ -69,7 +71,7 @@ describe("GET /api/logs (global)", () => {
     await post("notes", { level: "info", message: "app event" });
     const all = await (await app.request("/api/logs")).json();
     expect(all.records).toHaveLength(2);
-    const plat = await (await app.request("/api/logs?app=platform")).json();
+    const plat = await (await app.request("/api/logs?app=_platform")).json();
     expect(plat.records.map((r: { source: string }) => r.source)).toEqual(["watcher"]);
     const notes = await (await app.request("/api/logs?app=notes")).json();
     expect(notes.records.map((r: { message: string }) => r.message)).toEqual(["app event"]);

@@ -69,7 +69,7 @@ describe("mcp tool helpers", () => {
       .toHaveLength(1);
     const app = await fetchLogs(base, { appId: "diary" });
     expect(app.records[0]).toMatchObject({ source: "app", message: "render failed" });
-    const platform = await fetchLogs(base, { appId: "platform" });
+    const platform = await fetchLogs(base, { appId: "_platform" });
     expect(platform.records.length).toBeGreaterThan(0); // boot + scaffold activity
   });
 });

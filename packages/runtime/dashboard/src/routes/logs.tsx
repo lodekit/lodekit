@@ -126,7 +126,7 @@ function LogsView() {
       const r = JSON.parse((e as MessageEvent).data) as LogRecord;
       const { app, level, q } = filtersRef.current;
       const matches =
-        (!app || (app === "platform" ? r.appId === null : r.appId === app)) &&
+        (!app || (app === "_platform" ? r.appId === null : r.appId === app)) &&
         LEVEL_RANK[r.level] >= LEVEL_RANK[level] &&
         (!q || r.message.toLowerCase().includes(q.toLowerCase()));
       if (!matches) return;
@@ -180,7 +180,7 @@ function LogsView() {
           onChange={(e) => setApp(e.target.value || undefined)}
         >
           <option value="">All sources</option>
-          <option value="platform">platform</option>
+          <option value="_platform">platform</option>
           {apps.map((a) => (
             <option key={a.appId} value={a.appId}>{a.appId}</option>
           ))}

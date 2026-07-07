@@ -55,8 +55,8 @@ export function apiRoutes(cfg: Config) {
     .route(`/apps/:appId/${LOGS}`, logRoutes)
     .use(`/apps/:appId/${EVENTS}/*`, withEvents())
     .route(`/apps/:appId/${EVENTS}`, eventRoutes)
-    // Global log read (dashboard + MCP). `app=platform` selects the runtime's own
-    // records — "platform" is a reserved app name on this endpoint.
+    // Global log read (dashboard + MCP). `app=_platform` selects the runtime's own
+    // records — the internal-namespace sentinel (spec 2026-07-07-events §2/§8).
     .get("/logs", zValidator("query", logsQuery.extend({ app: z.string().optional() }), validationHook), (c) => {
       const { app, level, source, before, limit, q } = c.req.valid("query");
       return c.json(queryLogs({ app, level, source, before, limit, q }));
