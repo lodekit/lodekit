@@ -136,12 +136,11 @@ prepared statement, broadcasts a `log` SSE event (on the app's channel when `app
 set; the global channel sees everything — existing `sse.ts` semantics), and tees `error`
 records to stderr. The three existing bare `console.*` sites convert. Existing SSE
 *state* broadcasts (`server-state`, build events) are untouched — state is not logs —
+but state transitions also get logged, including the worker's fatal stack, which today
+is lost when the exit handler overwrites it (closes that roadmap item as a side effect).
 
 > **Superseded (2026-07-07):** those state broadcasts now ride the event bus as stored
 > events (`docs/specs/2026-07-07-events-design.md` §4). Still not logs.
-
-but state transitions also get logged, including the worker's fatal stack, which today
-is lost when the exit handler overwrites it (closes that roadmap item as a side effect).
 
 **Worker console capture** (`appWorkerEntry.mjs` + `appWorker.ts`): the worker entry
 patches `console.debug/log/warn/error` (mapping `log`→info), sending
