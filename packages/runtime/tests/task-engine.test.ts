@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import type { Config } from "../src/config.js";
 import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "../src/taskEngine.js";
+import { initLogStore, queryLogs, closeLogStoreForTest } from "../src/logStore.js";
 import {
   getTasksDb, applyManifest, insertRun, claimNextDue, getRun, getDef, listRuns,
   BACKOFF_BASE_MS,
@@ -34,6 +35,7 @@ beforeEach(() => {
     appsDir: path.join(root, "apps"),
     dataDir: path.join(root, "data"),
     cacheDir: path.join(root, ".cache"),
+    stateDir: path.join(root, ".state"),
     port: 0,
     baseUrl: "",
   };
@@ -164,16 +166,36 @@ describe("taskEngine", () => {
   });
 
   it("a tasks-module load error keeps previous defs; _dashboard is ignored", async () => {
+    const err = vi.spyOn(process.stderr, "write").mockImplementation(() => true); // error log tees to stderr
     registerManifest("alpha", [{ name: "job" }]);
     const db = getTasksDb(cfg.dataDir, "alpha");
     registerManifest("alpha", [], "SyntaxError: bad module");
     expect(getDef(db, "job")!.retired).toBe(false); // NOT retired by the failed load
+    expect(err).toHaveBeenCalled();
     registerManifest("_dashboard", [{ name: "sneaky" }]);
     expect(fs.existsSync(path.join(cfg.dataDir, "_dashboard"))).toBe(false);
+    vi.restoreAllMocks();
   });
 
   it("apps without tasks never get a data dir", () => {
     registerManifest("plain", []);
     expect(fs.existsSync(path.join(cfg.dataDir, "plain"))).toBe(false);
+  });
+
+  it("run lifecycle lands as tasks-source log records (logging spec §8 wiring)", async () => {
+    initLogStore(path.join(root, "state"));
+    try {
+      registerManifest("alpha", [{ name: "job" }]);
+      const db = getTasksDb(cfg.dataDir, "alpha");
+      const { runId } = insertRun(db, { task: "job", notBefore: clock, source: "enqueue", now: clock });
+      dispatchTasks();
+      await vi.waitFor(() => expect(getRun(db, runId)!.state).toBe("succeeded"));
+      const { records } = queryLogs({ app: "alpha", source: "tasks" });
+      const messages = records.map((r) => r.message);
+      expect(messages).toContain("run started: job");
+      expect(messages).toContain("run succeeded: job");
+    } finally {
+      closeLogStoreForTest();
+    }
   });
 });

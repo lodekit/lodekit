@@ -13,6 +13,7 @@ import {
   type ManifestTask, type TaskRunRow,
 } from "./services/tasks.js";
 import { dueOccurrence } from "./taskSchedule.js";
+import { emitLog } from "./logger.js";
 
 export interface EngineDeps {
   now(): number;
@@ -46,7 +47,7 @@ export function initTaskEngine(config: Config, overrides: Partial<EngineDeps> = 
 export function registerManifest(appId: string, rawTasks: unknown[], loadError?: string): void {
   if (!cfg || !isValidAppId(appId)) return; // _dashboard sits outside the app-id grammar
   if (loadError) {
-    console.error(`[tasks] ${appId}: tasks module failed to load:\n${loadError}`);
+    emitLog("error", "tasks", "tasks module failed to load", { stack: loadError }, appId);
     emitTasksChange(appId, { task: "*", error: loadError });
     return;
   }
@@ -85,7 +86,7 @@ export function dispatchTasks(): void {
     try {
       dispatchApp(appId);
     } catch (e) {
-      console.error(`[tasks] dispatch failed for ${appId}:`, e);
+      emitLog("error", "tasks", "dispatch failed", { stack: e instanceof Error ? (e.stack ?? e.message) : String(e) }, appId);
     }
   }
 }
@@ -120,8 +121,12 @@ function dispatchApp(appId: string): void {
 
 async function executeRun(appId: string, run: TaskRunRow): Promise<void> {
   inflight.add(appId);
+  // Run-lifecycle records under the `tasks` source (spec §8): start debug,
+  // retry warn, terminal failure error — durable state stays in the runs table.
+  const fields = { task: run.task, runId: run.id, attempt: run.attempt };
   try {
     emitTasksChange(appId, { task: run.task, runId: run.id, state: "running" });
+    emitLog("debug", "tasks", `run started: ${run.task}`, fields, appId);
     const db = getTasksDb(cfg!.dataDir, appId);
     const def = getDef(db, run.task)!; // claimNextDue joins on a live def
     let result: TaskRunResult;
@@ -137,10 +142,18 @@ async function executeRun(appId: string, run: TaskRunRow): Promise<void> {
     }
     const outcome = finishRun(db, run, result, def, deps.now());
     emitTasksChange(appId, { task: run.task, runId: run.id, state: outcome.state });
+    const duration_ms = run.startedAt != null ? deps.now() - run.startedAt : undefined;
+    if (outcome.state === "succeeded") {
+      emitLog("debug", "tasks", `run succeeded: ${run.task}`, { ...fields, duration_ms }, appId);
+    } else if (outcome.state === "queued") {
+      emitLog("warn", "tasks", `run failed, retry scheduled: ${run.task}`, { ...fields, duration_ms, stack: result.ok ? undefined : result.message }, appId);
+    } else {
+      emitLog("error", "tasks", `run failed terminally: ${run.task}`, { ...fields, duration_ms, stack: result.ok ? undefined : result.message }, appId);
+    }
   } catch (e) {
     // A throw here (finishRun write failure, broadcast error) leaves the row
     // 'running' — boot recovery reconciles it. Never let it wedge dispatch.
-    console.error(`[tasks] run #${run.id} (${appId}/${run.task}) failed to record:`, e);
+    emitLog("error", "tasks", `run failed to record: ${run.task}`, { ...fields, stack: e instanceof Error ? (e.stack ?? e.message) : String(e) }, appId);
   } finally {
     inflight.delete(appId);
     dispatchTasks(); // chain the app's next due run without waiting for the poll
