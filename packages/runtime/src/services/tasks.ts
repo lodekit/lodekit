@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import { getAppDb, openDbs } from "../db.js";
-import { broadcast } from "../sse.js";
+import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
 import { parseDuration } from "../duration.js";
 import { validateSchedule, type ScheduleKind } from "../taskSchedule.js";
 import { Hono, type MiddlewareHandler } from "hono";
@@ -429,11 +429,14 @@ export function sweepAllTaskRuns(): void {
 
 const EVENT = `${CATALOG_NAME}-change`;
 
+// Change-feed events: identity + state, never values (events spec §4); a module
+// load error sends {task: "*"} — the stack lives in the adjacent tasks-source
+// log record, and a full stack could blow the payload cap and drop the event.
 export function emitTasksChange(
   appId: string,
-  data: { task: string; runId?: number; state?: string; error?: string }
+  data: { task: string; runId?: number; state?: string }
 ): void {
-  broadcast(EVENT, { appId, ...data }, appId);
+  emitEvent({ ns: appId, source: PLATFORM_NS, type: EVENT, payload: data, ttl: CHANGE_FEED_TTL_S });
 }
 
 export type TasksEnv = { Variables: { tasksDb: Database.Database; appId: string } };

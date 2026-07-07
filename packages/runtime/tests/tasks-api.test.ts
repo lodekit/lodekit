@@ -104,7 +104,7 @@ describe("tasks HTTP surface", () => {
     expect((await fetch(api("/runs/99999"))).status).toBe(404);
   });
 
-  it("broadcasts tasks-change on enqueue over the app SSE channel", async () => {
+  it("delivers tasks-change on enqueue over the app SSE channel as a bus envelope", async () => {
     const ac = new AbortController();
     const res = await fetch(`${base}/api/apps/app/events`, { signal: ac.signal });
     const reader = res.body!.getReader();
@@ -120,7 +120,9 @@ describe("tasks HTTP surface", () => {
       expect(buf).toContain(needle);
     };
     await post(api("/resize/runs"), {});
-    await waitFor("event: tasks-change");
+    await waitFor("event: event");
+    await waitFor('"type":"tasks-change"');
+    await waitFor('"ns":"app"');
     await waitFor('"state":"queued"');
     ac.abort();
   });

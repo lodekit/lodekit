@@ -48,7 +48,7 @@ export function registerManifest(appId: string, rawTasks: unknown[], loadError?:
   if (!cfg || !isValidAppId(appId)) return; // _dashboard sits outside the app-id grammar
   if (loadError) {
     emitLog("error", "tasks", "tasks module failed to load", { stack: loadError }, appId);
-    emitTasksChange(appId, { task: "*", error: loadError });
+    emitTasksChange(appId, { task: "*" });
     return;
   }
   // Never materialize a data dir for an app that has never used tasks.
