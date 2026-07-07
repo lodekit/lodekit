@@ -8,8 +8,9 @@ catalog beside kv-store (`2026-07-03-kv-store-v2-design.md`), file-store
 (`2026-07-06-file-store-design.md`), logging (`2026-07-06-logging-design.md`), and tasks
 (`2026-07-06-tasks-service-design.md`), whose declaration pattern (`src/tasks.ts`) it
 deliberately mirrors. Closes the roadmap items "Settings" (apps register settings),
-"Service defaults/thresholds → settings", and "Log retention as dashboard settings", and
-supersedes the theming spec's deferral of a person-facing dark/light toggle
+"Service defaults/thresholds → settings", "Log retention as dashboard settings", and
+"Event retention as settings" (`2026-07-07-events-design.md` §6), and supersedes the
+theming spec's deferral of a person-facing dark/light toggle
 (`2026-07-06-user-theming-and-ui-catalog-design.md`).
 
 ## 1. Purpose and v1 scope
@@ -193,6 +194,7 @@ instead).
 | `tasks.min_every` | duration | 1m | per-app | ✓ |
 | `tasks.dispatch_poll` | duration | 1s | global | ✓ |
 | `tasks.sweep_interval` | duration | 60s | global | ✓ |
+| `tasks.list_limit` | number (int) | 50 | per-app | ✓ |
 
 **Services → Logs**
 
@@ -216,6 +218,14 @@ instead).
 |---|---|---|---|---|
 | `files.sweep_interval` | duration | 60s | global | ✓ |
 | `files.list_limit` | number (int) | 100 | per-app | ✓ |
+
+**Services → Events**
+
+| Key | Type | Default | Scope | Advanced |
+|---|---|---|---|---|
+| `events.retention_age` | duration | 30d | per-app | |
+| `events.retention_max_rows` | number (int) | 50 000 | global (one platform-wide store cap) | |
+| `events.sweep_interval` | duration | 60s | global | ✓ |
 
 **Services → App hosting**
 
