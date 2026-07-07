@@ -47,6 +47,11 @@ The posture, decided up front:
 - **Other local processes running as the person stay trusted** — consistent with the
   platform's local-trust posture. Any local process could read the Keychain item; the
   Keychain buys backup-safety and at-rest encryption, not local-process isolation.
+  (Corollary, accepted: the master key rides in `security add-generic-password` argv
+  during its one-time first-write, briefly visible to `ps`. This is ≤ the standing
+  Keychain read a same-user process already has, and macOS hides other users' argv from
+  non-root; `security` has no reliable stdin path and a native Keychain module would
+  break the buildless runtime.)
 - **Rejected alternatives:** per-secret Keychain items (ACL prompts tied to code
   identity — the ad-hoc-signed app and the dev `tsx` runtime would re-prompt after
   every rebuild; nothing transfers to a future Linux story); key file beside the data
