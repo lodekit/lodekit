@@ -13,6 +13,9 @@ import { filesRoutes, withFiles, CATALOG_NAME as FILES } from "./services/file-s
 import { logRoutes, withLogs, logsQuery, CATALOG_NAME as LOGS } from "./services/log-store.js";
 import { queryLogs } from "./logStore.js";
 import { tasksRoutes, withTasks, CATALOG_NAME as TASKS } from "./services/tasks.js";
+import { eventRoutes, withEvents, eventsQuery, CATALOG_NAME as EVENTS } from "./services/event-store.js";
+import { queryEvents } from "./eventStore.js";
+import { NS_RE } from "./events.js";
 
 // Holds the stream open until the client disconnects; the abort callback
 // removes the client from the SSE registry.
@@ -50,6 +53,8 @@ export function apiRoutes(cfg: Config) {
     .route(`/apps/:appId/${CATALOG_NAME}`, kvRoutes)
     .use(`/apps/:appId/${LOGS}/*`, withLogs())
     .route(`/apps/:appId/${LOGS}`, logRoutes)
+    .use(`/apps/:appId/${EVENTS}/*`, withEvents())
+    .route(`/apps/:appId/${EVENTS}`, eventRoutes)
     // Global log read (dashboard + MCP). `app=platform` selects the runtime's own
     // records — "platform" is a reserved app name on this endpoint.
     .get("/logs", zValidator("query", logsQuery.extend({ app: z.string().optional() }), validationHook), (c) => {
@@ -58,6 +63,15 @@ export function apiRoutes(cfg: Config) {
     })
     .use(`/apps/:appId/${TASKS}/*`, withTasks(cfg))
     .route(`/apps/:appId/${TASKS}`, tasksRoutes)
+    // Global event history (dashboard + MCP); /api/events itself stays the SSE feed.
+    .get(
+      "/events/history",
+      zValidator("query", eventsQuery.extend({ ns: z.string().regex(NS_RE).optional() }), validationHook),
+      (c) => {
+        const { ns, type, after, before, limit } = c.req.valid("query");
+        return c.json(queryEvents({ ns, type, after, before, limit }));
+      }
+    )
     .get("/events", (c) => sseHandler()(c))
     .get("/apps/:appId/events", (c) => {
       const appId = c.req.param("appId");
