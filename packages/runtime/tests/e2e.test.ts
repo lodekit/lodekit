@@ -120,7 +120,9 @@ describe("showcase apps e2e (Start)", () => {
 
   it("emits app-prefixed /_build/ asset URLs that resolve as written in the shell", async () => {
     const html = await (await fetch(base + "/greenhouse/")).text();
-    const src = html.match(/src="([^"]+\.js)"/)?.[1];
+    // The theme resolver script (/_ui/theme.js) is global and unprefixed by design —
+    // match the app's own bundle script specifically, not just the first src=".js".
+    const src = html.match(/src="([^"]+\/_build\/[^"]+\.js)"/)?.[1];
     expect(src).toBeTruthy();
     expect(src!.startsWith("/greenhouse/_build/")).toBe(true);
     expect((await fetch(base + src!)).status).toBe(200);

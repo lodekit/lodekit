@@ -35,14 +35,10 @@ export const Route = createRootRoute({
     <html lang="en">
       <head>
         <HeadContent />
-        {/* Theme before hydration — no dark-mode flash (spec §2 / shadcn item 2).
-            dangerouslySetInnerHTML is safe ONLY because this is a fixed string
-            literal; never interpolate anything into it. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: \`document.documentElement.classList.toggle("dark",matchMedia("(prefers-color-scheme: dark)").matches)\`,
-          }}
-        />
+        {/* Theme before hydration — no dark-mode flash. Served by the runtime
+            from the effective appearance.theme setting; system mode keeps the
+            OS media query (settings spec §8). */}
+        <script src="/_ui/theme.js" />
       </head>
       <body>
         <Outlet />

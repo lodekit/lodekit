@@ -19,7 +19,7 @@ import { initLogStore, sweepLogStore } from "./logStore.js";
 import { initEventStore, sweepEventStore } from "./eventStore.js";
 import {
   initSettingsStore, registerSettingsManifest,
-  effectiveMs, effectiveNumber, onSettingsWrite, collectAppOverrides,
+  effectiveMs, effectiveNumber, effectiveString, onSettingsWrite, collectAppOverrides,
 } from "./services/settings.js";
 import { parseDuration } from "./duration.js";
 import { createLogger } from "./logger.js";
@@ -36,6 +36,23 @@ const fallbackPage = (message?: string) => `<!doctype html>
 </head>
 <body><h1>Lodekit</h1><p class="muted">The dashboard isn't available${message ? " — its build failed" : " yet"}. Apps and the API are still running.</p>${message ? `<pre>${escapeHtml(message)}</pre>` : ""}</body>
 </html>
+`;
+
+const themeResolverJs = (mode: string) => `(() => {
+  let mode = ${JSON.stringify(mode)};
+  const mq = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => document.documentElement.classList.toggle("dark", mode === "dark" || (mode === "system" && mq.matches));
+  apply();
+  mq.addEventListener("change", apply);
+  if (typeof EventSource !== "undefined") {
+    const es = new EventSource("/api/events");
+    es.addEventListener("event", (e) => {
+      const d = JSON.parse(e.data);
+      if (d.type !== "settings-change" || d.payload?.key !== "appearance.theme") return;
+      fetch("/_ui/theme.json").then((r) => r.json()).then((t) => { mode = t.theme; apply(); }).catch(() => {});
+    });
+  }
+})();
 `;
 
 const uiNotBuiltPage = () => `<!doctype html>
@@ -83,6 +100,19 @@ export function createApp(cfg: Config): Hono {
       c.header("Cache-Control", "no-store");
       c.header("Content-Type", "text/css; charset=utf-8");
       return c.body(css);
+    })
+    // Theme mode resolver (settings spec §8): a classic blocking script so the
+    // class lands before paint. Generated per request from the effective
+    // appearance.theme; the interpolation is safe — a validated 3-value enum,
+    // JSON-encoded. Live changes re-apply via the bus without app code.
+    .get("/_ui/theme.js", (c) => {
+      c.header("Cache-Control", "no-store");
+      c.header("Content-Type", "text/javascript; charset=utf-8");
+      return c.body(themeResolverJs(effectiveString("appearance.theme")));
+    })
+    .get("/_ui/theme.json", (c) => {
+      c.header("Cache-Control", "no-store");
+      return c.json({ theme: effectiveString("appearance.theme") });
     })
     .use("/_ui/*", serveStatic({
       root: uiStaticDir,

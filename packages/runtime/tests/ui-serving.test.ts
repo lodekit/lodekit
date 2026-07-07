@@ -5,6 +5,7 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { createServer } from "../src/server.js";
 import type { Config } from "../src/config.js";
+import { initSettingsStore, closeSettingsStoreForTest, setPlatformValue } from "../src/services/settings.js";
 
 let root: string, cache: string, staticDir: string, server: Server, base: string;
 
@@ -32,9 +33,11 @@ beforeEach(() => {
   cache = fs.mkdtempSync(path.join(os.tmpdir(), "lk-cache-"));
   staticDir = fs.mkdtempSync(path.join(os.tmpdir(), "lk-ui-"));
   process.env.LODEKIT_UI_STATIC_DIR = staticDir;
+  initSettingsStore(path.join(root, "data"));
 });
 afterEach(() => {
   delete process.env.LODEKIT_UI_STATIC_DIR;
+  closeSettingsStoreForTest();
   server?.close();
   for (const d of [root, cache, staticDir]) fs.rmSync(d, { recursive: true, force: true });
 });
@@ -96,5 +99,15 @@ describe("/_ui/theme.css", () => {
     await listen(cfgFor(root, cache));
     expect((await fetch(base + "/_ui/theme.css?app=..%2Fevil")).status).toBe(404);
     expect((await fetch(base + "/_ui/theme.css?app=nope")).status).toBe(404);
+  });
+
+  it("serves the theme resolver with the effective mode, no-store", async () => {
+    await listen(cfgFor(root, cache));
+    const r = await fetch(`${base}/_ui/theme.js`);
+    expect(r.headers.get("cache-control")).toBe("no-store");
+    expect(await r.text()).toContain('"system"');
+    setPlatformValue("appearance.theme", "dark");
+    expect(await (await fetch(`${base}/_ui/theme.js`)).text()).toContain('"dark"');
+    expect(await (await fetch(`${base}/_ui/theme.json`)).json()).toEqual({ theme: "dark" });
   });
 });

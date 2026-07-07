@@ -46,7 +46,7 @@ describe("scaffoldApp", () => {
     const root_ = fs.readFileSync(path.join(d, "src", "routes", "__root.tsx"), "utf8");
     expect(root_).toContain("Notes");
     expect(root_).toContain('from "../styles.css?url"');
-    expect(root_).toContain("dangerouslySetInnerHTML");
+    expect(root_).toContain('src="/_ui/theme.js"');
     const indexTsx = fs.readFileSync(path.join(d, "src", "routes", "index.tsx"), "utf8");
     expect(indexTsx).toContain('from "@lodekit/sdk"');
     expect(indexTsx).toContain('from "@lodekit/ui"');
