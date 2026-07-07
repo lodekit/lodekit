@@ -1,7 +1,7 @@
 # Settings service (v1) — design
 
 **Date:** 2026-07-07
-**Status:** Draft — awaiting review
+**Status:** Approved
 **Fits:** the umbrella spec's service-catalog row "settings — Future" and its dashboard
 per-service-panels row (`docs/specs/2026-07-02-product-overview-design.md`). Joins the
 catalog beside kv-store (`2026-07-03-kv-store-v2-design.md`), file-store
@@ -166,17 +166,20 @@ this table is normative and replaces them (each constant's site reads the effect
 instead).
 
 **General**
+
 | Key | Type | Default | Scope | |
 |---|---|---|---|---|
 | `general.start_at_login` | boolean | false | global | applied by the manager (§9) |
 
 **Appearance**
+
 | Key | Type | Default | Scope | |
 |---|---|---|---|---|
 | `appearance.icon_style` | select a/b/c | b | global | applied by the manager (§9) |
 | `appearance.theme` | select system/light/dark | system | global | drives dashboard + all hosted apps (§8) |
 
 **Services → Tasks**
+
 | Key | Type | Default | Scope | Advanced |
 |---|---|---|---|---|
 | `tasks.default_retries` | number (int, ≥0) | 3 | per-app | |
@@ -192,6 +195,7 @@ instead).
 | `tasks.sweep_interval` | duration | 60s | global | ✓ |
 
 **Services → Logs**
+
 | Key | Type | Default | Scope | Advanced |
 |---|---|---|---|---|
 | `logs.retention_age` | duration | 7d | per-app | |
@@ -200,18 +204,21 @@ instead).
 | `logs.list_limit` | number (int) | 100 | per-app | ✓ |
 
 **Services → Store**
+
 | Key | Type | Default | Scope | Advanced |
 |---|---|---|---|---|
 | `kv.sweep_interval` | duration | 60s | global | ✓ |
 | `kv.list_limit` | number (int) | 1000 | per-app | ✓ |
 
 **Services → Files**
+
 | Key | Type | Default | Scope | Advanced |
 |---|---|---|---|---|
 | `files.sweep_interval` | duration | 60s | global | ✓ |
 | `files.list_limit` | number (int) | 100 | per-app | ✓ |
 
 **Services → App hosting**
+
 | Key | Type | Default | Scope | Advanced |
 |---|---|---|---|---|
 | `hosting.request_timeout` | duration | 30s | per-app | |
