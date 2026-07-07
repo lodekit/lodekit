@@ -9,7 +9,7 @@ person's system (no system Node, no PATH). Spec:
 ## Commands
 
 - `pnpm --filter @lodekit/manager start` — dev mode: menubar app supervising the workspace
-  runtime against `examples/` (system Node).
+  runtime against `root/` (system Node).
 - `pnpm --filter @lodekit/manager test` — vitest suite (supervisor, paths, logs).
 - `pnpm --filter @lodekit/manager make` — build the payload + fetch the pinned Node
   (`scripts/prepare-bundle.mjs`, one-place version pin), then package the ad-hoc-signed
