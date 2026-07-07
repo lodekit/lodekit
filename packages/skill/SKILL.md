@@ -101,7 +101,7 @@ The person's knobs: declare them, read them — never write them from app code.
   Every setting needs `label`, `description` (one line — shown under the control), and `default`. Types: `boolean`, `string`, `number`, `select`, `duration`. Keys are snake_case.
 - Read (typed) by importing your own schema: `import settings from "../settings"; const v = await settings.get("show_archived");` — plus `settings.all()` and `settings.watch(cb)`.
 - The person edits values in the dashboard Settings page; the dashboard renders your schema automatically.
-- Boundaries: **Settings** = person writes, app reads. **Store (`kv`)** = the app's own memory — app writes at runtime. **Secrets** = credentials, server-side only (coming) — never put credentials in Settings or the Store.
+- Boundaries: **Settings** = person writes, app reads. **Store (`kv`)** = the app's own memory — app writes at runtime. **Secrets** = credentials, server-side only (see the Secrets section) — never put credentials in Settings or the Store.
 - Inspect over MCP: `lodekit_settings_list`, `lodekit_settings_get`.
 
 ## Secrets
