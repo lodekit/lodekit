@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
 const { getPaths } = require("./paths");
-const { openLogStream } = require("./logs");
+const { openDailyLogStream } = require("./logs");
 const { Supervisor } = require("./supervisor");
 const { getIconStyle, setIconStyle } = require("./settings");
 
@@ -22,8 +22,8 @@ const paths = getPaths({
   repoRoot: path.resolve(__dirname, "..", ".."),
 });
 
-const managerLogStream = openLogStream(paths.logsDir, "manager.log");
-const runtimeLogStream = openLogStream(paths.logsDir, "runtime.log");
+const managerLogStream = openDailyLogStream(paths.logsDir, "manager");
+const runtimeLogStream = openDailyLogStream(paths.logsDir, "runtime");
 const log = (msg) => managerLogStream.write(`${new Date().toISOString()} ${msg}\n`);
 
 function spawnRuntime() {

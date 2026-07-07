@@ -1,14 +1,66 @@
 "use strict";
 const fs = require("node:fs");
 const path = require("node:path");
+const { Writable } = require("node:stream");
 
-// One log file per process per manager launch; the previous launch's file
-// survives as `<name>.old` (spec §6).
-function openLogStream(logsDir, name) {
-  fs.mkdirSync(logsDir, { recursive: true });
-  const file = path.join(logsDir, name);
-  if (fs.existsSync(file)) fs.renameSync(file, `${file}.old`);
-  return fs.createWriteStream(file, { flags: "a" });
+const DEFAULT_DAYS = 7;
+
+// UTC date stamp — a stable, sortable YYYYMMDD used in filenames and sweep compares.
+function dateStamp(d) {
+  return d.toISOString().slice(0, 10).replace(/-/g, "");
 }
 
-module.exports = { openLogStream };
+// Deletes dated log files older than `days`, plus the pre-dated-scheme legacy
+// names (one-time cleanup; logging spec §7). Lexicographic compare works because
+// the stamp is fixed-width YYYYMMDD.
+function sweepLogs(logsDir, { days = DEFAULT_DAYS, now = () => new Date() } = {}) {
+  const cutoff = dateStamp(new Date(now().getTime() - days * 24 * 60 * 60 * 1000));
+  let entries;
+  try {
+    entries = fs.readdirSync(logsDir);
+  } catch {
+    return;
+  }
+  for (const name of entries) {
+    const dated = /^[a-z]+-(\d{8})\.log$/.exec(name);
+    const legacy = /^(runtime|manager)\.log(\.old)?$/.test(name);
+    if ((dated && dated[1] < cutoff) || legacy) {
+      try {
+        fs.unlinkSync(path.join(logsDir, name));
+      } catch {
+        // sweep is best-effort; a locked file waits for the next roll
+      }
+    }
+  }
+}
+
+// A pipe-compatible Writable appending to <base>-YYYYMMDD.log. Same-day launches
+// append (a crash loop must not destroy the launch that started it); the write
+// path rolls to a new file when the date stamp changes; sweep runs at open and
+// at each roll.
+function openDailyLogStream(logsDir, base, { days = DEFAULT_DAYS, now = () => new Date() } = {}) {
+  fs.mkdirSync(logsDir, { recursive: true });
+  let current = null;
+  let stamp = "";
+  const roll = () => {
+    const s = dateStamp(now());
+    if (s !== stamp) {
+      if (current) current.end();
+      stamp = s;
+      sweepLogs(logsDir, { days, now });
+      current = fs.createWriteStream(path.join(logsDir, `${base}-${s}.log`), { flags: "a" });
+    }
+    return current;
+  };
+  roll();
+  return new Writable({
+    write(chunk, encoding, callback) {
+      roll().write(chunk, encoding, callback);
+    },
+    final(callback) {
+      current ? current.end(callback) : callback();
+    },
+  });
+}
+
+module.exports = { dateStamp, openDailyLogStream, sweepLogs };
