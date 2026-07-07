@@ -30,10 +30,10 @@ describe("getPaths", () => {
     expect(p.dashboardUrl).toBe("http://lodekit.localhost:7777");
   });
 
-  it("dev mode runs the workspace runtime against examples/ on the system node", () => {
+  it("dev mode runs the workspace runtime against root/ on the system node", () => {
     const p = getPaths({ packaged: false, homedir: HOME, resourcesPath: "/ignored", repoRoot: "/repo" });
     expect(p.mode).toBe("dev");
-    expect(p.lodekitRoot).toBe("/repo/examples");
+    expect(p.lodekitRoot).toBe("/repo/root");
     expect(p.cacheDir).toBe("/repo/.cache");
     expect(p.stateDir).toBe("/repo/.cache/state");
     expect(p.nodeBin).toBe("node");

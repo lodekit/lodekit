@@ -10,7 +10,7 @@ For trivial tasks, use judgment.
 
 ## Architecture
 
-pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `examples/` is **not** a
+pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `root/` is **not** a
 member (so the sample apps never get a `node_modules`). Structure and rationale:
 `docs/specs/2026-06-30-monorepo-migration-design.md`.
 
@@ -30,9 +30,9 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
   Lodekit-local Node + the platform payload (runtime/mcp/skill via `pnpm deploy`) in
   `Resources/`, spawning the runtime as a single direct child Node process (so
   `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
-  app supervising the workspace runtime against `examples/` on the system Node.
-- **`examples/`** — sample Start apps (no per-app dependencies) as a self-contained Lodekit
-  root, used in dev via `LODEKIT_ROOT=./examples`.
+  app supervising the workspace runtime against `root/` on the system Node.
+- **`root/`** — the checked-in Lodekit root: showcase Start apps (no per-app dependencies)
+  used in dev via `LODEKIT_ROOT=./root` and shipped by the manager on first run.
 
 Deferred subsystems (designed-in, not built): docs content/theming/deploy and packaging
 polish (Developer ID signing/notarization, auto-update). See `roadmap.md`.
@@ -50,7 +50,7 @@ Package manager is **pnpm** (workspaces). From the repo root:
   workspace to hoisted layout and silently break runtime Vite/Tailwind builds. Install from
   the repo root; recover with a root-level node_modules wipe + `pnpm install`.
 - `pnpm dev` — run the runtime against the example apps
-  (`LODEKIT_ROOT=$(pwd)/examples pnpm --filter @lodekit/runtime start`).
+  (`LODEKIT_ROOT=$(pwd)/root pnpm --filter @lodekit/runtime start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
 - `pnpm test` — runs `pnpm -r test`: `@lodekit/runtime` (vitest, incl. the runtime↔MCP
   integration test), `@lodekit/sdk`, and `@lodekit/manager` (supervisor/paths/logs).
@@ -58,7 +58,7 @@ Package manager is **pnpm** (workspaces). From the repo root:
 - `pnpm --filter @lodekit/web-main dev` | `build` — the landing site.
 - `pnpm --filter @lodekit/web-docs dev` | `build` — the docs site.
 - `pnpm --filter @lodekit/manager start` — the menubar manager in dev mode (system Node;
-  supervises the runtime against `examples/`).
+  supervises the runtime against `root/`).
 - `pnpm --filter @lodekit/manager make` — package `Lodekit.app` (runs
   `scripts/prepare-bundle.mjs` first: pnpm-deploys the platform payload and downloads the
   pinned Node — the version is pinned there, and the bundle must be built on that same

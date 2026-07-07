@@ -45,11 +45,11 @@ beforeEach(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-root-"));
   cache = fs.mkdtempSync(path.join(os.tmpdir(), "lk-cache-"));
   copyDir(
-    path.join(__dirname, "../../../examples/apps/expense-tracker"),
+    path.join(__dirname, "../../../root/apps/expense-tracker"),
     path.join(root, "apps", "expense-tracker")
   );
   copyDir(
-    path.join(__dirname, "../../../examples/apps/habit-tracker"),
+    path.join(__dirname, "../../../root/apps/habit-tracker"),
     path.join(root, "apps", "habit-tracker")
   );
   // The loopback round-trip proof: a route whose loader calls the fixture's `bump` server

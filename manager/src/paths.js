@@ -32,7 +32,7 @@ function getPaths({ packaged, homedir, resourcesPath, repoRoot }) {
   return {
     ...common,
     mode: "dev",
-    lodekitRoot: path.join(repoRoot, "examples"),
+    lodekitRoot: path.join(repoRoot, "root"),
     cacheDir: path.join(repoRoot, ".cache"),
     stateDir: path.join(repoRoot, ".cache", "state"),
     nodeBin: "node",
