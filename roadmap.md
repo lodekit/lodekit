@@ -180,6 +180,15 @@ above; the remainder:
   semantics.
 - **Internal scheduler vs the Tasks service** — ~~packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.~~ **Resolved (2026-07-06, Tasks slice-spec §2):** layered, not conflated — the scheduler stays the internal heartbeat; the Tasks dispatcher is its third consumer (`docs/specs/2026-07-06-tasks-service-design.md`).
 - **Tasks — deferred from the v1 slice-spec** (`docs/specs/2026-07-06-tasks-service-design.md` §11): event-triggered tasks (after the events revamp; closes the server-side `watch`/signals gap), step-based durable execution (`step.run`/`sleep`/`waitForEvent`), signals, dynamic schedule API, per-task concurrency/rate limits/priorities, MCP task tools (read-only first), and optionally consolidating the kv/file TTL sweeps onto Tasks. Accepted at personal scale (final review): dueOccurrence's occurrence-by-occurrence cron walk after long offline gaps (worst ~tens of ms, once) — bound it only if it ever bites.
+- **Task schedules and timezone/DST semantics** — cron (and the `every` anchor) evaluate in
+  the machine-local timezone (Tasks slice-spec §4), which is under-specified at the edges:
+  DST transitions (a `30 2 * * *` task on spring-forward day hits a nonexistent local time;
+  fall-back repeats an hour), the person traveling/changing the system timezone (next-run
+  times silently shift; a tz jump can make an occurrence look missed or stale against the
+  `catchUp` window), and the persisted high-water mark straddling the change. Today the
+  behavior is whatever croner + epoch-ms arithmetic do. Decide and be explicit: document
+  the exact DST/tz-change rules, and/or add a per-task `tz` option (croner supports one,
+  e.g. pinning a schedule to UTC or a named zone).
 - **Task-engine app-set eviction on app deletion** — deleting an app (`dropBuild`) stops its
   worker but the tasks engine keeps polling its per-app db each dispatch tick (schedule runs
   materialize into one absorbed queued row per task; SSE events for a gone app). Bounded and
