@@ -176,24 +176,23 @@ function DashboardHome() {
   useEffect(() => {
     void load();
     const es = new EventSource("/api/events");
-    es.addEventListener("apps-changed", () => void load());
-    for (const ev of ["building", "ready", "error"] as const) {
-      es.addEventListener(ev, (e) => {
-        const d = JSON.parse((e as MessageEvent).data) as { appId: string; message?: string };
-        setStates((s) => ({ ...s, [d.appId]: { status: ev, message: d.message } }));
-      });
-    }
-    es.addEventListener("server-state", (e) => {
+    es.addEventListener("event", (e) => {
       const d = JSON.parse((e as MessageEvent).data) as {
-        appId: string;
-        status: ServerStatus["status"];
-        message?: string;
+        ns: string;
+        type: string;
+        payload: Record<string, unknown> | null;
       };
-      setServerStates((s) => ({ ...s, [d.appId]: { status: d.status, message: d.message } }));
-    });
-    es.addEventListener("kv-store-change", (e) => {
-      const d = JSON.parse((e as MessageEvent).data) as { appId: string };
-      void queryClient.invalidateQueries({ queryKey: ["kv", d.appId] });
+      if (d.type === "apps-changed") return void load();
+      if (d.type === "building" || d.type === "ready" || d.type === "error") {
+        const message = typeof d.payload?.message === "string" ? d.payload.message : undefined;
+        return setStates((s) => ({ ...s, [d.ns]: { status: d.type as BuildStatus["status"], message } }));
+      }
+      if (d.type === "server-state") {
+        const p = d.payload as { status: ServerStatus["status"]; message?: string } | null;
+        if (p) setServerStates((s) => ({ ...s, [d.ns]: { status: p.status, message: p.message } }));
+        return;
+      }
+      if (d.type === "kv-store-change") void queryClient.invalidateQueries({ queryKey: ["kv", d.ns] });
     });
     es.addEventListener("tasks-change", (e) => {
       const d = JSON.parse((e as MessageEvent).data) as { appId: string };
@@ -215,6 +214,7 @@ function DashboardHome() {
             {apps ? `${apps.length} ${apps.length === 1 ? "app" : "apps"}` : ""}
           </span>
           <Link to="/logs" className="text-sm text-muted-foreground hover:underline">Logs</Link>
+          <Link to="/events" className="text-sm text-muted-foreground hover:underline">Events</Link>
         </div>
       </div>
       {apps === null ? (
