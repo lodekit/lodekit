@@ -2,3 +2,10 @@ packages:
   - 'packages/*'
   - 'web/*'
   - 'manager'
+
+# Supply-chain cooldown: a published version must be at least this old (minutes)
+# before it's installable — quarantines fresh, potentially-compromised releases.
+# Pin an exact version explicitly to bypass when a genuine security patch lands.
+minimumReleaseAge: 10080 # 7 days
+minimumReleaseAgeExclude:
+  - '@lodekit/*'
