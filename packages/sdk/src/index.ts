@@ -55,3 +55,13 @@ export type { DefinedSecrets, SecretSlots, SecretSlotDef } from "./secrets.js";
 
 /** The app's own app id, injected by the toolchain at build time ("" outside an app build). */
 export const appId = injectedAppId;
+
+import { createRemoteDb } from "./db.js";
+import type { SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
+
+/** The app's typed database handle (db-store): pass your src/db.ts tables.
+ *  Schema application happens at worker boot from the same file — this factory
+ *  only builds the query client. */
+export function createDb<TSchema extends Record<string, unknown>>(schema: TSchema): SqliteRemoteDatabase<TSchema> {
+  return createRemoteDb({ baseUrl: serverBaseUrl, appId: injectedAppId, schema });
+}
