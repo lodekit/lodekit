@@ -369,3 +369,17 @@ above; the remainder:
   `stop()` have no guard against a double `start()` (leaks the prior `unsubscribe`) or a
   `stop()` racing an in-flight `start()`. Leak-only today (single caller in `main.js`); fix
   before `runtimeSettings` gets a second caller or a restart-loop path.
+- **Dashboard cosmetic nits (UI revamp, 2026-07-10)** — three parked judgment calls, all
+  needing a live browser look rather than more code work:
+  - *Advanced rows' bottom borders 4px short* — the Service Overrides accordion content
+    gets `pr-1` (`dashboard/src/routes/settings.tsx`) so the accordion's `overflow-hidden`
+    height animation doesn't clip field focus rings; side effect is each row's `border-b`
+    stops 4px short of the non-accordion rows' dividers. Judge whether it's noticeable;
+    if so, find a ring-clip fix that doesn't shorten the border.
+  - *Narrow services panel pushes content* — on narrow viewports the services panel
+    reflows the page content aside; the revamp spec said it should overlay like a drawer.
+    Decide whether the spec behavior is worth implementing.
+  - *Settings sidebar sticky offset under a scrolled-away header* — the sidebar is
+    `md:sticky md:top-24` (`dashboard/src/routes/settings.tsx`), sized to clear a sticky
+    header; but the desktop header scrolls away, so the pinned sidebar sits 6rem below the
+    viewport top with a dead gap above. Likely a smaller or dynamic top offset.
