@@ -176,6 +176,34 @@ the person-facing name for the runtime (the app-hosting service); recorded in
 - Field controls, drift badges ("was reset to default"), the app secrets card,
   and service overrides keep current behavior, restyled into the new row.
 
+## 4a. Amendments (2026-07-10, post-smoke feedback)
+
+Settings-page revisions from the first browser smoke; these supersede the
+matching lines in §4:
+
+- **Sidebar:** the per-service entries collapse into a single **Services**
+  item below Appearance. Sidebar = SETTINGS heading, General, Appearance,
+  Services, then the Apps group. The Services page shows **per-service tab
+  navigation** (Store, Files, Tasks, Events, Logs, Engine) with each tab's
+  Advanced accordion at the bottom. Old `?section=<service>` links land on
+  the Services page with that tab active.
+- **App page:** "Service overrides" becomes **Service Overrides** — an
+  initially-collapsed card that expands to the same per-service tabs. Row
+  labels drop the `Section · ` prefix (the tab names the service); the
+  platform value an override shadows renders under the control,
+  right-aligned, always visible.
+- **Rows:** all field controls share one small width; the "Applies to all
+  apps" inherited label is removed everywhere; descriptions are one step
+  smaller than labels; the reset icon is muted when enabled and half-faded
+  when disabled (never full-strength).
+- **Errors:** a rejected write keeps the person's typed input for correction
+  and shows the server reason without the setting-key prefix.
+- **Empty groups:** a service whose settings are all advanced (Store, Files)
+  says "No general settings — see Advanced." instead of rendering empty.
+- **Advanced:** the accordion trigger is styled as a small uppercase heading
+  with space above, so it reads as a section head rather than hugging the row
+  border above it.
+
 ## 5. Out of scope
 
 - Real Data and Tasks pages (stubs only).
