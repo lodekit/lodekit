@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
@@ -10,6 +10,7 @@ import {
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@lodekit/ui";
 import { Check, ChevronDown, RotateCcw } from "lucide-react";
+import { SERVICE_ICONS } from "../components/nav";
 
 export const Route = createFileRoute("/settings")({
   validateSearch: (s: Record<string, unknown>): { section?: string } =>
@@ -55,9 +56,12 @@ async function write(url: string, value: unknown | undefined) {
 // Text-ish fields hold a local draft so a rejected write keeps the person's
 // input for correction; the draft re-seeds only when the effective value
 // actually changes externally (reset, another tab, manager reconciliation).
+// Focus selects the content (type-to-replace), Escape restores the value the
+// field had when focused, and blurring an unchanged field writes nothing.
 function FieldControl({ field, value, onChange }: { field: Field; value: unknown; onChange: (v: unknown) => void }) {
   const [draft, setDraft] = useState(String(value));
   const [seeded, setSeeded] = useState(String(value));
+  const focusValue = useRef(String(value));
   if (String(value) !== seeded) { // external change: re-seed during render (React's sanctioned pattern)
     setSeeded(String(value));
     setDraft(String(value));
@@ -67,7 +71,7 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
   }
   if (field.type === "select") {
     return (
-      <Select value={String(value)} onValueChange={(v) => onChange(v)}>
+      <Select value={String(value)} onValueChange={(v) => { if (v !== String(value)) onChange(v); }}>
         <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
         <SelectContent>
           {(field.options ?? []).map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
@@ -75,8 +79,17 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
       </Select>
     );
   }
+  const onFocus = (e: FocusEvent<HTMLInputElement>) => {
+    focusValue.current = draft;
+    e.currentTarget.select();
+  };
+  const keys = (commit: () => void) => (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") commit();
+    if (e.key === "Escape") setDraft(focusValue.current);
+  };
   if (field.type === "number") {
     const commit = () => {
+      if (draft === String(value)) return; // unchanged: no write
       const n = Number(draft);
       if (draft.trim() !== "" && Number.isFinite(n)) { onChange(n); return; }
       setDraft(String(value)); // emptied/invalid input: no-op, never write 0
@@ -86,24 +99,27 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
         type="number" className="w-32" value={draft}
         min={field.min as number | undefined} max={field.max as number | undefined} step={field.step ?? (field.integer ? 1 : undefined)}
         onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
+        onFocus={onFocus} onBlur={commit} onKeyDown={keys(commit)}
       />
     );
   }
   // string + duration: text input; the server validates the duration grammar.
-  const commit = () => onChange(draft);
+  const commit = () => {
+    if (draft === String(value)) return; // unchanged: no write
+    onChange(draft);
+  };
   return (
     <Input
       className="w-32" value={draft} placeholder={field.placeholder}
       maxLength={field.maxLength} onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
+      onFocus={onFocus} onBlur={commit} onKeyDown={keys(commit)}
     />
   );
 }
 
 // A setting row: label, one-liner description, [saved ✓] [reset ↺] [control].
-// The reset icon carries the "modified" signal: muted when enabled, half-faded
-// by the button's disabled style at default. A successful write fades a check
+// The reset icon carries the "modified" signal: muted when the value is
+// overridden, hidden (space kept) at default. A successful write fades a check
 // in beside the control for ~1.5s. A rejected write keeps the typed input.
 function SettingRow(props: {
   field: Field; value: unknown; effective: unknown; platformValue?: unknown; drifted?: boolean;
@@ -144,12 +160,11 @@ function SettingRow(props: {
           />
           <Button
             variant="ghost" size="icon"
-            disabled={!modified}
             title="Reset to default" aria-label="Reset to default"
-            className="text-muted-foreground hover:text-foreground"
+            className={`size-7 text-muted-foreground hover:text-foreground ${modified ? "" : "invisible"}`}
             onClick={() => commit(undefined)}
           >
-            <RotateCcw className="size-4" />
+            <RotateCcw className="size-3.5" />
           </Button>
           <FieldControl field={props.field} value={props.effective} onChange={commit} />
         </div>
@@ -180,7 +195,7 @@ function SettingRows({ entries, render }: { entries: { advanced: boolean }[]; re
         <Accordion type="single" collapsible>
           <AccordionItem value="advanced" className="border-b-0">
             <AccordionTrigger className="pt-4 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
-              Advanced · {advanced.length}
+              Advanced
             </AccordionTrigger>
             <AccordionContent>{render(true)}</AccordionContent>
           </AccordionItem>
@@ -196,8 +211,16 @@ function ServiceTabs({ sections, initial, children }: { sections: string[]; init
   if (sections.length === 0) return null;
   return (
     <Tabs defaultValue={initial && sections.includes(initial) ? initial : sections[0]}>
-      <TabsList className="w-full justify-start overflow-x-auto">
-        {sections.map((s) => <TabsTrigger key={s} value={s}>{s}</TabsTrigger>)}
+      <TabsList variant="line" className="w-full justify-start overflow-x-auto">
+        {sections.map((s) => {
+          const Icon = SERVICE_ICONS[s]; // canonical service → icon map (components/nav.ts)
+          return (
+            <TabsTrigger key={s} value={s}>
+              {Icon && <Icon aria-hidden="true" />}
+              {s}
+            </TabsTrigger>
+          );
+        })}
       </TabsList>
       {/* forceMount + CSS hide: inactive panels stay mounted so an uncommitted
           draft or rejected-write error survives switching tabs. */}

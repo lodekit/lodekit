@@ -204,6 +204,23 @@ matching lines in §4:
   with space above, so it reads as a section head rather than hugging the row
   border above it.
 
+## 4b. Amendments (2026-07-10, second smoke round)
+
+- **Shell width:** the column widens from `56rem` to **`70rem`** (matches
+  obsidian.md's content container), header and main together.
+- **Service tabs:** the `line` TabsList variant, each trigger carrying its
+  service icon. The canonical service → icon map lives in
+  `dashboard/src/components/nav.ts` (`SERVICE_ICONS`): Store `Database`,
+  Files `Folder`, Tasks `ListChecks`, Events `Zap`, Logs `ScrollText`,
+  Engine `Cpu`. New surfaces that show a service by name pull from it.
+- **Advanced:** the trigger reads just "Advanced" — no field count.
+- **Reset icon:** hidden entirely (space preserved) at default, smaller
+  (`size-7` button), vertically centered with the control.
+- **Field editing:** focusing a text/number field selects its content, so
+  typing replaces the value (the standard convention for short value fields);
+  Escape restores what the field held when focused; blurring an unchanged
+  field writes nothing (no save, no check).
+
 ## 5. Out of scope
 
 - Real Data and Tasks pages (stubs only).

@@ -30,7 +30,7 @@ export const Route = createRootRoute({
         <QueryClientProvider client={queryClient}>
           <SSEProvider>
             <Header />
-            <main className="mx-auto w-full min-w-80 max-w-4xl flex-1 px-4 py-6 md:px-8">
+            <main className="mx-auto w-full min-w-80 max-w-[70rem] flex-1 px-4 py-6 md:px-8">
               <Outlet />
             </main>
           </SSEProvider>

@@ -1,5 +1,5 @@
 // packages/runtime/dashboard/src/components/nav.ts
-import { Database, KeyRound, ListChecks, Palette, ScrollText, Zap, type LucideIcon } from "lucide-react";
+import { Cpu, Database, Folder, KeyRound, ListChecks, Palette, ScrollText, Zap, type LucideIcon } from "lucide-react";
 
 // The services menu / command-bar page list (UI revamp spec §2). `to` navigates
 // inside the SPA; `href` is a full-page navigation (Themes is the static
@@ -14,3 +14,16 @@ export const SERVICES: ServiceEntry[] = [
   { label: "Logs", icon: ScrollText, to: "/logs" },
   { label: "Themes", icon: Palette, href: "/_ui/" },
 ];
+
+// Canonical service → icon map, keyed by the settings section name the runtime
+// emits (platformSettings.ts SECTIONS). Any surface that shows a service by
+// name pulls its icon from here so the pairing never drifts; a service shares
+// its icon with the related page above (Store ↔ Data, both the Database icon).
+export const SERVICE_ICONS: Record<string, LucideIcon> = {
+  Store: Database,
+  Files: Folder,
+  Tasks: ListChecks,
+  Events: Zap,
+  Logs: ScrollText,
+  Engine: Cpu,
+};
