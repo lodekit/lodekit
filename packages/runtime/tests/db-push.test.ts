@@ -83,6 +83,15 @@ describe("applySchemaPush", () => {
     expect(cols("app", "plants")).toEqual(["id", "name"]);
   });
 
+  it("a corrupt stored snapshot gates rather than throwing", async () => {
+    await applySchemaPush(dir, "app", await snap(v1));
+    getAppDb(dir, "app").prepare("UPDATE _schema SET snapshot = 'not json' WHERE id = 1").run();
+    const r = await applySchemaPush(dir, "app", await snap(v2));
+    expect(r.status).toBe("gated");
+    if (r.status === "gated") expect(r.message).toMatch(/corrupt/i);
+    expect(cols("app", "plants")).toEqual(["id", "name"]); // unchanged — gate left the old schema intact
+  });
+
   it("skips internal namespaces", async () => {
     expect((await applySchemaPush(dir, "_dashboard", await snap(v1))).status).toBe("noop");
     expect(fs.existsSync(path.join(dir, "_dashboard", "db.sqlite"))).toBe(false);

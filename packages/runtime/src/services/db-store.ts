@@ -226,7 +226,19 @@ export async function applySchemaPush(
   const { generateSQLiteDrizzleJson, generateSQLiteMigration } = await import("drizzle-kit/api");
   const db = getAppDb(dataDir, appId);
   const prevRow = db.prepare("SELECT snapshot FROM _schema WHERE id = 1").get() as { snapshot: string } | undefined;
-  const prev = prevRow ? JSON.parse(prevRow.snapshot) : await generateSQLiteDrizzleJson({});
+  let prev: Awaited<ReturnType<typeof generateSQLiteDrizzleJson>>;
+  if (prevRow) {
+    try {
+      prev = JSON.parse(prevRow.snapshot);
+    } catch (e) {
+      const message = `stored schema snapshot is corrupt — keeping the previous schema: ${e instanceof Error ? e.message : String(e)}`;
+      emitLog("error", "db-store", message, undefined, appId);
+      emitSchemaState(appId, { status: "gated", message });
+      return { status: "gated", message };
+    }
+  } else {
+    prev = await generateSQLiteDrizzleJson({});
+  }
   let statements: string[];
   try {
     statements = await generateSQLiteMigration(prev, snapshot as Parameters<typeof generateSQLiteMigration>[1]);

@@ -34,7 +34,7 @@ is the living checklist — extend it with every new surface.
 | `db.update` / `db.delete` | schedules, skip next, let go |
 | FK `onDelete: "cascade"` | let go — rules/state/journal follow the plant |
 | `db.batch` (transaction) | seeding a plant's dependents |
-| `` sql`…` `` escape hatch | snapshot stats |
+| `` sql`…` `` escape hatch | snapshot stats (`db.values`) |
 | client-side `db` queries | journal add + load-more (browser) |
 | `events.watch {type: array}` | conservatory refresh on `["db-store-change", "kv-store-change"]` |
 | `files.put {title, metadata, contentType}` | photo upload with caption |

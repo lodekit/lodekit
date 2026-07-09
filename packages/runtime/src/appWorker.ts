@@ -154,6 +154,12 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
       void (async () => {
         try {
           await dbManifestCb?.(appId, msg.snapshot ?? null, msg.error);
+        } catch (e) {
+          // Degrade, never die: a corrupt db file or snapshot must not take the host
+          // down — the app keeps serving on whatever schema its database has.
+          const message = `schema push failed unexpectedly: ${e instanceof Error ? e.message : String(e)}`;
+          emitLog("error", "db-store", message, e instanceof Error && e.stack ? { stack: e.stack } : undefined, appId);
+          emitEvent({ ns: appId, source: PLATFORM_NS, type: "schema-state", payload: { status: "gated", message }, ttl: CHANGE_FEED_TTL_S });
         } finally {
           // Ack even on a failed push — the app serves on its previous schema.
           try { worker.postMessage({ type: "db-manifest-ack" }); } catch { /* worker died */ }

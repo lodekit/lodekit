@@ -1,3 +1,4 @@
+import { count } from "drizzle-orm";
 import { files, kv, logs, tasks } from "@lodekit/sdk";
 import { db, plants, careRules, careState, journal } from "./db";
 import { CARE_VERB, type CareKind, parseEvery, invTs, streakKey, snoozeKey } from "./lib";
@@ -76,7 +77,30 @@ const SEEDS: SeedPlant[] = [
 
 /** Idempotent first-open seed. Returns true when it seeded. */
 export async function seedIfNeeded(): Promise<boolean> {
-  if (await kv.has("seeded")) return false;
+  const seeded = await kv.get<{ at: number; version?: number }>("seeded");
+  if (seeded) {
+    const [{ n }] = await db.select({ n: count() }).from(plants);
+    if ((seeded.version ?? 1) >= 2 || n > 0) return false;
+    // kv-era conservatory (v1): entities lived in kv keys the db knows nothing
+    // about. Start fresh on the new schema — cancel stale reminders, clear the
+    // old kv keys and files, then reseed (same routine as the Shed's reset).
+    for (const run of await tasks.runs({ state: "queued", limit: 1000 })) {
+      await tasks.cancel(run.id).catch(() => false);
+    }
+    let cursor: string | null = null;
+    do {
+      const page = await kv.list({ limit: 200, cursor: cursor ?? undefined });
+      for (const e of page.entries) await kv.del(e.key);
+      cursor = page.nextCursor;
+    } while (cursor);
+    let fc: string | null = null;
+    do {
+      const page = await files.list({ limit: 200, cursor: fc ?? undefined });
+      for (const f of page.entries) await files.delete(f.slug);
+      fc = page.nextCursor;
+    } while (fc);
+    logs.warn("kv-era conservatory upgraded — reseeding on the database schema", {});
+  }
   const now = Date.now();
   for (const seed of SEEDS) {
     const adoptedAt = now - seed.daysAgo * 86_400_000;

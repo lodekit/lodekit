@@ -36,11 +36,13 @@ export const exportSnapshot = createServerFn().handler(async () => {
     db.select().from(careState),
     db.select().from(journal),
   ]);
-  // The raw-SQL escape hatch (spec §6): one aggregate the query builder could
-  // write too — shown raw on purpose.
-  const [stats] = await db.all<{ plants: number; journal_entries: number }>(
-    sql`SELECT (SELECT count(*) FROM plants) AS plants, (SELECT count(*) FROM journal) AS journal_entries`
+  // The raw-SQL escape hatch (spec §6): db.values returns positional rows by
+  // contract — the right raw API over the proxy driver (db.all without field
+  // metadata would also be positional, just typed as objects — a trap).
+  const [[plantCount, journalCount]] = await db.values<[number, number]>(
+    sql`SELECT (SELECT count(*) FROM plants), (SELECT count(*) FROM journal)`
   );
+  const stats = { plants: plantCount, journal_entries: journalCount };
   const stat = await files.put(
     JSON.stringify({ exportedAt: Date.now(), stats, plants: allPlants, careRules: rules, careState: states, journal: entries }, null, 2),
     { slug: `snapshot-${Date.now()}`, contentType: "application/json", title: "Conservatory snapshot", ttl: 3600 }

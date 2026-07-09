@@ -68,7 +68,10 @@ export const db = createDb({ recipes });
   Import operators from `drizzle-orm` (`eq`, `and`, `desc`, `count`, `sql`, …).
 - **Transactions are `db.batch([...])`** (the proxy driver has no interactive
   transactions). Complex reads can drop to the escape hatch:
-  `` await db.all(sql`SELECT …`) ``.
+  `` await db.values(sql`SELECT …`) `` — raw SQL has no field metadata over the
+  proxy driver, so rows come back positional: use `db.values` (positional by
+  contract) or the query builder with aliased fields. `db.all` on raw SQL would
+  also return positional rows, just typed as objects — a trap.
 - Declare relations with `.references(() => other.id, { onDelete: "cascade" })` —
   foreign keys are enforced; cascades replace manual cleanup loops.
 - Blobs don't transport over the query door — binary belongs in Files.
