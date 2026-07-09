@@ -5,7 +5,7 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { start } from "../src/server.js";
 import { loadConfig } from "../src/config.js";
-import { scaffold, listApps, fetchSecrets } from "../../mcp/client.js";
+import { scaffold, listApps, fetchSecrets, fetchDbSchema, selectDb } from "../../mcp/client.js";
 import { createClient } from "@lodekit/sdk";
 import { getSettingsDb, applySettingsManifest } from "../src/services/settings.js";
 
@@ -132,5 +132,21 @@ describe("mcp tool helpers", () => {
     const catalog = await fetchSecrets(base);
     expect(JSON.stringify(catalog)).toContain("mcp-probe-key");
     expect(JSON.stringify(catalog)).not.toContain("mcp-probe-plaintext");
+  });
+
+  it("db tools: schema lists user tables, select reads rows, writes refused", async () => {
+    const { getAppDb } = await import("../src/db.js");
+    const db = getAppDb(dataDir, "mcp-db");
+    db.exec("CREATE TABLE IF NOT EXISTS recipes (id INTEGER PRIMARY KEY, title TEXT NOT NULL)");
+    db.prepare("INSERT INTO recipes (title) VALUES ('Toast')").run();
+
+    const schema = await fetchDbSchema(base, "mcp-db");
+    expect(schema.tables.map((t: { name: string }) => t.name)).toEqual(["recipes"]);
+
+    const rows = await selectDb(base, "mcp-db", "SELECT title FROM recipes");
+    expect(rows).toEqual({ rows: [{ title: "Toast" }] });
+
+    await expect(selectDb(base, "mcp-db", "DELETE FROM recipes")).rejects.toThrow();
+    await expect(selectDb(base, "mcp-db", "SELECT * FROM _kv")).rejects.toThrow(/_-prefixed/);
   });
 });

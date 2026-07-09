@@ -59,3 +59,20 @@ export async function fetchSecrets(base: string, appId?: string) {
   if (!r.ok) throw new Error(`secrets fetch failed: ${r.status}`);
   return r.json();
 }
+
+export async function fetchDbSchema(base: string, appId: string) {
+  const r = await fetch(`${base}/api/apps/${appId}/db-store/schema`);
+  if (!r.ok) throw new Error(`db schema fetch failed: ${r.status}`);
+  return r.json();
+}
+
+export async function selectDb(base: string, appId: string, sql: string, params?: (string | number | null)[]) {
+  const r = await fetch(`${base}/api/apps/${appId}/db-store/select`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(params ? { sql, params } : { sql }),
+  });
+  const body = await r.json().catch(() => null);
+  if (!r.ok) throw new Error((body as { error?: string } | null)?.error ?? `db select failed: ${r.status}`);
+  return body;
+}

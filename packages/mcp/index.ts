@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { scaffold, listApps, fetchLogs, fetchEvents, fetchSettings, fetchSecrets } from "./client.js";
+import { scaffold, listApps, fetchLogs, fetchEvents, fetchSettings, fetchSecrets, fetchDbSchema, selectDb } from "./client.js";
 import { createClient } from "@lodekit/sdk";
 
 const BASE = process.env.LODEKIT_BASE_URL ?? "http://lodekit.localhost:7777";
@@ -71,6 +71,22 @@ server.tool(
     const value = await createClient({ baseUrl: BASE, appId }).kv.get(key);
     return text(value === undefined ? { found: false } : { found: true, value });
   }
+);
+
+server.tool(
+  "lodekit_db_schema",
+  { appId: z.string().describe("the app whose declared tables to inspect") },
+  async ({ appId }) => text(await fetchDbSchema(BASE, appId))
+);
+
+server.tool(
+  "lodekit_db_query",
+  {
+    appId: z.string(),
+    sql: z.string().describe("a single SELECT statement over the app's tables (read-only connection; _-prefixed tables are hidden)"),
+    params: z.array(z.union([z.string(), z.number(), z.null()])).optional(),
+  },
+  async ({ appId, sql, params }) => text(await selectDb(BASE, appId, sql, params))
 );
 
 server.tool(
