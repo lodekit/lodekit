@@ -1,1 +1,12 @@
 @import "@lodekit/ui/theme.css";
+
+/* Tailwind v4 dropped v3's `button { cursor: pointer }` preflight (native-cursor
+   alignment) and shadcn follows it; the dashboard opts back in — shadcn's own
+   documented restore rule. Covers buttons, tab triggers, accordion/collapsible
+   triggers. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}

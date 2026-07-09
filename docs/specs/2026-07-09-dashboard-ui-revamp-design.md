@@ -221,6 +221,27 @@ matching lines in §4:
   Escape restores what the field held when focused; blurring an unchanged
   field writes nothing (no save, no check).
 
+## 4c. Amendments (2026-07-10, third smoke round)
+
+- **Cursors:** Tailwind v4 dropped v3's pointer-cursor preflight for buttons
+  and shadcn follows native cursors; the dashboard opts back in via shadcn's
+  documented base-layer rule (`dashboard/src/index.css`) — hand cursor on all
+  enabled buttons, tab triggers, and accordion/collapsible triggers.
+- **Tab strip:** left-aligned, sized to content (no full-width fill).
+- **Data tab:** Store and Files aggregate into one **Data** tab on both
+  service tab strips, rendered as flat per-service sections (small headings,
+  no accordion inside the tab — both services are all-advanced). Old
+  `?section=Store|Files` links land on the Data tab. `SERVICE_ICONS` gains
+  `Data: Database`.
+- **Saved feedback:** the check icon is replaced by a soft primary ring that
+  flashes around the control and fades (~1.5s) — no element appears or moves.
+- **Escape restore:** removed (§4b) — restoring on Escape then writing the
+  restored value on blur contradicted the blur-saves expectation; the reset
+  button covers reverting.
+- **Focus-ring clip:** advanced rows sit inside the accordion's
+  overflow-hidden animation wrapper; the content pads right (`pr-1`) so the
+  3px ring isn't clipped at the container edge.
+
 ## 5. Out of scope
 
 - Real Data and Tasks pages (stubs only).

@@ -19,7 +19,9 @@ export const SERVICES: ServiceEntry[] = [
 // emits (platformSettings.ts SECTIONS). Any surface that shows a service by
 // name pulls its icon from here so the pairing never drifts; a service shares
 // its icon with the related page above (Store ↔ Data, both the Database icon).
+// "Data" is the settings display tab that aggregates Store + Files.
 export const SERVICE_ICONS: Record<string, LucideIcon> = {
+  Data: Database,
   Store: Database,
   Files: Folder,
   Tasks: ListChecks,

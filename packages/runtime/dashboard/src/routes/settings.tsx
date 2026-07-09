@@ -9,7 +9,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Switch,
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@lodekit/ui";
-import { Check, ChevronDown, RotateCcw } from "lucide-react";
+import { ChevronDown, RotateCcw } from "lucide-react";
 import { SERVICE_ICONS } from "../components/nav";
 
 export const Route = createFileRoute("/settings")({
@@ -45,6 +45,21 @@ function orderedSections(present: string[]): string[] {
   ];
 }
 
+// A display tab on the service tab strips. Store + Files aggregate into one
+// "Data" tab (spec §4c) rendered as flat per-service sections — both are
+// all-advanced, so an accordion inside the tab would bury everything.
+interface ServiceTab { name: string; sections: string[] }
+const DATA_SECTIONS = ["Store", "Files"];
+
+function serviceTabs(present: string[]): ServiceTab[] {
+  const ordered = orderedSections(present);
+  const data = ordered.filter((s) => DATA_SECTIONS.includes(s));
+  return [
+    ...(data.length > 0 ? [{ name: "Data", sections: data }] : []),
+    ...ordered.filter((s) => !DATA_SECTIONS.includes(s)).map((s) => ({ name: s, sections: [s] })),
+  ];
+}
+
 async function write(url: string, value: unknown | undefined) {
   const res = value === undefined
     ? await fetch(url, { method: "DELETE" })
@@ -56,12 +71,11 @@ async function write(url: string, value: unknown | undefined) {
 // Text-ish fields hold a local draft so a rejected write keeps the person's
 // input for correction; the draft re-seeds only when the effective value
 // actually changes externally (reset, another tab, manager reconciliation).
-// Focus selects the content (type-to-replace), Escape restores the value the
-// field had when focused, and blurring an unchanged field writes nothing.
+// Focus selects the content (type-to-replace); blurring an unchanged field
+// writes nothing.
 function FieldControl({ field, value, onChange }: { field: Field; value: unknown; onChange: (v: unknown) => void }) {
   const [draft, setDraft] = useState(String(value));
   const [seeded, setSeeded] = useState(String(value));
-  const focusValue = useRef(String(value));
   // The no-write baseline: the last draft submitted (or seeded). Comparing the
   // draft against this — not the server value — keeps a standing rejected
   // draft from re-submitting on focus+blur, and Enter-then-blur from writing
@@ -85,13 +99,9 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
       </Select>
     );
   }
-  const onFocus = (e: FocusEvent<HTMLInputElement>) => {
-    focusValue.current = draft;
-    e.currentTarget.select();
-  };
+  const onFocus = (e: FocusEvent<HTMLInputElement>) => e.currentTarget.select();
   const keys = (commit: () => void) => (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") commit();
-    if (e.key === "Escape") setDraft(focusValue.current);
   };
   if (field.type === "number") {
     const commit = () => {
@@ -125,10 +135,12 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
   );
 }
 
-// A setting row: label, one-liner description, [saved ✓] [reset ↺] [control].
+// A setting row: label, one-liner description, [reset ↺] [control].
 // The reset icon carries the "modified" signal: muted when the value is
-// overridden, hidden (space kept) at default. A successful write fades a check
-// in beside the control for ~1.5s. A rejected write keeps the typed input.
+// overridden, hidden (space kept) at default. A successful write flashes a
+// soft ring around the control (~1.5s, fades out) — no extra element, so
+// nothing pops in beside the hidden reset button. A rejected write keeps the
+// typed input.
 function SettingRow(props: {
   field: Field; value: unknown; effective: unknown; platformValue?: unknown; drifted?: boolean;
   onWrite: (v: unknown | undefined) => Promise<void>;
@@ -162,10 +174,6 @@ function SettingRow(props: {
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
         <div className="flex items-center gap-2">
-          <Check
-            aria-hidden="true"
-            className={`size-4 text-muted-foreground transition-opacity duration-500 ${saved ? "opacity-100" : "opacity-0"}`}
-          />
           <Button
             variant="ghost" size="icon"
             title="Reset to default" aria-label="Reset to default"
@@ -174,7 +182,9 @@ function SettingRow(props: {
           >
             <RotateCcw className="size-3.5" />
           </Button>
-          <FieldControl field={props.field} value={props.effective} onChange={commit} />
+          <span className={`inline-flex rounded-md transition-shadow duration-700 ${saved ? "ring-2 ring-primary/40" : ""}`}>
+            <FieldControl field={props.field} value={props.effective} onChange={commit} />
+          </span>
         </div>
         {props.platformValue !== undefined && (
           <p className="text-xs text-muted-foreground">Platform value: {String(props.platformValue)}</p>
@@ -205,7 +215,9 @@ function SettingRows({ entries, render }: { entries: { advanced: boolean }[]; re
             <AccordionTrigger className="pt-4 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
               Advanced
             </AccordionTrigger>
-            <AccordionContent>{render(true)}</AccordionContent>
+            {/* pr-1: the outer accordion wrapper is overflow-hidden for its height
+                animation and would clip the controls' 3px focus ring at the edge. */}
+            <AccordionContent className="pr-1">{render(true)}</AccordionContent>
           </AccordionItem>
         </Accordion>
       )}
@@ -214,43 +226,64 @@ function SettingRows({ entries, render }: { entries: { advanced: boolean }[]; re
 }
 
 // Per-service tab strip shared by the platform Services page and the app page's
-// Service Overrides card. children renders one tab's content by section name.
-function ServiceTabs({ sections, initial, children }: { sections: string[]; initial?: string; children: (section: string) => ReactNode }) {
-  if (sections.length === 0) return null;
+// Service Overrides card. children renders one tab's content. A multi-section
+// tab (Data) renders its sections as flat headed groups via renderSection.
+function ServiceTabs({ tabs, initial, children }: { tabs: ServiceTab[]; initial?: string; children: (tab: ServiceTab) => ReactNode }) {
+  if (tabs.length === 0) return null;
+  const names = tabs.map((t) => t.name);
   return (
-    <Tabs defaultValue={initial && sections.includes(initial) ? initial : sections[0]}>
-      <TabsList variant="line" className="w-full justify-start overflow-x-auto">
-        {sections.map((s) => {
-          const Icon = SERVICE_ICONS[s]; // canonical service → icon map (components/nav.ts)
+    <Tabs defaultValue={initial && names.includes(initial) ? initial : names[0]}>
+      <TabsList variant="line" className="max-w-full justify-start overflow-x-auto">
+        {tabs.map((t) => {
+          const Icon = SERVICE_ICONS[t.name]; // canonical service → icon map (components/nav.ts)
           return (
-            <TabsTrigger key={s} value={s}>
+            <TabsTrigger key={t.name} value={t.name}>
               {Icon && <Icon aria-hidden="true" />}
-              {s}
+              {t.name}
             </TabsTrigger>
           );
         })}
       </TabsList>
       {/* forceMount + CSS hide: inactive panels stay mounted so an uncommitted
           draft or rejected-write error survives switching tabs. */}
-      {sections.map((s) => (
-        <TabsContent key={s} value={s} forceMount className="data-[state=inactive]:hidden">
-          {children(s)}
+      {tabs.map((t) => (
+        <TabsContent key={t.name} value={t.name} forceMount className="data-[state=inactive]:hidden">
+          {children(t)}
         </TabsContent>
       ))}
     </Tabs>
   );
 }
 
+// A multi-section tab's body: each service under a small heading, every field
+// listed flat — no accordion inside an aggregated tab.
+function SectionedTab({ sections, renderSection }: { sections: string[]; renderSection: (section: string) => ReactNode }) {
+  return (
+    <>
+      {sections.map((s, i) => (
+        <div key={s}>
+          <div className={`pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground ${i === 0 ? "pt-1" : "pt-4"}`}>
+            {s}
+          </div>
+          {renderSection(s)}
+        </div>
+      ))}
+    </>
+  );
+}
+
+const platformRow = (invalidate: () => void) => (e: PlatformEntry) => (
+  <SettingRow
+    key={e.key} field={e.field} value={e.value} effective={e.effective} drifted={e.drifted}
+    onWrite={async (v) => { await write(`/api/settings/${e.key}`, v); invalidate(); }}
+  />
+);
+
 function PlatformRows({ rows, invalidate }: { rows: PlatformEntry[]; invalidate: () => void }) {
   return (
     <SettingRows
       entries={rows}
-      render={(advanced) => rows.filter((e) => e.advanced === advanced).map((e) => (
-        <SettingRow
-          key={e.key} field={e.field} value={e.value} effective={e.effective} drifted={e.drifted}
-          onWrite={async (v) => { await write(`/api/settings/${e.key}`, v); invalidate(); }}
-        />
-      ))}
+      render={(advanced) => rows.filter((e) => e.advanced === advanced).map(platformRow(invalidate))}
     />
   );
 }
@@ -266,16 +299,22 @@ function PlatformSection({ section, entries, invalidate }: { section: string; en
   );
 }
 
-// One Services page for all per-service platform settings, a tab per service.
+// One Services page for all per-service platform settings, a tab per service
+// (Store + Files aggregate into the Data tab).
 function ServicesSection({ services, entries, invalidate, initial }: {
   services: string[]; entries: PlatformEntry[]; invalidate: () => void; initial?: string;
 }) {
+  const rowsOf = (s: string) => entries.filter((e) => e.section === s);
   return (
     <Card>
       <CardHeader><CardTitle>Services</CardTitle></CardHeader>
       <CardContent>
-        <ServiceTabs sections={services} initial={initial}>
-          {(s) => <PlatformRows rows={entries.filter((e) => e.section === s)} invalidate={invalidate} />}
+        <ServiceTabs tabs={serviceTabs(services)} initial={initial}>
+          {(t) => t.sections.length === 1 ? (
+            <PlatformRows rows={rowsOf(t.sections[0])} invalidate={invalidate} />
+          ) : (
+            <SectionedTab sections={t.sections} renderSection={(s) => rowsOf(s).map(platformRow(invalidate))} />
+          )}
         </ServiceTabs>
       </CardContent>
     </Card>
@@ -385,8 +424,19 @@ function ServiceOverridesCard({ app, overrides, invalidate }: {
   app: AppInfo; overrides: OverrideEntry[]; invalidate: () => void;
 }) {
   const [open, setOpen] = useState(false);
-  const sections = orderedSections([...new Set(overrides.map((o) => o.section))]);
-  if (sections.length === 0) return null;
+  const tabs = serviceTabs([...new Set(overrides.map((o) => o.section))]);
+  const rowsOf = (s: string) => overrides.filter((o) => o.section === s);
+  const overrideRow = (o: OverrideEntry) => (
+    <SettingRow
+      key={o.key}
+      field={o.field}
+      value={o.override}
+      effective={o.override ?? o.platformEffective}
+      platformValue={o.platformEffective}
+      onWrite={async (v) => { await write(`/api/apps/${app.appId}/settings/${o.key}`, v); invalidate(); }}
+    />
+  );
+  if (tabs.length === 0) return null;
   return (
     <Card>
       <Collapsible open={open} onOpenChange={setOpen}>
@@ -399,25 +449,15 @@ function ServiceOverridesCard({ app, overrides, invalidate }: {
         {/* forceMount + CSS hide: collapsing must not unmount rows mid-edit. */}
         <CollapsibleContent forceMount className="data-[state=closed]:hidden">
           <CardContent>
-            <ServiceTabs sections={sections}>
-              {(s) => {
-                const rows = overrides.filter((o) => o.section === s);
-                return (
-                  <SettingRows
-                    entries={rows}
-                    render={(advanced) => rows.filter((o) => o.advanced === advanced).map((o) => (
-                      <SettingRow
-                        key={o.key}
-                        field={o.field}
-                        value={o.override}
-                        effective={o.override ?? o.platformEffective}
-                        platformValue={o.platformEffective}
-                        onWrite={async (v) => { await write(`/api/apps/${app.appId}/settings/${o.key}`, v); invalidate(); }}
-                      />
-                    ))}
-                  />
-                );
-              }}
+            <ServiceTabs tabs={tabs}>
+              {(t) => t.sections.length === 1 ? (
+                <SettingRows
+                  entries={rowsOf(t.sections[0])}
+                  render={(advanced) => rowsOf(t.sections[0]).filter((o) => o.advanced === advanced).map(overrideRow)}
+                />
+              ) : (
+                <SectionedTab sections={t.sections} renderSection={(s) => rowsOf(s).map(overrideRow)} />
+              )}
             </ServiceTabs>
           </CardContent>
         </CollapsibleContent>
@@ -510,7 +550,7 @@ function SettingsView() {
         ) : isServices ? (
           <ServicesSection
             services={services} entries={entries} invalidate={invalidate}
-            initial={section !== "Services" ? section : undefined}
+            initial={section === "Services" ? undefined : DATA_SECTIONS.includes(section) ? "Data" : section}
           />
         ) : (
           <PlatformSection section={section} entries={entries} invalidate={invalidate} />
