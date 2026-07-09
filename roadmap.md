@@ -357,7 +357,10 @@ above; the remainder:
   client (`packages/sdk/src/client.ts`) — two connections for a single app page that uses
   `watch`. All apps share one origin (`lodekit.localhost:7777`), and HTTP/1.1 caps
   concurrent connections per origin at ~6; consolidate onto a shared channel (or lift the
-  per-origin connection concern) before enough app tabs are open at once to matter.
+  per-origin connection concern) before enough app tabs are open at once to matter. The
+  dashboard half is done (UI revamp, 2026-07-09): a shell-level `SSEProvider` now holds one
+  shared `EventSource` per dashboard tab (was one each for `index`/`settings`/`events`/
+  `logs`/`secrets`); remaining scope is the hosted-app-page duplication above.
 - **Manager `runtimeSettings` subscribe hygiene** — `manager/src/runtimeSettings.js`'s
   `defaultSubscribe` reads the `/api/events` SSE response without `res.setEncoding("utf8")`
   (multi-byte UTF-8 split across chunk boundaries could corrupt a frame), and `start()`/
