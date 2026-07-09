@@ -20,14 +20,23 @@ is the living checklist — extend it with every new surface.
 
 | Surface | Home in Greenhouse |
 | --- | --- |
-| `kv.get` / `set` / `del` / `has` | care state, snooze clear, seed flag |
+| `kv.get` / `set` / `del` / `has` | streak reset, snooze clear, seed flag |
 | `kv.set {ttl}` | snooze (expiry = reminder returns) |
-| `kv.incr` | streaks, lifetime care counters, Welcome's visit counter |
-| `kv.getMany` | conservatory grid state fan-in, snapshot export |
-| `kv.setMany` | seeding |
-| `kv.list {prefix, cursor}` | journal pagination; compost sweep; reset |
-| `kv.collection` (all 5 ops) | plant records CRUD |
-| `events.watch {type: "kv-store-change"}` | conservatory live refresh |
+| `kv.incr` | streaks, Welcome's visit counter |
+| `kv.getMany` | conservatory grid fan-in (streaks + snoozes) |
+| `kv.list {prefix, cursor}` | reset sweep |
+| `kv.collection` | **removed** — entities live in db-store now; the SDK keeps the API |
+| `src/db.ts` schema + boot push | plants / care_rules / care_state / journal |
+| `db.select` + joins | conservatory grid, morning rounds |
+| aggregates (`count`, `groupBy`) | lifetime care counts, rounds total |
+| `db.insert … returning` | adopt / seed |
+| `onConflictDoUpdate` (upsert) | care state on give-care |
+| `db.update` / `db.delete` | schedules, skip next, let go |
+| FK `onDelete: "cascade"` | let go — rules/state/journal follow the plant |
+| `db.batch` (transaction) | seeding a plant's dependents |
+| `` sql`…` `` escape hatch | snapshot stats |
+| client-side `db` queries | journal add + load-more (browser) |
+| `events.watch {type: array}` | conservatory refresh on `["db-store-change", "kv-store-change"]` |
 | `files.put {title, metadata, contentType}` | photo upload with caption |
 | `files.put {ttl}` | self-expiring snapshot export |
 | `files.put` (server-side) | seeded SVG portraits |
@@ -50,9 +59,8 @@ is the living checklist — extend it with every new surface.
 | `@lodekit/ui`, `theme.css` | throughout |
 
 **Pending (showcase Part 2, spec §5):** `events.emit` (client+server, `{ttl}`),
-`events.list` (`before`/`after`/server-side), `events.watch` with a type array, the
-Ledger, While You Were Away, and `weekly_gazette` (`cron` + `catchUp: "24h"` +
-`retries`/`timeout`).
+`events.list` (`before`/`after`/server-side), the Ledger, While You Were Away, and
+`weekly_gazette` (`cron` + `catchUp: "24h"` + `retries`/`timeout`).
 
 **Pending (settings slice, `2026-07-07-settings-design.md`):** `defineSettings()` in
 `src/settings.ts` (all five field types have a plausible Greenhouse home) and the typed

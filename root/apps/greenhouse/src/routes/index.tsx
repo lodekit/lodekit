@@ -1,33 +1,32 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { Link, createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { db, plants, careRules, careState } from "../db";
+import { CARE_KINDS, careByKind, dueByKind, moodFor, streakKey, snoozeKey } from "../lib";
 import { kv, files, events } from "@lodekit/sdk";
 import { Badge, Button, Card, CardContent, Input } from "@lodekit/ui";
-import {
-  CARE_KINDS,
-  type CareState,
-  moodFor,
-  plants,
-  stateKey,
-  streakKey,
-  snoozeKey,
-} from "../lib";
 import { seedIfNeeded } from "../seed";
 import { adoptPlant } from "../care";
 
 export const getConservatory = createServerFn().handler(async () => {
   await seedIfNeeded();
-  const rows = await plants.all();
   const now = Date.now();
-  const keys = rows.flatMap(({ id }) => [stateKey(id), streakKey(id), snoozeKey(id)]);
+  const [rows, rules, states] = await Promise.all([
+    db.select().from(plants).orderBy(plants.id),
+    db.select().from(careRules),
+    db.select().from(careState),
+  ]);
+  // kv.getMany fan-in for the app-memory bits (streaks, snoozes).
+  const keys = rows.flatMap(({ id }) => [streakKey(id), snoozeKey(id)]);
   const entries = keys.length ? await kv.getMany(keys) : [];
   const byKey = new Map(entries.map((e) => [e.key, e.value]));
-  return rows.map(({ id, value: plant }) => {
-    const state = (byKey.get(stateKey(id)) as CareState | undefined) ?? {};
-    const streak = (byKey.get(streakKey(id)) as number | undefined) ?? 0;
-    const snoozed = byKey.get(snoozeKey(id)) != null;
-    const dueKinds = CARE_KINDS.filter((k) => plant.care[k] && state[k] && state[k]!.dueAt <= now);
-    return { id, plant, streak, snoozed, dueKinds, mood: moodFor(plant, state, streak, now) };
+  return rows.map((plant) => {
+    const care = careByKind(rules.filter((r) => r.plantId === plant.id));
+    const due = dueByKind(states.filter((s) => s.plantId === plant.id));
+    const streak = (byKey.get(streakKey(plant.id)) as number | undefined) ?? 0;
+    const snoozed = byKey.get(snoozeKey(plant.id)) != null;
+    const dueKinds = CARE_KINDS.filter((k) => care[k] && due[k] && due[k]!.dueAt <= now);
+    return { id: plant.id, plant, streak, snoozed, dueKinds, mood: moodFor(care, due, streak, now) };
   });
 });
 
@@ -41,9 +40,9 @@ function Conservatory() {
   const router = useRouter();
 
   // useEffect (not module scope) keeps the watch off the SSR path — it's client-only.
-  // The kv change feed rides the event bus: any kv write in this app refreshes the grid.
+  // Entity writes ride db-store-change; streak/snooze (app memory) ride kv-store-change.
   useEffect(
-    () => events.watch({ type: "kv-store-change" }, () => void router.invalidate()),
+    () => events.watch({ type: ["db-store-change", "kv-store-change"] }, () => void router.invalidate()),
     [router]
   );
 

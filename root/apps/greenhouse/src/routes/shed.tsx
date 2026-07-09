@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { sql } from "drizzle-orm";
+import { db, plants, careRules, careState, journal } from "../db";
 import { kv, files, tasks, logs, appId } from "@lodekit/sdk";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@lodekit/ui";
-import { plants, stateKey, streakKey } from "../lib";
 import { seedIfNeeded } from "../seed";
 
 export const resetConservatory = createServerFn().handler(async () => {
@@ -11,7 +12,7 @@ export const resetConservatory = createServerFn().handler(async () => {
   for (const run of await tasks.runs({ state: "queued", limit: 1000 })) {
     await tasks.cancel(run.id).catch(() => false);
   }
-  for (const { id } of await plants.all()) await plants.remove(id);
+  await db.delete(plants); // cascade takes care_rules, care_state, journal
   let cursor: string | null = null;
   do {
     const page = await kv.list({ limit: 200, cursor: cursor ?? undefined });
@@ -29,17 +30,20 @@ export const resetConservatory = createServerFn().handler(async () => {
 });
 
 export const exportSnapshot = createServerFn().handler(async () => {
-  const rows = await plants.all();
-  const keys = rows.flatMap(({ id }) => [stateKey(id), streakKey(id)]);
-  const entries = keys.length ? await kv.getMany(keys) : [];
+  const [allPlants, rules, states, entries] = await Promise.all([
+    db.select().from(plants),
+    db.select().from(careRules),
+    db.select().from(careState),
+    db.select().from(journal),
+  ]);
+  // The raw-SQL escape hatch (spec §6): one aggregate the query builder could
+  // write too — shown raw on purpose.
+  const [stats] = await db.all<{ plants: number; journal_entries: number }>(
+    sql`SELECT (SELECT count(*) FROM plants) AS plants, (SELECT count(*) FROM journal) AS journal_entries`
+  );
   const stat = await files.put(
-    JSON.stringify({ exportedAt: Date.now(), plants: rows, care: entries }, null, 2),
-    {
-      slug: `snapshot-${Date.now()}`,
-      contentType: "application/json",
-      title: "Conservatory snapshot",
-      ttl: 3600, // self-expires in an hour — a temporary export, not a record
-    }
+    JSON.stringify({ exportedAt: Date.now(), stats, plants: allPlants, careRules: rules, careState: states, journal: entries }, null, 2),
+    { slug: `snapshot-${Date.now()}`, contentType: "application/json", title: "Conservatory snapshot", ttl: 3600 }
   );
   logs.info("snapshot exported", { slug: stat.slug });
   return stat.slug;

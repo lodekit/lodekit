@@ -2,43 +2,48 @@ import { useEffect, useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { kv, files, logs, events } from "@lodekit/sdk";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@lodekit/ui";
+import { and, count, desc, eq, isNotNull, lt, or } from "drizzle-orm";
+import { db, plants as plantsTable, careRules, careState, journal } from "../db";
 import {
   CARE_KINDS,
   type CareKind,
-  type CareState,
-  type JournalEntry,
-  type Plant,
+  type CareEvery,
+  type DueByKind,
+  careByKind,
+  dueByKind,
   moodFor,
-  plants,
   invTs,
-  stateKey,
   streakKey,
-  countKey,
   snoozeKey,
-  journalPrefix,
-  journalKey,
 } from "../lib";
+import { kv, files, logs, events } from "@lodekit/sdk";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@lodekit/ui";
 import { giveCare, updateCare, snoozePlant, remindLater, skipNext, letGo } from "../care";
 
 export const getPlant = createServerFn()
   .inputValidator(z.object({ plantId: z.number().int() }))
   .handler(async ({ data }) => {
-    const plant = await plants.get(data.plantId);
+    const [plant] = await db.select().from(plantsTable).where(eq(plantsTable.id, data.plantId));
     if (!plant) throw new Error("plant not found");
     const now = Date.now();
-    const state = (await kv.get<CareState>(stateKey(data.plantId))) ?? {};
+    const rules = await db.select().from(careRules).where(eq(careRules.plantId, data.plantId));
+    const states = await db.select().from(careState).where(eq(careState.plantId, data.plantId));
+    const care = careByKind(rules);
+    const due = dueByKind(states);
     const streak = (await kv.get<number>(streakKey(data.plantId))) ?? 0;
     const snoozed = await kv.has(snoozeKey(data.plantId));
-    const counts: Partial<Record<CareKind, number>> = {};
-    for (const kind of CARE_KINDS) {
-      counts[kind] = (await kv.get<number>(countKey(data.plantId, kind))) ?? 0;
-    }
+    // Lifetime care counts, derived — GROUP BY over the journal instead of a counter per kind.
+    const countRows = await db
+      .select({ kind: journal.kind, n: count() }).from(journal)
+      .where(and(eq(journal.plantId, data.plantId), isNotNull(journal.kind)))
+      .groupBy(journal.kind);
+    const counts = Object.fromEntries(countRows.map((r) => [r.kind as CareKind, r.n]));
     const photos = await files.list({ prefix: `photo-${data.plantId}-`, limit: 12 });
-    const journal = await kv.list<JournalEntry>({ prefix: journalPrefix(data.plantId), limit: 10 });
+    const entries = await db
+      .select().from(journal).where(eq(journal.plantId, data.plantId))
+      .orderBy(desc(journal.at), desc(journal.id)).limit(10);
     const cover = await files.stat(`cover-${data.plantId}`);
-    return { plant, state, streak, snoozed, counts, photos, journal, cover, mood: moodFor(plant, state, streak, now) };
+    return { plant, care, due, streak, snoozed, counts, photos, journal: entries, cover, mood: moodFor(care, due, streak, now) };
   });
 
 export const Route = createFileRoute("/plants/$plantId")({
@@ -53,7 +58,7 @@ function PlantPage() {
   const { plantId } = Route.useParams();
   const id = Number(plantId);
   const router = useRouter();
-  const { plant, state, streak, snoozed, counts, cover, mood } = data;
+  const { plant, care, due, streak, snoozed, counts, cover, mood } = data;
   const refresh = () => void router.invalidate();
 
   // The file change feed rides the event bus; slug filtering happens in the callback
@@ -92,7 +97,7 @@ function PlantPage() {
         </CardContent>
       </Card>
 
-      <CareCard id={id} plant={plant} state={state} counts={counts} onChange={refresh} />
+      <CareCard id={id} care={care} due={due} counts={counts} onChange={refresh} />
       <PhotoTimeline id={id} initial={data.photos} onChange={refresh} />
       <JournalCard id={id} initial={data.journal} />
 
@@ -112,21 +117,21 @@ function PlantPage() {
 
 function CareCard({
   id,
-  plant,
-  state,
+  care,
+  due,
   counts,
   onChange,
 }: {
   id: number;
-  plant: Plant;
-  state: CareState;
+  care: CareEvery;
+  due: DueByKind;
   counts: Partial<Record<CareKind, number>>;
   onChange: () => void;
 }) {
-  const kinds = CARE_KINDS.filter((k) => plant.care[k]);
+  const kinds = CARE_KINDS.filter((k) => care[k]);
   const [editing, setEditing] = useState(false);
   const [every, setEvery] = useState<Record<string, string>>(
-    Object.fromEntries(kinds.map((k) => [k, plant.care[k]!.every]))
+    Object.fromEntries(kinds.map((k) => [k, care[k]!]))
   );
   const now = Date.now();
   return (
@@ -136,8 +141,8 @@ function CareCard({
       </CardHeader>
       <CardContent className="space-y-3">
         {kinds.map((kind) => {
-          const ks = state[kind];
-          const due = ks != null && ks.dueAt <= now;
+          const ks = due[kind];
+          const isDue = ks != null && ks.dueAt <= now;
           return (
             <div key={kind} className="flex flex-wrap items-center gap-2">
               <span className="w-16 capitalize">{kind}</span>
@@ -145,11 +150,11 @@ function CareCard({
                 {kind === "water" ? "💧 Water" : kind === "feed" ? "🍽️ Feed" : "💨 Mist"} now
               </Button>
               <span className="text-sm text-muted-foreground">
-                every {plant.care[kind]!.every}
-                {ks && ` · ${due ? "due since" : "next"} ${fmtDate(ks.dueAt)}`}
+                every {care[kind]!}
+                {ks && ` · ${isDue ? "due since" : "next"} ${fmtDate(ks.dueAt)}`}
                 {` · ${counts[kind] ?? 0}× so far`}
               </span>
-              {due && (
+              {isDue && (
                 <>
                   <Button size="sm" variant="secondary" onClick={async () => { await remindLater({ data: { plantId: id, kind } }); onChange(); }}>
                     Remind me in 1h
@@ -178,7 +183,7 @@ function CareCard({
               size="sm"
               onClick={async () => {
                 for (const kind of kinds) {
-                  if (every[kind] !== plant.care[kind]!.every) {
+                  if (every[kind] !== care[kind]!) {
                     await updateCare({ data: { plantId: id, kind, every: every[kind] } });
                   }
                 }
@@ -291,14 +296,14 @@ function JournalCard({
   initial,
 }: {
   id: number;
-  initial: { entries: { key: string; value: JournalEntry }[]; nextCursor: string | null };
+  initial: (typeof journal.$inferSelect)[];
 }) {
-  const [entries, setEntries] = useState(initial.entries);
-  const [cursor, setCursor] = useState(initial.nextCursor);
+  const [entries, setEntries] = useState(initial);
+  const [done, setDone] = useState(initial.length < 10);
   const [text, setText] = useState("");
   useEffect(() => {
-    setEntries(initial.entries);
-    setCursor(initial.nextCursor);
+    setEntries(initial);
+    setDone(initial.length < 10);
   }, [initial]);
 
   return (
@@ -313,8 +318,8 @@ function JournalCard({
             onClick={async () => {
               if (!text.trim()) return;
               const at = Date.now();
-              await kv.set(journalKey(id, at), { at, text: text.trim() });
-              setEntries((cur) => [{ key: journalKey(id, at), value: { at, text: text.trim() } }, ...cur]);
+              await db.insert(journal).values({ plantId: id, at, text: text.trim() });
+              setEntries((cur) => [{ id: -at, plantId: id, at, kind: null, text: text.trim() }, ...cur]);
               setText("");
             }}
           >
@@ -323,18 +328,28 @@ function JournalCard({
         </div>
         <ul className="space-y-1 text-sm">
           {entries.map((e) => (
-            <li key={e.key}>
-              <span className="text-muted-foreground">{fmtDate(e.value.at)}</span> — {e.value.text}
+            <li key={e.id}>
+              <span className="text-muted-foreground">{fmtDate(e.at)}</span> — {e.text}
             </li>
           ))}
         </ul>
-        {cursor && (
+        {!done && (
           <Button
             variant="secondary"
             onClick={async () => {
-              const page = await kv.list<JournalEntry>({ prefix: journalPrefix(id), limit: 10, cursor });
-              setEntries((cur) => [...cur, ...page.entries]);
-              setCursor(page.nextCursor);
+              const last = entries[entries.length - 1];
+              const page = await db
+                .select().from(journal)
+                .where(
+                  and(
+                    eq(journal.plantId, id),
+                    or(lt(journal.at, last.at), and(eq(journal.at, last.at), lt(journal.id, last.id)))
+                  )
+                )
+                .orderBy(desc(journal.at), desc(journal.id))
+                .limit(10);
+              setEntries((cur) => [...cur, ...page]);
+              if (page.length < 10) setDone(true);
             }}
           >
             Load more

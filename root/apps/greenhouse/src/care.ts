@@ -1,21 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { and, eq } from "drizzle-orm";
 import { kv, files, tasks, logs } from "@lodekit/sdk";
-import {
-  CARE_KINDS,
-  CARE_VERB,
-  type CareKind,
-  type CareState,
-  type Plant,
-  plants,
-  parseEvery,
-  stateKey,
-  streakKey,
-  countKey,
-  snoozeKey,
-  journalPrefix,
-  journalKey,
-} from "./lib";
+import { db, plants, careRules, careState, journal } from "./db";
+import { CARE_VERB, type CareKind, parseEvery, streakKey, snoozeKey } from "./lib";
 import { portraitSvg } from "./seed";
 
 const kindSchema = z.enum(["water", "feed", "mist"]);
@@ -25,29 +13,37 @@ async function requeueReminder(plantId: number, kind: CareKind, at: number): Pro
   return tasks.enqueue("care-reminder", { plantId, kind }, { at, dedupeKey: `${plantId}:${kind}` });
 }
 
+const stateFor = async (plantId: number, kind: CareKind) =>
+  (await db.select().from(careState).where(and(eq(careState.plantId, plantId), eq(careState.kind, kind))))[0];
+
 export const giveCare = createServerFn()
   .inputValidator(careInput)
   .handler(async ({ data }) => {
     const { plantId, kind } = data;
-    const plant = await plants.get(plantId);
+    const [plant] = await db.select().from(plants).where(eq(plants.id, plantId));
     if (!plant) throw new Error(`no plant ${plantId}`);
-    const cfg = plant.care[kind];
-    if (!cfg) throw new Error(`${plant.name} doesn't take "${kind}"`);
+    const [rule] = await db
+      .select().from(careRules)
+      .where(and(eq(careRules.plantId, plantId), eq(careRules.kind, kind)));
+    if (!rule) throw new Error(`${plant.name} doesn't take "${kind}"`);
     const now = Date.now();
-    const state = (await kv.get<CareState>(stateKey(plantId))) ?? {};
-    const prev = state[kind];
-    // Streak: on-time care extends it; late care restarts it at 1.
+    const prev = await stateFor(plantId, kind);
+    // Streak (kv counter — app memory): on-time care extends it; late restarts it at 1.
     if (prev && now > prev.dueAt) await kv.set(streakKey(plantId), 0);
     const streak = await kv.incr(streakKey(plantId));
-    await kv.incr(countKey(plantId, kind));
     // One live reminder per plant+kind: drop the stale queued run, then requeue.
     if (prev?.reminderRunId != null) await tasks.cancel(prev.reminderRunId).catch(() => false);
-    const dueAt = now + parseEvery(cfg.every);
+    const dueAt = now + parseEvery(rule.every);
     const reminderRunId = await requeueReminder(plantId, kind, dueAt);
-    state[kind] = { lastAt: now, dueAt, reminderRunId };
-    await kv.set(stateKey(plantId), state);
+    await db
+      .insert(careState)
+      .values({ plantId, kind, lastAt: now, dueAt, reminderRunId })
+      .onConflictDoUpdate({
+        target: [careState.plantId, careState.kind],
+        set: { lastAt: now, dueAt, dueSince: null, reminderRunId },
+      });
     await kv.del(snoozeKey(plantId));
-    await kv.set(journalKey(plantId, now), { at: now, text: `${CARE_VERB[kind]} ${plant.name}.` });
+    await db.insert(journal).values({ plantId, at: now, kind, text: `${CARE_VERB[kind]} ${plant.name}.` });
     logs.info("care given", { plantId, kind, streak });
     return { dueAt, streak };
   });
@@ -70,31 +66,26 @@ export const adoptPlant = createServerFn()
     parseEvery(data.feedEvery);
     if (data.mistEvery) parseEvery(data.mistEvery);
     const now = Date.now();
-    const care: Plant["care"] = {
-      water: { every: data.waterEvery },
-      feed: { every: data.feedEvery },
-    };
-    if (data.mistEvery) care.mist = { every: data.mistEvery };
-    const { id } = await plants.add({
-      name: data.name,
-      species: data.species,
-      icon: data.icon,
-      personality: data.personality,
-      adoptedAt: now,
-      care,
-    });
+    const every: Partial<Record<CareKind, string>> = { water: data.waterEvery, feed: data.feedEvery };
+    if (data.mistEvery) every.mist = data.mistEvery;
+    const [{ id }] = await db
+      .insert(plants)
+      .values({ name: data.name, species: data.species, icon: data.icon, personality: data.personality, adoptedAt: now })
+      .returning({ id: plants.id });
+    await db.insert(careRules).values(
+      (Object.entries(every) as [CareKind, string][]).map(([kind, e]) => ({ plantId: id, kind, every: e }))
+    );
     await files.put(portraitSvg(data.icon, id), {
       slug: `cover-${id}`,
       contentType: "image/svg+xml",
       title: `${data.name}'s portrait`,
     });
-    const state: CareState = {};
-    for (const kind of Object.keys(care) as CareKind[]) {
-      const dueAt = now + parseEvery(care[kind]!.every);
-      state[kind] = { lastAt: now, dueAt, reminderRunId: await requeueReminder(id, kind, dueAt) };
+    for (const [kind, e] of Object.entries(every) as [CareKind, string][]) {
+      const dueAt = now + parseEvery(e);
+      const reminderRunId = await requeueReminder(id, kind, dueAt);
+      await db.insert(careState).values({ plantId: id, kind, lastAt: now, dueAt, reminderRunId });
     }
-    await kv.set(stateKey(id), state);
-    await kv.set(journalKey(id, now), { at: now, text: `${data.name} joined the conservatory.` });
+    await db.insert(journal).values({ plantId: id, at: now, text: `${data.name} joined the conservatory.` });
     logs.info("plant adopted", { plantId: id, name: data.name });
     return id;
   });
@@ -103,26 +94,29 @@ export const updateCare = createServerFn()
   .inputValidator(z.object({ plantId: z.number().int(), kind: kindSchema, every: z.string() }))
   .handler(async ({ data }) => {
     parseEvery(data.every);
-    const plant = await plants.get(data.plantId);
+    const [plant] = await db.select().from(plants).where(eq(plants.id, data.plantId));
     if (!plant) throw new Error("plant not found");
-    plant.care[data.kind] = { every: data.every };
-    await plants.set(data.plantId, plant);
+    await db
+      .update(careRules)
+      .set({ every: data.every })
+      .where(and(eq(careRules.plantId, data.plantId), eq(careRules.kind, data.kind)));
     // Reschedule from lastAt under the new interval.
-    const state = (await kv.get<CareState>(stateKey(data.plantId))) ?? {};
-    const ks = state[data.kind];
+    const ks = await stateFor(data.plantId, data.kind);
     if (ks) {
       if (ks.reminderRunId != null) await tasks.cancel(ks.reminderRunId).catch(() => false);
-      ks.dueAt = ks.lastAt + parseEvery(data.every);
-      delete ks.dueSince;
-      ks.reminderRunId = await requeueReminder(data.plantId, data.kind, ks.dueAt);
-      await kv.set(stateKey(data.plantId), state);
+      const dueAt = ks.lastAt + parseEvery(data.every);
+      const reminderRunId = await requeueReminder(data.plantId, data.kind, dueAt);
+      await db
+        .update(careState)
+        .set({ dueAt, dueSince: null, reminderRunId })
+        .where(and(eq(careState.plantId, data.plantId), eq(careState.kind, data.kind)));
     }
   });
 
 export const snoozePlant = createServerFn()
   .inputValidator(z.object({ plantId: z.number().int(), hours: z.number().int().min(1).max(72) }))
   .handler(async ({ data }) => {
-    // TTL key: while present the due badge hides; expiry brings it back by itself.
+    // TTL key (kv — app memory): while present the due badge hides; expiry brings it back.
     await kv.set(snoozeKey(data.plantId), true, { ttl: data.hours * 3600 });
     logs.info("plant snoozed", { plantId: data.plantId, hours: data.hours });
   });
@@ -141,18 +135,20 @@ export const remindLater = createServerFn()
 export const skipNext = createServerFn()
   .inputValidator(careInput)
   .handler(async ({ data }) => {
-    const state = (await kv.get<CareState>(stateKey(data.plantId))) ?? {};
-    const ks = state[data.kind];
+    const ks = await stateFor(data.plantId, data.kind);
     if (!ks) return false;
     if (ks.reminderRunId != null) await tasks.cancel(ks.reminderRunId).catch(() => false);
-    const plant = await plants.get(data.plantId);
-    const cfg = plant?.care[data.kind];
-    if (!cfg) return false;
+    const [rule] = await db
+      .select().from(careRules)
+      .where(and(eq(careRules.plantId, data.plantId), eq(careRules.kind, data.kind)));
+    if (!rule) return false;
     // Push the due time one interval out and queue the next reminder.
-    ks.dueAt = ks.dueAt + parseEvery(cfg.every);
-    delete ks.dueSince;
-    ks.reminderRunId = await requeueReminder(data.plantId, data.kind, ks.dueAt);
-    await kv.set(stateKey(data.plantId), state);
+    const dueAt = ks.dueAt + parseEvery(rule.every);
+    const reminderRunId = await requeueReminder(data.plantId, data.kind, dueAt);
+    await db
+      .update(careState)
+      .set({ dueAt, dueSince: null, reminderRunId })
+      .where(and(eq(careState.plantId, data.plantId), eq(careState.kind, data.kind)));
     logs.info("next care skipped", { plantId: data.plantId, kind: data.kind });
     return true;
   });
@@ -161,21 +157,15 @@ export const letGo = createServerFn()
   .inputValidator(z.object({ plantId: z.number().int() }))
   .handler(async ({ data }) => {
     const { plantId } = data;
-    const plant = await plants.get(plantId);
-    const state = (await kv.get<CareState>(stateKey(plantId))) ?? {};
-    for (const ks of Object.values(state)) {
-      if (ks?.reminderRunId != null) await tasks.cancel(ks.reminderRunId).catch(() => false);
+    const [plant] = await db.select().from(plants).where(eq(plants.id, plantId));
+    for (const ks of await db.select().from(careState).where(eq(careState.plantId, plantId))) {
+      if (ks.reminderRunId != null) await tasks.cancel(ks.reminderRunId).catch(() => false);
     }
-    await kv.del(stateKey(plantId));
+    // ON DELETE CASCADE takes care_rules, care_state, and the journal with it —
+    // the cleanup that kv-era code did key by key.
+    await db.delete(plants).where(eq(plants.id, plantId));
     await kv.del(streakKey(plantId));
     await kv.del(snoozeKey(plantId));
-    for (const kind of CARE_KINDS) await kv.del(countKey(plantId, kind));
-    let cursor: string | null = null;
-    do {
-      const page = await kv.list({ prefix: journalPrefix(plantId), limit: 200, cursor: cursor ?? undefined });
-      for (const e of page.entries) await kv.del(e.key);
-      cursor = page.nextCursor;
-    } while (cursor);
     for (const prefix of [`photo-${plantId}-`, `archive-${plantId}-`]) {
       let fc: string | null = null;
       do {
@@ -185,6 +175,5 @@ export const letGo = createServerFn()
       } while (fc);
     }
     await files.delete(`cover-${plantId}`).catch(() => false);
-    await plants.remove(plantId);
     logs.info("plant let go", { plantId, name: plant?.name });
   });

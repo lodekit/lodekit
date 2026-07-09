@@ -1,18 +1,6 @@
 import { files, kv, logs, tasks } from "@lodekit/sdk";
-import {
-  type CareKind,
-  type CareState,
-  type Plant,
-  CARE_VERB,
-  plants,
-  parseEvery,
-  invTs,
-  stateKey,
-  streakKey,
-  countKey,
-  snoozeKey,
-  journalKey,
-} from "./lib";
+import { db, plants, careRules, careState, journal } from "./db";
+import { CARE_VERB, type CareKind, parseEvery, invTs, streakKey, snoozeKey } from "./lib";
 
 /** Deterministic SVG portrait — no binary assets, no network. Icon is stripped of
  *  markup-significant characters (it lands inside an SVG text node). */
@@ -28,7 +16,8 @@ export function portraitSvg(icon: string, seed: number): string {
 }
 
 interface SeedPlant {
-  plant: Omit<Plant, "adoptedAt">;
+  plant: { name: string; species: string; icon: string; personality: string };
+  every: Partial<Record<CareKind, string>>;
   daysAgo: number;
   streak: number;
   story: "overdue" | "dueSoon" | "fine" | "snoozed";
@@ -41,8 +30,8 @@ const SEEDS: SeedPlant[] = [
       species: "Fiddle-leaf fig",
       icon: "🌿",
       personality: "Dramatic. Sheds a leaf to make a point.",
-      care: { water: { every: "3d" }, feed: { every: "14d" }, mist: { every: "2d" } },
     },
+    every: { water: "3d", feed: "14d", mist: "2d" },
     daysAgo: 120,
     streak: 0,
     story: "overdue",
@@ -53,8 +42,8 @@ const SEEDS: SeedPlant[] = [
       species: "Golden barrel cactus",
       icon: "🌵",
       personality: "Unbothered. Thrives on neglect, mildly disappointed by attention.",
-      care: { water: { every: "14d" }, feed: { every: "30d" } },
     },
+    every: { water: "14d", feed: "30d" },
     daysAgo: 400,
     streak: 3,
     story: "fine",
@@ -65,8 +54,8 @@ const SEEDS: SeedPlant[] = [
       species: "Golden pothos",
       icon: "🪴",
       personality: "Overachiever. Will trellis your bookshelf without asking.",
-      care: { water: { every: "5d" }, feed: { every: "21d" } },
     },
+    every: { water: "5d", feed: "21d" },
     daysAgo: 60,
     streak: 12,
     story: "dueSoon",
@@ -77,75 +66,61 @@ const SEEDS: SeedPlant[] = [
       species: "Boston fern",
       icon: "🌱",
       personality: "Anxious. Checks the humidity forecast twice a day.",
-      care: { water: { every: "2d" }, feed: { every: "14d" }, mist: { every: "1d" } },
     },
+    every: { water: "2d", feed: "14d", mist: "1d" },
     daysAgo: 30,
     streak: 1,
     story: "snoozed",
   },
 ];
 
-/** Idempotent first-open seed (spec §8). Returns true when it seeded. */
+/** Idempotent first-open seed. Returns true when it seeded. */
 export async function seedIfNeeded(): Promise<boolean> {
   if (await kv.has("seeded")) return false;
   const now = Date.now();
   for (const seed of SEEDS) {
     const adoptedAt = now - seed.daysAgo * 86_400_000;
-    const { id } = await plants.add({ ...seed.plant, adoptedAt });
+    const [{ id }] = await db
+      .insert(plants)
+      .values({ ...seed.plant, adoptedAt })
+      .returning({ id: plants.id });
     await files.put(portraitSvg(seed.plant.icon, id), {
-      slug: `cover-${id}`,
-      contentType: "image/svg+xml",
-      title: `${seed.plant.name}'s portrait`,
+      slug: `cover-${id}`, contentType: "image/svg+xml", title: `${seed.plant.name}'s portrait`,
     });
     await files.put(portraitSvg(seed.plant.icon, id + 1), {
-      slug: `photo-${id}-${invTs(adoptedAt)}`,
-      contentType: "image/svg+xml",
-      title: "Adoption day",
-      metadata: { plantId: id },
+      slug: `photo-${id}-${invTs(adoptedAt)}`, contentType: "image/svg+xml",
+      title: "Adoption day", metadata: { plantId: id },
     });
-    const state: CareState = {};
-    const backdated: { key: string; value: unknown }[] = [];
+    const stateRows: (typeof careState.$inferInsert)[] = [];
+    const journalRows: (typeof journal.$inferInsert)[] = [];
     let i = 0;
-    for (const [kind, cfg] of Object.entries(seed.plant.care) as [CareKind, { every: string }][]) {
-      const every = parseEvery(cfg.every);
-      // Stagger due times per the seed's story: an overdue plant is past due, a
-      // dueSoon plant comes due within hours, the rest are comfortably ahead.
+    for (const [kind, every] of Object.entries(seed.every) as [CareKind, string][]) {
+      const ms = parseEvery(every);
+      // Stagger due times per the seed's story (same arithmetic as before).
       const dueAt =
-        seed.story === "overdue"
-          ? now - Math.floor(every / 2)
-          : seed.story === "dueSoon"
-            ? now + Math.floor(Math.min(every, 86_400_000) / 4)
-            : now + every;
-      const lastAt = dueAt - every;
-      // Stagger the backdated journal entry's timestamp per kind (independent of
-      // lastAt, which drives the care state) so same-ms entries don't collide and
-      // collapse in the kv.setMany below.
+        seed.story === "overdue" ? now - Math.floor(ms / 2)
+        : seed.story === "dueSoon" ? now + Math.floor(Math.min(ms, 86_400_000) / 4)
+        : now + ms;
+      const lastAt = dueAt - ms;
       const stampAt = lastAt - i * 60_000;
       i++;
-      const reminderRunId = await tasks.enqueue(
-        "care-reminder",
-        { plantId: id, kind },
-        { at: dueAt, dedupeKey: `${id}:${kind}` }
-      );
-      state[kind] = { lastAt, dueAt, reminderRunId };
-      backdated.push({
-        key: journalKey(id, stampAt),
-        value: { at: stampAt, text: `${CARE_VERB[kind]} ${seed.plant.name}.` },
-      });
+      const reminderRunId = await tasks.enqueue("care-reminder", { plantId: id, kind }, { at: dueAt, dedupeKey: `${id}:${kind}` });
+      stateRows.push({ plantId: id, kind, lastAt, dueAt, reminderRunId });
+      journalRows.push({ plantId: id, at: stampAt, kind, text: `${CARE_VERB[kind]} ${seed.plant.name}.` });
     }
-    backdated.push({
-      key: journalKey(id, adoptedAt),
-      value: { at: adoptedAt, text: `${seed.plant.name} joined the conservatory.` },
-    });
-    await kv.setMany([
-      { key: stateKey(id), value: state },
-      { key: streakKey(id), value: seed.streak },
-      { key: countKey(id, "water"), value: Math.max(1, Math.floor(seed.daysAgo / 3)) },
-      ...backdated,
+    journalRows.push({ plantId: id, at: adoptedAt, text: `${seed.plant.name} joined the conservatory.` });
+    // One transaction for the plant's dependents — db.batch is the transaction story.
+    await db.batch([
+      db.insert(careRules).values(
+        (Object.entries(seed.every) as [CareKind, string][]).map(([kind, every]) => ({ plantId: id, kind, every }))
+      ),
+      db.insert(careState).values(stateRows),
+      db.insert(journal).values(journalRows),
     ]);
+    await kv.set(streakKey(id), seed.streak);
     if (seed.story === "snoozed") await kv.set(snoozeKey(id), true, { ttl: 86_400 });
   }
-  await kv.set("seeded", { at: now, version: 1 });
+  await kv.set("seeded", { at: now, version: 2 });
   logs.info("conservatory seeded", { plants: SEEDS.length });
   return true;
 }
