@@ -5,9 +5,9 @@ description: Use when building a local tool/app "with Lodekit" — scaffolds via
 
 # Building Lodekit Apps
 
-> **Stale — pending the v0.1 rewrite** (umbrella spec §2.7). The storage API is now the `kv`
-> handle (`docs/specs/2026-07-03-kv-store-v2-design.md`); `lodekit_inspect_db` was replaced by
-> `lodekit_kv_list`/`lodekit_kv_get`.
+> **Stale — pending the v0.1 rewrite** (umbrella spec §2.7), except the storage sections
+> below (Database, Files, Logs, Events, Settings, Secrets), which are current as of the
+> db-store slice. The workflow and the rest of this file still await the rewrite.
 
 Lodekit hosts small single-page tools. You write plain HTML + vanilla JS; Lodekit
 auto-injects the design system and a client SDK. Data is per-app SQLite via the SDK.
@@ -20,21 +20,74 @@ auto-injects the design system and a client SDK. Data is per-app SQLite via the 
 2. Write `apps/<slug>/index.html` and `apps/<slug>/app.js` with the real tool. Do NOT add
    `<link>`/`<script>` for the design system or SDK — Lodekit injects them.
 3. Use design-system classes for a consistent look (below).
-4. Use `window.lodekit` for storage. Create tables on load with `db.exec`.
+4. Use the Database (`db`) or KV (`kv`) for storage — see below for which.
 5. Call `lodekit_open_app({ slug })` to open it; `lodekit_inspect_db({ slug })` to check data.
 
-## Client SDK (`window.lodekit`)
+## Choosing storage: Database (`db`) vs KV (`kv`)
 
-- `await lodekit.db.query(sql, params?)` → array of row objects.
-- `await lodekit.db.exec(sql, params?)` → `{ changes, lastInsertRowid }`.
-- `await lodekit.store.get(key)` → JSON value or `null`.
-- `await lodekit.store.set(key, value)` → persists JSON.
-- `lodekit.secrets.get(name)` — not implemented in the POC; do not use.
+Two per-app stores; choose by data kind, without asking the person (they can steer):
+
+- **Database (db-store) — the default for domain records.** Anything that is an
+  *entity*: it has fields, has relationships, gets listed/filtered/aggregated, would
+  hurt to lose. Recipes, expenses, plants, rows saved from an integration.
+- **KV (kv-store) — app memory.** Counters, cursors, preferences, caches, last-seen
+  offsets, flags: small values the app writes about itself.
+
+If you're modeling it with composite keys (`checkin:<id>:<day>`) or scanning prefixes
+to "join", it's an entity — put it in the database.
+
+## Database (db-store)
+
+Declare the schema in `src/db.ts` — drizzle tables plus the app's typed client:
+
+```ts
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { createDb } from "@lodekit/sdk";
+
+export const recipes = sqliteTable("recipes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  addedAt: integer("added_at", { mode: "timestamp" }).notNull(),
+});
+
+export const db = createDb({ recipes });
+```
+
+- **Schema applies on save.** The runtime diffs your declaration against the live
+  database at boot: additive changes (new table/column/index) apply automatically —
+  never write migrations, never run a CLI.
+- **No breaking changes.** Destructive changes (drop/rename/type change) are *gated*:
+  they don't apply, and the app reports a `schema-state` error explaining what would
+  be lost. Iterate additively (expand-copy): add the new column or table, copy data in
+  app code, switch reads, stop writing the old one.
+- Table and column names are snake_case, written explicitly (as above). Table names
+  must not start with `_` (reserved for the platform).
+- **Query anywhere** with the full drizzle builder — server functions, loaders, and
+  the browser all work: `await db.select().from(recipes).where(eq(recipes.id, id))`,
+  joins, `groupBy`/`count`, `insert().returning()`, `onConflictDoUpdate`.
+  Import operators from `drizzle-orm` (`eq`, `and`, `desc`, `count`, `sql`, …).
+- **Transactions are `db.batch([...])`** (the proxy driver has no interactive
+  transactions). Complex reads can drop to the escape hatch:
+  `` await db.all(sql`SELECT …`) ``.
+- Declare relations with `.references(() => other.id, { onDelete: "cascade" })` —
+  foreign keys are enforced; cascades replace manual cleanup loops.
+- Blobs don't transport over the query door — binary belongs in Files.
+- Validate user input with derived schemas where useful: `drizzle-zod`'s
+  `createInsertSchema(recipes)` — derived from the table, never a second source of truth.
+- Live refresh: `events.watch({ type: "db-store-change" }, () => …invalidate…)` —
+  same pattern as the kv feed; payloads carry identity (`{ op, table }`), never values.
+- **Via MCP**: `lodekit_db_schema` (the declared tables) and `lodekit_db_query`
+  (SELECT-only) — inspect real data before assuming a change worked.
+- **Reading errors:** drizzle 0.45 wraps driver errors in `DrizzleQueryError` — the
+  real message from the Lodekit server (a gate explanation, a guard rejection) rides
+  `error.cause`, not `error.message`. When a db call throws, log or inspect
+  `error.cause` to see what actually went wrong.
 
 ## Files (file-store)
 
-Per-app blob storage for documents and binary data — use the Store (`kv`) for JSON
-values, Files for bytes (reports, downloads, images). Import: `import { files } from "@lodekit/sdk"`.
+Per-app blob storage for documents and binary data — use the Database (`db`) for
+records, KV (`kv`) for small JSON values, Files for bytes (reports, downloads, images).
+Import: `import { files } from "@lodekit/sdk"`.
 
 - A file's key is its **slug** (`a-z0-9-`). Pass one explicitly, or pass `title`
   and let the service derive it ("Q2 Report" → `q2-report`); re-putting the same
@@ -101,13 +154,13 @@ The person's knobs: declare them, read them — never write them from app code.
   Every setting needs `label`, `description` (one line — shown under the control), and `default`. Types: `boolean`, `string`, `number`, `select`, `duration`. Keys are snake_case.
 - Read (typed) by importing your own schema: `import settings from "../settings"; const v = await settings.get("show_archived");` — plus `settings.all()` and `settings.watch(cb)`.
 - The person edits values in the dashboard Settings page; the dashboard renders your schema automatically.
-- Boundaries: **Settings** = person writes, app reads. **Store (`kv`)** = the app's own memory — app writes at runtime. **Secrets** = credentials, server-side only (see the Secrets section) — never put credentials in Settings or the Store.
+- Boundaries: **Settings** = person writes, app reads. **KV (`kv`)** = the app's own memory — app writes at runtime. **Database (`db`)** = the app's domain records. **Secrets** = credentials, server-side only (see the Secrets section) — never put credentials in Settings or KV.
 - Inspect over MCP: `lodekit_settings_list`, `lodekit_settings_get`.
 
 ## Secrets
 
 Credentials (API keys, auth tokens) live in the **secret-store** — never in
-Settings, never in the Store. The person owns a platform-wide secret catalog;
+Settings, never in KV. The person owns a platform-wide secret catalog;
 your app declares **slots** it needs, and the person **links** a secret to each
 slot in the dashboard. Server-side code reads linked values; browser code never
 can.
@@ -142,29 +195,14 @@ Hard rules:
 - **Never ask the person to paste a secret value into chat.** Direct them to
   the dashboard → Secrets (or the app's settings page, which shows pending
   slots with a link/create affordance).
-- **Never log, echo, or store a secret value** — not in `kv`, not in `files`,
-  not in events, not in console output.
-- The three-store boundary: **Settings** = the person's knobs; **Store (kv)**
-  = the app's own memory; **Secrets** = credentials the person provides.
+- **Never log, echo, or store a secret value** — not in `kv`, not in `db`, not in
+  `files`, not in events, not in console output.
+- The four-way boundary: **Settings** = the person's knobs; **KV (`kv`)** = app
+  memory; **Database (`db`)** = domain records; **Secrets** = credentials the
+  person provides.
 
 ## Design system classes
 
 `lk-container` (page wrapper), `lk-h1`, `lk-muted`, `lk-card`, `lk-grid`, `lk-row`,
 `lk-input`, `lk-select`, `lk-btn`, `lk-table`. Prefer these over custom CSS so tools
 look consistent. App-specific tweaks go in an optional `app.css`.
-
-## Example `app.js`
-
-```js
-async function init() {
-  await lodekit.db.exec(
-    "CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, body TEXT, created_at TEXT)"
-  );
-  await render();
-}
-async function render() {
-  const notes = await lodekit.db.query("SELECT * FROM notes ORDER BY id DESC");
-  // ...build DOM with lk- classes...
-}
-init();
-```
