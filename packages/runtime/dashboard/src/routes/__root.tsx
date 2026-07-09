@@ -1,6 +1,8 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import appCss from "../index.css?url";
+import { SSEProvider } from "../components/sse";
+import { Header } from "../components/header";
 
 const queryClient = new QueryClient();
 
@@ -24,9 +26,14 @@ export const Route = createRootRoute({
             OS media query (settings spec §8). */}
         <script src="/_ui/theme.js" />
       </head>
-      <body>
+      <body className="flex min-h-screen flex-col">
         <QueryClientProvider client={queryClient}>
-          <Outlet />
+          <SSEProvider>
+            <Header />
+            <main className="mx-auto w-full min-w-80 max-w-4xl flex-1 px-4 py-6 md:px-8">
+              <Outlet />
+            </main>
+          </SSEProvider>
         </QueryClientProvider>
         <footer className="text-muted-foreground py-4 text-center text-xs">{versionLine}</footer>
         <Scripts />
