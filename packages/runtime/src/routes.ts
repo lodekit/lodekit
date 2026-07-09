@@ -9,6 +9,7 @@ import { scaffoldApp } from "./scaffold.js";
 import { addClient } from "./sse.js";
 import { validationHook } from "./validation.js";
 import { kvRoutes, withDb, CATALOG_NAME } from "./services/kv-store.js";
+import { dbRoutes, withDbStore, CATALOG_NAME as DB } from "./services/db-store.js";
 import { filesRoutes, withFiles, CATALOG_NAME as FILES } from "./services/file-store.js";
 import { logRoutes, withLogs, logsQuery, CATALOG_NAME as LOGS } from "./services/log-store.js";
 import { queryLogs } from "./logStore.js";
@@ -55,6 +56,8 @@ export function apiRoutes(cfg: Config) {
     })
     .use(`/apps/:appId/${CATALOG_NAME}/*`, withDb(cfg))
     .route(`/apps/:appId/${CATALOG_NAME}`, kvRoutes)
+    .use(`/apps/:appId/${DB}/*`, withDbStore(cfg))
+    .route(`/apps/:appId/${DB}`, dbRoutes)
     .use(`/apps/:appId/${LOGS}/*`, withLogs())
     .route(`/apps/:appId/${LOGS}`, logRoutes)
     .use(`/apps/:appId/${EVENTS}/*`, withEvents())
