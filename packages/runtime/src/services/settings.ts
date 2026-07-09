@@ -19,6 +19,8 @@ import { PLATFORM_SETTINGS, PLATFORM_KEY_RE } from "../platformSettings.js";
 import { validationHook } from "../validation.js";
 import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
 import { emitLog } from "../logger.js";
+import { applyMigrations } from "../migrations.js";
+import { SETTINGS_CHAIN } from "../migrations/platform.js";
 
 export const CATALOG_NAME = "settings";
 
@@ -139,13 +141,7 @@ export function initSettingsStore(dataDir: string): boolean {
     fs.mkdirSync(dir, { recursive: true });
     platformDb = new BetterSqlite3(path.join(dir, "settings.sqlite"));
     platformDb.pragma("journal_mode = WAL");
-    platformDb.exec(
-      `CREATE TABLE IF NOT EXISTS settings (
-        key        TEXT PRIMARY KEY,
-        value      TEXT NOT NULL,
-        updated_at INTEGER NOT NULL
-      );`
-    );
+    applyMigrations(platformDb, SETTINGS_CHAIN);
     return true;
   } catch (e) {
     platformDb = null;

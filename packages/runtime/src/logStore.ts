@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
+import { applyMigrations } from "./migrations.js";
+import { LOGS_CHAIN } from "./migrations/platform.js";
 
 export const LEVELS = { debug: 10, info: 20, warn: 30, error: 40 } as const;
 export type LevelName = keyof typeof LEVELS;
@@ -48,20 +50,7 @@ export function initLogStore(stateDir: string): boolean {
     fs.mkdirSync(stateDir, { recursive: true });
     db = new Database(path.join(stateDir, "logs.sqlite"));
     db.pragma("journal_mode = WAL");
-    db.exec(
-      `CREATE TABLE IF NOT EXISTS logs (
-        id      INTEGER PRIMARY KEY,
-        ts      INTEGER NOT NULL,
-        level   INTEGER NOT NULL,
-        source  TEXT NOT NULL,
-        app_id  TEXT,
-        message TEXT NOT NULL,
-        fields  TEXT
-      );
-      CREATE INDEX IF NOT EXISTS logs_app ON logs(app_id, id);
-      CREATE INDEX IF NOT EXISTS logs_level ON logs(level, id);
-      CREATE INDEX IF NOT EXISTS logs_ts ON logs(ts);`
-    );
+    applyMigrations(db, LOGS_CHAIN);
     return true;
   } catch (e) {
     db = null;

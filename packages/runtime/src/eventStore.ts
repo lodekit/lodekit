@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { emitLog } from "./logger.js";
+import { applyMigrations } from "./migrations.js";
+import { EVENTS_CHAIN } from "./migrations/platform.js";
 
 export interface EventRecord {
   id: number;
@@ -45,19 +47,7 @@ export function initEventStore(dataDir: string): boolean {
     fs.mkdirSync(dir, { recursive: true });
     db = new Database(path.join(dir, "events.sqlite"));
     db.pragma("journal_mode = WAL");
-    db.exec(
-      `CREATE TABLE IF NOT EXISTS events (
-        id         INTEGER PRIMARY KEY,
-        ts         INTEGER NOT NULL,
-        ns         TEXT NOT NULL,
-        source     TEXT NOT NULL,
-        type       TEXT NOT NULL,
-        payload    TEXT,
-        expires_at INTEGER
-      );
-      CREATE INDEX IF NOT EXISTS events_ns ON events(ns, id);
-      CREATE INDEX IF NOT EXISTS events_ts ON events(ts);`
-    );
+    applyMigrations(db, EVENTS_CHAIN);
     return true;
   } catch (e) {
     db = null;

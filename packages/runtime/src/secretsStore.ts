@@ -11,6 +11,8 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import type { Config } from "./config.js";
 import { getMasterKey, SecretsUnavailableError } from "./keyProvider.js";
 import { slugify } from "./services/file-store.js";
+import { applyMigrations } from "./migrations.js";
+import { SECRETS_CHAIN } from "./migrations/platform.js";
 
 export { SecretsUnavailableError };
 
@@ -89,24 +91,7 @@ export function initSecretStore(cfg: Config): boolean {
     fs.mkdirSync(dir, { recursive: true });
     db = new BetterSqlite3(path.join(dir, "secrets.sqlite"));
     db.pragma("journal_mode = WAL");
-    db.exec(
-      `CREATE TABLE IF NOT EXISTS secrets (
-        slug        TEXT PRIMARY KEY,
-        label       TEXT NOT NULL,
-        description TEXT,
-        ciphertext  BLOB NOT NULL,   -- AES-256-GCM output, auth tag appended
-        nonce       BLOB NOT NULL,
-        created_at  INTEGER NOT NULL,
-        updated_at  INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS links (
-        app_id    TEXT NOT NULL,
-        slot      TEXT NOT NULL,
-        slug      TEXT NOT NULL,
-        linked_at INTEGER NOT NULL,
-        PRIMARY KEY (app_id, slot)
-      );`
-    );
+    applyMigrations(db, SECRETS_CHAIN);
     return true;
   } catch (e) {
     db = null;
