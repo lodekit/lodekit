@@ -62,9 +62,15 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
   const [draft, setDraft] = useState(String(value));
   const [seeded, setSeeded] = useState(String(value));
   const focusValue = useRef(String(value));
+  // The no-write baseline: the last draft submitted (or seeded). Comparing the
+  // draft against this — not the server value — keeps a standing rejected
+  // draft from re-submitting on focus+blur, and Enter-then-blur from writing
+  // twice while the refetched value is still in flight.
+  const lastSent = useRef(String(value));
   if (String(value) !== seeded) { // external change: re-seed during render (React's sanctioned pattern)
     setSeeded(String(value));
     setDraft(String(value));
+    lastSent.current = String(value);
   }
   if (field.type === "boolean") {
     return <Switch checked={Boolean(value)} onCheckedChange={(v) => onChange(v)} />;
@@ -89,9 +95,9 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
   };
   if (field.type === "number") {
     const commit = () => {
-      if (draft === String(value)) return; // unchanged: no write
+      if (draft === lastSent.current) return; // unchanged: no write
       const n = Number(draft);
-      if (draft.trim() !== "" && Number.isFinite(n)) { onChange(n); return; }
+      if (draft.trim() !== "" && Number.isFinite(n)) { lastSent.current = draft; onChange(n); return; }
       setDraft(String(value)); // emptied/invalid input: no-op, never write 0
     };
     return (
@@ -105,7 +111,8 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
   }
   // string + duration: text input; the server validates the duration grammar.
   const commit = () => {
-    if (draft === String(value)) return; // unchanged: no write
+    if (draft === lastSent.current) return; // unchanged: no write
+    lastSent.current = draft;
     onChange(draft);
   };
   return (
@@ -176,8 +183,8 @@ function SettingRow(props: {
   );
 }
 
-// Rows for one group: the general rows, then an "Advanced · N" accordion styled
-// as a small heading. Groups where everything is advanced (Store, Files) get a
+// Rows for one group: the general rows, then an "Advanced" accordion styled as
+// a small heading. Groups where everything is advanced (Store, Files) get a
 // note instead of a broken-empty general area.
 function SettingRows({ entries, render }: { entries: { advanced: boolean }[]; render: (advanced: boolean) => ReactNode }) {
   const advanced = entries.filter((e) => e.advanced);
