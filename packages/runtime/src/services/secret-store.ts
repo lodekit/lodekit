@@ -3,7 +3,7 @@
 // (src/secrets.ts via the worker-boot manifest), the person links secrets to
 // slots (the grant), and server-side app code reads values through the
 // worker-token door. Catalog + links live in secretsStore; slot declarations
-// live in the app's own db (settings' _lodekit_setting_defs pattern).
+// live in the app's own db (settings' _setting_defs pattern).
 import fs from "node:fs";
 import path from "node:path";
 import type Database from "better-sqlite3";
@@ -48,22 +48,8 @@ export function emitSecretsChange(ns: string, name: string): void {
 
 // ---------- slot declarations (per-app db) ----------
 
-const ensured = new WeakSet<Database.Database>();
-
 export function getSlotsDb(dataDir: string, appId: string): Database.Database {
-  const db = getAppDb(dataDir, appId);
-  if (!ensured.has(db)) {
-    db.exec(
-      `CREATE TABLE IF NOT EXISTS _lodekit_secret_slots (
-        slot          TEXT PRIMARY KEY,
-        def           TEXT,          -- JSON SlotDef; NULL when the declaration failed
-        error         TEXT,          -- per-slot declaration error (spec §5)
-        registered_at INTEGER NOT NULL
-      );`
-    );
-    ensured.add(db);
-  }
-  return db;
+  return getAppDb(dataDir, appId);
 }
 
 function validateSlotDef(slot: string, raw: unknown): SlotDef {
@@ -91,14 +77,14 @@ export function applySecretsManifest(cfg: Config, appId: string, slots: Record<s
         error = e instanceof Error ? e.message : String(e);
       }
       db.prepare(
-        `INSERT INTO _lodekit_secret_slots (slot, def, error, registered_at)
+        `INSERT INTO _secret_slots (slot, def, error, registered_at)
          VALUES (@slot, @def, @error, @now)
          ON CONFLICT(slot) DO UPDATE SET def = excluded.def, error = excluded.error, registered_at = excluded.registered_at`
       ).run({ slot, def: def ? JSON.stringify(def) : null, error, now });
     }
-    const existing = db.prepare("SELECT slot FROM _lodekit_secret_slots").all() as { slot: string }[];
+    const existing = db.prepare("SELECT slot FROM _secret_slots").all() as { slot: string }[];
     for (const { slot } of existing) {
-      if (!kept.has(slot)) db.prepare("DELETE FROM _lodekit_secret_slots WHERE slot = ?").run(slot);
+      if (!kept.has(slot)) db.prepare("DELETE FROM _secret_slots WHERE slot = ?").run(slot);
     }
   });
   txn();
@@ -126,7 +112,7 @@ export function registerSecretsManifest(cfg: Config, appId: string, slots: Recor
 }
 
 export function listSlots(db: Database.Database): { slot: string; def: SlotDef | null; error: string | null }[] {
-  const rows = db.prepare("SELECT slot, def, error FROM _lodekit_secret_slots ORDER BY slot").all() as
+  const rows = db.prepare("SELECT slot, def, error FROM _secret_slots ORDER BY slot").all() as
     { slot: string; def: string | null; error: string | null }[];
   return rows.map((r) => ({ slot: r.slot, def: r.def ? (JSON.parse(r.def) as SlotDef) : null, error: r.error }));
 }
@@ -198,7 +184,7 @@ export function withSecrets(cfg: Config): MiddlewareHandler<SecretsEnv> {
 
 // 404 gate shared by the slot routes: the slot must be declared.
 function requireSlot(db: Database.Database, slot: string): void {
-  if (!db.prepare("SELECT 1 FROM _lodekit_secret_slots WHERE slot = ?").get(slot)) {
+  if (!db.prepare("SELECT 1 FROM _secret_slots WHERE slot = ?").get(slot)) {
     throw new SecretsNotFoundError(`unknown slot "${slot}"`);
   }
 }

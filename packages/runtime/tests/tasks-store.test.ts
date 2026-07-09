@@ -3,9 +3,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import Database from "better-sqlite3";
-import { getAppDb } from "../src/db.js";
+import { applyMigrations } from "../src/migrations.js";
+import { APP_DB_CHAIN } from "../src/migrations/appDb.js";
 import {
-  ensureSchema, applyManifest, getDef, setHighWater, hasTasks,
+  applyManifest, getDef, setHighWater, hasTasks,
   insertRun, claimNextDue, finishRun, markInterrupted, listRuns, getRun, lastRunOf,
   cancelRun, sweepRuns, getTasksDb,
   type TaskDefRow,
@@ -31,7 +32,7 @@ const polFor = (def: TaskDefRow | undefined) => ({
 let db: Database.Database;
 beforeEach(() => {
   db = new Database(":memory:");
-  ensureSchema(db);
+  applyMigrations(db, APP_DB_CHAIN);
 });
 
 const manifest = (over: object = {}) => [{ name: "digest", cron: "0 9 * * *", ...over }];
@@ -43,16 +44,19 @@ describe("applyManifest", () => {
     expect(getDef(db, "b")).toMatchObject({ retries: 1, timeoutMs: 60_000, catchUpMs: 0 });
   });
 
-  it("v0 defs tables are rebuilt on ensure (user_version migration)", () => {
+  it("v0 defs tables are rebuilt by the app-db migration chain (user_version)", () => {
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "lk-tasksmig-"));
     try {
-      const raw = getAppDb(dataDir, "legacy");
+      const appDir = path.join(dataDir, "legacy");
+      fs.mkdirSync(appDir, { recursive: true });
+      const raw = new Database(path.join(appDir, "db.sqlite"));
       raw.exec(`CREATE TABLE _lodekit_task_defs (
         name TEXT PRIMARY KEY, schedule_kind TEXT, schedule_expr TEXT, catch_up_ms INTEGER,
         retries INTEGER NOT NULL, timeout_ms INTEGER NOT NULL, retired INTEGER NOT NULL DEFAULT 0,
         error TEXT, registered_at INTEGER NOT NULL, high_water INTEGER)`);
       raw.prepare(`INSERT INTO _lodekit_task_defs (name, retries, timeout_ms, registered_at) VALUES ('old', 3, 300000, 1)`).run();
-      const db2 = getTasksDb(dataDir, "legacy"); // triggers ensureSchema → rebuild
+      raw.close();
+      const db2 = getTasksDb(dataDir, "legacy"); // first open triggers the migration chain → v0 rebuild
       expect(db2.pragma("user_version", { simple: true })).toBe(1);
       expect(getDef(db2, "old")).toBeUndefined(); // rebuilt empty; next boot re-registers
     } finally {

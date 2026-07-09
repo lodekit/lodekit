@@ -64,57 +64,8 @@ export class TasksError extends Error {
   }
 }
 
-const ensured = new WeakSet<Database.Database>();
-
 export function getTasksDb(dataDir: string, appId: string): Database.Database {
-  const db = getAppDb(dataDir, appId);
-  if (!ensured.has(db)) {
-    ensureSchema(db);
-    ensured.add(db);
-  }
-  return db;
-}
-
-export function ensureSchema(db: Database.Database): void {
-  // v0 → v1 (settings spec §6 liveness): config columns become NULL-able
-  // ("app did not specify — resolve the effective default at use"). Defs are
-  // reconstructed from the manifest on every worker boot, so a rebuild only
-  // resets schedule anchors; the runs table (the durable history) is untouched.
-  if ((db.pragma("user_version", { simple: true }) as number) < 1) {
-    db.exec("DROP TABLE IF EXISTS _lodekit_task_defs");
-    db.pragma("user_version = 1");
-  }
-  db.exec(
-    `CREATE TABLE IF NOT EXISTS _lodekit_task_defs (
-      name          TEXT PRIMARY KEY,
-      schedule_kind TEXT,
-      schedule_expr TEXT,
-      catch_up_ms   INTEGER, -- NULL = unspecified, 0 = disabled, -1 = always (Infinity)
-      retries       INTEGER, -- NULL = unspecified
-      timeout_ms    INTEGER, -- NULL = unspecified
-      retired       INTEGER NOT NULL DEFAULT 0,
-      error         TEXT,
-      registered_at INTEGER NOT NULL,
-      high_water    INTEGER
-    );
-    CREATE TABLE IF NOT EXISTS _lodekit_task_runs (
-      id          INTEGER PRIMARY KEY,
-      task        TEXT NOT NULL,
-      state       TEXT NOT NULL,
-      payload     TEXT,
-      dedupe_key  TEXT,
-      attempt     INTEGER NOT NULL DEFAULT 0,
-      not_before  INTEGER NOT NULL,
-      source      TEXT NOT NULL,
-      created_at  INTEGER NOT NULL,
-      started_at  INTEGER,
-      finished_at INTEGER,
-      duration_ms INTEGER,
-      error       TEXT
-    );
-    CREATE INDEX IF NOT EXISTS idx_task_runs_due ON _lodekit_task_runs(state, not_before);
-    CREATE INDEX IF NOT EXISTS idx_task_runs_task ON _lodekit_task_runs(task, id);`
-  );
+  return getAppDb(dataDir, appId);
 }
 
 interface DefDbRow {
@@ -205,7 +156,7 @@ export function applyManifest(
       const registeredAt = scheduleChanged ? now : prev!.registeredAt;
       const highWater = scheduleChanged ? now : prev!.highWater;
       db.prepare(
-        `INSERT INTO _lodekit_task_defs
+        `INSERT INTO _task_defs
            (name, schedule_kind, schedule_expr, catch_up_ms, retries, timeout_ms, retired, error, registered_at, high_water)
          VALUES (@name, @kind, @expr, @catchUp, @retries, @timeout, 0, @error, @registeredAt, @highWater)
          ON CONFLICT(name) DO UPDATE SET
@@ -220,13 +171,13 @@ export function applyManifest(
         error, registeredAt, highWater,
       });
     }
-    const existing = (db.prepare("SELECT name FROM _lodekit_task_defs WHERE retired = 0").all() as { name: string }[]);
+    const existing = (db.prepare("SELECT name FROM _task_defs WHERE retired = 0").all() as { name: string }[]);
     for (const { name } of existing) {
       if (names.has(name)) continue;
-      db.prepare("UPDATE _lodekit_task_defs SET retired = 1 WHERE name = ?").run(name);
+      db.prepare("UPDATE _task_defs SET retired = 1 WHERE name = ?").run(name);
       const rows = db
         .prepare(
-          `UPDATE _lodekit_task_runs SET state = 'canceled', finished_at = ?, error = 'task retired'
+          `UPDATE _task_runs SET state = 'canceled', finished_at = ?, error = 'task retired'
            WHERE task = ? AND state = 'queued' RETURNING id`
         )
         .all(now, name) as { id: number }[];
@@ -238,22 +189,22 @@ export function applyManifest(
 }
 
 export function listDefs(db: Database.Database): TaskDefRow[] {
-  return (db.prepare("SELECT * FROM _lodekit_task_defs ORDER BY name").all() as DefDbRow[]).map(toDef);
+  return (db.prepare("SELECT * FROM _task_defs ORDER BY name").all() as DefDbRow[]).map(toDef);
 }
 
 export function getDef(db: Database.Database, name: string): TaskDefRow | undefined {
-  const r = db.prepare("SELECT * FROM _lodekit_task_defs WHERE name = ?").get(name) as DefDbRow | undefined;
+  const r = db.prepare("SELECT * FROM _task_defs WHERE name = ?").get(name) as DefDbRow | undefined;
   return r ? toDef(r) : undefined;
 }
 
 export function setHighWater(db: Database.Database, name: string, highWater: number): void {
-  db.prepare("UPDATE _lodekit_task_defs SET high_water = ? WHERE name = ?").run(highWater, name);
+  db.prepare("UPDATE _task_defs SET high_water = ? WHERE name = ?").run(highWater, name);
 }
 
 export function hasTasks(db: Database.Database): boolean {
   return (
-    db.prepare("SELECT 1 FROM _lodekit_task_defs LIMIT 1").get() !== undefined ||
-    db.prepare("SELECT 1 FROM _lodekit_task_runs LIMIT 1").get() !== undefined
+    db.prepare("SELECT 1 FROM _task_defs LIMIT 1").get() !== undefined ||
+    db.prepare("SELECT 1 FROM _task_runs LIMIT 1").get() !== undefined
   );
 }
 
@@ -264,13 +215,13 @@ export function insertRun(
   const txn = db.transaction((): { runId: number; deduped: boolean } => {
     if (opts.dedupeKey != null) {
       const existing = db
-        .prepare("SELECT id FROM _lodekit_task_runs WHERE task = ? AND dedupe_key = ? AND state = 'queued' LIMIT 1")
+        .prepare("SELECT id FROM _task_runs WHERE task = ? AND dedupe_key = ? AND state = 'queued' LIMIT 1")
         .get(opts.task, opts.dedupeKey) as { id: number } | undefined;
       if (existing) return { runId: existing.id, deduped: true };
     }
     const info = db
       .prepare(
-        `INSERT INTO _lodekit_task_runs (task, state, payload, dedupe_key, attempt, not_before, source, created_at)
+        `INSERT INTO _task_runs (task, state, payload, dedupe_key, attempt, not_before, source, created_at)
          VALUES (@task, 'queued', @payload, @dedupeKey, 0, @notBefore, @source, @now)`
       )
       .run({
@@ -288,7 +239,7 @@ export function insertRun(
 
 export function hasQueuedScheduleRun(db: Database.Database, task: string): boolean {
   return (
-    db.prepare("SELECT 1 FROM _lodekit_task_runs WHERE task = ? AND state = 'queued' AND source = 'schedule' LIMIT 1")
+    db.prepare("SELECT 1 FROM _task_runs WHERE task = ? AND state = 'queued' AND source = 'schedule' LIMIT 1")
       .get(task) !== undefined
   );
 }
@@ -298,14 +249,14 @@ export function claimNextDue(db: Database.Database, now: number): TaskRunRow | u
   const txn = db.transaction((): TaskRunRow | undefined => {
     const row = db
       .prepare(
-        `SELECT r.* FROM _lodekit_task_runs r
-         JOIN _lodekit_task_defs d ON d.name = r.task
+        `SELECT r.* FROM _task_runs r
+         JOIN _task_defs d ON d.name = r.task
          WHERE r.state = 'queued' AND r.not_before <= ? AND d.retired = 0 AND d.error IS NULL
          ORDER BY r.not_before, r.id LIMIT 1`
       )
       .get(now) as RunDbRow | undefined;
     if (!row) return undefined;
-    db.prepare("UPDATE _lodekit_task_runs SET state = 'running', attempt = attempt + 1, started_at = ? WHERE id = ?")
+    db.prepare("UPDATE _task_runs SET state = 'running', attempt = attempt + 1, started_at = ? WHERE id = ?")
       .run(now, row.id);
     return toRun({ ...row, state: "running", attempt: row.attempt + 1, started_at: now });
   });
@@ -323,7 +274,7 @@ export function finishRun(
 ): { state: "succeeded" | "failed" | "queued"; notBefore?: number } {
   if (result.ok) {
     db.prepare(
-      "UPDATE _lodekit_task_runs SET state = 'succeeded', finished_at = ?, duration_ms = ?, error = NULL WHERE id = ?"
+      "UPDATE _task_runs SET state = 'succeeded', finished_at = ?, duration_ms = ?, error = NULL WHERE id = ?"
     ).run(now, run.startedAt != null ? now - run.startedAt : null, run.id);
     return { state: "succeeded" };
   }
@@ -331,12 +282,12 @@ export function finishRun(
   if (run.attempt <= policy.retries && !policy.retired) {
     const notBefore = now + Math.min(policy.backoffBaseMs * 2 ** (run.attempt - 1), policy.backoffCapMs);
     db.prepare(
-      "UPDATE _lodekit_task_runs SET state = 'queued', not_before = ?, started_at = NULL, error = ? WHERE id = ?"
+      "UPDATE _task_runs SET state = 'queued', not_before = ?, started_at = NULL, error = ? WHERE id = ?"
     ).run(notBefore, error, run.id);
     return { state: "queued", notBefore };
   }
   db.prepare(
-    "UPDATE _lodekit_task_runs SET state = 'failed', finished_at = ?, duration_ms = ?, error = ? WHERE id = ?"
+    "UPDATE _task_runs SET state = 'failed', finished_at = ?, duration_ms = ?, error = ? WHERE id = ?"
   ).run(now, run.startedAt != null ? now - run.startedAt : null, error, run.id);
   return { state: "failed" };
 }
@@ -348,7 +299,7 @@ export function markInterrupted(
   now: number,
   policy: (def: TaskDefRow | undefined) => { retries: number; backoffBaseMs: number; backoffCapMs: number; retired: boolean }
 ): { task: string; runId: number; state: "queued" | "failed" }[] {
-  const rows = (db.prepare("SELECT * FROM _lodekit_task_runs WHERE state = 'running'").all() as RunDbRow[]).map(toRun);
+  const rows = (db.prepare("SELECT * FROM _task_runs WHERE state = 'running'").all() as RunDbRow[]).map(toRun);
   const out: { task: string; runId: number; state: "queued" | "failed" }[] = [];
   for (const run of rows) {
     const r = finishRun(db, run, { ok: false, message: "interrupted by runtime shutdown" }, policy(getDef(db, run.task)), now);
@@ -364,7 +315,7 @@ export function listRuns(
   const limit = Math.min(Math.max(1, Math.floor(opts.limit ?? 50)), 200);
   const rows = db
     .prepare(
-      `SELECT * FROM _lodekit_task_runs
+      `SELECT * FROM _task_runs
        WHERE (@task IS NULL OR task = @task) AND (@state IS NULL OR state = @state)
        ORDER BY id DESC LIMIT @limit`
     )
@@ -373,7 +324,7 @@ export function listRuns(
 }
 
 export function getRun(db: Database.Database, id: number): TaskRunRow | undefined {
-  const r = db.prepare("SELECT * FROM _lodekit_task_runs WHERE id = ?").get(id) as RunDbRow | undefined;
+  const r = db.prepare("SELECT * FROM _task_runs WHERE id = ?").get(id) as RunDbRow | undefined;
   return r ? toRun(r) : undefined;
 }
 
@@ -382,7 +333,7 @@ export function lastRunOf(
   task: string
 ): { runId: number; state: RunState; finishedAt: number | null; error: string | null } | undefined {
   const r = db
-    .prepare("SELECT id, state, finished_at, error FROM _lodekit_task_runs WHERE task = ? ORDER BY id DESC LIMIT 1")
+    .prepare("SELECT id, state, finished_at, error FROM _task_runs WHERE task = ? ORDER BY id DESC LIMIT 1")
     .get(task) as { id: number; state: string; finished_at: number | null; error: string | null } | undefined;
   return r ? { runId: r.id, state: r.state as RunState, finishedAt: r.finished_at, error: r.error } : undefined;
 }
@@ -392,7 +343,7 @@ export function cancelRun(db: Database.Database, id: number, now: number): { tas
     const run = getRun(db, id);
     if (!run) return "not-found";
     if (run.state !== "queued") return "not-queued";
-    db.prepare("UPDATE _lodekit_task_runs SET state = 'canceled', finished_at = ? WHERE id = ?").run(now, id);
+    db.prepare("UPDATE _task_runs SET state = 'canceled', finished_at = ? WHERE id = ?").run(now, id);
     return { task: run.task };
   });
   return txn();
@@ -403,26 +354,22 @@ export function cancelRun(db: Database.Database, id: number, now: number): { tas
 export function sweepRuns(db: Database.Database, now: number, keep: number, maxAgeMs: number): number {
   return db
     .prepare(
-      `DELETE FROM _lodekit_task_runs WHERE id IN (
+      `DELETE FROM _task_runs WHERE id IN (
          SELECT id FROM (
            SELECT id, finished_at, ROW_NUMBER() OVER (PARTITION BY task ORDER BY id DESC) AS rn
-           FROM _lodekit_task_runs WHERE state IN ('succeeded','failed','canceled')
+           FROM _task_runs WHERE state IN ('succeeded','failed','canceled')
          ) WHERE rn > ? AND finished_at < ?
        )`
     )
     .run(keep, now - maxAgeMs).changes;
 }
 
-// openDbs pattern (kv-store sweepAll): only connections opened through
-// getTasksDb are guaranteed the schema — ensure idempotently. Retention knobs
-// resolve per app (effective settings), so a per-app override is honored.
+// openDbs pattern (kv-store sweepAll): every connection open since boot has
+// the schema (the app-db migration chain's job). Retention knobs resolve per
+// app (effective settings), so a per-app override is honored.
 export function sweepAllTaskRuns(): void {
   const now = Date.now();
   for (const { appId, db } of openDbs()) {
-    if (!ensured.has(db)) {
-      ensureSchema(db);
-      ensured.add(db);
-    }
     sweepRuns(db, now, effectiveNumber("tasks.run_retention_count", appId), effectiveMs("tasks.run_retention_age", appId));
   }
 }

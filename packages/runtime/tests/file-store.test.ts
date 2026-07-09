@@ -63,14 +63,14 @@ describe("deriveSlug", () => {
     expect(deriveSlug(c.db, "My Report")).toBe("my-report");
     c.db
       .prepare(
-        `INSERT INTO _lodekit_files (slug, path, content_type, size, hash, created_at, updated_at)
+        `INSERT INTO _files (slug, path, content_type, size, hash, created_at, updated_at)
          VALUES ('my-report', 'x', 'text/plain', 0, 'h', 0, 0)`
       )
       .run();
     expect(deriveSlug(c.db, "My Report")).toBe("my-report-2");
     c.db
       .prepare(
-        `INSERT INTO _lodekit_files (slug, path, content_type, size, hash, created_at, updated_at)
+        `INSERT INTO _files (slug, path, content_type, size, hash, created_at, updated_at)
          VALUES ('my-report-2', 'x', 'text/plain', 0, 'h', 0, 0)`
       )
       .run();
@@ -90,10 +90,10 @@ describe("naming helpers", () => {
   });
 });
 
-describe("getFiles / ensureSchema", () => {
+describe("getFiles / schema", () => {
   it("creates the table idempotently and builds the ctx", () => {
     const c = ctx("finance");
-    const cols = (c.db.prepare("PRAGMA table_info(_lodekit_files)").all() as { name: string }[]).map((x) => x.name);
+    const cols = (c.db.prepare("PRAGMA table_info(_files)").all() as { name: string }[]).map((x) => x.name);
     expect(cols).toEqual(
       expect.arrayContaining(["slug", "path", "title", "content_type", "size", "hash", "metadata", "created_at", "updated_at", "expires_at"])
     );
@@ -212,7 +212,7 @@ describe("statFile / openFile / deleteFile", () => {
     const stat = await put(c, "x", { slug: "vanished" });
     fs.rmSync(stat.path);
     expect(statFile(c, "vanished")).toBeUndefined();
-    expect(c.db.prepare("SELECT 1 FROM _lodekit_files WHERE slug = 'vanished'").get()).toBeUndefined();
+    expect(c.db.prepare("SELECT 1 FROM _files WHERE slug = 'vanished'").get()).toBeUndefined();
   });
 });
 
@@ -311,7 +311,7 @@ describe("TTL + sweep", () => {
     sweepFiles(cfg);
     expect(fs.existsSync(stat.path)).toBe(false);
     expect(fs.existsSync(path.dirname(stat.path))).toBe(false);
-    expect(c.db.prepare("SELECT 1 FROM _lodekit_files WHERE slug = 'fleeting'").get()).toBeUndefined();
+    expect(c.db.prepare("SELECT 1 FROM _files WHERE slug = 'fleeting'").get()).toBeUndefined();
   });
 
   it("removes orphaned temp files older than one hour, keeps fresh ones", async () => {

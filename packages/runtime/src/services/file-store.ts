@@ -59,40 +59,14 @@ export interface FilesCtx {
   urlBase: string; // <cfg.baseUrl>/api/apps/<appId>/file-store
 }
 
-const ensured = new WeakSet<Database.Database>();
-
 export function getFiles(cfg: Config, appId: string): FilesCtx {
   const db = getAppDb(cfg.dataDir, appId);
-  if (!ensured.has(db)) {
-    ensureSchema(db);
-    ensured.add(db);
-  }
   return {
     db,
     dir: path.join(cfg.dataDir, appId, "files"),
     appId,
     urlBase: `${cfg.baseUrl}/api/apps/${appId}/${CATALOG_NAME}`,
   };
-}
-
-export function ensureSchema(db: Database.Database): void {
-  db.exec(
-    `CREATE TABLE IF NOT EXISTS _lodekit_files (
-      slug         TEXT PRIMARY KEY,
-      path         TEXT NOT NULL,
-      title        TEXT,
-      content_type TEXT NOT NULL,
-      size         INTEGER NOT NULL,
-      hash         TEXT NOT NULL,
-      metadata     TEXT,
-      created_at   INTEGER NOT NULL,
-      updated_at   INTEGER NOT NULL,
-      expires_at   INTEGER
-    )`
-  );
-  db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_files_expires ON _lodekit_files(expires_at) WHERE expires_at IS NOT NULL"
-  );
 }
 
 // "Contas Jul 2026" -> "contas-jul-2026"; empty/unusable input -> "file".
@@ -112,7 +86,7 @@ export function slugify(input: string): string {
 // (an explicit slug that exists is a replace, not a collision).
 export function deriveSlug(db: Database.Database, title?: string): string {
   const base = slugify(title ?? "").slice(0, 120); // room for the suffix
-  const exists = db.prepare("SELECT 1 FROM _lodekit_files WHERE slug = ?");
+  const exists = db.prepare("SELECT 1 FROM _files WHERE slug = ?");
   if (!exists.get(base)) return base;
   for (let n = 2; ; n++) {
     const candidate = `${base}-${n}`;
@@ -183,10 +157,10 @@ function removeBytes(ctx: FilesCtx, relPath: string): void {
 
 // Raw row lookup with kv-style lazy TTL expiry (expired = missing; bytes removed too).
 function liveRow(ctx: FilesCtx, slug: string): Row | undefined {
-  const row = ctx.db.prepare("SELECT * FROM _lodekit_files WHERE slug = ?").get(slug) as Row | undefined;
+  const row = ctx.db.prepare("SELECT * FROM _files WHERE slug = ?").get(slug) as Row | undefined;
   if (!row) return undefined;
   if (row.expires_at !== null && row.expires_at <= Date.now()) {
-    ctx.db.prepare("DELETE FROM _lodekit_files WHERE slug = ?").run(slug);
+    ctx.db.prepare("DELETE FROM _files WHERE slug = ?").run(slug);
     removeBytes(ctx, row.path);
     return undefined;
   }
@@ -199,7 +173,7 @@ function verifiedRow(ctx: FilesCtx, slug: string): Row | undefined {
   const row = liveRow(ctx, slug);
   if (!row) return undefined;
   if (!fs.existsSync(path.join(ctx.dir, row.path))) {
-    ctx.db.prepare("DELETE FROM _lodekit_files WHERE slug = ?").run(slug);
+    ctx.db.prepare("DELETE FROM _files WHERE slug = ?").run(slug);
     emit(ctx.appId, slug, "del");
     return undefined;
   }
@@ -268,7 +242,7 @@ export async function putFile(
   };
   ctx.db
     .prepare(
-      `INSERT INTO _lodekit_files (slug, path, title, content_type, size, hash, metadata, created_at, updated_at, expires_at)
+      `INSERT INTO _files (slug, path, title, content_type, size, hash, metadata, created_at, updated_at, expires_at)
        VALUES (@slug, @path, @title, @content_type, @size, @hash, @metadata, @created_at, @updated_at, @expires_at)
        ON CONFLICT(slug) DO UPDATE SET
          path = excluded.path, title = excluded.title, content_type = excluded.content_type,
@@ -294,7 +268,7 @@ export function deleteFile(ctx: FilesCtx, slug: string): boolean {
   const row = liveRow(ctx, slug);
   if (!row) return false;
   removeBytes(ctx, row.path);
-  ctx.db.prepare("DELETE FROM _lodekit_files WHERE slug = ?").run(slug);
+  ctx.db.prepare("DELETE FROM _files WHERE slug = ?").run(slug);
   emit(ctx.appId, slug, "del");
   return true;
 }
@@ -307,7 +281,7 @@ export function listFiles(
   const like = (opts.prefix ?? "").replace(/[\\%_]/g, (m) => "\\" + m) + "%";
   const rows = ctx.db
     .prepare(
-      `SELECT * FROM _lodekit_files
+      `SELECT * FROM _files
        WHERE slug LIKE ? ESCAPE '\\' AND slug > ?
          AND (expires_at IS NULL OR expires_at > ?)
        ORDER BY slug ASC LIMIT ?`
@@ -334,7 +308,7 @@ export function copyFile(ctx: FilesCtx, from: string, to: string): FileStat | un
   const row: Row = { ...src, slug: to, path: relPath, created_at: now, updated_at: now };
   ctx.db
     .prepare(
-      `INSERT INTO _lodekit_files (slug, path, title, content_type, size, hash, metadata, created_at, updated_at, expires_at)
+      `INSERT INTO _files (slug, path, title, content_type, size, hash, metadata, created_at, updated_at, expires_at)
        VALUES (@slug, @path, @title, @content_type, @size, @hash, @metadata, @created_at, @updated_at, @expires_at)
        ON CONFLICT(slug) DO UPDATE SET
          path = excluded.path, title = excluded.title, content_type = excluded.content_type,
@@ -353,14 +327,14 @@ export function moveFile(ctx: FilesCtx, from: string, to: string): FileStat | un
   if (!src) return undefined;
   const existing = liveRow(ctx, to);
   if (existing) removeBytes(ctx, existing.path);
-  ctx.db.prepare("DELETE FROM _lodekit_files WHERE slug = ?").run(to);
+  ctx.db.prepare("DELETE FROM _files WHERE slug = ?").run(to);
 
   // Rename in place: stays in its current date folder, created_at survives (spec §6).
   const relPath = `${path.dirname(src.path)}/${to}-${src.hash.slice(0, 8)}${path.extname(src.path)}`;
   fs.renameSync(path.join(ctx.dir, src.path), path.join(ctx.dir, relPath));
   const now = Date.now();
   ctx.db
-    .prepare("UPDATE _lodekit_files SET slug = ?, path = ?, updated_at = ? WHERE slug = ?")
+    .prepare("UPDATE _files SET slug = ?, path = ?, updated_at = ? WHERE slug = ?")
     .run(to, relPath, now, from);
   emit(ctx.appId, from, "del");
   emit(ctx.appId, to, "put");
@@ -373,10 +347,6 @@ export function moveFile(ctx: FilesCtx, from: string, to: string): FileStat | un
 export function sweepFiles(cfg: Config): void {
   const now = Date.now();
   for (const { appId, db } of openDbs()) {
-    if (!ensured.has(db)) {
-      ensureSchema(db);
-      ensured.add(db);
-    }
     const ctx: FilesCtx = {
       db,
       dir: path.join(cfg.dataDir, appId, "files"),
@@ -384,7 +354,7 @@ export function sweepFiles(cfg: Config): void {
       urlBase: `${cfg.baseUrl}/api/apps/${appId}/${CATALOG_NAME}`,
     };
     const expired = db
-      .prepare("DELETE FROM _lodekit_files WHERE expires_at IS NOT NULL AND expires_at <= ? RETURNING slug, path")
+      .prepare("DELETE FROM _files WHERE expires_at IS NOT NULL AND expires_at <= ? RETURNING slug, path")
       .all(now) as { slug: string; path: string }[];
     for (const r of expired) {
       removeBytes(ctx, r.path);

@@ -40,31 +40,8 @@ export class SettingsNotFoundError extends SettingsError {
 
 // ---------- per-app storage (defs + values) ----------
 
-const ensured = new WeakSet<Database.Database>();
-
 export function getSettingsDb(dataDir: string, appId: string): Database.Database {
-  const db = getAppDb(dataDir, appId);
-  if (!ensured.has(db)) {
-    ensureSchema(db);
-    ensured.add(db);
-  }
-  return db;
-}
-
-export function ensureSchema(db: Database.Database): void {
-  db.exec(
-    `CREATE TABLE IF NOT EXISTS _lodekit_setting_defs (
-      key           TEXT PRIMARY KEY,
-      field         TEXT,          -- JSON SettingField; NULL when the declaration failed
-      error         TEXT,          -- per-field declaration error (spec §5)
-      registered_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS _lodekit_setting_values (
-      key        TEXT PRIMARY KEY, -- bare = app setting, dotted = service override
-      value      TEXT NOT NULL,    -- JSON
-      updated_at INTEGER NOT NULL
-    );`
-  );
+  return getAppDb(dataDir, appId);
 }
 
 // Wholesale per successful boot (spec §5): defs absent from the manifest are
@@ -83,16 +60,16 @@ export function applySettingsManifest(db: Database.Database, fields: Record<stri
         error = e instanceof Error ? e.message : String(e);
       }
       db.prepare(
-        `INSERT INTO _lodekit_setting_defs (key, field, error, registered_at)
+        `INSERT INTO _setting_defs (key, field, error, registered_at)
          VALUES (@key, @field, @error, @now)
          ON CONFLICT(key) DO UPDATE SET field = excluded.field, error = excluded.error, registered_at = excluded.registered_at`
       ).run({ key, field: field ? JSON.stringify(field) : null, error, now });
     }
-    const existing = db.prepare("SELECT key FROM _lodekit_setting_defs").all() as { key: string }[];
+    const existing = db.prepare("SELECT key FROM _setting_defs").all() as { key: string }[];
     for (const { key } of existing) {
       if (keys.has(key)) continue;
-      db.prepare("DELETE FROM _lodekit_setting_defs WHERE key = ?").run(key);
-      db.prepare("DELETE FROM _lodekit_setting_values WHERE key = ?").run(key);
+      db.prepare("DELETE FROM _setting_defs WHERE key = ?").run(key);
+      db.prepare("DELETE FROM _setting_values WHERE key = ?").run(key);
     }
   });
   txn();
@@ -115,32 +92,32 @@ export function registerSettingsManifest(cfg: Config, appId: string, fields: Rec
 }
 
 export function listAppDefs(db: Database.Database): { key: string; field: SettingField | null; error: string | null }[] {
-  const rows = db.prepare("SELECT key, field, error FROM _lodekit_setting_defs ORDER BY key").all() as
+  const rows = db.prepare("SELECT key, field, error FROM _setting_defs ORDER BY key").all() as
     { key: string; field: string | null; error: string | null }[];
   return rows.map((r) => ({ key: r.key, field: r.field ? (JSON.parse(r.field) as SettingField) : null, error: r.error }));
 }
 
 export function getAppDef(db: Database.Database, key: string): { field: SettingField | null; error: string | null } | undefined {
-  const r = db.prepare("SELECT field, error FROM _lodekit_setting_defs WHERE key = ?").get(key) as
+  const r = db.prepare("SELECT field, error FROM _setting_defs WHERE key = ?").get(key) as
     { field: string | null; error: string | null } | undefined;
   return r ? { field: r.field ? (JSON.parse(r.field) as SettingField) : null, error: r.error } : undefined;
 }
 
 export function getValue(db: Database.Database, key: string): unknown {
-  const r = db.prepare("SELECT value FROM _lodekit_setting_values WHERE key = ?").get(key) as { value: string } | undefined;
+  const r = db.prepare("SELECT value FROM _setting_values WHERE key = ?").get(key) as { value: string } | undefined;
   return r === undefined ? undefined : (JSON.parse(r.value) as unknown);
 }
 
 export function setValue(db: Database.Database, key: string, value: unknown): void {
   db.prepare(
-    `INSERT INTO _lodekit_setting_values (key, value, updated_at) VALUES (?, ?, ?)
+    `INSERT INTO _setting_values (key, value, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
   ).run(key, JSON.stringify(value), Date.now());
   invalidateSettingsCache();
 }
 
 export function deleteValue(db: Database.Database, key: string): void {
-  db.prepare("DELETE FROM _lodekit_setting_values WHERE key = ?").run(key);
+  db.prepare("DELETE FROM _setting_values WHERE key = ?").run(key);
   invalidateSettingsCache();
 }
 
