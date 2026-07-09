@@ -15,6 +15,7 @@ import type { Config } from "../config.js";
 import { isValidAppId } from "../registry.js";
 import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
 import { validationHook } from "../validation.js";
+import { emitLog } from "../logger.js";
 
 export const CATALOG_NAME = "db-store";
 
@@ -162,3 +163,107 @@ export const dbRoutes = new Hono<DbEnv>()
   });
 
 export type DbRoutes = typeof dbRoutes;
+
+// ---------- schema push (spec §7): declared schema -> live database ----------
+
+export type PushResult =
+  | { status: "applied"; statements: number }
+  | { status: "gated"; message: string }
+  | { status: "noop" };
+
+// ADD is anchored right after the table identifier (one \S+ token — drizzle
+// emits backticked names): a greedy `.*` would let a quoted identifier like
+// `last add` inside a DROP COLUMN statement classify as additive.
+const ADDITIVE = [/^create table\b/i, /^create (unique )?index\b/i, /^alter table \S+ add(\s+column)?\s/i];
+const isAdditive = (s: string) => ADDITIVE.some((re) => re.test(s.trim()));
+
+const EXPAND_COPY =
+  "Destructive schema changes don't auto-apply. Iterate additively (expand-copy): add the new column/table, " +
+  "copy data across in app code, switch reads, stop writing the old one. (Accepting destructive migrations is on the roadmap.)";
+
+function emitSchemaState(appId: string, payload: Record<string, unknown>): void {
+  emitEvent({ ns: appId, source: PLATFORM_NS, type: "schema-state", payload, ttl: CHANGE_FEED_TTL_S });
+}
+
+// The db-manifest hook's handler (wired in server.ts). Contract mirrors the
+// settings manifest: a load error keeps the previous schema; internal
+// namespaces are skipped; an app that declares nothing never materializes a
+// database. Returns the outcome for tests/observability; callers may ignore it.
+export async function applySchemaPush(
+  dataDir: string,
+  appId: string,
+  snapshot: unknown,
+  loadError?: string
+): Promise<PushResult> {
+  if (!isValidAppId(appId)) return { status: "noop" }; // _dashboard et al
+  if (loadError) {
+    const message = `src/db.ts failed to load — keeping the previous schema`;
+    emitLog("error", "db-store", message, { stack: loadError }, appId);
+    emitSchemaState(appId, { status: "gated", message });
+    return { status: "gated", message };
+  }
+  const tables =
+    snapshot && typeof snapshot === "object" && "tables" in snapshot
+      ? Object.keys((snapshot as { tables: Record<string, unknown> }).tables ?? {})
+      : null;
+  if (tables === null) {
+    const message = "src/db.ts produced no schema snapshot — keeping the previous schema";
+    emitLog("error", "db-store", message, undefined, appId);
+    emitSchemaState(appId, { status: "gated", message });
+    return { status: "gated", message };
+  }
+  // Never materialize a data dir for an app that declares no tables and has none.
+  if (tables.length === 0 && !fs.existsSync(path.join(dataDir, appId, "db.sqlite"))) return { status: "noop" };
+
+  const bad = tables.filter((t) => t.startsWith("_") || t.startsWith("sqlite_"));
+  if (bad.length > 0) {
+    const message = `table names may not start with "_" or "sqlite_": ${bad.join(", ")}`;
+    emitLog("error", "db-store", message, undefined, appId);
+    emitSchemaState(appId, { status: "gated", message });
+    return { status: "gated", message };
+  }
+
+  const { generateSQLiteDrizzleJson, generateSQLiteMigration } = await import("drizzle-kit/api");
+  const db = getAppDb(dataDir, appId);
+  const prevRow = db.prepare("SELECT snapshot FROM _schema WHERE id = 1").get() as { snapshot: string } | undefined;
+  const prev = prevRow ? JSON.parse(prevRow.snapshot) : await generateSQLiteDrizzleJson({});
+  let statements: string[];
+  try {
+    statements = await generateSQLiteMigration(prev, snapshot as Parameters<typeof generateSQLiteMigration>[1]);
+  } catch (e) {
+    const message = `schema diff failed: ${e instanceof Error ? e.message : String(e)}`;
+    emitLog("error", "db-store", message, undefined, appId);
+    emitSchemaState(appId, { status: "gated", message });
+    return { status: "gated", message };
+  }
+  if (statements.length === 0) return { status: "noop" };
+
+  const destructive = statements.filter((s) => !isAdditive(s));
+  if (destructive.length > 0) {
+    const message = `schema change gated — would require:\n${destructive.join(";\n")}\n${EXPAND_COPY}`;
+    emitLog("error", "db-store", message, undefined, appId);
+    emitSchemaState(appId, { status: "gated", message });
+    return { status: "gated", message };
+  }
+
+  try {
+    const txn = db.transaction(() => {
+      for (const s of statements) db.exec(s);
+      db.prepare(
+        `INSERT INTO _schema (id, snapshot, updated_at) VALUES (1, @snap, @now)
+         ON CONFLICT(id) DO UPDATE SET snapshot = excluded.snapshot, updated_at = excluded.updated_at`
+      ).run({ snap: JSON.stringify(snapshot), now: Date.now() });
+    });
+    txn();
+  } catch (e) {
+    // A statement the diff produced but the database refused (e.g. a table that
+    // pre-exists outside snapshot lineage) — same surface as the gate (spec §7).
+    const message = `schema apply failed: ${e instanceof Error ? e.message : String(e)}`;
+    emitLog("error", "db-store", message, undefined, appId);
+    emitSchemaState(appId, { status: "gated", message });
+    return { status: "gated", message };
+  }
+  emitLog("info", "db-store", `schema applied (${statements.length} statement${statements.length === 1 ? "" : "s"})`, undefined, appId);
+  emitSchemaState(appId, { status: "applied", statements: statements.length });
+  return { status: "applied", statements: statements.length };
+}
