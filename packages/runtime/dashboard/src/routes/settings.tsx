@@ -99,6 +99,7 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
       const n = Number(draft);
       if (draft.trim() !== "" && Number.isFinite(n)) { lastSent.current = draft; onChange(n); return; }
       setDraft(String(value)); // emptied/invalid input: no-op, never write 0
+      lastSent.current = String(value); // realign so the restored value never counts as a pending edit
     };
     return (
       <Input
