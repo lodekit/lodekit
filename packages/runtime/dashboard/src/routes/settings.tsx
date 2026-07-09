@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
   Badge, Button, Card, CardContent, CardHeader, CardTitle,
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
   Input, Label,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Switch,
+  Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@lodekit/ui";
-import { Check, RotateCcw } from "lucide-react";
+import { Check, ChevronDown, RotateCcw } from "lucide-react";
 
 export const Route = createFileRoute("/settings")({
   validateSearch: (s: Record<string, unknown>): { section?: string } =>
@@ -32,6 +34,16 @@ interface SlotEntry {
 }
 interface AppInfo { appId: string; name: string; icon?: string }
 
+// Pinned display order (UI revamp spec §4); unknown future sections append.
+const SERVICE_ORDER = ["Store", "Files", "Tasks", "Events", "Logs", "Engine"];
+
+function orderedSections(present: string[]): string[] {
+  return [
+    ...SERVICE_ORDER.filter((s) => present.includes(s)),
+    ...present.filter((s) => !SERVICE_ORDER.includes(s)),
+  ];
+}
+
 async function write(url: string, value: unknown | undefined) {
   const res = value === undefined
     ? await fetch(url, { method: "DELETE" })
@@ -40,18 +52,23 @@ async function write(url: string, value: unknown | undefined) {
 }
 
 // One schema-driven control per field type (spec §4's type → component table).
-// The draft/commit-on-blur state (number/string/duration) must be an unconditional
-// hook — SettingRow remounts this component (key'd on type+effective) on every
-// external change, so every render here calls the same hooks regardless of branch.
+// Text-ish fields hold a local draft so a rejected write keeps the person's
+// input for correction; the draft re-seeds only when the effective value
+// actually changes externally (reset, another tab, manager reconciliation).
 function FieldControl({ field, value, onChange }: { field: Field; value: unknown; onChange: (v: unknown) => void }) {
   const [draft, setDraft] = useState(String(value));
+  const [seeded, setSeeded] = useState(String(value));
+  if (String(value) !== seeded) { // external change: re-seed during render (React's sanctioned pattern)
+    setSeeded(String(value));
+    setDraft(String(value));
+  }
   if (field.type === "boolean") {
     return <Switch checked={Boolean(value)} onCheckedChange={(v) => onChange(v)} />;
   }
   if (field.type === "select") {
     return (
       <Select value={String(value)} onValueChange={(v) => onChange(v)}>
-        <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
         <SelectContent>
           {(field.options ?? []).map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
         </SelectContent>
@@ -77,7 +94,7 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
   const commit = () => onChange(draft);
   return (
     <Input
-      className="w-40" value={draft} placeholder={field.placeholder}
+      className="w-32" value={draft} placeholder={field.placeholder}
       maxLength={field.maxLength} onChange={(e) => setDraft(e.target.value)}
       onBlur={commit} onKeyDown={(e) => { if (e.key === "Enter") commit(); }}
     />
@@ -85,24 +102,29 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
 }
 
 // A setting row: label, one-liner description, [saved ✓] [reset ↺] [control].
-// The reset icon is faint+disabled at default and lights up when modified —
-// it carries the "modified" signal (the old dot is gone). A successful write
-// fades a check in beside the control for ~1.5s.
+// The reset icon carries the "modified" signal: muted when enabled, half-faded
+// by the button's disabled style at default. A successful write fades a check
+// in beside the control for ~1.5s. A rejected write keeps the typed input.
 function SettingRow(props: {
-  field: Field; value: unknown; effective: unknown; inheritedLabel?: string; drifted?: boolean;
+  field: Field; value: unknown; effective: unknown; platformValue?: unknown; drifted?: boolean;
   onWrite: (v: unknown | undefined) => Promise<void>;
 }) {
   const modified = props.value !== null && props.value !== undefined;
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const commit = (v: unknown | undefined) => {
     props.onWrite(v)
       .then(() => {
         setError(null);
         setSaved(true);
-        setTimeout(() => setSaved(false), 1500);
+        clearTimeout(savedTimer.current);
+        savedTimer.current = setTimeout(() => setSaved(false), 1500);
       })
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(msg.replace(/^[a-z0-9_.]+: /, "")); // drop the key prefix — the row is the context
+      });
   };
   return (
     <div className="flex items-start justify-between gap-6 border-b py-3 last:border-b-0">
@@ -111,68 +133,115 @@ function SettingRow(props: {
           {props.field.label}
           {props.drifted && <Badge variant="outline">was reset to default</Badge>}
         </Label>
-        <p className="mt-1 text-sm text-muted-foreground">{props.field.description}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{props.field.description}</p>
         {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
-        {props.inheritedLabel && !modified && (
-          <p className="mt-0.5 text-xs text-muted-foreground">{props.inheritedLabel}</p>
-        )}
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Check
-          aria-hidden="true"
-          className={`size-4 text-muted-foreground transition-opacity duration-500 ${saved ? "opacity-100" : "opacity-0"}`}
-        />
-        <Button
-          variant="ghost" size="icon"
-          disabled={!modified}
-          title="Reset to default" aria-label="Reset to default"
-          className={modified ? "" : "opacity-30"}
-          onClick={() => commit(undefined)}
-        >
-          <RotateCcw className="size-4" />
-        </Button>
-        <FieldControl key={`${props.field.type}:${String(props.effective)}`} field={props.field} value={props.effective} onChange={commit} />
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="flex items-center gap-2">
+          <Check
+            aria-hidden="true"
+            className={`size-4 text-muted-foreground transition-opacity duration-500 ${saved ? "opacity-100" : "opacity-0"}`}
+          />
+          <Button
+            variant="ghost" size="icon"
+            disabled={!modified}
+            title="Reset to default" aria-label="Reset to default"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => commit(undefined)}
+          >
+            <RotateCcw className="size-4" />
+          </Button>
+          <FieldControl field={props.field} value={props.effective} onChange={commit} />
+        </div>
+        {props.platformValue !== undefined && (
+          <p className="text-xs text-muted-foreground">Platform value: {String(props.platformValue)}</p>
+        )}
       </div>
     </div>
   );
 }
 
-function SettingsGroup({ title, entries, render }: { title: string; entries: { advanced: boolean }[]; render: (advanced: boolean) => ReactNode }) {
+// Rows for one group: the general rows, then an "Advanced · N" accordion styled
+// as a small heading. Groups where everything is advanced (Store, Files) get a
+// note instead of a broken-empty general area.
+function SettingRows({ entries, render }: { entries: { advanced: boolean }[]; render: (advanced: boolean) => ReactNode }) {
   const advanced = entries.filter((e) => e.advanced);
+  const general = entries.filter((e) => !e.advanced);
+  return (
+    <>
+      {general.length === 0 ? (
+        <p className="py-3 text-sm text-muted-foreground">
+          {advanced.length > 0 ? "No general settings — see Advanced." : "No settings."}
+        </p>
+      ) : (
+        render(false)
+      )}
+      {advanced.length > 0 && (
+        <Accordion type="single" collapsible>
+          <AccordionItem value="advanced" className="border-b-0">
+            <AccordionTrigger className="pt-4 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
+              Advanced · {advanced.length}
+            </AccordionTrigger>
+            <AccordionContent>{render(true)}</AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )}
+    </>
+  );
+}
+
+// Per-service tab strip shared by the platform Services page and the app page's
+// Service Overrides card. children renders one tab's content by section name.
+function ServiceTabs({ sections, initial, children }: { sections: string[]; initial?: string; children: (section: string) => ReactNode }) {
+  if (sections.length === 0) return null;
+  return (
+    <Tabs defaultValue={initial && sections.includes(initial) ? initial : sections[0]}>
+      <TabsList className="w-full justify-start overflow-x-auto">
+        {sections.map((s) => <TabsTrigger key={s} value={s}>{s}</TabsTrigger>)}
+      </TabsList>
+      {sections.map((s) => <TabsContent key={s} value={s}>{children(s)}</TabsContent>)}
+    </Tabs>
+  );
+}
+
+function PlatformRows({ rows, invalidate }: { rows: PlatformEntry[]; invalidate: () => void }) {
+  return (
+    <SettingRows
+      entries={rows}
+      render={(advanced) => rows.filter((e) => e.advanced === advanced).map((e) => (
+        <SettingRow
+          key={e.key} field={e.field} value={e.value} effective={e.effective} drifted={e.drifted}
+          onWrite={async (v) => { await write(`/api/settings/${e.key}`, v); invalidate(); }}
+        />
+      ))}
+    />
+  );
+}
+
+function PlatformSection({ section, entries, invalidate }: { section: string; entries: PlatformEntry[]; invalidate: () => void }) {
   return (
     <Card>
-      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+      <CardHeader><CardTitle>{section}</CardTitle></CardHeader>
       <CardContent>
-        {render(false)}
-        {advanced.length > 0 && (
-          <Accordion type="single" collapsible>
-            <AccordionItem value="advanced" className="border-b-0">
-              <AccordionTrigger className="py-2 text-sm text-muted-foreground hover:no-underline">
-                Advanced · {advanced.length}
-              </AccordionTrigger>
-              <AccordionContent>{render(true)}</AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        )}
+        <PlatformRows rows={entries.filter((e) => e.section === section)} invalidate={invalidate} />
       </CardContent>
     </Card>
   );
 }
 
-function PlatformSection({ section, entries, invalidate }: { section: string; entries: PlatformEntry[]; invalidate: () => void }) {
-  const rows = entries.filter((e) => e.section === section);
+// One Services page for all per-service platform settings, a tab per service.
+function ServicesSection({ services, entries, invalidate, initial }: {
+  services: string[]; entries: PlatformEntry[]; invalidate: () => void; initial?: string;
+}) {
   return (
-    <SettingsGroup
-      title={section}
-      entries={rows}
-      render={(advanced) => rows.filter((e) => e.advanced === advanced).map((e) => (
-        <SettingRow
-          key={e.key} field={e.field} value={e.value} effective={e.effective} drifted={e.drifted}
-          inheritedLabel={e.scope === "global" ? "Applies to all apps" : undefined}
-          onWrite={async (v) => { await write(`/api/settings/${e.key}`, v); invalidate(); }}
-        />
-      ))}
-    />
+    <Card>
+      <CardHeader><CardTitle>Services</CardTitle></CardHeader>
+      <CardContent>
+        <ServiceTabs sections={services} initial={initial}>
+          {(s) => <PlatformRows rows={entries.filter((e) => e.section === s)} invalidate={invalidate} />}
+        </ServiceTabs>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -231,7 +300,7 @@ function AppSecretsCard({ app }: { app: AppInfo }) {
                 {s.error && <Badge variant="destructive">declaration error</Badge>}
                 {s.status === "pending" && !s.error && <Badge variant="outline">needs a secret</Badge>}
               </Label>
-              <p className="mt-1 text-sm text-muted-foreground">{s.error ?? s.description}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{s.error ?? s.description}</p>
             </div>
             {!s.error && (
               <div className="flex shrink-0 items-center gap-2">
@@ -271,6 +340,54 @@ function AppSecretsCard({ app }: { app: AppInfo }) {
   );
 }
 
+// Per-app service overrides: an initially-collapsed card, then the same
+// per-service tabs as the platform Services page. The tab names the service,
+// so row labels drop the old "Section · " prefix; the platform value the
+// override shadows sits under each control.
+function ServiceOverridesCard({ app, overrides, invalidate }: {
+  app: AppInfo; overrides: OverrideEntry[]; invalidate: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const sections = orderedSections([...new Set(overrides.map((o) => o.section))]);
+  if (sections.length === 0) return null;
+  return (
+    <Card>
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CardHeader>
+          <CollapsibleTrigger className="flex w-full items-center justify-between">
+            <CardTitle>Service Overrides</CardTitle>
+            <ChevronDown aria-hidden="true" className={`size-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+          </CollapsibleTrigger>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent>
+            <ServiceTabs sections={sections}>
+              {(s) => {
+                const rows = overrides.filter((o) => o.section === s);
+                return (
+                  <SettingRows
+                    entries={rows}
+                    render={(advanced) => rows.filter((o) => o.advanced === advanced).map((o) => (
+                      <SettingRow
+                        key={o.key}
+                        field={o.field}
+                        value={o.override}
+                        effective={o.override ?? o.platformEffective}
+                        platformValue={o.platformEffective}
+                        onWrite={async (v) => { await write(`/api/apps/${app.appId}/settings/${o.key}`, v); invalidate(); }}
+                      />
+                    ))}
+                  />
+                );
+              }}
+            </ServiceTabs>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  );
+}
+
 function AppSection({ app }: { app: AppInfo }) {
   const queryClient = useQueryClient();
   const q = useQuery<{ declared: DeclaredEntry[]; overrides: OverrideEntry[] }>({
@@ -296,27 +413,14 @@ function AppSection({ app }: { app: AppInfo }) {
             ) : (
               <div key={d.key} className="border-b py-3 last:border-b-0">
                 <Label className="flex items-center gap-2"><code>{d.key}</code><Badge variant="destructive">declaration error</Badge></Label>
-                <p className="mt-1 text-sm text-muted-foreground">{d.error}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{d.error}</p>
               </div>
             )
           )}
         </CardContent>
       </Card>
       <AppSecretsCard app={app} />
-      <SettingsGroup
-        title="Service overrides"
-        entries={overrides}
-        render={(advanced) => overrides.filter((o) => o.advanced === advanced).map((o) => (
-          <SettingRow
-            key={o.key}
-            field={{ ...o.field, label: `${o.section} · ${o.field.label}` }}
-            value={o.override}
-            effective={o.override ?? o.platformEffective}
-            inheritedLabel={`Platform value: ${String(o.platformEffective)}`}
-            onWrite={async (v) => { await write(`/api/apps/${app.appId}/settings/${o.key}`, v); invalidate(); }}
-          />
-        ))}
-      />
+      <ServiceOverridesCard app={app} overrides={overrides} invalidate={invalidate} />
     </div>
   );
 }
@@ -331,18 +435,16 @@ function SettingsView() {
   const apps = useQuery<AppInfo[]>({ queryKey: ["apps"], queryFn: async () => (await fetch("/api/apps")).json() });
 
   const entries = platform.data?.settings ?? [];
-  // Pinned display order (UI revamp spec §4); unknown future sections append.
-  const SERVICE_ORDER = ["Store", "Files", "Tasks", "Events", "Logs", "Engine"];
-  const present = [...new Set(entries.map((e) => e.section))].filter((s) => s !== "General" && s !== "Appearance");
-  const services = [
-    ...SERVICE_ORDER.filter((s) => present.includes(s)),
-    ...present.filter((s) => !SERVICE_ORDER.includes(s)),
-  ];
+  const services = orderedSections(
+    [...new Set(entries.map((e) => e.section))].filter((s) => s !== "General" && s !== "Appearance")
+  );
   const app = apps.data?.find((a) => a.appId === section);
+  // Old per-service deep links (?section=Tasks) land on the Services page with that tab active.
+  const isServices = section === "Services" || services.includes(section);
+  const invalidate = () => void queryClient.invalidateQueries({ queryKey: ["settings", "_platform"] });
 
   const itemClass = (active: boolean) =>
     `block shrink-0 rounded px-2 py-1 hover:bg-accent ${active ? "bg-accent font-medium" : "text-muted-foreground"}`;
-  const groupLabel = "hidden pt-3 px-2 text-xs uppercase text-muted-foreground md:block";
 
   return (
     <div className="flex flex-col gap-4 md:flex-row md:gap-8">
@@ -354,15 +456,12 @@ function SettingsView() {
         {["General", "Appearance"].map((s) => (
           <Link key={s} to="/settings" search={{ section: s }} className={itemClass(section === s)}>{s}</Link>
         ))}
-        <div className={groupLabel}>Apps</div>
+        <Link to="/settings" search={{ section: "Services" }} className={itemClass(isServices)}>Services</Link>
+        <div className="hidden pt-3 px-2 text-xs uppercase text-muted-foreground md:block">Apps</div>
         {(apps.data ?? []).map((a) => (
           <Link key={a.appId} to="/settings" search={{ section: a.appId }} className={itemClass(section === a.appId)}>
             {a.icon} {a.name}
           </Link>
-        ))}
-        <div className={groupLabel}>Services</div>
-        {services.map((s) => (
-          <Link key={s} to="/settings" search={{ section: s }} className={itemClass(section === s)}>{s}</Link>
         ))}
       </nav>
       <div className="min-w-0 flex-1 space-y-4">
@@ -370,11 +469,13 @@ function SettingsView() {
           <Skeleton className="h-40" />
         ) : app ? (
           <AppSection app={app} />
-        ) : (
-          <PlatformSection
-            section={section} entries={entries}
-            invalidate={() => void queryClient.invalidateQueries({ queryKey: ["settings", "_platform"] })}
+        ) : isServices ? (
+          <ServicesSection
+            services={services} entries={entries} invalidate={invalidate}
+            initial={section !== "Services" ? section : undefined}
           />
+        ) : (
+          <PlatformSection section={section} entries={entries} invalidate={invalidate} />
         )}
       </div>
     </div>
