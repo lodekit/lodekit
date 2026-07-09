@@ -199,7 +199,13 @@ function ServiceTabs({ sections, initial, children }: { sections: string[]; init
       <TabsList className="w-full justify-start overflow-x-auto">
         {sections.map((s) => <TabsTrigger key={s} value={s}>{s}</TabsTrigger>)}
       </TabsList>
-      {sections.map((s) => <TabsContent key={s} value={s}>{children(s)}</TabsContent>)}
+      {/* forceMount + CSS hide: inactive panels stay mounted so an uncommitted
+          draft or rejected-write error survives switching tabs. */}
+      {sections.map((s) => (
+        <TabsContent key={s} value={s} forceMount className="data-[state=inactive]:hidden">
+          {children(s)}
+        </TabsContent>
+      ))}
     </Tabs>
   );
 }
@@ -354,12 +360,13 @@ function ServiceOverridesCard({ app, overrides, invalidate }: {
     <Card>
       <Collapsible open={open} onOpenChange={setOpen}>
         <CardHeader>
-          <CollapsibleTrigger className="flex w-full items-center justify-between">
+          <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
             <CardTitle>Service Overrides</CardTitle>
             <ChevronDown aria-hidden="true" className={`size-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
           </CollapsibleTrigger>
         </CardHeader>
-        <CollapsibleContent>
+        {/* forceMount + CSS hide: collapsing must not unmount rows mid-edit. */}
+        <CollapsibleContent forceMount className="data-[state=closed]:hidden">
           <CardContent>
             <ServiceTabs sections={sections}>
               {(s) => {
