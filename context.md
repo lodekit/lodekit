@@ -107,19 +107,14 @@ One cloud battery — a capability the runtime provides to apps: storage, secret
 _Avoid_: capability, feature, component (components are UI), battery (marketing metaphor, not the domain word)
 
 **Service catalog**:
-The full set of services Lodekit offers, named AWS-style: kv-store (the Store), relational-store (the Database, currently parked), file-store (Files), log-store (Logs), event-store (Events), secret-store, tasks (Tasks — one service; task-queue and task-schedule are its two capabilities), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
+The full set of services Lodekit offers, named AWS-style: kv-store (KV), db-store (the Database), file-store (Files), log-store (Logs), event-store (Events), secret-store, tasks (Tasks — one service; task-queue and task-schedule are its two capabilities), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
 _Avoid_: the SDK (the SDK is the layer into the catalog, not the catalog), feature list
 
 The shipped and near-term services:
 
-**Store**:
-An app's per-app key–value store of JSON values (the kv-store service), reached through the
-SDK as the `kv` handle (`import { kv } from "@lodekit/sdk"`; catalog-name → handle mapping:
-kv-store→kv, relational-store→db, file-store→files, secret-store→secrets, log-store→logs, event-store→events, settings→settings). The first storage
-service; joined by Files (file-store) in 0.x. Its second iteration shipped as the v0.1 storage
-slice (`docs/specs/2026-07-03-kv-store-v2-design.md`). Distinct from the Cache and from
-Settings — see Flagged ambiguities.
-_Avoid_: cache, settings, preferences
+**KV**:
+An app's per-app key–value store of JSON values (the kv-store service), reached through the SDK as the `kv` handle. **App memory**: counters, cursors, preferences, caches, flags — small values the app writes about itself at runtime. Domain records belong in the Database — see the decision rule there. Its second iteration shipped as the v0.1 storage slice (`docs/specs/2026-07-03-kv-store-v2-design.md`). Distinct from the Cache and from Settings — see Flagged ambiguities.
+_Avoid_: the Store (retired name), cache, settings, preferences
 
 **Files**:
 An app's per-app blob storage (the file-store service) for documents and binary data,
@@ -149,11 +144,11 @@ An underscore-prefixed id (`_platform`, `_manager`, `_dashboard`) naming a platf
 _Avoid_: reserved app, system app, internal app
 
 **Database**:
-An app's per-app SQL database (relational-store). **Parked**: retired in the v0.1 storage iteration; returns to the catalog once a schemas/migrations story exists.
-_Avoid_: store (the store is the KV; the two differ), sql
+An app's per-app relational database (the db-store service), reached through the SDK as the `db` handle: schema declared in `src/db.ts` (drizzle tables), additive changes applied on save, destructive changes gated (`docs/specs/2026-07-09-db-store-design.md`). **The default home for domain records** — anything that is an entity: has fields, has relationships, gets listed/filtered/aggregated, would hurt to lose. KV is app memory; the Database is the domain model. Returned to the catalog by the db-store slice.
+_Avoid_: relational-store (the retired catalog name), the store, sql
 
 **Settings**:
-Configuration the person views and edits in the dashboard Settings page: **platform settings** declared by the runtime (General/Appearance plus every service default, dot-namespaced keys like `tasks.default_retries`) and **app settings** declared in an app's `src/settings.ts` via `defineSettings()` (snake_case keys); the app reads its own through the SDK (`settings` handle — read + watch, never write). Per-app–scoped service settings can be **overridden** per app; resolution is app override → platform value → declared default (the **effective value**). Shipped: `docs/specs/2026-07-07-settings-design.md`. Distinct from the Store — see Flagged ambiguities.
+Configuration the person views and edits in the dashboard Settings page: **platform settings** declared by the runtime (General/Appearance plus every service default, dot-namespaced keys like `tasks.default_retries`) and **app settings** declared in an app's `src/settings.ts` via `defineSettings()` (snake_case keys); the app reads its own through the SDK (`settings` handle — read + watch, never write). Per-app–scoped service settings can be **overridden** per app; resolution is app override → platform value → declared default (the **effective value**). Shipped: `docs/specs/2026-07-07-settings-design.md`. Distinct from KV — see Flagged ambiguities.
 _Avoid_: preferences, config, options
 
 **Task**:
@@ -246,9 +241,9 @@ _Avoid_: the endpoints, the REST API
 - The **Manager** installs and supervises the **Runtime**. The runtime has two doors: the **MCP server** (the agent's) and the **Dashboard** (the person's).
 - The person builds **Apps** using an **Agent**: the agent loads the **Skill**, drives Lodekit through the **MCP server**, and writes code on the **Stack** — the **SDK** and **UI library** on the **shared toolchain**, conforming to the **App contract**.
 - An **App** is identified by its **App id**; that same app id is its URL path and its data namespace.
-- Every **Service** in the **Service catalog** is provided by the **Runtime**; an app reaches its services (**Database**, **Store**, **Settings**, **Tasks**) only through the **SDK**, which calls the **Scoped API**.
+- Every **Service** in the **Service catalog** is provided by the **Runtime**; an app reaches its services (**Database**, **KV**, **Files**, **Settings**, **Tasks**) only through the **SDK**, which calls the **Scoped API**.
 - An app's **server functions** run in its **app worker** inside the **runtime**; they reach services through the **SDK** over loopback HTTP.
-- An app's source lives in the **Apps tree**, its built output in the **Cache**, and its persistent state (**Database** + **Store**) in the **Data tree**.
+- An app's source lives in the **Apps tree**, its built output in the **Cache**, and its persistent state (**Database** + **KV** + **Files**) in the **Data tree**.
 - The **Backup tree** = apps tree + data tree. The **Cache** is deliberately outside it.
 - **Settings** and **Tasks** are declared by an app and surfaced to the person in the **Dashboard**.
 - The **MCP server** may read an app's services on the person's behalf (writes later, behind designed guardrails).
@@ -256,8 +251,9 @@ _Avoid_: the endpoints, the REST API
 ## Flagged ambiguities
 
 - **Lodekit vs Platform** — Lodekit is the whole product experience; the platform is its installed subset (runtime, SDK, UI library, dashboard, manager). "Download Lodekit" installs the platform.
-- **Store vs Cache** — both sound like "somewhere things are kept," but they are opposites in durability. The **Store** is per-app durable KV state (backed up, in the data tree); the **Cache** is disposable build output (never backed up). Never call the store a cache.
+- **KV vs Cache** — both sound like "somewhere things are kept," but they are opposites in durability. **KV** is per-app durable state (backed up, in the data tree); the **Cache** is disposable build output (never backed up). Never call KV a cache.
 - **Event vs Log** — logs are telemetry (what happened, for observation); events drive business logic (what happened, for reaction). The `log` SSE tail is log-store's live surface, not an event, and never touches the bus.
-- **Store vs Settings** — both hold small per-app values. **Settings** are declared by the app and edited by the person in the dashboard (the person's knobs); the **Store** is written by app code at runtime (the app's own memory). An app reads both, but only settings are meant for human hands. Credentials are neither: **Secrets** (secret-store) hold sensitive values the person provides, encrypted at rest, read only by server-side app code — never Settings, never the Store. Apps declare **slots** (`src/secrets.ts`); the person **links** a catalog secret to each slot in the dashboard — the link is the grant.
+- **KV vs Settings** — both hold small per-app values. **Settings** are declared by the app and edited by the person in the dashboard (the person's knobs); **KV** is written by app code at runtime (the app's own memory). An app reads both, but only settings are meant for human hands. Credentials are neither: **Secrets** (secret-store) hold sensitive values the person provides, encrypted at rest, read only by server-side app code — never Settings, never KV. Apps declare **slots** (`src/secrets.ts`); the person **links** a catalog secret to each slot in the dashboard — the link is the grant.
+- **KV vs Database** — both are per-app durable storage. The **Database** holds domain records (entities, relationships, queries); **KV** holds app memory (counters, cursors, preferences, caches, flags). The skill applies this rule by default; the person steers by exception.
 - **Docs vs Skill** — both teach how to use Lodekit, to different readers. **Docs** are the public site for people; the **Skill** is the instruction pack for agents. Content may overlap; the audiences never do.
 - **Skill** — `@lodekit/skill` is the Lodekit skill package (content an agent loads to use Lodekit), not to be confused with agent skills in general.

@@ -26,20 +26,20 @@ pointed here):
   Deferred from the slice (spec §12): master-key rotation, non-darwin key providers,
   secret expiry, read-audit log, MCP write/link tools, import; the worker-token door
   covers only the secrets value route — extending it stays with "Local door hardening".
-- **App-id-existence check** — the kv router (and the scoped events endpoint) materialize
-  `data/<app-id>/db.sqlite` for any well-formed app id without checking the app registry —
-  inherited from the old `withDb` (now the Hono `withDb` middleware); tighten with this body
-  of work.
+- **App-id-existence check** — the kv router and the db-store router (and the scoped events
+  endpoint) materialize `data/<app-id>/db.sqlite` for any well-formed app id without checking
+  the app registry (both via `getAppDb`) — inherited from the old `withDb` (now the Hono
+  `withDb` middleware); tighten with this body of work.
 - **400-vs-500 split** — the kv router's `handle()` maps every thrown error to 400
   (spec-mandated "never crash"); split `KvError` → 400 / unexpected → 500 once
   observability/security work lands.
 
 ## Relational-store's return
 
-The database service (per-app SQL) is **parked** by the v0.1 storage iteration — kv-store is
-the sole storage service through early 0.x. Iterate after v0.1 ships: define the
-schemas/migrations story (plus data initialization/fixtures) that lets relational-store
-re-enter the service catalog. The parking shipped with kv-store v2 (docs/specs/2026-07-03-kv-store-v2-design.md).
+~~The database service (per-app SQL) is **parked**…~~ **Shipped (2026-07-09)** as the
+**db-store** slice (`docs/specs/2026-07-09-db-store-design.md`): drizzle schemas in
+`src/db.ts`, push-with-gate migrations for apps, the unified migration engine
+(file-based chains) for every internal schema, and the `_lodekit_*` → `_*` rename.
 
 ## App server code — next triggers
 
@@ -172,6 +172,17 @@ above; the remainder:
   versions requires `pnpm rebuild better-sqlite3` (ABI mismatch otherwise).
 
 ## Other deferred items
+- **Accepting destructive db-store migrations** — a person-facing confirmation flow
+  that lets a gated schema change apply deliberately (db-store spec §14); until then
+  the gate + the skill's expand-copy habit is the whole story.
+- **Data explorer (dashboard)** — the unified KV + Database surface (schema browser,
+  rows, eventually Looker-style assisted querying) — in flight in a separate session;
+  `StorePanel` was deleted by the db-store slice; never ship isolated per-service
+  data panels again. db-store's `GET /schema` + `/select` are its substrate.
+- **Internal queries onto the drizzle builder** — opportunistic, per service, riding
+  the declarations in `packages/runtime/src/internalSchema.ts` (drift-tested).
+- **db-store fixtures/data initialization** — seeding/fixtures as a designed
+  companion (spec §14); push handles DDL only.
 - **Versioning — release automation** — changelogs, tags, bump tooling; versions are bumped
   by hand in lockstep for now (docs/specs/2026-07-06-versioning-design.md §8).
 - **v0.1 skill rewrite scope** — must cover the `kv` surface, the collection/`_seq:<name>`
@@ -182,7 +193,8 @@ above; the remainder:
   invalidation causes one redundant self-invalidate refetch per write, and collection
   removal does not cascade (e.g. deleting a habit orphans its checkin keys); the `tasks`
   handle, the `src/tasks.ts` + `task()` declaration contract, and the catch-up/retry
-  semantics.
+  semantics; the `db` surface (`src/db.ts` schema authoring, `createDb`, batch-as-transaction,
+  the KV-vs-DB decision rule, expand-copy habit).
 - **Internal scheduler vs the Tasks service** — ~~packages/runtime/src/scheduler.ts is runtime-internal plumbing (first user: the kv-store expiry sweep). When the Tasks service (umbrella spec §2.12) is designed holistically, decide whether it subsumes this scheduler or keeps it as the internal substrate.~~ **Resolved (2026-07-06, Tasks slice-spec §2):** layered, not conflated — the scheduler stays the internal heartbeat; the Tasks dispatcher is its third consumer (`docs/specs/2026-07-06-tasks-service-design.md`).
 - **Tasks — deferred from the v1 slice-spec** (`docs/specs/2026-07-06-tasks-service-design.md` §11): event-triggered tasks (after the events revamp; closes the server-side `watch`/signals gap), step-based durable execution (`step.run`/`sleep`/`waitForEvent`), signals, dynamic schedule API, per-task concurrency/rate limits/priorities, MCP task tools (read-only first), and optionally consolidating the kv/file TTL sweeps onto Tasks. Accepted at personal scale (final review): dueOccurrence's occurrence-by-occurrence cron walk after long offline gaps (worst ~tens of ms, once) — bound it only if it ever bites.
 - **Task schedules and timezone/DST semantics** — cron (and the `every` anchor) evaluate in
