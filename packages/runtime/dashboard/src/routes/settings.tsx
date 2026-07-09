@@ -138,9 +138,9 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
 // A setting row: label, one-liner description, [reset ↺] [control].
 // The reset icon carries the "modified" signal: muted when the value is
 // overridden, hidden (space kept) at default. A successful write flashes a
-// soft ring around the control (~1.5s, fades out) — no extra element, so
-// nothing pops in beside the hidden reset button. A rejected write keeps the
-// typed input.
+// soft ring around the control (300ms fade, 800ms hold) — no extra element,
+// so nothing pops in beside the hidden reset button. A rejected write keeps
+// the typed input.
 function SettingRow(props: {
   field: Field; value: unknown; effective: unknown; platformValue?: unknown; drifted?: boolean;
   onWrite: (v: unknown | undefined) => Promise<void>;
@@ -155,7 +155,7 @@ function SettingRow(props: {
         setError(null);
         setSaved(true);
         clearTimeout(savedTimer.current);
-        savedTimer.current = setTimeout(() => setSaved(false), 1500);
+        savedTimer.current = setTimeout(() => setSaved(false), 800);
       })
       .catch((e) => {
         const msg = e instanceof Error ? e.message : String(e);
@@ -182,7 +182,7 @@ function SettingRow(props: {
           >
             <RotateCcw className="size-3.5" />
           </Button>
-          <span className={`inline-flex transition-shadow duration-700 ${props.field.type === "boolean" ? "rounded-full" : "rounded-md"} ${saved ? "ring-2 ring-primary/40" : ""}`}>
+          <span className={`inline-flex transition-shadow duration-300 ${props.field.type === "boolean" ? "rounded-full" : "rounded-md"} ${saved ? "ring-2 ring-primary/40" : ""}`}>
             <FieldControl field={props.field} value={props.effective} onChange={commit} />
           </span>
         </div>
