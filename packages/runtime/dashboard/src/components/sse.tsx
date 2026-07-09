@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 type Handler = (e: MessageEvent) => void;
@@ -29,21 +29,26 @@ export function SSEProvider({ children }: { children: ReactNode }) {
     const onEvent = fan("event");
     es.addEventListener("log", onLog);
     es.addEventListener("event", (e) => {
-      const d = JSON.parse((e as MessageEvent).data) as { ns: string; type: string };
-      if (d.type === "apps-changed") void queryClient.invalidateQueries({ queryKey: ["apps"] });
-      if (d.type === "settings-change") void queryClient.invalidateQueries({ queryKey: ["settings", d.ns] });
-      if (d.type === "secrets-change") void queryClient.invalidateQueries({ queryKey: ["secrets", d.ns] });
-      if (d.type === "kv-store-change") void queryClient.invalidateQueries({ queryKey: ["kv", d.ns] });
-      if (d.type === "tasks-change") {
-        void queryClient.invalidateQueries({ queryKey: ["tasks", d.ns] });
-        void queryClient.invalidateQueries({ queryKey: ["task-runs", d.ns] });
+      try {
+        const d = JSON.parse((e as MessageEvent).data) as { ns: string; type: string };
+        if (d.type === "apps-changed") void queryClient.invalidateQueries({ queryKey: ["apps"] });
+        if (d.type === "settings-change") void queryClient.invalidateQueries({ queryKey: ["settings", d.ns] });
+        if (d.type === "secrets-change") void queryClient.invalidateQueries({ queryKey: ["secrets", d.ns] });
+        if (d.type === "kv-store-change") void queryClient.invalidateQueries({ queryKey: ["kv", d.ns] });
+        if (d.type === "tasks-change") {
+          void queryClient.invalidateQueries({ queryKey: ["tasks", d.ns] });
+          void queryClient.invalidateQueries({ queryKey: ["task-runs", d.ns] });
+        }
+      } catch {
+        // malformed frame: skip invalidation, still fan out below
       }
       onEvent(e);
     });
     return () => es.close();
   }, [queryClient]);
 
-  return <SSEContext.Provider value={{ subscribe }}>{children}</SSEContext.Provider>;
+  const value = useMemo(() => ({ subscribe }), [subscribe]);
+  return <SSEContext.Provider value={value}>{children}</SSEContext.Provider>;
 }
 
 export function useSSEEvent(name: StreamName, handler: Handler) {
