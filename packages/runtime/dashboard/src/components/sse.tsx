@@ -23,7 +23,9 @@ export function SSEProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const es = new EventSource("/api/events");
     const fan = (name: StreamName) => (e: Event) => {
-      listeners.current.get(name)?.forEach((h) => h(e as MessageEvent));
+      listeners.current.get(name)?.forEach((h) => {
+        try { h(e as MessageEvent); } catch { /* one bad subscriber never blocks the rest */ }
+      });
     };
     const onLog = fan("log");
     const onEvent = fan("event");

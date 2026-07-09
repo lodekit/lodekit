@@ -130,8 +130,10 @@ Today `index.tsx` and `settings.tsx` each open their own `EventSource`, and the
 shell needs live data too (command bar app list, logo icon-style). A single
 `EventSource` is lifted into a shell-level provider that translates bus events
 into React Query invalidations (`apps`, `settings`, `secrets`, `kv`, `tasks`,
-build/server state). Pages consume queries only. One SSE connection total per
-dashboard tab (also serves the roadmap's "SSE connection budget" concern).
+build/server state). Pages consume queries only. One SSE connection for the
+dashboard's own pages (the theme resolver script, `/_ui/theme.js`, still opens its
+own — consolidating that is remaining roadmap scope; also serves the roadmap's
+"SSE connection budget" concern).
 
 ## 4. Settings page
 

@@ -358,9 +358,11 @@ above; the remainder:
   `watch`. All apps share one origin (`lodekit.localhost:7777`), and HTTP/1.1 caps
   concurrent connections per origin at ~6; consolidate onto a shared channel (or lift the
   per-origin connection concern) before enough app tabs are open at once to matter. The
-  dashboard half is done (UI revamp, 2026-07-09): a shell-level `SSEProvider` now holds one
-  shared `EventSource` per dashboard tab (was one each for `index`/`settings`/`events`/
-  `logs`/`secrets`); remaining scope is the hosted-app-page duplication above.
+  dashboard half is partly done (UI revamp, 2026-07-09): a shell-level `SSEProvider` now
+  holds one shared `EventSource` for the dashboard's own pages (was one each for
+  `index`/`settings`/`events`/`logs`/`secrets`), but the theme resolver above still opens
+  its own — so a dashboard tab holds two connections; remaining scope is unchanged:
+  hosted-app-page/theme-resolver duplication.
 - **Manager `runtimeSettings` subscribe hygiene** — `manager/src/runtimeSettings.js`'s
   `defaultSubscribe` reads the `/api/events` SSE response without `res.setEncoding("utf8")`
   (multi-byte UTF-8 split across chunk boundaries could corrupt a frame), and `start()`/

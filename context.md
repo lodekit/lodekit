@@ -22,6 +22,7 @@ _Avoid_: server, backend, daemon
 The person-facing name for the runtime wherever the dashboard shows it (the
 Settings "Engine" section — `hosting.*` keys). Same thing as the runtime; "Engine"
 is what the person reads, "runtime" is what the code and docs say.
+_Avoid_: "engine" in code, specs, and internal docs — that's "runtime"; the dashboard is the only surface that says Engine.
 
 **Manager**:
 The thin menubar app (`@lodekit/manager`) that ships and supervises the platform: it provisions a Lodekit-local Node (pinned version, never the system's), runs the runtime as a child process, and offers status indication, "open dashboard", and quit from the menu bar. It has no product UI of its own — everything it shows is the dashboard, opened in the browser.
