@@ -18,6 +18,11 @@ _Avoid_: the product (that's Lodekit, which is more), the install, the stack (th
 The single Node process at the heart of the platform — it hosts, builds, watches, and serves apps, the dashboard, and the API. Referred to in code as `@lodekit/runtime`.
 _Avoid_: server, backend, daemon
 
+**Engine**:
+The person-facing name for the runtime wherever the dashboard shows it (the
+Settings "Engine" section — `hosting.*` keys). Same thing as the runtime; "Engine"
+is what the person reads, "runtime" is what the code and docs say.
+
 **Manager**:
 The thin menubar app (`@lodekit/manager`) that ships and supervises the platform: it provisions a Lodekit-local Node (pinned version, never the system's), runs the runtime as a child process, and offers status indication, "open dashboard", and quit from the menu bar. It has no product UI of its own — everything it shows is the dashboard, opened in the browser.
 _Avoid_: desktop app, shell, controller, tray app, the Electron app (implementation detail)

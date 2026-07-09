@@ -25,6 +25,8 @@ describe("platform catalog", () => {
     expect(PLATFORM_SETTINGS["events.retention_age"].field.default).toBe("30d");
     expect(PLATFORM_SETTINGS["kv.list_limit"].field.default).toBe(1000);
     expect(PLATFORM_SETTINGS["hosting.request_timeout"].field.default).toBe("30s");
+    // Engine is the person-facing name for the runtime (UI revamp spec §4)
+    expect(PLATFORM_SETTINGS["hosting.request_timeout"].section).toBe("Engine");
     // inherently-global loops are never per-app
     for (const k of Object.keys(PLATFORM_SETTINGS).filter((k) => k.endsWith("sweep_interval"))) {
       expect(PLATFORM_SETTINGS[k].scope, k).toBe("global");

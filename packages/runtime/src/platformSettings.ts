@@ -12,7 +12,7 @@ export interface PlatformSetting {
 
 export const PLATFORM_KEY_RE = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 
-export const SECTIONS = ["General", "Appearance", "Tasks", "Logs", "Store", "Files", "Events", "App hosting"] as const;
+export const SECTIONS = ["General", "Appearance", "Tasks", "Logs", "Store", "Files", "Events", "Engine"] as const;
 
 const g = (field: SettingField, section: string): PlatformSetting => ({ field, scope: "global", section });
 const p = (field: SettingField, section: string): PlatformSetting => ({ field, scope: "per-app", section });
@@ -161,15 +161,15 @@ export const PLATFORM_SETTINGS: Record<string, PlatformSetting> = {
     type: "duration", label: "Request timeout",
     description: "How long an app may take to answer an HTTP request.",
     default: "30s", min: "1s",
-  }, "App hosting"),
+  }, "Engine"),
   "hosting.restart_backoff_base": p({
     type: "duration", label: "Restart backoff base",
     description: "First delay before a crashed app server restarts; doubles per consecutive crash.",
     default: "1s", min: "1s", advanced: true,
-  }, "App hosting"),
+  }, "Engine"),
   "hosting.restart_backoff_cap": p({
     type: "duration", label: "Restart backoff cap",
     description: "The restart delay never exceeds this.",
     default: "10s", min: "1s", advanced: true,
-  }, "App hosting"),
+  }, "Engine"),
 };
