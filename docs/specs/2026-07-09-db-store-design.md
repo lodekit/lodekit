@@ -184,10 +184,15 @@ export const db = createDb({ plants, careEvents });
 
 Follows the settings-defs worker-boot registration pattern:
 
-1. **Snapshot (worker).** On app-worker boot — after settings-defs registration, before
-   `ready` — the worker imports the built `src/db.ts`, serializes the declared schema
-   with `generateSQLiteDrizzleJson` (`drizzle-kit/api`, available via the shared
-   toolchain), and POSTs the snapshot to the schema door on the scoped API.
+1. **Snapshot (worker).** On app-worker boot — before the server bundle loads and
+   `ready` is posted — the worker entry imports the built `src/db.ts` bundle,
+   serializes the declared schema with `generateSQLiteDrizzleJson` (`drizzle-kit/api`,
+   imported by the entry from the runtime's own install), and posts a `db-manifest`
+   message over the worker channel — the same mechanism the settings/tasks/secrets
+   manifests use, not an HTTP door. Channel FIFO gives the ordering guarantee for
+   free: the host processes `db-manifest` (and applies the schema synchronously —
+   better-sqlite3) before it processes `ready`, so no request is forwarded before the
+   new schema is live.
 2. **Diff (host).** The host loads the last-applied snapshot from the app's `_schema`
    row (empty snapshot for a first push), computes the migration with
    `generateSQLiteMigration(prev, cur)` in-process, and classifies the statements.
@@ -204,9 +209,11 @@ Follows the settings-defs worker-boot registration pattern:
    exactly what would be lost and pointing at the expand-copy path. The skill teaches
    no-breaking-changes as the default habit (§11). Accepting destructive migrations via
    a confirmation flow is roadmap (§14).
-5. Validation at the door: user-table grammar (§4), snapshot shape (zod). A gated app
-   keeps serving — existing tables and queries keep working; only the new schema didn't
-   apply.
+5. Validation at the registration hook: user-table grammar (§4), snapshot shape. A
+   snapshot that fails to load in the worker (import error) is reported, never fatal —
+   the runtime keeps the previous schema, mirroring the settings-manifest contract. A
+   gated app keeps serving — existing tables and queries keep working; only the new
+   schema didn't apply.
 
 ## 8. HTTP surface and SDK
 
@@ -221,11 +228,19 @@ convention (CATALOG_NAME + ops + chained Hono router + middleware), mounted at
 - `POST /batch` — an array of query payloads executed inside one transaction, results
   array back; drizzle's transactional unit over the proxy driver (interactive
   transactions don't exist on sqlite-proxy — batch is the story, and the skill says so).
+- `POST /select` — SELECT-only queries executed on a short-lived **read-only
+  connection** — the MCP door (§9); the readonly guarantee is the connection's, not a
+  SQL-parsing promise.
 - `GET /schema` — user-table introspection (tables, columns with type/notnull/pk/default,
   indexes), `_*`/`sqlite_*` hidden. Serves MCP and the future data explorer.
-- `POST /schema` — the worker-boot push door (§7).
 - Zod-validated at the boundary; kv-store's error conventions (400 with message, never a
-  crash).
+  crash). Query params are JSON scalars (string/number/null) — blob columns don't
+  transport over the proxy; binary belongs in file-store.
+- **Change feed:** successful writes through `/query` and `/batch` emit a
+  `db-store-change` event (kv-store's identity-only pattern, change-feed ttl): payload
+  `{ op, table? }` — op from the statement's first keyword, table extracted best-effort
+  from drizzle's regular SQL shapes. Apps live-refresh via
+  `events.watch({ type: "db-store-change" }, …)`, exactly like the kv feed.
 
 **SDK:** `createDb(schema)` is the one new export (`packages/sdk/src/client.ts` grows a
 `db` section like `kv`/`files`); the drizzle proxy callback is ~10 lines of `fetch`
@@ -239,10 +254,11 @@ security work):
 
 - `lodekit_db_schema` ({ appId }) — the `GET /schema` view: the agent reads the domain
   model.
-- `lodekit_db_query` ({ appId, sql }) — SELECT-only, executed on a short-lived
-  **read-only connection** (`new Database(path, { readonly: true })`) so the guarantee
-  is the connection's, not a SQL-parsing promise. "Show me all my plants watered this
-  month" without the agent touching app code.
+- `lodekit_db_query` ({ appId, sql, params? }) — SELECT-only via `POST /select` (§8),
+  executed on a short-lived **read-only connection**
+  (`new Database(path, { readonly: true })`) so the guarantee is the connection's, not
+  a SQL-parsing promise. "Show me all my plants watered this month" without the agent
+  touching app code.
 
 ## 10. Dashboard
 
