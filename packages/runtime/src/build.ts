@@ -184,6 +184,7 @@ const DEEP_IMPORT_PACKAGES = [
   "@tanstack/react-router",
   "@tanstack/react-start",
   "zod",
+  "drizzle-orm",
 ];
 
 function packageNameOf(specifier: string): string {
