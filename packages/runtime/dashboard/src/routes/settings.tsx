@@ -182,7 +182,7 @@ function SettingRow(props: {
           >
             <RotateCcw className="size-3.5" />
           </Button>
-          <span className={`inline-flex rounded-md transition-shadow duration-700 ${saved ? "ring-2 ring-primary/40" : ""}`}>
+          <span className={`inline-flex transition-shadow duration-700 ${props.field.type === "boolean" ? "rounded-full" : "rounded-md"} ${saved ? "ring-2 ring-primary/40" : ""}`}>
             <FieldControl field={props.field} value={props.effective} onChange={commit} />
           </span>
         </div>
