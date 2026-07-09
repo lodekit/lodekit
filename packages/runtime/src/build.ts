@@ -338,5 +338,29 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
     });
   }
 
+  // The db entry (db-store spec §7): src/db.ts becomes a separate self-contained
+  // ssr bundle beside server.js — same mechanism as settings.js. The worker entry
+  // imports it to extract the declared drizzle tables for the schema push.
+  const dbSource = path.join(fs.realpathSync(t.rootDir), "src", "db.ts");
+  if (fs.existsSync(dbSource)) {
+    await build({
+      configFile: false,
+      root: fs.realpathSync(t.rootDir),
+      logLevel: "silent",
+      define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
+      plugins: [deepImportResolver()],
+      resolve: { alias: appAliases(themeOverridesFile) },
+      ssr: { noExternal: true },
+      build: {
+        ssr: dbSource,
+        outDir: path.join(t.outDir, "server"),
+        emptyOutDir: false,
+        rollupOptions: {
+          output: { entryFileNames: "db.js", chunkFileNames: "assets/db-[name]-[hash].js" },
+        },
+      },
+    });
+  }
+
   fs.writeFileSync(path.join(t.outDir, "package.json"), JSON.stringify({ type: "module" }));
 }

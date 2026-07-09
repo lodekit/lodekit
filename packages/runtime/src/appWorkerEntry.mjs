@@ -2,9 +2,11 @@
 // depend on the tsx loader. Protocol (structured clone + transfers):
 //   main -> worker  { type:"request", id, method, url, headers:[[k,v]], body:Uint8Array|null }
 //                   | { type:"task-run", id, name, payload }
+//                   | { type:"db-manifest-ack" }
 //   worker -> main  { type:"ready" } | { type:"fatal", message }
 //                   | { type:"tasks-manifest", tasks:[{name,...config}], error? }
 //                   | { type:"secrets-manifest", slots:{...}, error? }
+//                   | { type:"db-manifest", snapshot, error? }
 //                   | { type:"response", id, status, headers:[[k,v]], body:ReadableStream|null }
 //                   | { type:"response-error", id, message }
 //                   | { type:"task-result", id, ok, message? }
@@ -26,6 +28,36 @@ for (const [method, level] of Object.entries(CONSOLE_LEVELS)) {
       // logging must never break the app (e.g. unserializable arg)
     }
   };
+}
+
+// db manifest (db-store spec §7): the declared schema's snapshot, extracted
+// BEFORE the server bundle loads. The host applies the push and acks; waiting
+// for the ack (bounded) guarantees no request is forwarded before the new
+// schema is live. drizzle-kit resolves from the runtime's own install — this
+// entry is runtime code, not app code. An import failure is reported, never
+// fatal — the runtime keeps the previous schema.
+if (workerData.dbEntry) {
+  try {
+    const [mod, kit] = await Promise.all([import(workerData.dbEntry), import("drizzle-kit/api")]);
+    const snapshot = await kit.generateSQLiteDrizzleJson({ ...mod });
+    const acked = new Promise((resolve) => {
+      const onMsg = (m) => {
+        if (m && m.type === "db-manifest-ack") {
+          parentPort.off("message", onMsg);
+          resolve();
+        }
+      };
+      parentPort.on("message", onMsg);
+      setTimeout(() => {
+        parentPort.off("message", onMsg);
+        resolve(); // availability over strictness: proceed after 10s without an ack
+      }, 10_000).unref();
+    });
+    parentPort.postMessage({ type: "db-manifest", snapshot });
+    await acked;
+  } catch (e) {
+    parentPort.postMessage({ type: "db-manifest", snapshot: null, error: e?.stack ?? String(e) });
+  }
 }
 
 let handler;

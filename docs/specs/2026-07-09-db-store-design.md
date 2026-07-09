@@ -189,10 +189,9 @@ Follows the settings-defs worker-boot registration pattern:
    serializes the declared schema with `generateSQLiteDrizzleJson` (`drizzle-kit/api`,
    imported by the entry from the runtime's own install), and posts a `db-manifest`
    message over the worker channel — the same mechanism the settings/tasks/secrets
-   manifests use, not an HTTP door. Channel FIFO gives the ordering guarantee for
-   free: the host processes `db-manifest` (and applies the schema synchronously —
-   better-sqlite3) before it processes `ready`, so no request is forwarded before the
-   new schema is live.
+   manifests use, not an HTTP door. Because the host's handler is async, the worker
+   posts `db-manifest` and waits (bounded) for the host's ack — the host applies the
+   schema before acking — so no request is forwarded before the new schema is live.
 2. **Diff (host).** The host loads the last-applied snapshot from the app's `_schema`
    row (empty snapshot for a first push), computes the migration with
    `generateSQLiteMigration(prev, cur)` in-process, and classifies the statements.

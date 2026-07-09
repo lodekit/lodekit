@@ -65,6 +65,14 @@ export function onSecretsManifest(cb: (appId: string, slots: Record<string, unkn
   secretsManifestCb = cb;
 }
 
+let dbManifestCb: ((appId: string, snapshot: unknown, error?: string) => Promise<unknown> | void) | undefined;
+
+/** db-store hook (single, last-wins): fired at worker boot, BEFORE ready, with the
+ *  app's schema snapshot. The worker waits for the ack this handler triggers. */
+export function onDbManifest(cb: (appId: string, snapshot: unknown, error?: string) => Promise<unknown> | void): void {
+  dbManifestCb = cb;
+}
+
 const managed = new Map<string, Managed>();
 
 // Per-spawn worker tokens (secret-store spec §7): the server-only door's
@@ -112,6 +120,7 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
   const tasksEntry = path.join(cfg.cacheDir, appId, "server", "tasks.js");
   const settingsEntry = path.join(cfg.cacheDir, appId, "server", "settings.js");
   const secretsEntry = path.join(cfg.cacheDir, appId, "server", "secrets.js");
+  const dbEntry = path.join(cfg.cacheDir, appId, "server", "db.js");
   const workerToken = randomBytes(32).toString("hex");
   workerTokens.set(appId, workerToken);
   const worker = new Worker(ENTRY, {
@@ -120,6 +129,7 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
       tasksEntry: fs.existsSync(tasksEntry) ? tasksEntry : null,
       settingsEntry: fs.existsSync(settingsEntry) ? settingsEntry : null,
       secretsEntry: fs.existsSync(secretsEntry) ? secretsEntry : null,
+      dbEntry: fs.existsSync(dbEntry) ? dbEntry : null,
     },
     env: { ...process.env, LODEKIT_BASE_URL: baseUrl, LODEKIT_WORKER_TOKEN: workerToken },
   });
@@ -140,6 +150,17 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
     if (msg.type === "tasks-manifest") { manifestCb?.(appId, msg.tasks ?? [], msg.error); return; }
     if (msg.type === "settings-manifest") { settingsManifestCb?.(appId, msg.fields ?? {}, msg.error); return; }
     if (msg.type === "secrets-manifest") { secretsManifestCb?.(appId, msg.slots ?? {}, msg.error); return; }
+    if (msg.type === "db-manifest") {
+      void (async () => {
+        try {
+          await dbManifestCb?.(appId, msg.snapshot ?? null, msg.error);
+        } finally {
+          // Ack even on a failed push — the app serves on its previous schema.
+          try { worker.postMessage({ type: "db-manifest-ack" }); } catch { /* worker died */ }
+        }
+      })();
+      return;
+    }
     if (msg.type === "task-result") {
       const t = m.pendingTasks.get(msg.id);
       if (!t) return;
