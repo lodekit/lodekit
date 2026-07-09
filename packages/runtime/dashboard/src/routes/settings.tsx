@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
   Badge, Button, Card, CardContent, CardHeader, CardTitle,
-  Collapsible, CollapsibleContent, CollapsibleTrigger, Input, Label,
+  Input, Label,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Switch,
 } from "@lodekit/ui";
+import { Check, RotateCcw } from "lucide-react";
 
 export const Route = createFileRoute("/settings")({
   validateSearch: (s: Record<string, unknown>): { section?: string } =>
@@ -82,22 +84,31 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
   );
 }
 
-// A setting row: label, one-liner description, control, modified dot + reset.
+// A setting row: label, one-liner description, [saved ✓] [reset ↺] [control].
+// The reset icon is faint+disabled at default and lights up when modified —
+// it carries the "modified" signal (the old dot is gone). A successful write
+// fades a check in beside the control for ~1.5s.
 function SettingRow(props: {
   field: Field; value: unknown; effective: unknown; inheritedLabel?: string; drifted?: boolean;
   onWrite: (v: unknown | undefined) => Promise<void>;
 }) {
   const modified = props.value !== null && props.value !== undefined;
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const commit = (v: unknown | undefined) => {
-    props.onWrite(v).then(() => setError(null)).catch((e) => setError(e instanceof Error ? e.message : String(e)));
+    props.onWrite(v)
+      .then(() => {
+        setError(null);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 1500);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
   };
   return (
     <div className="flex items-start justify-between gap-6 border-b py-3 last:border-b-0">
       <div className="min-w-0">
         <Label className="flex items-center gap-2">
           {props.field.label}
-          {modified && <span className="size-1.5 rounded-full bg-primary" title="Modified" />}
           {props.drifted && <Badge variant="outline">was reset to default</Badge>}
         </Label>
         <p className="mt-1 text-sm text-muted-foreground">{props.field.description}</p>
@@ -107,10 +118,20 @@ function SettingRow(props: {
         )}
       </div>
       <div className="flex shrink-0 items-center gap-2">
+        <Check
+          aria-hidden="true"
+          className={`size-4 text-muted-foreground transition-opacity duration-500 ${saved ? "opacity-100" : "opacity-0"}`}
+        />
+        <Button
+          variant="ghost" size="icon"
+          disabled={!modified}
+          title="Reset to default" aria-label="Reset to default"
+          className={modified ? "" : "opacity-30"}
+          onClick={() => commit(undefined)}
+        >
+          <RotateCcw className="size-4" />
+        </Button>
         <FieldControl key={`${props.field.type}:${String(props.effective)}`} field={props.field} value={props.effective} onChange={commit} />
-        {modified && (
-          <Button variant="ghost" size="sm" onClick={() => commit(undefined)}>Reset</Button>
-        )}
       </div>
     </div>
   );
@@ -124,12 +145,14 @@ function SettingsGroup({ title, entries, render }: { title: string; entries: { a
       <CardContent>
         {render(false)}
         {advanced.length > 0 && (
-          <Collapsible>
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm" className="mt-2 text-muted-foreground">Advanced</Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>{render(true)}</CollapsibleContent>
-          </Collapsible>
+          <Accordion type="single" collapsible>
+            <AccordionItem value="advanced" className="border-b-0">
+              <AccordionTrigger className="py-2 text-sm text-muted-foreground hover:no-underline">
+                Advanced · {advanced.length}
+              </AccordionTrigger>
+              <AccordionContent>{render(true)}</AccordionContent>
+            </AccordionItem>
+          </Accordion>
         )}
       </CardContent>
     </Card>
@@ -307,58 +330,53 @@ function SettingsView() {
   });
   const apps = useQuery<AppInfo[]>({ queryKey: ["apps"], queryFn: async () => (await fetch("/api/apps")).json() });
 
-  // Live: settings-change (any ns) → refetch the affected doc (concurrent edits,
-  // manager reconciliation, worker re-registration all land here).
-  useEffect(() => {
-    const es = new EventSource("/api/events");
-    es.addEventListener("event", (e) => {
-      const d = JSON.parse((e as MessageEvent).data) as { ns: string; type: string };
-      if (d.type === "settings-change") void queryClient.invalidateQueries({ queryKey: ["settings", d.ns] });
-      if (d.type === "secrets-change") void queryClient.invalidateQueries({ queryKey: ["secrets", d.ns] });
-    });
-    return () => es.close();
-  }, [queryClient]);
-
   const entries = platform.data?.settings ?? [];
-  const serviceSections = [...new Set(entries.map((e) => e.section))].filter((s) => s !== "General" && s !== "Appearance");
-  const nav = ["General", "Appearance", ...serviceSections];
+  // Pinned display order (UI revamp spec §4); unknown future sections append.
+  const SERVICE_ORDER = ["Store", "Files", "Tasks", "Events", "Logs", "Engine"];
+  const present = [...new Set(entries.map((e) => e.section))].filter((s) => s !== "General" && s !== "Appearance");
+  const services = [
+    ...SERVICE_ORDER.filter((s) => present.includes(s)),
+    ...present.filter((s) => !SERVICE_ORDER.includes(s)),
+  ];
   const app = apps.data?.find((a) => a.appId === section);
 
+  const itemClass = (active: boolean) =>
+    `block shrink-0 rounded px-2 py-1 hover:bg-accent ${active ? "bg-accent font-medium" : "text-muted-foreground"}`;
+  const groupLabel = "hidden pt-3 px-2 text-xs uppercase text-muted-foreground md:block";
+
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        <Link to="/" className="text-sm text-muted-foreground hover:underline">Dashboard</Link>
-      </div>
-      <div className="flex gap-8">
-        <nav className="w-44 shrink-0 space-y-1 text-sm">
-          {nav.map((s) => (
-            <Link
-              key={s} to="/settings" search={{ section: s }}
-              className={`block rounded px-2 py-1 hover:bg-accent ${section === s ? "bg-accent font-medium" : "text-muted-foreground"}`}
-            >{s}</Link>
-          ))}
-          <div className="pt-2 text-xs uppercase text-muted-foreground">Apps</div>
-          {(apps.data ?? []).map((a) => (
-            <Link
-              key={a.appId} to="/settings" search={{ section: a.appId }}
-              className={`block rounded px-2 py-1 hover:bg-accent ${section === a.appId ? "bg-accent font-medium" : "text-muted-foreground"}`}
-            >{a.icon} {a.name}</Link>
-          ))}
-        </nav>
-        <div className="min-w-0 flex-1 space-y-4">
-          {platform.isLoading ? (
-            <Skeleton className="h-40" />
-          ) : app ? (
-            <AppSection app={app} />
-          ) : (
-            <PlatformSection
-              section={section} entries={entries}
-              invalidate={() => void queryClient.invalidateQueries({ queryKey: ["settings", "_platform"] })}
-            />
-          )}
+    <div className="flex flex-col gap-4 md:flex-row md:gap-8">
+      {/* Floating sidebar; below md it becomes a horizontal scrollable picker. */}
+      <nav className="flex gap-1 overflow-x-auto rounded-xl border bg-card p-3 text-sm shadow-sm md:sticky md:top-24 md:block md:w-48 md:shrink-0 md:space-y-1 md:self-start">
+        <div className="hidden px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:block">
+          Settings
         </div>
+        {["General", "Appearance"].map((s) => (
+          <Link key={s} to="/settings" search={{ section: s }} className={itemClass(section === s)}>{s}</Link>
+        ))}
+        <div className={groupLabel}>Apps</div>
+        {(apps.data ?? []).map((a) => (
+          <Link key={a.appId} to="/settings" search={{ section: a.appId }} className={itemClass(section === a.appId)}>
+            {a.icon} {a.name}
+          </Link>
+        ))}
+        <div className={groupLabel}>Services</div>
+        {services.map((s) => (
+          <Link key={s} to="/settings" search={{ section: s }} className={itemClass(section === s)}>{s}</Link>
+        ))}
+      </nav>
+      <div className="min-w-0 flex-1 space-y-4">
+        {platform.isLoading ? (
+          <Skeleton className="h-40" />
+        ) : app ? (
+          <AppSection app={app} />
+        ) : (
+          <PlatformSection
+            section={section} entries={entries}
+            invalidate={() => void queryClient.invalidateQueries({ queryKey: ["settings", "_platform"] })}
+          />
+        )}
       </div>
-    </main>
+    </div>
   );
 }
