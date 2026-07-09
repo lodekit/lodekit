@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Card, CardHeader, CardTitle, Skeleton } from "@lodekit/ui";
+import { useSSEEvent } from "../components/sse";
 
 interface EventRecord {
   id: number;
@@ -111,24 +112,20 @@ function EventsView() {
     return () => { cancelled = true; };
   }, [filterQuery]);
 
-  useEffect(() => {
-    const es = new EventSource("/api/events");
-    es.addEventListener("event", (e) => {
-      const r = JSON.parse((e as MessageEvent).data) as EventRecord;
-      const { ns, type, q } = filtersRef.current;
-      if ((ns && r.ns !== ns) || (type && r.type !== type) || !matchesQ(r, q)) return;
-      if (!hasRecordsRef.current) {
-        pendingRef.current.push(r);
-        return;
-      }
-      setRecords((rs) =>
-        rs && !(r.id !== 0 && rs.some((x) => x.id === r.id))
-          ? [r, ...rs].slice(0, Math.max(MAX_LIVE_ROWS, rs.length))
-          : rs
-      );
-    });
-    return () => es.close();
-  }, []);
+  useSSEEvent("event", (e) => {
+    const r = JSON.parse(e.data) as EventRecord;
+    const { ns, type, q } = filtersRef.current;
+    if ((ns && r.ns !== ns) || (type && r.type !== type) || !matchesQ(r, q)) return;
+    if (!hasRecordsRef.current) {
+      pendingRef.current.push(r);
+      return;
+    }
+    setRecords((rs) =>
+      rs && !(r.id !== 0 && rs.some((x) => x.id === r.id))
+        ? [r, ...rs].slice(0, Math.max(MAX_LIVE_ROWS, rs.length))
+        : rs
+    );
+  });
 
   useEffect(() => {
     void fetch("/api/apps").then((r) => r.json()).then(setApps).catch(() => {});
@@ -152,11 +149,8 @@ function EventsView() {
   const setNs = (value?: string) => void navigate({ search: value ? { ns: value } : {} });
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Events</h1>
-        <Link to="/" className="text-sm text-muted-foreground hover:underline">← Apps</Link>
-      </div>
+    <div>
+      <h1 className="mb-6 text-2xl font-semibold">Events</h1>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <select
           className="h-8 rounded-md border bg-background px-2 text-sm"
@@ -204,6 +198,6 @@ function EventsView() {
           )}
         </div>
       )}
-    </main>
+    </div>
   );
 }

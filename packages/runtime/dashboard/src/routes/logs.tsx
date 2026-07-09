@@ -1,6 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Button, Card, CardHeader, CardTitle, Skeleton } from "@lodekit/ui";
+import { useSSEEvent } from "../components/sse";
 
 const LEVELS = ["debug", "info", "warn", "error"] as const;
 type Level = (typeof LEVELS)[number];
@@ -120,33 +121,29 @@ function LogsView() {
 
   // Live tail: a single persistent connection (filter changes must not tear it down), prepending
   // matching records from the shared SSE stream.
-  useEffect(() => {
-    const es = new EventSource("/api/events");
-    es.addEventListener("log", (e) => {
-      const r = JSON.parse((e as MessageEvent).data) as LogRecord;
-      const { app, level, q } = filtersRef.current;
-      const matches =
-        (!app || (app === "_platform" ? r.appId === null : r.appId === app)) &&
-        LEVEL_RANK[r.level] >= LEVEL_RANK[level] &&
-        (!q || r.message.toLowerCase().includes(q.toLowerCase()));
-      if (!matches) return;
-      if (!hasRecordsRef.current) {
-        pendingRef.current.push(r);
-        return;
-      }
-      // Non-shrinking: grows freely up to MAX_LIVE_ROWS; beyond that (user has paginated further)
-      // the length holds steady and each arrival displaces the oldest displayed row, so the
-      // paginated tail stays contiguous instead of getting chopped back down.
-      // Cross-connection arrival order between the backfill fetch and this SSE stream isn't
-      // guaranteed, so skip a real record (id !== 0) already present from backfill.
-      setRecords((rs) =>
-        rs && !(r.id !== 0 && rs.some((x) => x.id === r.id))
-          ? [r, ...rs].slice(0, Math.max(MAX_LIVE_ROWS, rs.length))
-          : rs
-      );
-    });
-    return () => es.close();
-  }, []);
+  useSSEEvent("log", (e) => {
+    const r = JSON.parse(e.data) as LogRecord;
+    const { app, level, q } = filtersRef.current;
+    const matches =
+      (!app || (app === "_platform" ? r.appId === null : r.appId === app)) &&
+      LEVEL_RANK[r.level] >= LEVEL_RANK[level] &&
+      (!q || r.message.toLowerCase().includes(q.toLowerCase()));
+    if (!matches) return;
+    if (!hasRecordsRef.current) {
+      pendingRef.current.push(r);
+      return;
+    }
+    // Non-shrinking: grows freely up to MAX_LIVE_ROWS; beyond that (user has paginated further)
+    // the length holds steady and each arrival displaces the oldest displayed row, so the
+    // paginated tail stays contiguous instead of getting chopped back down.
+    // Cross-connection arrival order between the backfill fetch and this SSE stream isn't
+    // guaranteed, so skip a real record (id !== 0) already present from backfill.
+    setRecords((rs) =>
+      rs && !(r.id !== 0 && rs.some((x) => x.id === r.id))
+        ? [r, ...rs].slice(0, Math.max(MAX_LIVE_ROWS, rs.length))
+        : rs
+    );
+  });
 
   useEffect(() => {
     void fetch("/api/apps").then((r) => r.json()).then(setApps);
@@ -168,11 +165,8 @@ function LogsView() {
   const setApp = (value?: string) => void navigate({ search: value ? { app: value } : {} });
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Logs</h1>
-        <Link to="/" className="text-sm text-muted-foreground hover:underline">← Apps</Link>
-      </div>
+    <div>
+      <h1 className="mb-6 text-2xl font-semibold">Logs</h1>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <select
           className="h-8 rounded-md border bg-background px-2 text-sm"
@@ -221,6 +215,6 @@ function LogsView() {
           )}
         </div>
       )}
-    </main>
+    </div>
   );
 }

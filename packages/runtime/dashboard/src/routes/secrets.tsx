@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Skeleton,
@@ -120,21 +120,9 @@ function SecretsView() {
   });
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ["secrets"] });
 
-  useEffect(() => {
-    const es = new EventSource("/api/events");
-    es.addEventListener("event", (e) => {
-      const d = JSON.parse((e as MessageEvent).data) as { ns: string; type: string };
-      if (d.type === "secrets-change") void queryClient.invalidateQueries({ queryKey: ["secrets", d.ns] });
-    });
-    return () => es.close();
-  }, [queryClient]);
-
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Secrets</h1>
-        <Link to="/" className="text-sm text-muted-foreground hover:underline">Dashboard</Link>
-      </div>
+    <div>
+      <h1 className="mb-6 text-2xl font-semibold">Secrets</h1>
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Credentials for your apps — values are encrypted, shown to no one, and readable only
@@ -154,6 +142,6 @@ function SecretsView() {
         </Card>
         <NewSecretForm onDone={invalidate} />
       </div>
-    </main>
+    </div>
   );
 }
