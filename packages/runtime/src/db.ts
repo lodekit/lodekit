@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
+import { applyMigrations } from "./migrations.js";
+import { APP_DB_CHAIN } from "./migrations/appDb.js";
 
 // Cache key is the resolved db file path, not the app id alone.
 // This ensures two calls with the same app id but different dataDir
@@ -16,6 +18,8 @@ export function getAppDb(dataDir: string, appId: string): Database.Database {
   fs.mkdirSync(appDataDir, { recursive: true });
   const db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
+  applyMigrations(db, APP_DB_CHAIN);
   connections.set(dbPath, { appId, db });
   return db;
 }

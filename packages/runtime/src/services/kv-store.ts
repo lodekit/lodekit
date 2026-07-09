@@ -37,56 +37,17 @@ const toEntry = (r: Row): Entry => ({
   expiresAt: r.expires_at,
 });
 
-const ensured = new WeakSet<Database.Database>();
-
 export function getKv(dataDir: string, appId: string): Database.Database {
-  const db = getAppDb(dataDir, appId);
-  if (!ensured.has(db)) {
-    ensureSchema(db);
-    ensured.add(db);
-  }
-  return db;
-}
-
-// Creates the v2 table, or migrates a POC-era (key,value) table in place by
-// adding the metadata columns (timestamps backfilled with "now"). Migrated
-// columns lack NOT NULL — acceptable; all writers populate them.
-export function ensureSchema(db: Database.Database): void {
-  db.exec(
-    `CREATE TABLE IF NOT EXISTS _lodekit_store (
-      key        TEXT PRIMARY KEY,
-      value      TEXT NOT NULL,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      expires_at INTEGER
-    )`
-  );
-  const cols = new Set(
-    (db.prepare("PRAGMA table_info(_lodekit_store)").all() as { name: string }[]).map((c) => c.name)
-  );
-  const missing = ["created_at", "updated_at", "expires_at"].filter((c) => !cols.has(c));
-  if (missing.length > 0) {
-    const migrate = db.transaction(() => {
-      for (const col of missing) db.exec(`ALTER TABLE _lodekit_store ADD COLUMN ${col} INTEGER`);
-      if (missing.includes("created_at")) {
-        db.prepare("UPDATE _lodekit_store SET created_at = ?, updated_at = ? WHERE created_at IS NULL")
-          .run(Date.now(), Date.now());
-      }
-    });
-    migrate();
-  }
-  db.exec(
-    "CREATE INDEX IF NOT EXISTS idx_store_expires ON _lodekit_store(expires_at) WHERE expires_at IS NOT NULL"
-  );
+  return getAppDb(dataDir, appId); // schema guaranteed by the app-db migration chain
 }
 
 export function get(db: Database.Database, key: string): { found: boolean; entry?: Entry } {
   const row = db
-    .prepare("SELECT key, value, created_at, updated_at, expires_at FROM _lodekit_store WHERE key = ?")
+    .prepare("SELECT key, value, created_at, updated_at, expires_at FROM _kv WHERE key = ?")
     .get(key) as Row | undefined;
   if (!row) return { found: false };
   if (row.expires_at !== null && row.expires_at <= Date.now()) {
-    db.prepare("DELETE FROM _lodekit_store WHERE key = ?").run(key);
+    db.prepare("DELETE FROM _kv WHERE key = ?").run(key);
     return { found: false };
   }
   return { found: true, entry: toEntry(row) };
@@ -101,7 +62,7 @@ export function set(
   const now = Date.now();
   const expiresAt = opts.ttl != null ? now + opts.ttl * 1000 : null;
   db.prepare(
-    `INSERT INTO _lodekit_store (key, value, created_at, updated_at, expires_at)
+    `INSERT INTO _kv (key, value, created_at, updated_at, expires_at)
      VALUES (@key, @value, @now, @now, @expiresAt)
      ON CONFLICT(key) DO UPDATE SET
        value = excluded.value, updated_at = excluded.updated_at, expires_at = excluded.expires_at`
@@ -109,7 +70,7 @@ export function set(
 }
 
 export function del(db: Database.Database, key: string): boolean {
-  return db.prepare("DELETE FROM _lodekit_store WHERE key = ?").run(key).changes > 0;
+  return db.prepare("DELETE FROM _kv WHERE key = ?").run(key).changes > 0;
 }
 
 // Synchronous transaction = race-free in the single runtime process.
@@ -125,7 +86,7 @@ export function incr(db: Database.Database, key: string, by = 1): number {
     const next = base + by;
     const now = Date.now();
     db.prepare(
-      `INSERT INTO _lodekit_store (key, value, created_at, updated_at, expires_at)
+      `INSERT INTO _kv (key, value, created_at, updated_at, expires_at)
        VALUES (?, ?, ?, ?, NULL)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
     ).run(key, JSON.stringify(next), now, now);
@@ -142,7 +103,7 @@ export function list(
   const like = (opts.prefix ?? "").replace(/[\\%_]/g, (m) => "\\" + m) + "%";
   const rows = db
     .prepare(
-      `SELECT key, value, created_at, updated_at, expires_at FROM _lodekit_store
+      `SELECT key, value, created_at, updated_at, expires_at FROM _kv
        WHERE key LIKE ? ESCAPE '\\' AND key > ?
          AND (expires_at IS NULL OR expires_at > ?)
        ORDER BY key ASC LIMIT ?`
@@ -175,22 +136,17 @@ export function setMany(
 export function sweep(db: Database.Database): string[] {
   return (
     db
-      .prepare("DELETE FROM _lodekit_store WHERE expires_at IS NOT NULL AND expires_at <= ? RETURNING key")
+      .prepare("DELETE FROM _kv WHERE expires_at IS NOT NULL AND expires_at <= ? RETURNING key")
       .all(Date.now()) as { key: string }[]
   ).map((r) => r.key);
 }
 
 // Sweeps every open connection. Apps never opened since boot aren't swept
 // until first access — lazy expiry on read covers correctness; the sweep is
-// for space. Only connections opened through getKv have the v2 schema
-// guaranteed, so guard with ensureSchema idempotently.
+// for space.
 export function sweepAll(): { appId: string; keys: string[] }[] {
   const results: { appId: string; keys: string[] }[] = [];
   for (const { appId, db } of openDbs()) {
-    if (!ensured.has(db)) {
-      ensureSchema(db);
-      ensured.add(db);
-    }
     const keys = sweep(db);
     if (keys.length > 0) results.push({ appId, keys });
   }
