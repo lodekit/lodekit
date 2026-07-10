@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, ExternalLink, ScrollText } from "lucide-react";
 import {
   Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton,
+  Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton,
 } from "@lodekit/ui";
 import { useSSEEvent } from "../components/sse";
 
@@ -143,12 +143,15 @@ function ConnectionRow({ c, providerId, invalidate }: { c: ConnectionDoc; provid
                 </>
               ) : (
                 <>
-                  <Select value="" onValueChange={(slug) => link(s.slot, slug)}>
+                  {/* Base UI Select's onValueChange can emit null (controlled reset) — never link an empty slug. */}
+                  <Select value="" onValueChange={(slug) => { if (slug) link(s.slot, slug); }}>
                     <SelectTrigger className="w-44"><SelectValue placeholder="Link a secret…" /></SelectTrigger>
-                    <SelectContent>
-                      {(catalog.data?.secrets ?? []).map((x) => (
-                        <SelectItem key={x.slug} value={x.slug}>{x.label}</SelectItem>
-                      ))}
+                    <SelectContent alignItemWithTrigger={false}>
+                      <SelectGroup>
+                        {(catalog.data?.secrets ?? []).map((x) => (
+                          <SelectItem key={x.slug} value={x.slug}>{x.label}</SelectItem>
+                        ))}
+                      </SelectGroup>
                     </SelectContent>
                   </Select>
                   <Button variant="ghost" size="sm" onClick={() => setCreating(s.slot)}>New secret…</Button>
