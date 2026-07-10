@@ -26,6 +26,7 @@ import {
 import { getGatewayEntry, listGatewayEntries, PROVIDER_ID_RE, type GatewayEntry } from "../gatewayManifests.js";
 import { executeGatewayRequest, getConnectionHealth, GatewayRequestError, REASON_STATUS } from "../gatewayEngine.js";
 import { SecretsUnavailableError } from "../secretsStore.js";
+import { startOauth, handleOauthCallback } from "../gatewayOauth.js";
 
 export const CATALOG_NAME = "gateways";
 
@@ -246,6 +247,25 @@ export function platformGatewaysRoutes(cfg: Config) {
       }));
       return c.json({ gateways });
     })
+    .get("/oauth/callback", async (c) => {
+      try {
+        const { appId, alias } = await handleOauthCallback({
+          code: c.req.query("code"), state: c.req.query("state"), error: c.req.query("error"),
+        });
+        return c.html(
+          `<!doctype html><meta charset="utf-8"><title>Lodekit</title>
+           <body style="font-family:ui-sans-serif,system-ui;max-width:480px;margin:20vh auto;text-align:center">
+           <h2>Connected</h2><p>${appId} · ${alias} is connected. You can close this tab.</p></body>`
+        );
+      } catch (e) {
+        return c.html(
+          `<!doctype html><meta charset="utf-8"><title>Lodekit</title>
+           <body style="font-family:ui-sans-serif,system-ui;max-width:480px;margin:20vh auto;text-align:center">
+           <h2>Connection failed</h2><p>${e instanceof Error ? e.message : String(e)}</p></body>`,
+          400
+        );
+      }
+    })
     .get("/:providerId/favicon", zValidator("param", providerParam, validationHook), (c) => {
       const e = getGatewayEntry(c.req.valid("param").providerId);
       if (!e?.faviconFile) return c.json({ error: "no favicon" }, 404);
@@ -368,6 +388,11 @@ export const appGatewaysRoutes = new Hono<GatewaysEnv>()
     deleteGatewayConfig(c.var.appId, alias, slot);
     emitGatewayChange(c.var.appId, alias);
     return c.json({ ok: true as const });
+  })
+  .post("/:alias/oauth/start", zValidator("param", aliasParam, validationHook), (c) => {
+    const { alias } = c.req.valid("param");
+    requireUse(c.var.usesDb, alias);
+    return c.json(startOauth(c.var.appId, alias));
   })
   // The ONLY traffic route (spec §6). Token first — no oracle for probing
   // connection state without server-side standing.

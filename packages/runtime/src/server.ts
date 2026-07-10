@@ -25,6 +25,8 @@ import { initSecretStore } from "./secretsStore.js";
 import { registerSecretsManifest } from "./services/secret-store.js";
 import { initGatewaysStore } from "./gatewaysStore.js";
 import { initGatewayManifests } from "./gatewayManifests.js";
+import { initGatewayEngine } from "./gatewayEngine.js";
+import { initGatewayOauth } from "./gatewayOauth.js";
 import { registerGatewaysManifest } from "./services/gateways.js";
 import { applySchemaPush } from "./services/db-store.js";
 import { parseDuration } from "./duration.js";
@@ -152,6 +154,8 @@ export async function start(cfg: Config): Promise<Server> {
   initSecretStore(cfg);
   initGatewaysStore(cfg);
   initGatewayManifests(cfg);
+  initGatewayEngine(cfg);
+  initGatewayOauth(cfg);
   if (!initEventStore(cfg.dataDir)) {
     createLogger("event-store").error("events.sqlite unavailable — event bus degrades to live-only");
   }
