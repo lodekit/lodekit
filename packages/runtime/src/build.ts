@@ -8,7 +8,7 @@ import tailwind from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import type { Config } from "./config.js";
 import { emitEvent, PLATFORM_NS } from "./events.js";
-import { scanApps } from "./registry.js";
+import { isValidAppId, scanApps } from "./registry.js";
 import { startAppWorker, stopAppWorker } from "./appWorker.js";
 import { getBuildInfo } from "./buildInfo.js";
 import { emitLog } from "./logger.js";
@@ -103,6 +103,26 @@ export async function idleBuilds(): Promise<void> {
 export async function buildAll(cfg: Config): Promise<void> {
   for (const app of scanApps(cfg.appsDir)) {
     await buildApp(cfg, app.appId);
+  }
+}
+
+// Apps removed while the runtime is down never hit the watcher's unlinkDir → dropBuild
+// path, so their built output lingers under cacheDir forever. Prune at startup: a cache
+// directory whose name fits the app id grammar but has no folder in appsDir is such a
+// leftover. Directory existence is the keep criterion (mirrors unlinkDir); everything
+// outside the grammar — _dashboard, stray files — sits out of reach by construction.
+export function pruneBuildCache(cfg: Config): void {
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(cfg.cacheDir, { withFileTypes: true });
+  } catch {
+    return; // cacheDir not created yet — nothing to prune
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !isValidAppId(entry.name)) continue;
+    if (fs.statSync(path.join(cfg.appsDir, entry.name), { throwIfNoEntry: false })?.isDirectory()) continue;
+    fs.rmSync(path.join(cfg.cacheDir, entry.name), { recursive: true, force: true });
+    emitLog("info", "build", "pruned stale build cache", undefined, entry.name);
   }
 }
 

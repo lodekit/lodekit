@@ -9,7 +9,7 @@ import type { Config } from "./config.js";
 import { apiRoutes } from "./routes.js";
 import { appHost } from "./appHost.js";
 import { startWatcher } from "./watcher.js";
-import { buildAll, buildDashboard, getDashboardState, idleBuilds } from "./build.js";
+import { buildAll, buildDashboard, getDashboardState, idleBuilds, pruneBuildCache } from "./build.js";
 import { isValidAppId, scanApps } from "./registry.js";
 import { configureWorkers, forwardToWorker, stopAllWorkers, onTasksManifest, onSettingsManifest, onSecretsManifest, onDbManifest } from "./appWorker.js";
 import { every, stop } from "./scheduler.js";
@@ -164,6 +164,9 @@ export async function start(cfg: Config): Promise<Server> {
   onSecretsManifest((appId, slots, error) => registerSecretsManifest(cfg, appId, slots, error));
   onDbManifest((appId, snapshot, error) => applySchemaPush(cfg.dataDir, appId, snapshot, error));
   recoverInterruptedRuns();
+  // Before any build runs or the watcher arms: apps removed while the runtime was
+  // down never got their dropBuild, so their cache output would accumulate forever.
+  pruneBuildCache(cfg);
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
   const watcher = await startWatcher(cfg);
   // Loop intervals and retention are settings (spec §6): every() is last-wins by
