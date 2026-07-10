@@ -6,6 +6,7 @@ import type { TasksRoutes } from "@lodekit/runtime/services/tasks";
 import type { EventRoutes } from "@lodekit/runtime/services/event-store";
 import type { SettingsRoutes } from "@lodekit/runtime/services/settings";
 import { SecretUnavailableError } from "./secrets.js";
+import { GatewayError, type GatewayErrorReason } from "./gateways.js";
 
 export interface KvEntry<T = unknown> {
   key: string;
@@ -40,6 +41,36 @@ export interface Secrets {
   /** Server-only: reads a linked secret's value. Throws SecretUnavailableError
    * ("unlinked" | "unavailable") or a plain Error outside server context. */
   get(slot: string): Promise<string>;
+}
+
+export interface GatewayResponse {
+  status: number;
+  ok: boolean;
+  headers: Record<string, string>;
+  json<T = unknown>(): Promise<T>;
+  text(): Promise<string>;
+}
+
+export interface GatewayRequestOpts {
+  query?: Record<string, string | number>;
+  headers?: Record<string, string>;
+  /** string sent as-is; object JSON-serialized (content-type set); Uint8Array as base64 */
+  body?: string | Uint8Array | object;
+  timeoutMs?: number;
+}
+
+export interface ConnectionHandle {
+  get(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>;
+  post(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>;
+  put(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>;
+  patch(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>;
+  delete(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>;
+  request(desc: { method: string; path: string } & GatewayRequestOpts): Promise<GatewayResponse>;
+}
+
+/** Server-only: each property is the app's declared alias from src/gateways.ts. */
+export interface Gateways {
+  [alias: string]: ConnectionHandle;
 }
 
 export interface FileStat {
@@ -146,6 +177,7 @@ export interface LodekitClient {
   events: Events;
   settings: Settings;
   secrets: Secrets;
+  gateways: Gateways;
 }
 
 // Preserves the hand-written transport's error semantics around the hc calls:
@@ -485,5 +517,75 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
     },
   };
 
-  return { kv, files, logs, tasks, events, settings, secrets };
+  // The gateways door (spec §6): all external traffic flows through the
+  // runtime — the worker never holds a credential. Plain fetch (not hc): the
+  // token header decides access and the envelope carries arbitrary bodies.
+  const gatewayCall = async (alias: string, desc: { method: string; path: string } & GatewayRequestOpts): Promise<GatewayResponse> => {
+    const token =
+      typeof window === "undefined" && typeof process !== "undefined"
+        ? process.env?.LODEKIT_WORKER_TOKEN
+        : undefined;
+    if (!token) throw new Error("gateways are server-only; call from a server function or task");
+    const payload: Record<string, unknown> = { method: desc.method, path: desc.path };
+    if (desc.query) {
+      payload.query = Object.fromEntries(Object.entries(desc.query).map(([k, v]) => [k, String(v)]));
+    }
+    const headers: Record<string, string> = {};
+    for (const [k, v] of Object.entries(desc.headers ?? {})) headers[k.toLowerCase()] = v;
+    if (desc.body !== undefined) {
+      if (typeof desc.body === "string") payload.body = desc.body;
+      else if (desc.body instanceof Uint8Array) payload.bodyBase64 = Buffer.from(desc.body).toString("base64");
+      else {
+        payload.body = JSON.stringify(desc.body);
+        headers["content-type"] ??= "application/json";
+      }
+    }
+    if (Object.keys(headers).length > 0) payload.headers = headers;
+    if (desc.timeoutMs !== undefined) payload.timeoutMs = desc.timeoutMs;
+    const r = await fetch(`${baseUrl}/api/apps/${appId}/gateways/${encodeURIComponent(alias)}/request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-lodekit-worker-token": token },
+      body: JSON.stringify(payload),
+    });
+    const data = (await r.json().catch(() => null)) as
+      | { status: number; headers: Record<string, string>; body?: string; bodyBase64?: string; durationMs: number }
+      | { error?: string; reason?: GatewayErrorReason }
+      | null;
+    if (!r.ok) {
+      const err = data as { error?: string; reason?: GatewayErrorReason } | null;
+      if (err?.reason) throw new GatewayError(err.reason, err.error);
+      throw new Error(err?.error ?? `gateway request failed: ${r.status}`);
+    }
+    const env = data as { status: number; headers: Record<string, string>; body?: string; bodyBase64?: string };
+    const text = () =>
+      Promise.resolve(env.body ?? (env.bodyBase64 ? Buffer.from(env.bodyBase64, "base64").toString("utf8") : ""));
+    return {
+      status: env.status,
+      ok: env.status >= 200 && env.status < 300,
+      headers: env.headers,
+      text,
+      json: async <T>() => JSON.parse(await text()) as T,
+    };
+  };
+
+  const handleCache = new Map<string, ConnectionHandle>();
+  const handleFor = (alias: string): ConnectionHandle => {
+    let h = handleCache.get(alias);
+    if (!h) {
+      const call = (method: string) => (path: string, opts: GatewayRequestOpts = {}) =>
+        gatewayCall(alias, { method, path, ...opts });
+      h = {
+        get: call("GET"), post: call("POST"), put: call("PUT"),
+        patch: call("PATCH"), delete: call("DELETE"),
+        request: (desc) => gatewayCall(alias, desc),
+      };
+      handleCache.set(alias, h);
+    }
+    return h;
+  };
+  const gateways: Gateways = new Proxy({} as Gateways, {
+    get: (_t, alias) => (typeof alias === "string" ? handleFor(alias) : undefined),
+  });
+
+  return { kv, files, logs, tasks, events, settings, secrets, gateways };
 }

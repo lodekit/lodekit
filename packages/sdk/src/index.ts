@@ -17,6 +17,10 @@ export type {
   LodekitEvent,
   Settings,
   Secrets,
+  Gateways,
+  ConnectionHandle,
+  GatewayResponse,
+  GatewayRequestOpts,
 } from "./client.js";
 export { task } from "./task.js";
 export type { TaskConfig, DefinedTask } from "./task.js";
@@ -52,6 +56,10 @@ export const secrets = client.secrets;
 _bindSecrets(client.secrets);
 export { defineSecrets, secret, SecretUnavailableError } from "./secrets.js";
 export type { DefinedSecrets, SecretSlots, SecretSlotDef } from "./secrets.js";
+
+export const gateways = client.gateways;
+export { defineGateways, gateway, GatewayError } from "./gateways.js";
+export type { DefinedGateways, GatewayUses, GatewayUse, GatewayErrorReason } from "./gateways.js";
 
 /** The app's own app id, injected by the toolchain at build time ("" outside an app build). */
 export const appId = injectedAppId;
