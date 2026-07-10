@@ -1,0 +1,14 @@
+{
+  "name": "OpenWeatherMap",
+  "website": "https://openweathermap.org",
+  "base_url": "https://api.openweathermap.org",
+  "auth": { "kind": "api_key", "in": "query", "param": "appid", "slot": "api_key" },
+  "slots": {
+    "api_key": {
+      "kind": "secret",
+      "label": "API key",
+      "description": "An OpenWeatherMap API key — the free tier works."
+    }
+  },
+  "limits": { "rate": "60/min" }
+}

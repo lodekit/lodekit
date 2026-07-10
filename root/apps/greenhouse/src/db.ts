@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, primaryKey, index } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, primaryKey, index, real } from "drizzle-orm/sqlite-core";
 import { createDb } from "@lodekit/sdk";
 
 export const plants = sqliteTable("plants", {
@@ -45,7 +45,19 @@ export const journal = sqliteTable(
   (t) => [index("journal_plant_at").on(t.plantId, t.at)]
 );
 
-export const db = createDb({ plants, careRules, careState, journal });
+export const weatherLog = sqliteTable("weather_log", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  day: text("day").notNull().unique(), // YYYY-MM-DD, local
+  high: real("high").notNull(),        // °C
+  low: real("low").notNull(),
+  humidity: integer("humidity").notNull(), // %
+  wind: real("wind").notNull(),        // m/s
+  rained: integer("rained", { mode: "boolean" }).notNull(),
+  recordedAt: integer("recorded_at").notNull(),
+});
+
+export const db = createDb({ plants, careRules, careState, journal, weatherLog });
 
 export type Plant = typeof plants.$inferSelect;
 export type CareStateRow = typeof careState.$inferSelect;
+export type WeatherDay = typeof weatherLog.$inferSelect;

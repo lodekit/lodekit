@@ -57,6 +57,14 @@ is the living checklist — extend it with every new surface.
 | `logs.debug` / `info` / `warn` / `error` | compost sweep / care & seed / wilting & reset / upload failures + Shed demo row |
 | `appId` export | Potting Shed's SDK exercises card |
 | `@lodekit/ui`, `theme.css` | throughout |
+| `src/gateways.ts` + `defineGateways` | the `weather` + `oauth_demo` connections |
+| `gateways.<alias>.get` (server-only, host-side key injection) | weather_log task, Shed identity card |
+| gateway secret slot (link = grant) | OpenWeatherMap `api_key` — retires the deferred secret-store DoD |
+| gateway config slot | Duende demo `client_id` |
+| the polling recipe (task → gateway → db) | weather_log → `weather_log` table → Sky Journal |
+| `GatewayError` handling (`unconfigured` → calm state) | weather_log no-op, Shed hint states |
+| OAuth connect / transparent refresh / needs-reauth | Duende demo (Shed card) |
+| `defineSettings` + `settings.get` | `weather_location` |
 
 **Pending (showcase Part 2, spec §5):** `events.emit` (client+server, `{ttl}`),
 `events.list` (`before`/`after`/server-side), the Ledger, While You Were Away, and
@@ -67,6 +75,8 @@ is the living checklist — extend it with every new surface.
 `settings.get`/`all`/`watch` reads — landed in parallel with the showcase slice; needs a
 Greenhouse chapter of its own.
 
-**Pending (secret-store slice, `2026-07-07-secret-store-design.md` §11):** declare a
-`weather_api_key` slot + linked server-side read — deferred to the Greenhouse
-integrations chapter (roadmap.md).
+**Retired (gateways slice, `2026-07-10-gateways-design.md` §14):** the secret-store
+DoD (declare + linked server-side read) now lives through the OpenWeatherMap
+gateway's `api_key` slot. Settings gets its first Greenhouse declaration
+(`weather_location`); `settings.watch` and the richer field types still await a
+dedicated settings chapter.

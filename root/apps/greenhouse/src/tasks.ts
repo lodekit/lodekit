@@ -1,6 +1,6 @@
-import { task, kv, files, logs } from "@lodekit/sdk";
+import { task, kv, files, logs, gateways, GatewayError, settings } from "@lodekit/sdk";
 import { and, count, desc, eq, inArray, isNull, lte } from "drizzle-orm";
-import { db, plants, careRules, careState, journal } from "./db";
+import { db, plants, careRules, careState, journal, weatherLog } from "./db";
 import { parseEvery, streakKey, type CareKind } from "./lib";
 
 /** Reminder for one plant + care kind, enqueued by care actions at the next due time. */
@@ -91,5 +91,49 @@ export const compost_sweep = task({
       }
     }
     logs.debug("compost swept", { files: sweptFiles, journalEntries: sweptRows });
+  },
+});
+
+/** Sky Journal (gateways spec §14): the polling recipe — a scheduled task
+ *  calls through the gateway, writes domain records, and the UI reads the
+ *  table. Unconfigured is a calm no-op, not a failed run. */
+export const weather_log = task({
+  cron: "0 7 * * *",
+  catchUp: true,
+  run: async () => {
+    const location = (await settings.get<string>("weather_location")) ?? "Lisbon,pt";
+    let res;
+    try {
+      res = await gateways.weather.get("/data/2.5/forecast", {
+        query: { q: location, units: "metric" },
+      });
+    } catch (e) {
+      if (e instanceof GatewayError && (e.reason === "unconfigured" || e.reason === "unavailable")) {
+        logs.info("sky journal idle — link an OpenWeatherMap key on the gateway page", { reason: e.reason });
+        return;
+      }
+      throw e; // transient failures fail the run; task retries handle it
+    }
+    if (!res.ok) {
+      logs.warn("weather fetch failed", { status: res.status });
+      return;
+    }
+    const data = await res.json<{
+      list: { dt: number; main: { temp_min: number; temp_max: number; humidity: number }; wind: { speed: number }; rain?: Record<string, number> }[];
+    }>();
+    const day = new Date().toISOString().slice(0, 10);
+    const today = data.list.filter((x) => new Date(x.dt * 1000).toISOString().slice(0, 10) === day);
+    if (today.length === 0) return;
+    const row = {
+      day,
+      high: Math.max(...today.map((x) => x.main.temp_max)),
+      low: Math.min(...today.map((x) => x.main.temp_min)),
+      humidity: Math.round(today.reduce((s, x) => s + x.main.humidity, 0) / today.length),
+      wind: Math.max(...today.map((x) => x.wind.speed)),
+      rained: today.some((x) => Object.values(x.rain ?? {}).some((v) => v > 0)),
+      recordedAt: Date.now(),
+    };
+    await db.insert(weatherLog).values(row).onConflictDoUpdate({ target: weatherLog.day, set: row });
+    logs.info("sky journal updated", { day, high: row.high, low: row.low, rained: row.rained });
   },
 });
