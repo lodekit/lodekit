@@ -172,6 +172,13 @@ above; the remainder:
   versions requires `pnpm rebuild better-sqlite3` (ABI mismatch otherwise).
 
 ## Other deferred items
+- **Scraping as its own service** — sourcing data from parties with no API (e.g. building
+  a custom feed from a handful of Instagram accounts) is deliberately **out of scope for
+  the integrations service**: integrations cover declared HTTP APIs with real auth
+  (static credentials, OAuth); session-cookie smuggling and page scraping don't fit its
+  provider/connection/guardrails model. When it matters, design scraping as a separate
+  service with its own contract (fetching + extraction, session handling, politeness/
+  rate limits, change detection feeding Events).
 - **Revisit "hosting" terminology holistically across the platform** — the dashboard's
   settings section was renamed to **Engine** (UI revamp, 2026-07-10; person-facing label
   only — see the Engine entry in `context.md`), but the underlying vocabulary still says
