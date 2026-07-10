@@ -10,10 +10,19 @@ import { fileURLToPath } from "node:url";
 
 // The one place the Lodekit-local Node version is pinned (spec §3).
 const NODE_VERSION = "24.12.0";
-const NODE_DIST = `node-v${NODE_VERSION}-darwin-arm64`;
-// sha256 of the tarball above, pinned with the version (verified against
-// nodejs.org's SHASUMS256.txt when the pin was set).
-const NODE_SHA256 = "319f221adc5e44ff0ed57e8a441b2284f02b8dc6fc87b8eb92a6a93643fd8080";
+// sha256 per dist tarball, pinned with the version (verified against
+// nodejs.org's SHASUMS256.txt when each pin was set).
+const NODE_SHA256S = {
+  "darwin-arm64": "319f221adc5e44ff0ed57e8a441b2284f02b8dc6fc87b8eb92a6a93643fd8080",
+  "darwin-x64": "b82ea4c62fd08e250cab59d625e75d77cc5b0a3d60c6698ebee4545c88a169c5",
+};
+// Host by default — CI builds each arch on a native runner. LODEKIT_BUNDLE_TARGET
+// overrides for experiments; a cross target fails assertNativeModule by design.
+const TARGET = process.env.LODEKIT_BUNDLE_TARGET ?? `${process.platform}-${process.arch}`;
+const NODE_DIST = `node-v${NODE_VERSION}-${TARGET}`;
+const NODE_SHA256 = NODE_SHA256S[TARGET];
+if (!NODE_SHA256) throw new Error(`No pinned Node dist for target ${TARGET}`);
+const MARKER_VALUE = `${NODE_VERSION}-${TARGET}`;
 
 const managerDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(managerDir, "..");
@@ -48,7 +57,7 @@ function assertNodeVersion() {
 
 async function fetchNode() {
   const marker = path.join(nodeDir, ".lodekit-node-version");
-  if (fs.existsSync(marker) && fs.readFileSync(marker, "utf8") === NODE_VERSION) return;
+  if (fs.existsSync(marker) && fs.readFileSync(marker, "utf8") === MARKER_VALUE) return;
   fs.rmSync(nodeDir, { recursive: true, force: true });
   fs.mkdirSync(cacheDir, { recursive: true });
   const tarball = path.join(cacheDir, `${NODE_DIST}.tar.gz`);
@@ -67,7 +76,7 @@ async function fetchNode() {
   run(`tar -xzf "${tarball}" -C "${cacheDir}"`);
   fs.mkdirSync(buildDir, { recursive: true });
   fs.renameSync(path.join(cacheDir, NODE_DIST), nodeDir);
-  fs.writeFileSync(marker, NODE_VERSION);
+  fs.writeFileSync(marker, MARKER_VALUE);
 }
 
 function buildPayload() {
