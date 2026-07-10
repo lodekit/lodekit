@@ -113,7 +113,8 @@ Simplicity never means cutting safety.
 - **Releases:** `/release` (skill at `.agents/skills/release/SKILL.md`) assembles a
   semver release PR with product-level notes — one changelog entry per shipped spec,
   not per commit. Merging it triggers the GitHub release build; the workflow is the
-  only creator of `v*` tags.
+  only creator of `v*` tags. Portable agent skills live in `.agents/skills/` (Claude Code
+  discovers them via the `.claude/skills` symlinks).
 - **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
 - **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
   showcase app exercises it (`root/readme.md` holds the living coverage checklist).
