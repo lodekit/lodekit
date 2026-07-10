@@ -17,7 +17,7 @@ import { initSettingsStore } from "../src/services/settings.js";
 import { initLogStore, queryLogs } from "../src/logStore.js";
 
 let root: string, state: string, stub: http.Server, stubPort: number;
-let mode: "echo" | "fail500" | "slow" | "big" | "unauthorized" | "retry-after";
+let mode: "echo" | "fail500" | "slow" | "big" | "unauthorized" | "retry-after" | "redirect" | "drip";
 let hits: { url: string; auth: string | null }[] = [];
 
 function cfg(): Config {
@@ -55,6 +55,13 @@ beforeEach(async () => {
     if (mode === "retry-after") { res.writeHead(429, { "Retry-After": "2" }); res.end("{}"); return; }
     if (mode === "slow") { setTimeout(() => { res.writeHead(200); res.end("{}"); }, 300); return; }
     if (mode === "big") { res.writeHead(200); res.end("x".repeat(5000)); return; }
+    if (mode === "redirect") {
+      const qs = req.url?.includes("?") ? req.url.slice(req.url.indexOf("?")) : "";
+      res.writeHead(302, { Location: `/next${qs}` });
+      res.end();
+      return;
+    }
+    if (mode === "drip") { res.writeHead(200, { "Content-Type": "text/plain" }); res.write("chunk"); return; }
     res.writeHead(200, { "Content-Type": "application/json", "Set-Cookie": "session=nope" });
     res.end(JSON.stringify({ url: req.url, auth: req.headers.authorization ?? null }));
   });
@@ -120,6 +127,31 @@ describe("auth injection + egress", () => {
     await expect(
       executeGatewayRequest(APP, "probe", { method: "GET", path: "/x", headers: { Authorization: "Bearer mine" } })
     ).rejects.toThrow(/owns the/i);
+  });
+
+  it("a caller-supplied authorization header is rejected even when the gateway's auth is none", async () => {
+    writeManifest("stub", stubManifest({ kind: "none" }, {}));
+    initGatewayManifests(cfg());
+    declare("stub");
+    await expect(
+      executeGatewayRequest(APP, "probe", { method: "GET", path: "/x", headers: { authorization: "Bearer mine" } })
+    ).rejects.toThrow(/owns the authorization/);
+  });
+
+  it("a redirect Location echoing the query string masks the injected key in the envelope", async () => {
+    writeManifest("stub", stubManifest(
+      { kind: "api_key", in: "query", param: "key", slot: "api_key" },
+      { api_key: { kind: "secret", label: "Key" } }
+    ));
+    initGatewayManifests(cfg());
+    declare("stub");
+    createSecret({ label: "Stub key", value: "sk-leak-me" });
+    setGatewayLink(APP, "probe", "api_key", "stub-key");
+    mode = "redirect";
+    const env = await executeGatewayRequest(APP, "probe", { method: "GET", path: "/hello" });
+    expect(env.status).toBe(302);
+    expect(env.headers["location"]).toContain("•••");
+    expect(env.headers["location"]).not.toContain("sk-leak-me");
   });
 
   it("base_url from a config slot works; unset config slot → unconfigured", async () => {
@@ -200,6 +232,24 @@ describe("guards", () => {
     setGatewayTuningForTest({ maxResponseBytes: 1000 });
     expect(await reason(executeGatewayRequest(APP, "probe", { method: "GET", path: "/x" }))).toBe("too_large");
   });
+
+  it("a timeout mid-body is typed, logged, and carries no URL in its message", async () => {
+    writeManifest("stub", stubManifest({ kind: "none" }, {}));
+    initGatewayManifests(cfg());
+    declare("stub");
+    mode = "drip";
+    let err: unknown;
+    try {
+      await executeGatewayRequest(APP, "probe", { method: "GET", path: "/x", timeoutMs: 100 });
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeInstanceOf(GatewayRequestError);
+    expect((err as GatewayRequestError).reason).toBe("timeout");
+    expect((err as GatewayRequestError).message).not.toContain(`127.0.0.1:${stubPort}`);
+    const { records } = queryLogs({ app: APP, source: "gateway:stub", limit: 10 });
+    expect(records.some((r) => (r.fields as Record<string, unknown>)?.outcome === "timeout")).toBe(true);
+  });
 });
 
 describe("observability", () => {
@@ -224,5 +274,29 @@ describe("observability", () => {
     expect(fields.provider).toBe("stub");
     expect(fields.alias).toBe("probe");
     expect(fields.status).toBe(200);
+  });
+
+  it("the composed basic-auth header value is masked in captured bodies", async () => {
+    writeManifest("stub", stubManifest(
+      { kind: "basic", username_slot: "user", password_slot: "pass" },
+      { user: { kind: "secret", label: "U" }, pass: { kind: "secret", label: "P" } }
+    ));
+    initGatewayManifests(cfg());
+    declare("stub");
+    createSecret({ label: "User", value: "alice" });
+    createSecret({ label: "Pass", value: "hunter2" });
+    setGatewayLink(APP, "probe", "user", "user");
+    setGatewayLink(APP, "probe", "pass", "pass");
+    setGatewayTuningForTest({ captureBodies: true });
+    // echo mode reflects the Authorization header into the response body
+    const env = await executeGatewayRequest(APP, "probe", { method: "GET", path: "/echo" });
+    expect(env.status).toBe(200);
+    const b64 = Buffer.from("alice:hunter2").toString("base64");
+    const { records } = queryLogs({ app: APP, source: "gateway:stub", limit: 10 });
+    expect(records.length).toBe(1);
+    const flat = JSON.stringify(records[0]);
+    expect(flat).not.toContain(b64);
+    expect(flat).not.toContain("hunter2");
+    expect(flat).toContain("•••");
   });
 });

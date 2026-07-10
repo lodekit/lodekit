@@ -233,20 +233,20 @@ async function injectAuth(
     return [v];
   }
   if (a.kind === "bearer") {
-    ownedHeader("authorization");
     const v = slotValue(manifest, appId, alias, a.slot);
     headers["authorization"] = `Bearer ${v}`;
     return [v];
   }
   if (a.kind === "basic") {
-    ownedHeader("authorization");
     const user = slotValue(manifest, appId, alias, a.username_slot);
     const pass = slotValue(manifest, appId, alias, a.password_slot);
-    headers["authorization"] = `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}`;
-    return [user, pass];
+    // The composed header value rides the redact list too — providers echo
+    // Authorization back often enough (debug endpoints, error pages).
+    const composed = `Basic ${Buffer.from(`${user}:${pass}`).toString("base64")}`;
+    headers["authorization"] = composed;
+    return [user, pass, composed];
   }
   // oauth2 — Task 8's module provides tokens (and transparent refresh).
-  ownedHeader("authorization");
   if (!oauthTokenProvider) throw new GatewayRequestError("unconfigured", "OAuth is not available");
   const { token, redact } = await oauthTokenProvider(providerId, manifest, appId, alias);
   headers["authorization"] = `Bearer ${token}`;
@@ -273,12 +273,29 @@ async function readCapped(res: Response, cap: number): Promise<Buffer> {
 
 const TEXTUAL = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded)|application\/[a-z0-9.+-]*\+(json|xml))/i;
 
-function scrub(s: string, redact: string[]): string {
+// Value masking only — headers must stay intact apart from the redaction.
+function mask(s: string, redact: string[]): string {
   let out = s;
   for (const v of redact) {
     if (v) out = out.split(v).join("•••");
   }
-  return out.slice(0, CAPTURE_TRUNCATE);
+  return out;
+}
+
+// Capture scrubbing — masked AND truncated (log records, not envelopes).
+function scrub(s: string, redact: string[]): string {
+  return mask(s, redact).slice(0, CAPTURE_TRUNCATE);
+}
+
+// Injected values plus their URL-encoded forms — a credential that went out in
+// a query param comes back percent-encoded in Location headers and error bodies.
+function expandRedact(values: string[]): string[] {
+  const out = [...values];
+  for (const v of values) {
+    const enc = encodeURIComponent(v);
+    if (enc !== v) out.push(enc);
+  }
+  return out;
 }
 
 function parseRetryAfter(h: string | null, now: number): number | null {
@@ -341,10 +358,33 @@ export async function executeGatewayRequest(
     for (const [k, v] of Object.entries(desc.headers ?? {})) {
       const lk = k.toLowerCase();
       if (lk === "host" || lk === "cookie") continue; // never caller-suppliable
+      if (lk === "authorization" || lk === "proxy-authorization") {
+        // Unconditional, whatever the manifest's auth kind — credentials are
+        // host-side by invariant, never smuggled in from the worker.
+        throw new GatewaysError("credentials belong in gateway slots — the gateway owns the authorization header");
+      }
       headers[lk] = v;
     }
     const url = assembleUrl(manifest, appId, alias, desc);
-    const redact = await injectAuth(providerId, manifest, appId, alias, url, headers);
+    const redact = expandRedact(await injectAuth(providerId, manifest, appId, alias, url, headers));
+    // Network/timeout failures — during fetch or mid-body. Settles the breaker
+    // (a provider failure), logs the scrubbed detail host-side, and returns a
+    // typed error with a STATIC message: undici messages can embed the request
+    // URL, which may carry an injected query credential.
+    const upstreamFailure = (e: unknown): GatewayRequestError => {
+      const timedOut = e instanceof Error && e.name === "TimeoutError";
+      breakerSettled = true;
+      const opened = breaker.recordFailure();
+      if (opened) emitGatewayHealth(PLATFORM_NS, { provider: providerId, breaker: "open" });
+      const outcome = timedOut ? "timeout" : "network";
+      record("error", outcome, null, Date.now() - started, {
+        error: scrub(String(e instanceof Error ? e.message : e), redact),
+      });
+      return new GatewayRequestError(
+        timedOut ? "timeout" : "network",
+        timedOut ? `gateway request timed out after ${timeoutMs} ms` : "upstream network error"
+      );
+    };
     const body = desc.bodyBase64 !== undefined ? Buffer.from(desc.bodyBase64, "base64")
       : desc.body !== undefined ? desc.body : undefined;
     let res: Response;
@@ -357,15 +397,18 @@ export async function executeGatewayRequest(
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (e) {
-      const timedOut = e instanceof Error && e.name === "TimeoutError";
-      breakerSettled = true;
-      const opened = breaker.recordFailure();
-      if (opened) emitGatewayHealth(PLATFORM_NS, { provider: providerId, breaker: "open" });
-      const outcome = timedOut ? "timeout" : "network";
-      record("error", outcome, null, Date.now() - started);
-      throw new GatewayRequestError(timedOut ? "timeout" : "network", e instanceof Error ? e.message : String(e));
+      throw upstreamFailure(e);
     }
-    const bytes = await readCapped(res, t.maxResponseBytes);
+    let bytes: Buffer;
+    try {
+      bytes = await readCapped(res, t.maxResponseBytes);
+    } catch (e) {
+      // The timeout signal can fire mid-body (headers fast, body trickling),
+      // and resets mid-stream reject reader.read() with raw errors — both must
+      // stay inside the taxonomy, with breaker accounting and a log record.
+      if (e instanceof GatewayRequestError) throw e; // too_large — the outer catch records it
+      throw upstreamFailure(e);
+    }
     const durationMs = Date.now() - started;
 
     // Breaker accounting: 5xx/network are provider failures; everything else
@@ -393,9 +436,11 @@ export async function executeGatewayRequest(
       if (until) bucketFor(providerId, manifest, t).pauseUntil(until);
     }
 
+    // Every outgoing header value is masked: with redirect "manual", a
+    // provider's Location can echo the query string — injected key included.
     const outHeaders: Record<string, string> = {};
     res.headers.forEach((v, k) => {
-      if (k.toLowerCase() !== "set-cookie") outHeaders[k.toLowerCase()] = v;
+      if (k.toLowerCase() !== "set-cookie") outHeaders[k.toLowerCase()] = mask(v, redact);
     });
     const contentType = res.headers.get("content-type") ?? "";
     const textual = TEXTUAL.test(contentType);
@@ -424,6 +469,11 @@ export async function executeGatewayRequest(
     }
     if (e instanceof GatewayRequestError && e.reason === "too_large") {
       record("error", "too_large", null, Date.now() - started);
+    }
+    // Guard rejections after entry resolution (path escape, owned header/param)
+    // leave evidence too; pre-resolution throws (unknown alias) never get here.
+    if (e instanceof GatewaysError) {
+      record("warn", "rejected", null, Date.now() - started);
     }
     throw e;
   } finally {
