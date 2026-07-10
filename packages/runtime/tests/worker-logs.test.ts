@@ -28,7 +28,7 @@ beforeEach(() => {
   cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "lk-wl-cache-"));
   stateDir = fs.mkdtempSync(path.join(os.tmpdir(), "lk-wl-state-"));
   initLogStore(stateDir);
-  cfg = { root: "", appsDir: "", dataDir: "", cacheDir, stateDir, port: 0, baseUrl: "", secretsKeyProvider: "file" };
+  cfg = { root: "", appsDir: "", dataDir: "", cacheDir, stateDir, port: 0, baseUrl: "", secretsKeyProvider: "file", gatewaysDir: "" };
   const serverDir = path.join(cacheDir, "loggy", "server");
   fs.mkdirSync(serverDir, { recursive: true });
   fs.writeFileSync(path.join(serverDir, "package.json"), '{"type":"module"}');

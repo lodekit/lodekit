@@ -21,7 +21,7 @@ let cfg: Config;
 
 beforeAll(async () => {
   cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "lodekit-worker-"));
-  cfg = { root: "", appsDir: "", dataDir: "", cacheDir, stateDir: "", port: 0, baseUrl: "", secretsKeyProvider: "file" };
+  cfg = { root: "", appsDir: "", dataDir: "", cacheDir, stateDir: "", port: 0, baseUrl: "", secretsKeyProvider: "file", gatewaysDir: "" };
   initEventStore(path.join(cacheDir, "data")); // capture server-state events durably
   await buildStart({
     rootDir: fixture, outDir: path.join(cacheDir, "start-app"),

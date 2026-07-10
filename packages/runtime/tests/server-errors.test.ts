@@ -19,6 +19,7 @@ beforeEach(async () => {
     stateDir: path.join(root, ".state"),
     port: 0,
     baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
+    gatewaysDir: path.join(root, "gateways"),
   };
   const app = createApp(cfg).get("/boom", () => {
     throw new Error("kaboom");

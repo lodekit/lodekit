@@ -48,6 +48,7 @@ beforeEach(async () => {
   cfg = {
     root, appsDir: path.join(root, "apps"), dataDir: path.join(root, "data"),
     cacheDir: cache, stateDir: path.join(root, ".state"), port: 0, baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
+    gatewaysDir: path.join(root, "gateways"),
   };
   await new Promise<void>((r) => { server = createServer(cfg).listen(0, () => r()); });
   const addr = server.address();

@@ -19,6 +19,7 @@ beforeEach(() => {
     stateDir: path.join(root, "state"),
     port: 0,
     baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
+    gatewaysDir: path.join(root, "gateways"),
   };
   initLogStore(cfg.stateDir);
   app = new Hono().route("/api", apiRoutes(cfg));

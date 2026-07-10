@@ -19,6 +19,7 @@ beforeEach(() => {
     stateDir: path.join(root, ".state"),
     port: 7777,
     baseUrl: "http://lodekit.localhost:7777", secretsKeyProvider: "file",
+    gatewaysDir: path.join(root, "gateways"),
   };
 });
 afterEach(() => {

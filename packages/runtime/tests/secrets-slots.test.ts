@@ -16,6 +16,7 @@ function cfg(): Config {
     root, appsDir: path.join(root, "apps"), dataDir: path.join(root, "data"),
     cacheDir: path.join(root, "cache"), stateDir: state, port: 0,
     baseUrl: "http://localhost:0", secretsKeyProvider: "file",
+    gatewaysDir: path.join(root, "gateways"),
   };
 }
 const APP = "app-a";

@@ -20,6 +20,7 @@ beforeEach(async () => {
     stateDir: path.join(root, ".state"),
     port: 0,
     baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
+    gatewaysDir: path.join(root, "gateways"),
   };
   await new Promise<void>((resolve) => {
     server = createServer(cfg).listen(0, () => resolve());

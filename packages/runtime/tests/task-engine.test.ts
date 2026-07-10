@@ -42,6 +42,7 @@ beforeEach(() => {
     stateDir: path.join(root, ".state"),
     port: 0,
     baseUrl: "", secretsKeyProvider: "file",
+    gatewaysDir: path.join(root, "gateways"),
   };
   clock = T0;
   workerUp = true;

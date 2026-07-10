@@ -8,7 +8,7 @@ import type { Config } from "../src/config.js";
 function fileCfg(stateDir: string): Config {
   return {
     root: "/x", appsDir: "/x/apps", dataDir: "/x/data", cacheDir: "/x/cache",
-    stateDir, port: 0, baseUrl: "http://localhost:0", secretsKeyProvider: "file",
+    stateDir, port: 0, baseUrl: "http://localhost:0", secretsKeyProvider: "file", gatewaysDir: "/x/gateways",
   };
 }
 

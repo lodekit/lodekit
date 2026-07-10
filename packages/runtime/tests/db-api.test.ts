@@ -21,6 +21,7 @@ beforeEach(async () => {
     stateDir: path.join(root, ".state"),
     port: 0,
     baseUrl: "http://lodekit.localhost:0", secretsKeyProvider: "file",
+    gatewaysDir: path.join(root, "gateways"),
   };
   // /api/events/history reads through the event store singleton — createServer()
   // (unlike start()) doesn't open it, so the change-feed tests below need it explicitly.
