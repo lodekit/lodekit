@@ -6,6 +6,18 @@ import { useSSEEvent } from "../components/sse";
 
 export const Route = createFileRoute("/gateways")({ component: GatewaysView });
 
+// Belt over the manifest schema's http(s)-only rule: never render an anchor
+// whose href doesn't parse as http(s) — a hostile manifest must not become a
+// javascript: link.
+function safeHttpUrl(s: string): string | null {
+  try {
+    const u = new URL(s);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
 // Shapes mirror services/gateways.ts platform payloads exactly.
 interface GatewaySummary {
   providerId: string;
@@ -53,7 +65,9 @@ function GatewaysView() {
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {list.map((g) => (
+          {list.map((g) => {
+            const website = g.website ? safeHttpUrl(g.website) : null;
+            return (
             <Card key={g.providerId} className="relative h-full transition-colors hover:bg-accent/50">
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -74,16 +88,17 @@ function GatewaysView() {
                 </CardDescription>
                 <div className="relative flex flex-wrap items-center gap-2 empty:hidden">
                   {g.error && <Badge variant="destructive">manifest error</Badge>}
-                  {g.website && (
-                    <a href={g.website} target="_blank" rel="noreferrer"
+                  {website && (
+                    <a href={website} target="_blank" rel="noreferrer"
                        className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:underline">
-                      {new URL(g.website).hostname} <ExternalLink aria-hidden="true" className="size-3" />
+                      {new URL(website).hostname} <ExternalLink aria-hidden="true" className="size-3" />
                     </a>
                   )}
                 </div>
               </CardHeader>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

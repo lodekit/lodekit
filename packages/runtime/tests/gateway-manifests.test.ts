@@ -68,6 +68,21 @@ describe("manifest schema", () => {
     expect(manifestSchema.safeParse(oauth).success).toBe(true);
   });
 
+  it("website and oauth2 URLs are http(s) only; http oauth2 endpoints only for private hosts", () => {
+    expect(manifestSchema.safeParse({ ...OWM, website: "javascript:alert(1)" }).success).toBe(false);
+    const oauth = (authorization_url: string) => ({
+      name: "X", base_url: "https://x.example",
+      auth: {
+        kind: "oauth2", authorization_url,
+        token_url: "https://x.example/token", client_id_slot: "client_id",
+      },
+      slots: { client_id: { kind: "config", label: "Client id" } },
+    });
+    expect(manifestSchema.safeParse(oauth("http://public.example/auth")).success).toBe(false);
+    expect(manifestSchema.safeParse(oauth("http://127.0.0.1:8123/auth")).success).toBe(true);
+    expect(manifestSchema.safeParse(oauth("javascript:alert(1)")).success).toBe(false);
+  });
+
   it("api_key needs param/header matching its `in`; http base_url only for private hosts", () => {
     expect(manifestSchema.safeParse({ ...OWM, auth: { kind: "api_key", in: "query", slot: "api_key" } }).success).toBe(false);
     expect(manifestSchema.safeParse({ ...OWM, base_url: "http://api.example.com" }).success).toBe(false);

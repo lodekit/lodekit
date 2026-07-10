@@ -36,6 +36,18 @@ const STATUS_BADGE: Record<ConnectionDoc["status"], { label: string; variant: "s
   error: { label: "error", variant: "destructive" },
 };
 
+// Belt over the manifest schema's http(s)-only rule: never render an anchor
+// whose href doesn't parse as http(s) — a hostile manifest must not become a
+// javascript: link.
+function safeHttpUrl(s: string): string | null {
+  try {
+    const u = new URL(s);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
 async function send(url: string, method: string, body?: unknown): Promise<Response> {
   return fetch(url, {
     method,
@@ -60,7 +72,9 @@ function ConnectionRow({ c, providerId, invalidate }: { c: ConnectionDoc; provid
   const act = async (fn: () => Promise<Response>) => {
     const res = await fn();
     if (!res.ok) { setError((await res.json().catch(() => null))?.error ?? res.statusText); return; }
-    setError(null); setCreating(null); setNewLabel(""); setNewValue("");
+    // Drop the config drafts too — after Clear/Save the input must show the
+    // refetched server value, not the stale typed text.
+    setError(null); setCreating(null); setNewLabel(""); setNewValue(""); setDrafts({});
     invalidate();
   };
   const base = `/api/apps/${c.appId}/gateways/${c.alias}`;
@@ -74,7 +88,11 @@ function ConnectionRow({ c, providerId, invalidate }: { c: ConnectionDoc; provid
   const connect = async () => {
     const res = await send(`${base}/oauth/start`, "POST");
     if (!res.ok) { setError((await res.json().catch(() => null))?.error ?? res.statusText); return; }
-    window.open((await res.json()).authorizeUrl, "_blank", "noopener");
+    const { authorizeUrl } = (await res.json()) as { authorizeUrl?: unknown };
+    // Same belt as the anchors: never window.open a non-http(s) URL.
+    if (typeof authorizeUrl === "string" && (authorizeUrl.startsWith("http://") || authorizeUrl.startsWith("https://"))) {
+      window.open(authorizeUrl, "_blank", "noopener");
+    }
   };
   const badge = STATUS_BADGE[c.status];
   return (
@@ -184,17 +202,22 @@ function GatewayDetail() {
   const detail = q.data;
   if (!detail?.gateway) return <p className="text-sm text-muted-foreground">Unknown gateway.</p>;
   const g = detail.gateway;
+  const website = g.website ? safeHttpUrl(g.website) : null;
   return (
     <main className="mx-auto max-w-4xl space-y-4">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
-            {g.hasFavicon && <img src={`/api/gateways/${g.providerId}/favicon`} alt="" className="size-10 rounded" />}
+            {g.hasFavicon ? (
+              <img src={`/api/gateways/${g.providerId}/favicon`} alt="" className="size-10 rounded" />
+            ) : (
+              <div className="flex size-10 items-center justify-center rounded bg-muted">🔌</div>
+            )}
             <div className="min-w-0">
               <CardTitle className="flex items-center gap-2">
                 {g.name}
-                {g.website && (
-                  <a href={g.website} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground">
+                {website && (
+                  <a href={website} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground">
                     <ExternalLink aria-hidden="true" className="size-4" />
                   </a>
                 )}
@@ -217,9 +240,16 @@ function GatewayDetail() {
         <CardHeader><CardTitle>Apps using this gateway</CardTitle></CardHeader>
         <CardContent>
           {detail.connections.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No apps connect through this gateway yet. An app declares a connection in its <code>src/gateways.ts</code>.
-            </p>
+            <>
+              <p className="text-sm text-muted-foreground">
+                No apps connect through this gateway yet. An app declares a connection in its <code>src/gateways.ts</code>.
+              </p>
+              {detail.slots.length > 0 && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Declares slots: {detail.slots.map((s) => `${s.label} (${s.kind})`).join(", ")}.
+                </p>
+              )}
+            </>
           ) : (
             detail.connections.map((c) => (
               <ConnectionRow key={`${c.appId}/${c.alias}`} c={c} providerId={g.providerId} invalidate={invalidate} />

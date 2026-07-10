@@ -71,6 +71,19 @@ export const manifestSchema = z
   })
   .superRefine((m, ctx) => {
     const issue = (message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+    // z.string().url() accepts any scheme (javascript: included) — every URL the
+    // dashboard renders as a link or opens must be pinned to http(s) here.
+    // publicHttpOk: website is just a link, so plain http is fine anywhere;
+    // credential endpoints get the base_url rule (https, or http toward the
+    // person's own network only — a local IdP is legit).
+    const httpOnly = (url: string, field: string, publicHttpOk: boolean) => {
+      const u = new URL(url);
+      if (u.protocol !== "http:" && u.protocol !== "https:") issue(`${field} must be http(s)`);
+      else if (u.protocol === "http:" && !publicHttpOk && !isPrivateHost(u.hostname)) {
+        issue(`http ${field} is allowed only for localhost/private hosts`);
+      }
+    };
+    if (m.website) httpOnly(m.website, "website", true);
     // Every slot the auth recipe (or base_url) references must be declared with
     // the right kind: credentials are secret slots; client ids / base URLs are config.
     const needs: [string, "secret" | "config"][] = [];
@@ -83,15 +96,13 @@ export const manifestSchema = z
     if (a.kind === "bearer") needs.push([a.slot, "secret"]);
     if (a.kind === "basic") needs.push([a.username_slot, "secret"], [a.password_slot, "secret"]);
     if (a.kind === "oauth2") {
+      httpOnly(a.authorization_url, "authorization_url", false);
+      httpOnly(a.token_url, "token_url", false);
       needs.push([a.client_id_slot, "config"]);
       if (a.client_secret_slot) needs.push([a.client_secret_slot, "secret"]);
     }
     if (typeof m.base_url === "string") {
-      const u = new URL(m.base_url);
-      if (u.protocol !== "http:" && u.protocol !== "https:") issue("base_url must be http(s)");
-      else if (u.protocol === "http:" && !isPrivateHost(u.hostname)) {
-        issue("http base_url is allowed only for localhost/private hosts");
-      }
+      httpOnly(m.base_url, "base_url", false);
     } else {
       needs.push([m.base_url.from_slot, "config"]);
     }
