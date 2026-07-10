@@ -275,3 +275,14 @@ export function readValue(appId: string, slot: string): string {
   if (!row) throw new SecretUnlinkedError(`slot "${slot}" is not linked to a secret`);
   return decryptValue(key(), row.ciphertext, row.nonce);
 }
+
+/** Decrypt a catalog secret by slug — the gateways engine's read path (its
+ *  links reference slugs directly, not app slots). Same posture as readValue:
+ *  the value never leaves the runtime process. */
+export function readValueBySlug(slug: string): string {
+  const row = store()
+    .prepare("SELECT ciphertext, nonce FROM secrets WHERE slug = ?")
+    .get(slug) as { ciphertext: Buffer; nonce: Buffer } | undefined;
+  if (!row) throw new SecretsNotFoundError(`unknown secret "${slug}"`);
+  return decryptValue(key(), row.ciphertext, row.nonce);
+}

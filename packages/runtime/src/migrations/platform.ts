@@ -82,3 +82,37 @@ export const SETTINGS_CHAIN: Migration[] = [
       `),
   },
 ];
+
+export const GATEWAYS_CHAIN: Migration[] = [
+  {
+    name: "001-baseline",
+    up: (db) =>
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS links (
+          app_id    TEXT NOT NULL,
+          alias     TEXT NOT NULL,
+          slot      TEXT NOT NULL,
+          slug      TEXT NOT NULL,   -- soft reference into the secrets catalog
+          linked_at INTEGER NOT NULL,
+          PRIMARY KEY (app_id, alias, slot)
+        );
+        CREATE TABLE IF NOT EXISTS config_values (
+          app_id TEXT NOT NULL,
+          alias  TEXT NOT NULL,
+          slot   TEXT NOT NULL,
+          value  TEXT NOT NULL,
+          set_at INTEGER NOT NULL,
+          PRIMARY KEY (app_id, alias, slot)
+        );
+        CREATE TABLE IF NOT EXISTS oauth_tokens (
+          app_id       TEXT NOT NULL,
+          alias        TEXT NOT NULL,
+          ciphertext   BLOB NOT NULL,  -- AES-256-GCM over the token JSON, auth tag appended
+          nonce        BLOB NOT NULL,
+          needs_reauth INTEGER NOT NULL DEFAULT 0,
+          updated_at   INTEGER NOT NULL,
+          PRIMARY KEY (app_id, alias)
+        );
+      `),
+  },
+];
