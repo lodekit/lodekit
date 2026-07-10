@@ -40,14 +40,14 @@ afterEach(() => {
 });
 
 describe("/_ui placeholder", () => {
-  it("redirects /_ui to /_ui/ and serves the placeholder page", async () => {
+  it("redirects /_ui through /_ui/ to the dashboard Themes stub", async () => {
     await listen(cfgFor(root, cache));
     const redirect = await fetch(base + "/_ui", { redirect: "manual" });
     expect(redirect.status).toBe(301);
     expect(redirect.headers.get("location")).toBe("/_ui/");
-    const home = await fetch(base + "/_ui/");
-    expect(home.status).toBe(200);
-    expect(await home.text()).toContain("Themes");
+    const home = await fetch(base + "/_ui/", { redirect: "manual" });
+    expect(home.status).toBe(302);
+    expect(home.headers.get("location")).toBe("/_dashboard/themes");
   });
 
   it("keeps serving theme assets and 404s unknown /_ui paths", async () => {

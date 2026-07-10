@@ -152,7 +152,7 @@ above; the remainder:
   templates; reserve/publish under the secured `@lodekit/*` npm scope.
 - **`web/` deploy** — deploy the Astro site to `lodekit.com` (domain secured).
 - **Theme editor / component visualizer** — a custom-rolled dashboard surface replacing
-  Storybook; the `/_ui/` placeholder page and the nav's "Themes" entry are its slot. A
+  Storybook; the dashboard /themes stub page (nav "Themes" entry) is its slot. A
   public deploy (ui.lodekit.com, beside docs.lodekit.com) folds into it if still wanted.
 - **Dedicated integration-test home** — cross-package integration tests (e.g. the
   runtime↔MCP test that boots the real server and drives the MCP helpers) currently live in

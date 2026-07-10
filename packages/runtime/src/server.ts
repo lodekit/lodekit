@@ -58,14 +58,6 @@ const themeResolverJs = (mode: string) => `(() => {
 })();
 `;
 
-// /_ui/ is the slot for the future theme editor / component visualizer
-// (roadmap). Storybook previously lived here; the nav's "Themes" entry
-// still points at this page.
-const uiPlaceholderPage = () => `<!doctype html>
-<html><head><meta charset="utf-8"><title>Lodekit — Themes</title>
-<style>body{font-family:system-ui;display:grid;place-items:center;min-height:100vh;margin:0}main{text-align:center}.muted{color:#666}</style></head>
-<body><main><h1>Themes</h1><p class="muted">The theme editor lives here soon. Your theme overrides in <code>theme.css</code> at the root of your Lodekit folder (and per-app) already apply everywhere.</p></main></body></html>`;
-
 export function createApp(cfg: Config): Hono {
   // serveStatic (here and in appHost below) checks its root's existence at
   // construction time and logs to stderr when missing — pre-create the cache
@@ -110,8 +102,10 @@ export function createApp(cfg: Config): Hono {
       c.header("Cache-Control", "no-store");
       return c.json({ theme: effectiveString("appearance.theme") });
     })
-    .get("/_ui/", (c) => c.html(uiPlaceholderPage()))
-    .all("/_ui/*", (c) => c.html(uiPlaceholderPage(), 404))
+    // The Themes stub inside the dashboard (the future theme editor's slot)
+    // replaced the standalone /_ui/ page; keep old links landing somewhere.
+    .get("/_ui/", (c) => c.redirect("/_dashboard/themes", 302))
+    .all("/_ui/*", (c) => c.text("not found", 404))
     .use("/_dashboard/_build/*", serveStatic({
       root: cfg.cacheDir,
       rewriteRequestPath: (p) => p.replace(/^\/_dashboard\/_build\//, "/_dashboard/client/"),
