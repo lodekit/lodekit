@@ -65,6 +65,13 @@ export function onSecretsManifest(cb: (appId: string, slots: Record<string, unkn
   secretsManifestCb = cb;
 }
 
+let gatewaysManifestCb: ((appId: string, uses: Record<string, unknown>, error?: string) => void) | undefined;
+
+/** Gateways hook (single, last-wins): fired once per worker boot with the app's declared gateway uses. */
+export function onGatewaysManifest(cb: (appId: string, uses: Record<string, unknown>, error?: string) => void): void {
+  gatewaysManifestCb = cb;
+}
+
 let dbManifestCb: ((appId: string, snapshot: unknown, error?: string) => Promise<unknown> | void) | undefined;
 
 /** db-store hook (single, last-wins): fired at worker boot, BEFORE ready, with the
@@ -120,6 +127,7 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
   const tasksEntry = path.join(cfg.cacheDir, appId, "server", "tasks.js");
   const settingsEntry = path.join(cfg.cacheDir, appId, "server", "settings.js");
   const secretsEntry = path.join(cfg.cacheDir, appId, "server", "secrets.js");
+  const gatewaysEntry = path.join(cfg.cacheDir, appId, "server", "gateways.js");
   const dbEntry = path.join(cfg.cacheDir, appId, "server", "db.js");
   const workerToken = randomBytes(32).toString("hex");
   workerTokens.set(appId, workerToken);
@@ -129,6 +137,7 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
       tasksEntry: fs.existsSync(tasksEntry) ? tasksEntry : null,
       settingsEntry: fs.existsSync(settingsEntry) ? settingsEntry : null,
       secretsEntry: fs.existsSync(secretsEntry) ? secretsEntry : null,
+      gatewaysEntry: fs.existsSync(gatewaysEntry) ? gatewaysEntry : null,
       dbEntry: fs.existsSync(dbEntry) ? dbEntry : null,
     },
     env: { ...process.env, LODEKIT_BASE_URL: baseUrl, LODEKIT_WORKER_TOKEN: workerToken },
@@ -150,6 +159,7 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
     if (msg.type === "tasks-manifest") { manifestCb?.(appId, msg.tasks ?? [], msg.error); return; }
     if (msg.type === "settings-manifest") { settingsManifestCb?.(appId, msg.fields ?? {}, msg.error); return; }
     if (msg.type === "secrets-manifest") { secretsManifestCb?.(appId, msg.slots ?? {}, msg.error); return; }
+    if (msg.type === "gateways-manifest") { gatewaysManifestCb?.(appId, msg.uses ?? {}, msg.error); return; }
     if (msg.type === "db-manifest") {
       void (async () => {
         try {

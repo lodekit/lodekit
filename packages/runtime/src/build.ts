@@ -338,6 +338,29 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
     });
   }
 
+  // The gateways entry (gateways spec §5): src/gateways.ts becomes a separate
+  // self-contained ssr bundle beside server.js — same mechanism as secrets.js.
+  const gatewaysSource = path.join(fs.realpathSync(t.rootDir), "src", "gateways.ts");
+  if (fs.existsSync(gatewaysSource)) {
+    await build({
+      configFile: false,
+      root: fs.realpathSync(t.rootDir),
+      logLevel: "silent",
+      define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
+      plugins: [deepImportResolver()],
+      resolve: { alias: appAliases(themeOverridesFile) },
+      ssr: { noExternal: true },
+      build: {
+        ssr: gatewaysSource,
+        outDir: path.join(t.outDir, "server"),
+        emptyOutDir: false,
+        rollupOptions: {
+          output: { entryFileNames: "gateways.js", chunkFileNames: "assets/gateways-[name]-[hash].js" },
+        },
+      },
+    });
+  }
+
   // The db entry (db-store spec §7): src/db.ts becomes a separate self-contained
   // ssr bundle beside server.js — same mechanism as settings.js. The worker entry
   // imports it to extract the declared drizzle tables for the schema push.

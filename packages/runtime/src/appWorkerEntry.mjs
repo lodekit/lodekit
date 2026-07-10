@@ -6,6 +6,7 @@
 //   worker -> main  { type:"ready" } | { type:"fatal", message }
 //                   | { type:"tasks-manifest", tasks:[{name,...config}], error? }
 //                   | { type:"secrets-manifest", slots:{...}, error? }
+//                   | { type:"gateways-manifest", uses:{...}, error? }
 //                   | { type:"db-manifest", snapshot, error? }
 //                   | { type:"response", id, status, headers:[[k,v]], body:ReadableStream|null }
 //                   | { type:"response-error", id, message }
@@ -146,6 +147,28 @@ if (workerData.secretsEntry) {
   }
 } else {
   parentPort.postMessage({ type: "secrets-manifest", slots: {} });
+}
+
+// Gateways manifest from the app's built src/gateways.ts (gateways spec §5):
+// the DEFAULT export tagged by defineGateways(). Uses are plain data. An
+// import failure is reported, never fatal — the runtime keeps previous uses.
+if (workerData.gatewaysEntry) {
+  try {
+    const mod = await import(workerData.gatewaysEntry);
+    const def = mod.default;
+    if (def && def.__lodekitGateways === true && def.uses && typeof def.uses === "object") {
+      parentPort.postMessage({ type: "gateways-manifest", uses: { ...def.uses } });
+    } else {
+      parentPort.postMessage({
+        type: "gateways-manifest", uses: {},
+        error: "src/gateways.ts has no defineGateways(...) default export",
+      });
+    }
+  } catch (e) {
+    parentPort.postMessage({ type: "gateways-manifest", uses: {}, error: e?.stack ?? String(e) });
+  }
+} else {
+  parentPort.postMessage({ type: "gateways-manifest", uses: {} });
 }
 
 parentPort.on("message", async (msg) => {
