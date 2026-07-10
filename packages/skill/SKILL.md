@@ -204,6 +204,90 @@ Hard rules:
   memory; **Database (`db`)** = domain records; **Secrets** = credentials the
   person provides.
 
+## Gateways
+
+**You build an integration by using a gateway to the provider — reuse one if
+it exists, author one if not.** When the person asks to "integrate with X" or
+"get data from X", the gateway is how: a declarative manifest the runtime
+enforces. Your app's server code calls through it; the runtime injects the
+credentials — app code never holds a key.
+
+The decision flow:
+
+1. **Check existing gateways first**: `lodekit_gateways` (or list
+   `<root>/gateways/`). If a gateway for the provider exists, just declare a
+   connection (step 3).
+2. **Author a manifest** only when none fits:
+   `gateways/<provider-id>/manifest.json` + a `favicon.svg`/`png` beside it.
+   HTTPS only for public hosts (`http:` is allowed only toward
+   localhost/private hosts, e.g. a local Home Assistant).
+
+```json
+{
+  "name": "OpenWeatherMap",
+  "website": "https://openweathermap.org",
+  "base_url": "https://api.openweathermap.org",
+  "auth": { "kind": "api_key", "in": "query", "param": "appid", "slot": "api_key" },
+  "slots": { "api_key": { "kind": "secret", "label": "API key" } },
+  "limits": { "rate": "60/min" }
+}
+```
+
+Auth kinds: `none`, `api_key` (query or header), `bearer`, `basic`, `oauth2`
+(authorization/token URLs + a `client_id` config slot; the person clicks
+Connect in the dashboard). Slots are `secret` (the person links a catalog
+secret) or `config` (a plain per-connection value — a personal base URL, an
+account id).
+
+3. **Declare the connection** in `src/gateways.ts`:
+
+```ts
+import { defineGateways, gateway } from "@lodekit/sdk";
+
+export default defineGateways({
+  weather: gateway({
+    provider: "openweathermap",
+    description: "Daily forecast for the watering log.",
+  }),
+});
+```
+
+4. **Call it — only in server functions and tasks** (never browser code):
+
+```ts
+import { gateways, GatewayError } from "@lodekit/sdk";
+
+const res = await gateways.weather.get("/data/2.5/forecast", {
+  query: { q: "Lisbon", units: "metric" },
+});
+if (res.ok) {
+  const forecast = await res.json();
+}
+```
+
+Paths are relative — the runtime pins requests under the gateway's base URL.
+Failures throw `GatewayError` with a `reason`: `unconfigured`/`needs_reauth`
+mean the person finishes the connection in the dashboard (render a
+"configure me" state); `rate_limited`/`breaker_open`/`timeout`/`network` are
+transient — let the task run fail and its retry policy decide. Every request
+is recorded in Logs under `source=gateway:<provider-id>`.
+
+**The polling recipe** (no webhooks exist): a scheduled task calls through
+the gateway, writes domain records to the Database, emits an event. Tasks is
+the scheduler, the Database is the record, Events is the announcement — no
+gateway-side polling machinery exists.
+
+Hard rules:
+
+- **Never ask the person for a credential in chat** — direct them to the
+  gateway's page in the dashboard (Gateways → the provider), where they link
+  secrets, set config values, and click Connect for OAuth.
+- **The agent never handles OAuth tokens.** Connect is a person-only,
+  dashboard-only act.
+- Don't fetch external APIs directly from app code when a gateway fits —
+  the gateway is what gives the person rate limiting, monitoring, and
+  key safety.
+
 ## Design system classes
 
 `lk-container` (page wrapper), `lk-h1`, `lk-muted`, `lk-card`, `lk-grid`, `lk-row`,
