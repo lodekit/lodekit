@@ -15,8 +15,11 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 mx-auto w-full min-w-80 max-w-[70rem] bg-background md:static md:px-8 md:pt-6">
       <div className="flex items-center gap-1 border-b bg-card px-4 py-2 md:rounded-xl md:border md:shadow-sm">
-        <Link to="/" aria-label="Lodekit home" className="mr-1">
+        <Link to="/" aria-label="Lodekit home" className="mr-1 flex items-center gap-2">
           <Logo className="size-7 text-primary" />
+          <span className="hidden font-display text-lg font-[550] text-foreground sm:inline">
+            lodekit
+          </span>
         </Link>
         <div className="flex-1" />
         <CommandBar />

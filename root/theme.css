@@ -1,15 +1,8 @@
 /* Example global theme — applies to every app in this Lodekit root and the dashboard.
-   Redefine any token from @lodekit/ui's theme (colors, --radius, --font-sans, …).
+   Redefine any token from @lodekit/ui's theme (colors, --radius, --font-ui, …).
    Per-app apps/<app-id>/theme.css files layer after this one and win where both set
-   the same token. Here: indigo primary, light and dark. */
+   the same token. Here: slightly rounder corners, keeping the default brand palette
+   (design.md) visible. */
 :root {
-  --primary: oklch(0.55 0.2 275);
-  --primary-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.65 0.15 275);
-}
-
-.dark {
-  --primary: oklch(0.7 0.17 275);
-  --primary-foreground: oklch(0.2 0.05 275);
-  --ring: oklch(0.55 0.12 275);
+  --radius: 0.75rem;
 }

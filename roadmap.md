@@ -383,3 +383,9 @@ above; the remainder:
     `md:sticky md:top-24` (`dashboard/src/routes/settings.tsx`), sized to clear a sticky
     header; but the desktop header scrolls away, so the pinned sidebar sits 6rem below the
     viewport top with a dead gap above. Likely a smaller or dynamic top offset.
+- **Self-host the brand fonts** — the default theme loads Fraunces + Hanken Grotesk via a
+  Google Fonts `@import` in `packages/ui/theme.css` (design.md). Offline — the normal
+  state for a local-first tool — every dashboard and app page falls back to
+  Georgia/system-ui, and each page load leaks a request to Google. Ship the two variable
+  font files (both SIL OFL) inside `packages/ui`, serve them from the runtime, and replace
+  the `@import` with `@font-face` declarations.
