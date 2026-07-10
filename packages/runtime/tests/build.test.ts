@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { buildApp, getBuildState } from "../src/build.js";
+import { buildApp, getBuildState, pruneBuildCache } from "../src/build.js";
 import { stopAppWorker } from "../src/appWorker.js";
 import type { Config } from "../src/config.js";
 
@@ -151,4 +151,46 @@ describe("buildApp", () => {
     const g = css.indexOf("ff3456");
     if (g !== -1) expect(css.indexOf("22cc78")).toBeGreaterThan(g);
   }, 60000);
+});
+
+describe("pruneBuildCache", () => {
+  it("removes cache entries whose app folder no longer exists", () => {
+    fs.mkdirSync(path.join(cache, "gone-app", "client"), { recursive: true });
+    fs.writeFileSync(path.join(cache, "gone-app", "client", "index.html"), "<html></html>");
+    pruneBuildCache(cfg);
+    expect(fs.existsSync(path.join(cache, "gone-app"))).toBe(false);
+  });
+
+  it("keeps cache entries whose app folder still exists", () => {
+    // Directory existence is the keep criterion — mirrors the watcher's unlinkDir
+    // semantics, which drops a build only when the top-level folder goes away.
+    fs.mkdirSync(path.join(root, "apps", "alive"), { recursive: true });
+    fs.mkdirSync(path.join(cache, "alive"), { recursive: true });
+    pruneBuildCache(cfg);
+    expect(fs.existsSync(path.join(cache, "alive"))).toBe(true);
+  });
+
+  it("leaves entries outside the app id grammar alone", () => {
+    fs.mkdirSync(path.join(cache, "_dashboard"), { recursive: true });
+    pruneBuildCache(cfg);
+    expect(fs.existsSync(path.join(cache, "_dashboard"))).toBe(true);
+  });
+
+  it("leaves stray files alone", () => {
+    fs.writeFileSync(path.join(cache, "notes"), "not a build dir");
+    pruneBuildCache(cfg);
+    expect(fs.existsSync(path.join(cache, "notes"))).toBe(true);
+  });
+
+  it("prunes everything app-shaped when appsDir is missing", () => {
+    fs.rmSync(path.join(root, "apps"), { recursive: true, force: true });
+    fs.mkdirSync(path.join(cache, "orphan"), { recursive: true });
+    pruneBuildCache(cfg);
+    expect(fs.existsSync(path.join(cache, "orphan"))).toBe(false);
+  });
+
+  it("is a no-op when cacheDir is missing", () => {
+    fs.rmSync(cache, { recursive: true, force: true });
+    expect(() => pruneBuildCache(cfg)).not.toThrow();
+  });
 });
