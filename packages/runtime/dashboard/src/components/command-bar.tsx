@@ -4,13 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, Settings } from "lucide-react";
 import {
   Button, Kbd,
-  Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+  Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator,
 } from "@lodekit/ui";
 import { SERVICES } from "./nav";
 
 interface AppInfo { appId: string; name: string; icon?: string }
-
-const PAGES = [...SERVICES, { label: "Settings", icon: Settings, to: "/settings" as const }];
 
 export function CommandBar() {
   const [open, setOpen] = useState(false);
@@ -66,8 +64,8 @@ export function CommandBar() {
                 ))}
               </CommandGroup>
             )}
-            <CommandGroup heading="Pages">
-              {PAGES.map((p) => (
+            <CommandGroup heading="Services">
+              {SERVICES.map((p) => (
                 <CommandItem
                   key={p.label}
                   onSelect={() => {
@@ -79,6 +77,12 @@ export function CommandBar() {
                   <p.icon className="size-4" aria-hidden="true" /> {p.label}
                 </CommandItem>
               ))}
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup>
+              <CommandItem onSelect={() => { setOpen(false); void navigate({ to: "/settings" }); }}>
+                <Settings className="size-4" aria-hidden="true" /> Settings
+              </CommandItem>
             </CommandGroup>
           </CommandList>
         </Command>
