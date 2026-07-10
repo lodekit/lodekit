@@ -261,7 +261,7 @@ _Avoid_: the endpoints, the REST API
 - An app's **server functions** run in its **app worker** inside the **runtime**; they reach services through the **SDK** over loopback HTTP.
 - An **App** reaches external **Providers** only through **Gateways**; the runtime injects linked **Secrets** host-side, so credentials never enter the **app worker**.
 - An app's source lives in the **Apps tree**, its built output in the **Cache**, and its persistent state (**Database** + **KV** + **Files**) in the **Data tree**.
-- The **Backup tree** = apps tree + data tree. The **Cache** is deliberately outside it.
+- The **Backup tree** = apps tree + data tree + gateways tree. The **Cache** is deliberately outside it.
 - **Settings** and **Tasks** are declared by an app and surfaced to the person in the **Dashboard**.
 - The **MCP server** may read an app's services on the person's behalf (writes later, behind designed guardrails).
 
