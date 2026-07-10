@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,100&family=Hanken+Grotesk:wght@400;500&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import "./shadcn-tailwind.css"; /* vendored — see its header */
 @import "./theme-tokens.css";
 /* The person's theme overrides. Resolves to the empty file shipped beside this one;
    the runtime's build aliases redirect it to the composed global + per-app overrides. */
