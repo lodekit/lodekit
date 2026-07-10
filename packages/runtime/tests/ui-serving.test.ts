@@ -7,7 +7,7 @@ import { createServer } from "../src/server.js";
 import type { Config } from "../src/config.js";
 import { initSettingsStore, closeSettingsStoreForTest, setPlatformValue } from "../src/services/settings.js";
 
-let root: string, cache: string, staticDir: string, server: Server, base: string;
+let root: string, cache: string, server: Server, base: string;
 
 function cfgFor(root: string, cache: string): Config {
   return {
@@ -31,38 +31,31 @@ async function listen(cfg: Config): Promise<void> {
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-root-"));
   cache = fs.mkdtempSync(path.join(os.tmpdir(), "lk-cache-"));
-  staticDir = fs.mkdtempSync(path.join(os.tmpdir(), "lk-ui-"));
-  process.env.LODEKIT_UI_STATIC_DIR = staticDir;
   initSettingsStore(path.join(root, "data"));
 });
 afterEach(() => {
-  delete process.env.LODEKIT_UI_STATIC_DIR;
   closeSettingsStoreForTest();
   server?.close();
-  for (const d of [root, cache, staticDir]) fs.rmSync(d, { recursive: true, force: true });
+  for (const d of [root, cache]) fs.rmSync(d, { recursive: true, force: true });
 });
 
-describe("/_ui static serving", () => {
-  it("serves the built storybook and redirects /_ui to /_ui/", async () => {
-    fs.writeFileSync(path.join(staticDir, "index.html"), "<!doctype html><title>ui</title>");
-    fs.mkdirSync(path.join(staticDir, "assets"));
-    fs.writeFileSync(path.join(staticDir, "assets", "a.js"), "// asset");
+describe("/_ui placeholder", () => {
+  it("redirects /_ui to /_ui/ and serves the placeholder page", async () => {
     await listen(cfgFor(root, cache));
     const redirect = await fetch(base + "/_ui", { redirect: "manual" });
     expect(redirect.status).toBe(301);
     expect(redirect.headers.get("location")).toBe("/_ui/");
     const home = await fetch(base + "/_ui/");
     expect(home.status).toBe(200);
-    expect(await home.text()).toContain("<title>ui</title>");
-    const asset = await fetch(base + "/_ui/assets/a.js");
-    expect(asset.status).toBe(200);
+    expect(await home.text()).toContain("Themes");
   });
 
-  it("serves a not-built page when the static build is missing", async () => {
-    await listen(cfgFor(root, cache)); // staticDir exists but has no index.html
-    const res = await fetch(base + "/_ui/");
-    expect(res.status).toBe(404);
-    expect(await res.text()).toContain("build-storybook");
+  it("keeps serving theme assets and 404s unknown /_ui paths", async () => {
+    await listen(cfgFor(root, cache));
+    expect((await fetch(base + "/_ui/theme.js")).status).toBe(200);
+    expect((await fetch(base + "/_ui/theme.json")).status).toBe(200);
+    expect((await fetch(base + "/_ui/theme.css")).status).toBe(200);
+    expect((await fetch(base + "/_ui/assets/nope.js")).status).toBe(404);
   });
 });
 

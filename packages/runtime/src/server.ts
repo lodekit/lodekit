@@ -9,7 +9,7 @@ import type { Config } from "./config.js";
 import { apiRoutes } from "./routes.js";
 import { appHost } from "./appHost.js";
 import { startWatcher } from "./watcher.js";
-import { buildAll, buildDashboard, getDashboardState, idleBuilds, uiDir } from "./build.js";
+import { buildAll, buildDashboard, getDashboardState, idleBuilds } from "./build.js";
 import { isValidAppId, scanApps } from "./registry.js";
 import { configureWorkers, forwardToWorker, stopAllWorkers, onTasksManifest, onSettingsManifest, onSecretsManifest, onDbManifest } from "./appWorker.js";
 import { every, stop } from "./scheduler.js";
@@ -58,23 +58,19 @@ const themeResolverJs = (mode: string) => `(() => {
 })();
 `;
 
-const uiNotBuiltPage = () => `<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lodekit</title>
-<style>body{font-family:ui-sans-serif,system-ui,sans-serif;max-width:640px;margin:15vh auto;padding:0 24px;color:#0a0a0a}.muted{color:#6b7280}code{background:#f4f4f5;padding:2px 6px;border-radius:6px}</style>
-</head>
-<body><h1>Lodekit</h1><p class="muted">The component preview isn't built. Run <code>pnpm --filter @lodekit/ui build-storybook</code> and reload.</p></body>
-</html>
-`;
+// /_ui/ is the slot for the future theme editor / component visualizer
+// (roadmap). Storybook previously lived here; the nav's "Themes" entry
+// still points at this page.
+const uiPlaceholderPage = () => `<!doctype html>
+<html><head><meta charset="utf-8"><title>Lodekit — Themes</title>
+<style>body{font-family:system-ui;display:grid;place-items:center;min-height:100vh;margin:0}main{text-align:center}.muted{color:#666}</style></head>
+<body><main><h1>Themes</h1><p class="muted">The theme editor lives here soon. Your theme overrides in <code>theme.css</code> at the root of your Lodekit folder (and per-app) already apply everywhere.</p></main></body></html>`;
 
 export function createApp(cfg: Config): Hono {
   // serveStatic (here and in appHost below) checks its root's existence at
   // construction time and logs to stderr when missing — pre-create the cache
   // dir so a fresh boot stays as silent as Express's static serving was.
   fs.mkdirSync(cfg.cacheDir, { recursive: true });
-  // Static Storybook build for /_ui — shipped inside the @lodekit/ui package
-  // (storybook-static travels with it through pnpm deploy). Env override is for tests.
-  const uiStaticDir = process.env.LODEKIT_UI_STATIC_DIR ?? path.join(uiDir, "storybook-static");
   return new Hono()
     .onError((err, c) => {
       if (err instanceof HTTPException) return err.getResponse(); // e.g. bodyLimit's 413
@@ -83,13 +79,10 @@ export function createApp(cfg: Config): Hono {
       return c.json({ error: err instanceof Error ? err.message : String(err) }, 500);
     })
     .route("/api", apiRoutes(cfg))
-    // Registered before the /_ui/* wildcard below: that pattern also matches the bare
-    // "/_ui" path, and serveStatic resolves it straight to index.html (no next() call)
-    // when the build exists — this route must win first so the redirect always fires.
     .get("/_ui", (c) => c.redirect("/_ui/", 301))
     // Live theme overrides for the /_ui preview: global file, optionally composed
     // with one app's file (?app=<id>) — read per request, never cached, so theme
-    // edits show on reload without rebuilding the static Storybook.
+    // edits show on reload.
     .get("/_ui/theme.css", (c) => {
       const read = (f: string) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "");
       let css = read(path.join(cfg.root, "theme.css"));
@@ -117,11 +110,8 @@ export function createApp(cfg: Config): Hono {
       c.header("Cache-Control", "no-store");
       return c.json({ theme: effectiveString("appearance.theme") });
     })
-    .use("/_ui/*", serveStatic({
-      root: uiStaticDir,
-      rewriteRequestPath: (p) => p.replace(/^\/_ui/, "") || "/",
-    }))
-    .all("/_ui/*", (c) => c.html(uiNotBuiltPage(), 404))
+    .get("/_ui/", (c) => c.html(uiPlaceholderPage()))
+    .all("/_ui/*", (c) => c.html(uiPlaceholderPage(), 404))
     .use("/_dashboard/_build/*", serveStatic({
       root: cfg.cacheDir,
       rewriteRequestPath: (p) => p.replace(/^\/_dashboard\/_build\//, "/_dashboard/client/"),
