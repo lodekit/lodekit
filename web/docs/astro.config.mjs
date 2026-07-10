@@ -80,6 +80,7 @@ export default defineConfig({
             "reference/glossary",
           ],
         },
+        { label: "Changelog", slug: "changelog" },
       ],
     }),
   ],
