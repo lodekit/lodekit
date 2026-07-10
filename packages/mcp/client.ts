@@ -76,3 +76,10 @@ export async function selectDb(base: string, appId: string, sql: string, params?
   if (!r.ok) throw new Error((body as { error?: string } | null)?.error ?? `db select failed: ${r.status}`);
   return body;
 }
+
+export async function fetchGateways(base: string, appId?: string) {
+  const url = appId ? `${base}/api/apps/${appId}/gateways` : `${base}/api/gateways`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`gateways fetch failed: ${r.status}`);
+  return r.json();
+}

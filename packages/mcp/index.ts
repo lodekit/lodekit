@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { scaffold, listApps, fetchLogs, fetchEvents, fetchSettings, fetchSecrets, fetchDbSchema, selectDb } from "./client.js";
+import { scaffold, listApps, fetchLogs, fetchEvents, fetchSettings, fetchSecrets, fetchDbSchema, selectDb, fetchGateways } from "./client.js";
 import { createClient } from "@lodekit/sdk";
 
 const BASE = process.env.LODEKIT_BASE_URL ?? "http://lodekit.localhost:7777";
@@ -111,6 +111,16 @@ server.tool(
   "lodekit_secrets_list",
   { appId: z.string().optional().describe("an app's declared slots + link status; omit for the person's secret catalog") },
   async ({ appId }) => text(await fetchSecrets(BASE, appId))
+);
+
+// The agent's "do we already have a gateway for this provider?" answer
+// (spec §13): gateways with their slots and usage, or an app's connections
+// with per-slot status. Wiring and status only — credentials and tokens
+// never appear; the person links and connects in the dashboard.
+server.tool(
+  "lodekit_gateways",
+  { appId: z.string().optional().describe("an app's gateway connections + slot status; omit for every gateway and its usage") },
+  async ({ appId }) => text(await fetchGateways(BASE, appId))
 );
 
 server.tool(

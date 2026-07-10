@@ -134,6 +134,14 @@ describe("mcp tool helpers", () => {
     expect(JSON.stringify(catalog)).not.toContain("mcp-probe-plaintext");
   });
 
+  it("fetchGateways lists gateways and app connections — wiring only", async () => {
+    const { fetchGateways } = await import("../../mcp/client.js");
+    const platform = await fetchGateways(base);
+    expect(platform).toHaveProperty("gateways");
+    const forApp = await fetchGateways(base, "start-app");
+    expect(forApp).toHaveProperty("connections");
+  });
+
   it("db tools: schema lists user tables, select reads rows, writes refused", async () => {
     const { getAppDb } = await import("../src/db.js");
     const db = getAppDb(dataDir, "mcp-db");
