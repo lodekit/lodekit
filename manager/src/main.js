@@ -137,6 +137,18 @@ function applyIconStyle(style) {
   rebuildMenu(); // re-renders the tray icon
 }
 
+// Same setting as the dashboard's General → Launch at login: apply to the OS here,
+// and write it through to the runtime so the dashboard toggle follows. When the
+// runtime is down, the start() reconcile (OS wins) catches the setting up later.
+function toggleLoginItem() {
+  const desired = !app.getLoginItemSettings().openAtLogin;
+  app.setLoginItemSettings({ openAtLogin: desired });
+  if (supervisor.state === "running") {
+    runtimeSettings.setStartAtLogin(desired).catch((e) => log(`runtimeSettings: ${e.message}`));
+  }
+  rebuildMenu();
+}
+
 function rebuildMenu() {
   if (!tray) return;
   const state = bootError ? "error" : supervisor.state;
@@ -152,21 +164,26 @@ function rebuildMenu() {
     Menu.buildFromTemplate([
       { label: STATE_LABEL[state], enabled: false },
       ...(state === "error" && errorMessage ? [{ label: errorMessage, enabled: false }] : []),
-      { type: "separator" },
       {
-        label: "Open Dashboard",
+        label: "Dashboard",
         enabled: state === "running",
         click: () => shell.openExternal(paths.dashboardUrl),
       },
-      ...action,
       { type: "separator" },
-      { label: "Open Logs", click: () => shell.openPath(paths.logsDir) },
       {
-        label: "Settings…",
+        label: "Settings",
         enabled: state === "running",
         click: () => shell.openExternal(`${paths.dashboardUrl}/_dashboard/settings`),
       },
+      {
+        label: "Launch at Login",
+        type: "checkbox",
+        checked: app.getLoginItemSettings().openAtLogin,
+        enabled: app.isPackaged, // dev builds never register the dev Electron (runtimeSettings canSetLogin)
+        click: toggleLoginItem,
+      },
       { type: "separator" },
+      ...action,
       { label: "Quit Lodekit", click: quit },
     ])
   );

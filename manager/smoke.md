@@ -25,7 +25,7 @@ fail). Build the artifact first: `pnpm --filter @lodekit/manager make`.
        stop the dev runtime, Restart → running. (A non-runtime process squatting the port
        surfaces differently — the spawned runtime exits and the menu shows "Runtime exited
        unexpectedly"; both are surfaced errors, never a crash.)
-9. [ ] "Start at Login": toggle on, log out/in, Lodekit is running.
+9. [ ] "Launch at Login": toggle on, log out/in, Lodekit is running.
 10. [ ] Quit: `pgrep -f "Resources/platform/runtime"` prints nothing (no orphan).
 11. [ ] Crash cleanup: `kill -9 <manager pid>` while running (find it via Activity
         Monitor), relaunch Lodekit.app — it terminates the stale runtime (pid file) and

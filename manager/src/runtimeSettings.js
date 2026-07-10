@@ -54,6 +54,11 @@ function createRuntimeSettings(deps) {
       if (unsubscribe) unsubscribe();
       unsubscribe = null;
     },
+    // Write path for the tray's Launch at Login checkbox: the caller applies the
+    // OS change itself; this keeps the runtime's setting (dashboard) in step.
+    setStartAtLogin(value) {
+      return putSetting("general.start_at_login", value);
+    },
   };
 
   // ---- production defaults (node:http against the local runtime) ----

@@ -55,6 +55,13 @@ describe("runtimeSettings", () => {
     expect(calls.put).toEqual([]);
   });
 
+  it("setStartAtLogin writes the setting through to the runtime (tray checkbox path)", async () => {
+    const { rs, calls } = harness();
+    await rs.setStartAtLogin(true);
+    expect(calls.put).toEqual([["general.start_at_login", true]]);
+    expect(calls.login).toEqual([]); // caller applies the OS change itself
+  });
+
   it("dev mode (canSetLogin=false) never touches the login item", async () => {
     const { rs, calls, change } = harness({ canSetLogin: false, fetchSettings: async () => doc("system", "a", true) });
     await rs.start();

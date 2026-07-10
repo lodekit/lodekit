@@ -19,7 +19,7 @@ const p = (field: SettingField, section: string): PlatformSetting => ({ field, s
 
 export const PLATFORM_SETTINGS: Record<string, PlatformSetting> = {
   "general.start_at_login": g({
-    type: "boolean", label: "Start at login",
+    type: "boolean", label: "Launch at login",
     description: "Launch Lodekit automatically when you log in. Applied by the menubar app (packaged builds only).",
     default: false,
   }, "General"),
