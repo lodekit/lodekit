@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const http = require("node:http");
 const path = require("node:path");
 const { getPaths } = require("./paths");
-const { installShowcase } = require("./firstRun");
+const { installShowcase, installGateways } = require("./firstRun");
 const { openDailyLogStream, stampLines } = require("./logs");
 const { Supervisor } = require("./supervisor");
 const { getIconStyle, setIconStyle } = require("./settings");
@@ -198,6 +198,7 @@ function ensureLodekitRoot() {
   if (isFirstRun) {
     const installed = installShowcase(paths.showcaseAppsDir, paths.lodekitRoot);
     if (installed.length) log(`first run: installed showcase apps ${installed.join(", ")}`);
+    installGateways(paths.showcaseGatewaysDir, paths.lodekitRoot);
   }
   return isFirstRun;
 }

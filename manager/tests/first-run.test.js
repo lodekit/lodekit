@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { installShowcase } from "../src/firstRun.js";
+import { installShowcase, installGateways } from "../src/firstRun.js";
 
 let src, root;
 beforeEach(() => {
@@ -38,5 +38,21 @@ describe("installShowcase", () => {
 
   it("is a no-op when the showcase dir is missing", () => {
     expect(installShowcase(path.join(src, "nope"), root)).toEqual([]);
+  });
+});
+
+describe("installGateways", () => {
+  it("copies each bundled gateway into root/gateways, additively", () => {
+    fs.mkdirSync(path.join(src, "gateways", "openweathermap"), { recursive: true });
+    fs.writeFileSync(path.join(src, "gateways", "openweathermap", "manifest.json"), "{}");
+    const installed = installGateways(path.join(src, "gateways"), root);
+    expect(installed).toEqual(["openweathermap"]);
+    expect(fs.existsSync(path.join(root, "gateways", "openweathermap", "manifest.json"))).toBe(true);
+    // second run: the person's dir is never touched
+    expect(installGateways(path.join(src, "gateways"), root)).toEqual([]);
+  });
+
+  it("missing source dir installs nothing", () => {
+    expect(installGateways(path.join(src, "nope"), root)).toEqual([]);
   });
 });

@@ -27,6 +27,7 @@ describe("getPaths", () => {
     );
     expect(p.mcpEntry).toBe("/Applications/Lodekit.app/Contents/Resources/platform/mcp/index.ts");
     expect(p.showcaseAppsDir).toBe("/Applications/Lodekit.app/Contents/Resources/platform/root/apps");
+    expect(p.showcaseGatewaysDir).toBe("/Applications/Lodekit.app/Contents/Resources/platform/root/gateways");
     expect(p.port).toBe(7777);
     expect(p.dashboardUrl).toBe("http://lodekit.localhost:7777");
   });
@@ -41,6 +42,7 @@ describe("getPaths", () => {
     expect(p.runtimeDir).toBe("/repo/packages/runtime");
     expect(p.runtimeEntry).toBe("/repo/packages/runtime/src/index.ts");
     expect(p.showcaseAppsDir).toBe(null);
+    expect(p.showcaseGatewaysDir).toBe(null);
     // Logs and pid file use the same macOS locations in both modes.
     expect(p.logsDir).toBe(path.join(HOME, "Library", "Logs", "Lodekit"));
     expect(p.pidFile).toBe(

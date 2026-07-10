@@ -123,6 +123,9 @@ function buildPayload() {
       !src.includes(".tanstack") &&
       !src.endsWith(".DS_Store"),
   });
+  fs.cpSync(path.join(repoRoot, "root", "gateways"), path.join(platformDir, "root", "gateways"), {
+    recursive: true,
+  });
 }
 
 // Relocatable means no symlink may resolve outside the payload (spec §3);
