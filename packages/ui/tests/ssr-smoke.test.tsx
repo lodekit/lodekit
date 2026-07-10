@@ -647,7 +647,10 @@ function Smoke() {
         </AccordionItem>
       </Accordion>
 
-      <Collapsible>
+      {/* Collapsible's panel is NOT portal-gated — with `defaultOpen` its
+          content renders synchronously under SSR (shouldRender includes
+          `open`), so the content marker is asserted below. */}
+      <Collapsible defaultOpen>
         <CollapsibleTrigger>Collapsible Trigger Marker</CollapsibleTrigger>
         <CollapsibleContent>Collapsible Content Marker</CollapsibleContent>
       </Collapsible>
@@ -707,6 +710,11 @@ function Smoke() {
       </ToggleGroup>
 
       <Avatar>
+        {/* AvatarImage never renders under SSR: Base UI gates it on a
+            client-only image-loading status (an effect creating
+            `new window.Image()` must report 'loaded' first — same category
+            as portal gating). Composed here to exercise its render body;
+            no assertion covers it. */}
         <AvatarImage src="/avatar.png" alt="Avatar Marker" />
         <AvatarFallback>AV</AvatarFallback>
         <AvatarBadge>1</AvatarBadge>
@@ -873,6 +881,7 @@ describe("SSR smoke", () => {
       "Accordion Trigger Marker",
       "Accordion Content Marker",
       "Collapsible Trigger Marker",
+      "Collapsible Content Marker",
       "Tab One Marker",
       "Tab Content Marker",
       "Table Caption Marker",
@@ -910,7 +919,11 @@ describe("SSR smoke", () => {
       'data-slot="separator"',
       'data-slot="slider"',
       'data-slot="progress"',
+      'data-slot="progress-track"',
+      'data-slot="progress-indicator"',
       'data-slot="progress-value"',
+      'data-slot="radio-group"',
+      'data-slot="radio-group-item"',
       'data-slot="avatar"',
       'data-slot="input-otp-group"',
       'data-slot="toggle-group"',
