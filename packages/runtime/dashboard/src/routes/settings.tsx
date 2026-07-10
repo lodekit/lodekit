@@ -210,7 +210,7 @@ function SettingRows({ entries, render }: { entries: { advanced: boolean }[]; re
         render(false)
       )}
       {advanced.length > 0 && (
-        <Accordion type="single" collapsible>
+        <Accordion>
           <AccordionItem value="advanced" className="border-b-0">
             <AccordionTrigger className="pt-4 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
               Advanced
@@ -233,11 +233,7 @@ function ServiceTabs({ tabs, initial, children }: { tabs: ServiceTab[]; initial?
   const names = tabs.map((t) => t.name);
   return (
     <Tabs defaultValue={initial && names.includes(initial) ? initial : names[0]}>
-      {/* pb-[5px]: the line variant's active underline sits 5px below the trigger box;
-          with overflow-x-auto that becomes vertical overflow (scrollbar + clipped line)
-          unless the list's padding box contains it. no-scrollbar: strips scroll chrome
-          on narrow screens, matching upstream shadcn tab strips. */}
-      <TabsList variant="line" className="no-scrollbar max-w-full justify-start overflow-x-auto pb-[5px]">
+      <TabsList variant="line" className="max-w-full justify-start overflow-x-auto">
         {tabs.map((t) => {
           const Icon = SERVICE_ICONS[t.name]; // canonical service → icon map (components/nav.ts)
           return (
@@ -248,10 +244,10 @@ function ServiceTabs({ tabs, initial, children }: { tabs: ServiceTab[]; initial?
           );
         })}
       </TabsList>
-      {/* forceMount + CSS hide: inactive panels stay mounted so an uncommitted
+      {/* keepMounted: inactive panels stay mounted (and hidden) so an uncommitted
           draft or rejected-write error survives switching tabs. */}
       {tabs.map((t) => (
-        <TabsContent key={t.name} value={t.name} forceMount className="data-[state=inactive]:hidden">
+        <TabsContent key={t.name} value={t.name} keepMounted>
           {children(t)}
         </TabsContent>
       ))}
@@ -400,7 +396,7 @@ function AppSecretsCard({ app }: { app: AppInfo }) {
                   </>
                 ) : (
                   <>
-                    <Select value="" onValueChange={(slug) => link(s.slot, slug)}>
+                    <Select value="" onValueChange={(slug) => { if (slug) link(s.slot, slug); }}>
                       <SelectTrigger className="w-44"><SelectValue placeholder="Link a secret…" /></SelectTrigger>
                       <SelectContent>
                         {(catalog.data?.secrets ?? []).map((c) => (
@@ -450,8 +446,8 @@ function ServiceOverridesCard({ app, overrides, invalidate }: {
             <ChevronDown aria-hidden="true" className={`size-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
           </CollapsibleTrigger>
         </CardHeader>
-        {/* forceMount + CSS hide: collapsing must not unmount rows mid-edit. */}
-        <CollapsibleContent forceMount className="data-[state=closed]:hidden">
+        {/* keepMounted: collapsing must not unmount rows mid-edit. */}
+        <CollapsibleContent keepMounted>
           <CardContent>
             <ServiceTabs tabs={tabs}>
               {(t) => t.sections.length === 1 ? (

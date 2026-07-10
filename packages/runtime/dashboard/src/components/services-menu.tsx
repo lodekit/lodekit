@@ -35,11 +35,11 @@ export function ServicesMenu() {
   const [open, setOpen] = useState(false);
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger render={
         <Button variant="ghost" size="icon" aria-label="Services">
           <LayoutGrid className="size-4" />
         </Button>
-      </PopoverTrigger>
+      } />
       <PopoverContent align="end" className="w-64 p-2">
         <ServicesGrid onNavigate={() => setOpen(false)} />
       </PopoverContent>

@@ -34,10 +34,8 @@ export function Header() {
         >
           <LayoutGrid className="size-4" />
         </Button>
-        <Button variant="ghost" size="icon" asChild aria-label="Settings">
-          <Link to="/settings">
-            <Settings className="size-4" />
-          </Link>
+        <Button variant="ghost" size="icon" aria-label="Settings" render={<Link to="/settings" />}>
+          <Settings className="size-4" />
         </Button>
       </div>
       {panelOpen && (
