@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Switch,
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@lodekit/ui";
-import { ChevronDown, RotateCcw } from "lucide-react";
+import { ChevronDown, Circle, CircleDot, Monitor, Moon, RotateCcw, Sun, type LucideIcon } from "lucide-react";
 import { SERVICE_ICONS } from "../components/nav";
 
 export const Route = createFileRoute("/settings")({
@@ -38,6 +38,17 @@ interface AppInfo { appId: string; name: string; icon?: string }
 
 // Pinned display order (UI revamp spec §4); unknown future sections append.
 const SERVICE_ORDER = ["Store", "Files", "Tasks", "Events", "Logs", "Engine"];
+
+// Icons shown beside select options ("<icon> Knockout"), keyed by setting key →
+// option value. Selects without an entry render plain labels.
+const OPTION_ICONS: Record<string, Record<string, LucideIcon>> = {
+  "appearance.theme": { system: Monitor, light: Sun, dark: Moon },
+  "appearance.icon_style": { a: Circle, b: CircleDot, c: Circle },
+};
+// The menubar "Solid" style has no filled lucide twin; fill the outline glyph.
+const OPTION_ICON_FILL: Record<string, Record<string, boolean>> = {
+  "appearance.icon_style": { a: true },
+};
 
 function orderedSections(present: string[]): string[] {
   return [
@@ -74,7 +85,7 @@ async function write(url: string, value: unknown | undefined) {
 // actually changes externally (reset, another tab, manager reconciliation).
 // Focus selects the content (type-to-replace); blurring an unchanged field
 // writes nothing.
-function FieldControl({ field, value, onChange }: { field: Field; value: unknown; onChange: (v: unknown) => void }) {
+function FieldControl({ field, fieldKey, value, onChange }: { field: Field; fieldKey?: string; value: unknown; onChange: (v: unknown) => void }) {
   const [draft, setDraft] = useState(String(value));
   const [seeded, setSeeded] = useState(String(value));
   // The no-write baseline: the last draft submitted (or seeded). Comparing the
@@ -91,11 +102,28 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
     return <Switch checked={Boolean(value)} onCheckedChange={(v) => onChange(v)} />;
   }
   if (field.type === "select") {
+    const icons = fieldKey ? OPTION_ICONS[fieldKey] : undefined;
+    const display = (o: { value: string; label: string }) => {
+      const Icon = icons?.[o.value];
+      if (!Icon) return o.label;
+      const fill = OPTION_ICON_FILL[fieldKey!]?.[o.value];
+      return (
+        <>
+          <Icon className={`size-4 ${fill ? "fill-current" : ""}`} aria-hidden="true" />
+          {o.label}
+        </>
+      );
+    };
+    // items: Base UI resolves the closed SelectValue through it — without it the
+    // trigger shows the raw stored value ("b") instead of the label.
+    const items = (field.options ?? []).map((o) => ({ value: o.value, label: display(o) }));
     return (
-      <Select value={String(value)} onValueChange={(v) => { if (v !== String(value)) onChange(v); }}>
+      <Select value={String(value)} onValueChange={(v) => { if (v !== null && v !== String(value)) onChange(v); }} items={items}>
         <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          {(field.options ?? []).map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+        {/* alignItemWithTrigger=false: drop below the trigger (shadcn-classic)
+            instead of Base UI's macOS-style overlay atop the control. */}
+        <SelectContent alignItemWithTrigger={false}>
+          {(field.options ?? []).map((o) => <SelectItem key={o.value} value={o.value}>{display(o)}</SelectItem>)}
         </SelectContent>
       </Select>
     );
@@ -143,7 +171,7 @@ function FieldControl({ field, value, onChange }: { field: Field; value: unknown
 // so nothing pops in beside the hidden reset button. A rejected write keeps
 // the typed input.
 function SettingRow(props: {
-  field: Field; value: unknown; effective: unknown; platformValue?: unknown; drifted?: boolean;
+  field: Field; fieldKey?: string; value: unknown; effective: unknown; platformValue?: unknown; drifted?: boolean;
   onWrite: (v: unknown | undefined) => Promise<void>;
 }) {
   const modified = props.value !== null && props.value !== undefined;
@@ -183,8 +211,10 @@ function SettingRow(props: {
           >
             <RotateCcw className="size-3.5" />
           </Button>
-          <span className={`inline-flex transition-shadow duration-300 ${props.field.type === "boolean" ? "rounded-full" : "rounded-md"} ${saved ? "ring-2 ring-primary/40" : ""}`}>
-            <FieldControl field={props.field} value={props.effective} onChange={commit} />
+          {/* rounded-full/-lg mirror the control's own radius (switch / base-nova
+              input+select trigger) so the saved ring hugs it without a corner gap. */}
+          <span className={`inline-flex transition-shadow duration-300 ${props.field.type === "boolean" ? "rounded-full" : "rounded-lg"} ${saved ? "ring-2 ring-primary/40" : ""}`}>
+            <FieldControl field={props.field} fieldKey={props.fieldKey} value={props.effective} onChange={commit} />
           </span>
         </div>
         {props.platformValue !== undefined && (
@@ -246,12 +276,21 @@ function ServiceTabs({ tabs, initial, children }: { tabs: ServiceTab[]; initial?
         })}
       </TabsList>
       {/* keepMounted: inactive panels stay mounted (and hidden) so an uncommitted
-          draft or rejected-write error survives switching tabs. */}
-      {tabs.map((t) => (
-        <TabsContent key={t.name} value={t.name} keepMounted>
-          {children(t)}
-        </TabsContent>
-      ))}
+          draft or rejected-write error survives switching tabs. The grid stacks
+          all panels in one cell and overrides `hidden` to invisible-but-laid-out,
+          so the container holds the tallest tab's height — no jump on switching.
+          visibility:hidden keeps inactive panels out of the a11y tree and focus
+          order, as `hidden` did. */}
+      <div className="grid">
+        {tabs.map((t) => (
+          <TabsContent
+            key={t.name} value={t.name} keepMounted
+            className="col-start-1 row-start-1 [&[hidden]]:block [&[hidden]]:invisible"
+          >
+            {children(t)}
+          </TabsContent>
+        ))}
+      </div>
     </Tabs>
   );
 }
@@ -275,7 +314,7 @@ function SectionedTab({ sections, renderSection }: { sections: string[]; renderS
 
 const platformRow = (invalidate: () => void) => (e: PlatformEntry) => (
   <SettingRow
-    key={e.key} field={e.field} value={e.value} effective={e.effective} drifted={e.drifted}
+    key={e.key} field={e.field} fieldKey={e.key} value={e.value} effective={e.effective} drifted={e.drifted}
     onWrite={async (v) => { await write(`/api/settings/${e.key}`, v); invalidate(); }}
   />
 );
@@ -432,6 +471,7 @@ function ServiceOverridesCard({ app, overrides, invalidate }: {
     <SettingRow
       key={o.key}
       field={o.field}
+      fieldKey={o.key}
       value={o.override}
       effective={o.override ?? o.platformEffective}
       platformValue={o.platformEffective}
@@ -487,7 +527,7 @@ function AppSection({ app }: { app: AppInfo }) {
           {declared.map((d) =>
             d.field ? (
               <SettingRow
-                key={d.key} field={d.field} value={d.value} effective={d.effective} drifted={d.drifted}
+                key={d.key} field={d.field} fieldKey={d.key} value={d.value} effective={d.effective} drifted={d.drifted}
                 onWrite={async (v) => { await write(`/api/apps/${app.appId}/settings/${d.key}`, v); invalidate(); }}
               />
             ) : (
