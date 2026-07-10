@@ -121,9 +121,16 @@ export const weather_log = task({
     const data = await res.json<{
       list: { dt: number; main: { temp_min: number; temp_max: number; humidity: number }; wind: { speed: number }; rain?: Record<string, number> }[];
     }>();
-    const day = new Date().toISOString().slice(0, 10);
-    const today = data.list.filter((x) => new Date(x.dt * 1000).toISOString().slice(0, 10) === day);
-    if (today.length === 0) return;
+    // Day key in machine-local time — never toISOString (UTC): the cron fires
+    // at 7am local, and east of UTC the ISO date is still yesterday's.
+    const localDay = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const day = localDay(new Date());
+    const today = data.list.filter((x) => localDay(new Date(x.dt * 1000)) === day);
+    if (today.length === 0) {
+      logs.info("sky journal: no forecast slots for today yet", { day });
+      return;
+    }
     const row = {
       day,
       high: Math.max(...today.map((x) => x.main.temp_max)),
