@@ -151,6 +151,17 @@ describe("gateways e2e (real worker, worker-token door)", () => {
       body: JSON.stringify({ slug }),
     });
     expect(linked.status).toBe(200);
+
+    // Turn body capture on (default false) via the real platform settings API —
+    // the stub echoes the injected URL (raw credential) in its response body, so
+    // with capture on the redaction assertion below is exercised for real.
+    const captureOn = await fetch(`${base}/api/settings/gateways.capture_bodies`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: true }),
+    });
+    expect(captureOn.status).toBe(200);
+
     // The stub echoes the URL it received — the key was injected by the HOST;
     // the worker only ever said "GET /hello?name=greenhouse".
     expect(await probe()).toBe("ok:/hello?name=greenhouse&key=gw-e2e-key");
@@ -163,10 +174,21 @@ describe("gateways e2e (real worker, worker-token door)", () => {
     });
     expect(bare.status).toBe(401);
 
-    // One log record per request, filterable both ways, credential absent.
+    // One log record per request, filterable both ways, credential absent. The
+    // success record's captured responseBody held "key=gw-e2e-key" on the wire —
+    // it must arrive in the log scrubbed to "•••".
     const logs = await (await fetch(`${base}/api/logs?app=${APP}&source=gateway:local-probe`)).json();
     expect(logs.records.length).toBeGreaterThan(0);
+    const okRecords = logs.records.filter(
+      (r: { fields: Record<string, unknown> | null }) => r.fields?.outcome === "ok",
+    );
+    expect(okRecords.length).toBe(1);
+    expect(okRecords[0].fields.responseBody).toContain("•••");
     expect(JSON.stringify(logs)).not.toContain("gw-e2e-key");
+
+    // Reset capture so the override doesn't bleed past this test.
+    const captureOff = await fetch(`${base}/api/settings/gateways.capture_bodies`, { method: "DELETE" });
+    expect(captureOff.status).toBe(200);
 
     await fetch(`${base}/api/apps/${APP}/gateways/probe/slots/api_key/link`, { method: "DELETE" });
     expect(await probe()).toBe("err:unconfigured");
