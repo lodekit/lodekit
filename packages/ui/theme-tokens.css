@@ -2,6 +2,9 @@
    --accent maps to shadcn's --primary (buttons, fills, active states); shadcn's
    own --accent stays a neutral hover wash and must not carry the amber. */
 :root {
+  /* Native scrollbars and form controls follow the theme; without this the
+     browser paints them light-scheme even under .dark. */
+  color-scheme: light;
   --font-display: "Fraunces", Georgia, serif;
   --font-ui: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --radius: 0.625rem;
@@ -39,6 +42,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: #0e1b26;
   --foreground: #f4f9fd;
   --card: #152634;
