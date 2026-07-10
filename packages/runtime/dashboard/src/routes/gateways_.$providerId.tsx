@@ -8,7 +8,7 @@ import {
 } from "@lodekit/ui";
 import { useSSEEvent } from "../components/sse";
 
-export const Route = createFileRoute("/gateways/$providerId")({ component: GatewayDetail });
+export const Route = createFileRoute("/gateways_/$providerId")({ component: GatewayDetail });
 
 // Shapes mirror services/gateways.ts payloads exactly.
 interface SlotState {
