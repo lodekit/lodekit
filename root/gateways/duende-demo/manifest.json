@@ -1,0 +1,20 @@
+{
+  "name": "Duende IdentityServer demo",
+  "website": "https://demo.duendesoftware.com",
+  "base_url": "https://demo.duendesoftware.com",
+  "auth": {
+    "kind": "oauth2",
+    "authorization_url": "https://demo.duendesoftware.com/connect/authorize",
+    "token_url": "https://demo.duendesoftware.com/connect/token",
+    "scopes": ["openid", "profile", "api", "offline_access"],
+    "pkce": true,
+    "client_id_slot": "client_id"
+  },
+  "slots": {
+    "client_id": {
+      "kind": "config",
+      "label": "Demo client id",
+      "description": "A published public client from demo.duendesoftware.com — use interactive.public.short to watch transparent refresh fire (75 s tokens), or interactive.public for calm 1 h tokens."
+    }
+  }
+}

@@ -3,7 +3,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { sql } from "drizzle-orm";
 import { db, plants, careRules, careState, journal } from "../db";
-import { kv, files, tasks, logs, appId } from "@lodekit/sdk";
+import { kv, files, tasks, logs, appId, gateways, GatewayError } from "@lodekit/sdk";
 import { Button, Card, CardContent, CardHeader, CardTitle } from "@lodekit/ui";
 import { seedIfNeeded } from "../seed";
 
@@ -51,9 +51,65 @@ export const exportSnapshot = createServerFn().handler(async () => {
   return stat.slug;
 });
 
+// The OAuth rail, live (gateways spec §14): Connect in the dashboard, then
+// this call rides a bearer token the runtime injected — and transparently
+// refreshed. App code never sees the token.
+export const fetchGatewayIdentity = createServerFn().handler(async () => {
+  try {
+    const res = await gateways.oauth_demo.get("/api/test");
+    if (!res.ok) return { state: "error" as const, message: `HTTP ${res.status}` };
+    return { state: "ok" as const, claims: await res.json<unknown>() };
+  } catch (e) {
+    if (e instanceof GatewayError) {
+      if (e.reason === "unconfigured") return { state: "unconfigured" as const, message: e.message };
+      if (e.reason === "needs_reauth") return { state: "needs_reauth" as const, message: e.message };
+      return { state: "error" as const, message: e.message };
+    }
+    return { state: "error" as const, message: e instanceof Error ? e.message : String(e) };
+  }
+});
+
 export const Route = createFileRoute("/shed")({
   component: Shed,
 });
+
+function GatewayDemoCard() {
+  const [result, setResult] = useState<Awaited<ReturnType<typeof fetchGatewayIdentity>> | null>(null);
+  const [busy, setBusy] = useState(false);
+  const check = async () => {
+    setBusy(true);
+    try {
+      setResult(await fetchGatewayIdentity());
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Card>
+      <CardHeader><CardTitle>Gateway demo — connected identity</CardTitle></CardHeader>
+      <CardContent className="space-y-2">
+        <p className="text-sm text-muted-foreground">
+          Calls Duende's public OAuth demo through the <code>oauth_demo</code> gateway.
+          Set the client id and click Connect on the gateway page first (demo login:
+          alice/alice or bob/bob).
+        </p>
+        <Button size="sm" disabled={busy} onClick={() => void check()}>
+          {busy ? "Checking…" : "Check identity"}
+        </Button>
+        {result?.state === "ok" && (
+          <pre className="overflow-auto rounded bg-muted p-2 text-xs">{JSON.stringify(result.claims, null, 2)}</pre>
+        )}
+        {result?.state === "unconfigured" && (
+          <p className="text-sm text-muted-foreground">Not connected yet — {result.message}</p>
+        )}
+        {result?.state === "needs_reauth" && (
+          <p className="text-sm text-destructive">Session expired — reconnect on the gateway page.</p>
+        )}
+        {result?.state === "error" && <p className="text-sm text-destructive">{result.message}</p>}
+      </CardContent>
+    </Card>
+  );
+}
 
 function Shed() {
   const router = useRouter();
@@ -172,6 +228,8 @@ function Shed() {
           </p>
         </CardContent>
       </Card>
+
+      <GatewayDemoCard />
     </main>
   );
 }
