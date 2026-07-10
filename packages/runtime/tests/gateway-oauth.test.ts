@@ -148,6 +148,7 @@ describe("connect flow", () => {
     const payload = encodeURIComponent("<img src=x onerror=alert(1)>");
     const res = await app.request(`/api/gateways/oauth/callback?state=${st}&error=${payload}`);
     expect(res.status).toBe(400);
+    expect(res.headers.get("content-security-policy")).toBe("default-src 'none'; style-src 'unsafe-inline'");
     const html = await res.text();
     expect(html).not.toContain("<img");
     expect(html).toContain("&lt;img");

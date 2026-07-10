@@ -254,6 +254,9 @@ export function platformGatewaysRoutes(cfg: Config) {
       return c.json({ gateways });
     })
     .get("/oauth/callback", async (c) => {
+      // Belt-and-braces on top of the escaping: these pages need no scripts,
+      // no fetches, nothing but their inline styles.
+      c.header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'");
       try {
         const { appId, alias } = await handleOauthCallback({
           code: c.req.query("code"), state: c.req.query("state"), error: c.req.query("error"),

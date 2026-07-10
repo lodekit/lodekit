@@ -73,7 +73,7 @@ const breakers = new Map<string, Breaker>();
 const semaphores = new Map<string, { limit: number; sem: Semaphore }>();
 const unhealthy = new Set<string>(); // `${appId}\n${alias}`
 
-// Task 8 wires the OAuth module in here; until then oauth2 is unconfigured.
+// gatewayOauth.ts wires the OAuth module in here at init; without it oauth2 is unconfigured.
 type OauthTokenProvider = (providerId: string, manifest: GatewayManifest, appId: string, alias: string) => Promise<{ token: string; redact: string[] }>;
 let oauthTokenProvider: OauthTokenProvider | null = null;
 /** @internal seam for gatewayOauth.ts */
