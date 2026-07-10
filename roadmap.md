@@ -172,6 +172,14 @@ above; the remainder:
   versions requires `pnpm rebuild better-sqlite3` (ABI mismatch otherwise).
 
 ## Other deferred items
+- **Revisit "hosting" terminology holistically across the platform** — the dashboard's
+  settings section was renamed to **Engine** (UI revamp, 2026-07-10; person-facing label
+  only — see the Engine entry in `context.md`), but the underlying vocabulary still says
+  "hosting" everywhere else: the `hosting.*` setting keys (`request_timeout`,
+  `restart_backoff_base`, `restart_backoff_cap`), their consumers in
+  `packages/runtime/src/appWorker.ts`, and the `platformSettings.ts` catalog. Decide the
+  canonical word (Engine vs hosting vs runtime) end to end; a key rename touches stored
+  per-app overrides in `_setting_values`, so it wants a small migration if ever done.
 - **Accepting destructive db-store migrations** — a person-facing confirmation flow
   that lets a gated schema change apply deliberately (db-store spec §14); until then
   the gate + the skill's expand-copy habit is the whole story.
