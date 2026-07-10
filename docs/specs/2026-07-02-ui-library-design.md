@@ -64,7 +64,9 @@ packages/ui/
   (ex-Radix + MUI people) gathers momentum, but Radix is stable, and the barrel insulates
   the bet: apps import `Button` from `@lodekit/ui`, never a primitive, so a later Radix →
   Base UI migration is an internal per-component change in `packages/ui` that touches no
-  app. Revisit if/when upstream shadcn migrates.
+  app. Revisit if/when upstream shadcn migrates. **Superseded 2026-07-10:** upstream
+  shadcn flipped its default to Base UI; migrated per
+  `docs/specs/2026-07-10-base-ui-migration-design.md` (base-nova set over `@base-ui/react`).
 - **Core set (v0.1) — every shadcn component that rides on the base dependencies** (Radix
   primitives, cva, clsx/tailwind-merge, or a small single-purpose lib), so agents reaching
   for any common shadcn name find it. Concretely: Accordion, Alert, AlertDialog,
