@@ -137,7 +137,7 @@ function applyIconStyle(style) {
   rebuildMenu(); // re-renders the tray icon
 }
 
-// Same setting as the dashboard's General → Launch at login: apply to the OS here,
+// Same setting as the dashboard's General → Launch at Login: apply to the OS here,
 // and write it through to the runtime so the dashboard toggle follows. When the
 // runtime is down, the start() reconcile (OS wins) catches the setting up later.
 function toggleLoginItem() {
