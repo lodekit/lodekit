@@ -7,7 +7,7 @@ export function EmptyStub({ icon: Icon, title }: { icon: LucideIcon; title: stri
     <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon"><Icon aria-hidden="true" /></EmptyMedia>
-        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyTitle role="heading" aria-level={1}>{title}</EmptyTitle>
         <EmptyDescription>Nothing here yet.</EmptyDescription>
       </EmptyHeader>
     </Empty>
