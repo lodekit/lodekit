@@ -7,13 +7,25 @@
 import fs from "node:fs";
 import path from "node:path";
 import type Database from "better-sqlite3";
+import { Hono, type MiddlewareHandler } from "hono";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
 import { getAppDb } from "../db.js";
-import { isValidAppId } from "../registry.js";
+import { isValidAppId, scanApps } from "../registry.js";
 import type { Config } from "../config.js";
 import { emitLog } from "../logger.js";
+import { validationHook } from "../validation.js";
+import { verifyWorkerToken } from "../appWorker.js";
 import { emitGatewayChange } from "../gatewayEvents.js";
-import { GatewaysError, pruneGatewayConnections } from "../gatewaysStore.js";
-import { PROVIDER_ID_RE } from "../gatewayManifests.js";
+import {
+  GatewaysError, GatewaysNotFoundError, pruneGatewayConnections,
+  setGatewayLink, deleteGatewayLink, getGatewayLink,
+  setGatewayConfig, deleteGatewayConfig, getGatewayConfig,
+  oauthState, CONFIG_VALUE_MAX_BYTES,
+} from "../gatewaysStore.js";
+import { getGatewayEntry, listGatewayEntries, PROVIDER_ID_RE, type GatewayEntry } from "../gatewayManifests.js";
+import { executeGatewayRequest, getConnectionHealth, GatewayRequestError, REASON_STATUS } from "../gatewayEngine.js";
+import { SecretsUnavailableError } from "../secretsStore.js";
 
 export const CATALOG_NAME = "gateways";
 
@@ -106,3 +118,271 @@ export function listUses(db: Database.Database): { alias: string; def: UseDef | 
     { alias: string; def: string | null; error: string | null }[];
   return rows.map((r) => ({ alias: r.alias, def: r.def ? (JSON.parse(r.def) as UseDef) : null, error: r.error }));
 }
+
+// ---------- HTTP surface (spec §6/§8/§12) ----------
+
+// Error mapping shared by both routers: typed engine failures carry their
+// reason in the body so the SDK maps them without status-code archaeology.
+function errResponse(err: unknown) {
+  if (err instanceof GatewayRequestError) {
+    return { body: { error: err.message, reason: err.reason }, status: REASON_STATUS[err.reason] };
+  }
+  if (err instanceof SecretsUnavailableError) return { body: { error: err.message }, status: 503 as const };
+  if (err instanceof GatewaysNotFoundError) return { body: { error: err.message }, status: 404 as const };
+  if (err instanceof GatewaysError) return { body: { error: err.message }, status: 400 as const };
+  return { body: { error: err instanceof Error ? err.message : String(err) }, status: 500 as const };
+}
+
+const providerParam = z.object({ providerId: z.string().regex(PROVIDER_ID_RE).max(64) });
+const aliasParam = z.object({ alias: z.string().regex(ALIAS_RE).max(64) });
+const aliasSlotParam = z.object({
+  alias: z.string().regex(ALIAS_RE).max(64),
+  slot: z.string().regex(ALIAS_RE).max(64),
+});
+const linkBody = z.object({ slug: z.string().regex(/^[a-z0-9][a-z0-9-]*$/).max(128) });
+const valueBody = z.object({ value: z.string().min(1).max(CONFIG_VALUE_MAX_BYTES) });
+const requestBody = z
+  .object({
+    method: z.enum(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD"]),
+    path: z.string().regex(/^\//).max(2048),
+    query: z.record(z.string().max(200), z.string().max(4096)).optional(),
+    headers: z.record(z.string().max(100), z.string().max(4096)).optional(),
+    body: z.string().optional(),
+    bodyBase64: z.string().optional(),
+    timeoutMs: z.number().int().positive().optional(),
+  })
+  .refine((b) => !(b.body !== undefined && b.bodyBase64 !== undefined), { message: "body and bodyBase64 are exclusive" });
+
+function gatewaySummary(e: GatewayEntry) {
+  const m = e.manifest;
+  return {
+    providerId: e.providerId,
+    name: m?.name ?? e.providerId,
+    website: m?.website ?? null,
+    authKind: m?.auth.kind ?? null,
+    error: e.error,
+    hasFavicon: e.faviconFile !== null,
+    limits: m?.limits ?? null,
+  };
+}
+
+function slotDefs(e: GatewayEntry) {
+  return Object.entries(e.manifest?.slots ?? {}).map(([slot, d]) => ({
+    slot, kind: d.kind, label: d.label, description: d.description ?? null, optional: d.optional ?? false,
+  }));
+}
+
+/** One app's connection docs — slot state, oauth state, derived status. */
+export function connectionDocsForApp(cfg: Config, appId: string) {
+  return listUses(getUsesDb(cfg.dataDir, appId)).map(({ alias, def, error }) => {
+    const entry = def ? getGatewayEntry(def.provider) : undefined;
+    const m = entry?.manifest ?? null;
+    const slots = m
+      ? Object.entries(m.slots).map(([slot, d]) => {
+          if (d.kind === "secret") {
+            const secret = getGatewayLink(appId, alias, slot) ?? null;
+            return {
+              slot, kind: d.kind, label: d.label, description: d.description ?? null,
+              optional: d.optional ?? false,
+              status: secret ? ("linked" as const) : ("pending" as const), secret, value: null,
+            };
+          }
+          const value = getGatewayConfig(appId, alias, slot) ?? null;
+          return {
+            slot, kind: d.kind, label: d.label, description: d.description ?? null,
+            optional: d.optional ?? false,
+            status: value !== null ? ("set" as const) : ("pending" as const), secret: null, value,
+          };
+        })
+      : [];
+    const oauth = m?.auth.kind === "oauth2" ? { status: oauthState(appId, alias) } : null;
+    const declError =
+      error ??
+      (def && !entry
+        ? `no gateway "${def.provider}" — ask your agent to author gateways/${def.provider}/manifest.json`
+        : def && entry && entry.error
+          ? `gateway manifest invalid: ${entry.error}`
+          : null);
+    let status: "error" | "needs_setup" | "needs_reauth" | "unhealthy" | "connected";
+    if (declError) status = "error";
+    else if (slots.some((s) => !s.optional && s.status === "pending") || oauth?.status === "none") status = "needs_setup";
+    else if (oauth?.status === "needs_reauth") status = "needs_reauth";
+    else if (getConnectionHealth(appId, alias) === "unhealthy") status = "unhealthy";
+    else status = "connected";
+    return {
+      alias, provider: def?.provider ?? null, providerName: m?.name ?? def?.provider ?? null,
+      description: def?.description ?? null, error: declError, status, slots, oauth,
+    };
+  });
+}
+
+function collectConnections(cfg: Config): { appId: string; alias: string; provider: string }[] {
+  const out: { appId: string; alias: string; provider: string }[] = [];
+  for (const app of scanApps(cfg.appsDir)) {
+    for (const u of listUses(getUsesDb(cfg.dataDir, app.appId))) {
+      if (u.def) out.push({ appId: app.appId, alias: u.alias, provider: u.def.provider });
+    }
+  }
+  return out;
+}
+
+const FAVICON_TYPES: Record<string, string> = {
+  ".svg": "image/svg+xml", ".png": "image/png", ".ico": "image/x-icon",
+};
+
+export function platformGatewaysRoutes(cfg: Config) {
+  return new Hono()
+    .onError((err, c) => {
+      const { body, status } = errResponse(err);
+      return c.json(body, status);
+    })
+    .get("/", (c) => {
+      const connections = collectConnections(cfg);
+      const gateways = listGatewayEntries().map((e) => ({
+        ...gatewaySummary(e),
+        apps: connections
+          .filter((x) => x.provider === e.providerId)
+          .map(({ appId, alias }) => ({ appId, alias })),
+      }));
+      return c.json({ gateways });
+    })
+    .get("/:providerId/favicon", zValidator("param", providerParam, validationHook), (c) => {
+      const e = getGatewayEntry(c.req.valid("param").providerId);
+      if (!e?.faviconFile) return c.json({ error: "no favicon" }, 404);
+      const ext = path.extname(e.faviconFile).toLowerCase();
+      c.header("Content-Type", FAVICON_TYPES[ext] ?? "application/octet-stream");
+      c.header("Cache-Control", "no-store");
+      return c.body(fs.readFileSync(e.faviconFile));
+    })
+    .get("/:providerId", zValidator("param", providerParam, validationHook), (c) => {
+      const { providerId } = c.req.valid("param");
+      const e = getGatewayEntry(providerId);
+      if (!e) throw new GatewaysNotFoundError(`unknown gateway "${providerId}"`);
+      const connections = collectConnections(cfg)
+        .filter((x) => x.provider === providerId)
+        .flatMap(({ appId }) =>
+          connectionDocsForApp(cfg, appId)
+            .filter((d) => d.provider === providerId)
+            .map((d) => ({ appId, ...d }))
+        );
+      // An app may hold several aliases on one provider; dedupe identical rows.
+      const seen = new Set<string>();
+      const deduped = connections.filter((x) => {
+        const k = `${x.appId}\n${x.alias}`;
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      return c.json({ gateway: gatewaySummary(e), slots: slotDefs(e), connections: deduped });
+    });
+}
+
+export type PlatformGatewaysRoutes = ReturnType<typeof platformGatewaysRoutes>;
+
+export type GatewaysEnv = { Variables: { usesDb: Database.Database; appId: string } };
+
+export function withGateways(cfg: Config): MiddlewareHandler<GatewaysEnv> {
+  // appGatewaysRoutes is a plain chained const (for hc type inference), so it
+  // has no cfg of its own — bind it here, at mount construction, once.
+  bindGatewaysConfig(cfg);
+  return async (c, next) => {
+    const appId = c.req.param("appId");
+    if (!appId || !isValidAppId(appId)) return c.json({ error: "invalid app id" }, 400);
+    c.set("usesDb", getUsesDb(cfg.dataDir, appId));
+    c.set("appId", appId);
+    await next();
+  };
+}
+
+// 404 gate shared by the per-alias routes: the alias must be declared; slot
+// routes additionally resolve the provider's slot def (kind decides the verb).
+function requireUse(db: Database.Database, alias: string): UseDef {
+  const use = listUses(db).find((u) => u.alias === alias);
+  if (!use) throw new GatewaysNotFoundError(`unknown gateway alias "${alias}"`);
+  if (!use.def) throw new GatewaysError(use.error ?? "invalid gateway declaration");
+  return use.def;
+}
+
+function requireSlotDef(db: Database.Database, alias: string, slot: string) {
+  const def = requireUse(db, alias);
+  const entry = getGatewayEntry(def.provider);
+  if (!entry?.manifest) throw new GatewaysError(`gateway "${def.provider}" is missing or invalid`);
+  const slotDef = entry.manifest.slots[slot];
+  if (!slotDef) throw new GatewaysNotFoundError(`gateway "${def.provider}" declares no slot "${slot}"`);
+  return slotDef;
+}
+
+let appCfg: Config | null = null;
+/** The app router reads cfg through withGateways' closure sibling — set once at mount. */
+export function bindGatewaysConfig(cfg: Config): void {
+  appCfg = cfg;
+}
+
+export const appGatewaysRoutes = new Hono<GatewaysEnv>()
+  .onError((err, c) => {
+    const { body, status } = errResponse(err);
+    return c.json(body, status);
+  })
+  .get("/", (c) => {
+    if (!appCfg) return c.json({ error: "gateways not initialized" }, 503);
+    return c.json({ connections: connectionDocsForApp(appCfg, c.var.appId) });
+  })
+  .put(
+    "/:alias/slots/:slot/link",
+    zValidator("param", aliasSlotParam, validationHook),
+    zValidator("json", linkBody, validationHook),
+    (c) => {
+      const { alias, slot } = c.req.valid("param");
+      const def = requireSlotDef(c.var.usesDb, alias, slot);
+      if (def.kind !== "secret") throw new GatewaysError(`slot "${slot}" is a config slot — set a value instead`);
+      setGatewayLink(c.var.appId, alias, slot, c.req.valid("json").slug);
+      emitGatewayChange(c.var.appId, alias);
+      return c.json({ ok: true as const });
+    }
+  )
+  .delete("/:alias/slots/:slot/link", zValidator("param", aliasSlotParam, validationHook), (c) => {
+    const { alias, slot } = c.req.valid("param");
+    const def = requireSlotDef(c.var.usesDb, alias, slot);
+    if (def.kind !== "secret") throw new GatewaysError(`slot "${slot}" is a config slot`);
+    deleteGatewayLink(c.var.appId, alias, slot);
+    emitGatewayChange(c.var.appId, alias);
+    return c.json({ ok: true as const });
+  })
+  .put(
+    "/:alias/slots/:slot/value",
+    zValidator("param", aliasSlotParam, validationHook),
+    zValidator("json", valueBody, validationHook),
+    (c) => {
+      const { alias, slot } = c.req.valid("param");
+      const def = requireSlotDef(c.var.usesDb, alias, slot);
+      if (def.kind !== "config") throw new GatewaysError(`slot "${slot}" is a secret slot — link a secret instead`);
+      setGatewayConfig(c.var.appId, alias, slot, c.req.valid("json").value);
+      emitGatewayChange(c.var.appId, alias);
+      return c.json({ ok: true as const });
+    }
+  )
+  .delete("/:alias/slots/:slot/value", zValidator("param", aliasSlotParam, validationHook), (c) => {
+    const { alias, slot } = c.req.valid("param");
+    const def = requireSlotDef(c.var.usesDb, alias, slot);
+    if (def.kind !== "config") throw new GatewaysError(`slot "${slot}" is a secret slot`);
+    deleteGatewayConfig(c.var.appId, alias, slot);
+    emitGatewayChange(c.var.appId, alias);
+    return c.json({ ok: true as const });
+  })
+  // The ONLY traffic route (spec §6). Token first — no oracle for probing
+  // connection state without server-side standing.
+  .post(
+    "/:alias/request",
+    zValidator("param", aliasParam, validationHook),
+    zValidator("json", requestBody, validationHook),
+    async (c) => {
+      if (!verifyWorkerToken(c.var.appId, c.req.header("x-lodekit-worker-token"))) {
+        return c.json({ error: "gateways are server-only" }, 401);
+      }
+      const { alias } = c.req.valid("param");
+      requireUse(c.var.usesDb, alias);
+      return c.json(await executeGatewayRequest(c.var.appId, alias, c.req.valid("json")));
+    }
+  );
+
+export type GatewaysRoutes = typeof appGatewaysRoutes;

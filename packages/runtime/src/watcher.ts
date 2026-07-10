@@ -6,6 +6,8 @@ import { emitEvent, PLATFORM_NS } from "./events.js";
 import { isValidAppId } from "./registry.js";
 import { buildAll, buildApp, buildDashboard, dropBuild } from "./build.js";
 import { createLogger } from "./logger.js";
+import { reloadGatewayManifests } from "./gatewayManifests.js";
+import { emitGatewayChange } from "./gatewayEvents.js";
 
 const DEBOUNCE_MS = 150;
 
@@ -105,24 +107,43 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
   });
   rootWatcher.on("add", onGlobalTheme).on("change", onGlobalTheme).on("unlink", onGlobalTheme);
 
+  // The gateways tree (spec §4): manifest edits re-validate live and announce
+  // themselves — the dashboard refetches, the engine reads the new registry
+  // entry on the next request. mkdir first: chokidar's ready never fires for
+  // a missing path, and materializing an empty gateways/ is harmless.
+  fs.mkdirSync(cfg.gatewaysDir, { recursive: true });
+  let gatewaysTimer: NodeJS.Timeout | undefined;
+  const onGateways = () => {
+    clearTimeout(gatewaysTimer);
+    gatewaysTimer = setTimeout(() => {
+      for (const id of reloadGatewayManifests()) emitGatewayChange(PLATFORM_NS, id);
+    }, DEBOUNCE_MS);
+  };
+  const gatewaysWatcher = chokidar.watch(cfg.gatewaysDir, { ignoreInitial: true });
+  gatewaysWatcher
+    .on("add", onGateways).on("change", onGateways).on("unlink", onGateways)
+    .on("addDir", onGateways).on("unlinkDir", onGateways);
+
   // Resolve only once both watchers have completed their initial scan. Chokidar with
   // ignoreInitial drops add/change events that land before "ready" fires, so returning
   // eagerly leaves a window where an app created right after boot is never built.
   await Promise.all([
     new Promise<void>((r) => watcher.once("ready", () => r())),
     new Promise<void>((r) => rootWatcher.once("ready", () => r())),
+    new Promise<void>((r) => gatewaysWatcher.once("ready", () => r())),
   ]);
 
   return {
     close: async () => {
       clearTimeout(globalTimer);
       clearTimeout(notifyTimer);
+      clearTimeout(gatewaysTimer);
       // Cancel any in-flight per-app debounce so it can't fire buildApp after close —
       // against a root a caller is about to remove (ENOENT) and clobbering a same-named
       // app's fresh state. The unlinkDir handler clears these per app; close clears the rest.
       for (const t of timers.values()) clearTimeout(t);
       timers.clear();
-      await Promise.all([watcher.close(), rootWatcher.close()]);
+      await Promise.all([watcher.close(), rootWatcher.close(), gatewaysWatcher.close()]);
     },
   };
 }

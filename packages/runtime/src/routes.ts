@@ -20,6 +20,7 @@ import { queryEvents } from "./eventStore.js";
 import { NS_RE } from "./events.js";
 import { platformSettingsRoutes, settingsRoutes, withSettings, CATALOG_NAME as SETTINGS } from "./services/settings.js";
 import { platformSecretsRoutes, appSecretsRoutes, withSecrets } from "./services/secret-store.js";
+import { platformGatewaysRoutes, appGatewaysRoutes, withGateways, bindGatewaysConfig, CATALOG_NAME as GATEWAYS } from "./services/gateways.js";
 
 // Holds the stream open until the client disconnects; the abort callback
 // removes the client from the SSE registry.
@@ -34,6 +35,7 @@ function sseHandler(appId?: string) {
 }
 
 export function apiRoutes(cfg: Config) {
+  bindGatewaysConfig(cfg);
   return new Hono()
     .use(`/apps/:appId/${FILES}/*`, withFiles(cfg))
     .route(`/apps/:appId/${FILES}`, filesRoutes)
@@ -75,6 +77,9 @@ export function apiRoutes(cfg: Config) {
     .route("/secrets", platformSecretsRoutes)
     .use("/apps/:appId/secrets/*", withSecrets(cfg))
     .route("/apps/:appId/secrets", appSecretsRoutes)
+    .route(`/${GATEWAYS}`, platformGatewaysRoutes(cfg))
+    .use(`/apps/:appId/${GATEWAYS}/*`, withGateways(cfg))
+    .route(`/apps/:appId/${GATEWAYS}`, appGatewaysRoutes)
     // Global event history (dashboard + MCP); /api/events itself stays the SSE feed.
     .get(
       "/events/history",
