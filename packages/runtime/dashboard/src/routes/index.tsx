@@ -57,6 +57,24 @@ function PendingSecretsBadge({ appId }: { appId: string }) {
   );
 }
 
+// The "connection needs the person" nudge (gateways spec §12): pending slots
+// or an unconnected/expired OAuth, visible without hunting.
+function PendingGatewaysBadge({ appId }: { appId: string }) {
+  const q = useQuery<{ connections: { status: string }[] }>({
+    queryKey: ["gateways", appId],
+    queryFn: async () => (await fetch(`/api/apps/${appId}/gateways`)).json(),
+  });
+  const pending = (q.data?.connections ?? []).filter(
+    (c) => c.status === "needs_setup" || c.status === "needs_reauth"
+  ).length;
+  if (pending === 0) return null;
+  return (
+    <Link to="/gateways">
+      <Badge variant="outline">{pending} gateway{pending === 1 ? "" : "s"} to set up</Badge>
+    </Link>
+  );
+}
+
 function DashboardHome() {
   const apps = useQuery<AppInfo[]>({
     queryKey: ["apps"],
@@ -119,6 +137,7 @@ function DashboardHome() {
               <StateBadge state={states[a.appId]} />
               <ServerStateBadge state={serverStates[a.appId]} />
               <PendingSecretsBadge appId={a.appId} />
+              <PendingGatewaysBadge appId={a.appId} />
             </div>
           </CardHeader>
         </Card>

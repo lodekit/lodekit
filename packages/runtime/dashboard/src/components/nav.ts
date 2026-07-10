@@ -1,5 +1,5 @@
 // packages/runtime/dashboard/src/components/nav.ts
-import { Cpu, Database, Folder, KeyRound, ListChecks, Palette, ScrollText, Zap, type LucideIcon } from "lucide-react";
+import { Cpu, Database, Folder, KeyRound, ListChecks, Palette, Plug, ScrollText, Zap, type LucideIcon } from "lucide-react";
 
 // The services menu / command-bar page list (UI revamp spec §2). `to` navigates
 // inside the SPA; `href` (currently unused) is a full-page navigation escape
@@ -11,6 +11,7 @@ export const SERVICES: ServiceEntry[] = [
   { label: "Tasks", icon: ListChecks, to: "/tasks" },
   { label: "Events", icon: Zap, to: "/events" },
   { label: "Secrets", icon: KeyRound, to: "/secrets" },
+  { label: "Gateways", icon: Plug, to: "/gateways" },
   { label: "Logs", icon: ScrollText, to: "/logs" },
   { label: "Themes", icon: Palette, to: "/themes" },
 ];
@@ -27,5 +28,6 @@ export const SERVICE_ICONS: Record<string, LucideIcon> = {
   Tasks: ListChecks,
   Events: Zap,
   Logs: ScrollText,
+  Gateways: Plug,
   Engine: Cpu,
 };

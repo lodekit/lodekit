@@ -38,7 +38,7 @@ interface SlotEntry {
 interface AppInfo { appId: string; name: string; icon?: string }
 
 // Pinned display order (UI revamp spec §4); unknown future sections append.
-const SERVICE_ORDER = ["Store", "Files", "Tasks", "Events", "Logs", "Engine"];
+const SERVICE_ORDER = ["Store", "Files", "Tasks", "Events", "Logs", "Gateways", "Engine"];
 
 // Icons shown beside select options ("<icon> Knockout"), keyed by setting key →
 // option value. icon_style uses the actual jar-cloud marks (logo.tsx). Selects

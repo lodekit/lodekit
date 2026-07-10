@@ -24,8 +24,10 @@ const MAX_LIVE_ROWS = 500;
 const MAX_ROWS = 1000;
 
 export const Route = createFileRoute("/logs")({
-  validateSearch: (s: Record<string, unknown>): { app?: string } =>
-    typeof s.app === "string" && s.app ? { app: s.app } : {},
+  validateSearch: (s: Record<string, unknown>): { app?: string; source?: string } => ({
+    ...(typeof s.app === "string" && s.app ? { app: s.app } : {}),
+    ...(typeof s.source === "string" && s.source ? { source: s.source } : {}),
+  }),
   component: LogsView,
 });
 
@@ -62,7 +64,7 @@ function Row({ r }: { r: LogRecord }) {
 }
 
 function LogsView() {
-  const { app } = Route.useSearch();
+  const { app, source } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [apps, setApps] = useState<{ appId: string; name: string }[]>([]);
   const [level, setLevel] = useState<Level>("debug");
@@ -80,14 +82,15 @@ function LogsView() {
   const filterQuery = useMemo(() => {
     const query = new URLSearchParams({ limit: "200" });
     if (app) query.set("app", app);
+    if (source) query.set("source", source);
     if (level !== "debug") query.set("level", level);
     if (debouncedQ) query.set("q", debouncedQ);
     return query;
-  }, [app, level, debouncedQ]);
+  }, [app, source, level, debouncedQ]);
 
   // Current filters, readable from the persistent SSE handler without reopening the connection.
-  const filtersRef = useRef({ app, level, q: debouncedQ });
-  filtersRef.current = { app, level, q: debouncedQ };
+  const filtersRef = useRef({ app, source, level, q: debouncedQ });
+  filtersRef.current = { app, source, level, q: debouncedQ };
 
   // Records that arrived over SSE while a backfill was in flight (records === null); merged in
   // once the backfill resolves so they aren't dropped.
@@ -123,9 +126,10 @@ function LogsView() {
   // matching records from the shared SSE stream.
   useSSEEvent("log", (e) => {
     const r = JSON.parse(e.data) as LogRecord;
-    const { app, level, q } = filtersRef.current;
+    const { app, source, level, q } = filtersRef.current;
     const matches =
       (!app || (app === "_platform" ? r.appId === null : r.appId === app)) &&
+      (!source || r.source === source) &&
       LEVEL_RANK[r.level] >= LEVEL_RANK[level] &&
       (!q || r.message.toLowerCase().includes(q.toLowerCase()));
     if (!matches) return;
@@ -162,7 +166,8 @@ function LogsView() {
     setNextBefore(d.nextBefore);
   }
 
-  const setApp = (value?: string) => void navigate({ search: value ? { app: value } : {} });
+  const setApp = (value?: string) =>
+    void navigate({ search: { ...(value ? { app: value } : {}), ...(source ? { source } : {}) } });
 
   return (
     <div>
@@ -188,6 +193,13 @@ function LogsView() {
             <option key={l} value={l}>{l}+</option>
           ))}
         </select>
+        {source && (
+          <Badge variant="secondary" className="gap-1">
+            source: {source}
+            <button aria-label="clear source filter"
+              onClick={() => void navigate({ search: app ? { app } : {} })}>×</button>
+          </Badge>
+        )}
         <input
           className="h-8 flex-1 rounded-md border bg-background px-2 text-sm"
           placeholder="Search messages…"
