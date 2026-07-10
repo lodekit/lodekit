@@ -5,6 +5,7 @@ import path from "node:path";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { createHash } from "node:crypto";
+import { Hono } from "hono";
 import type { Config } from "../src/config.js";
 import { initGatewayOauth, resetGatewayOauthForTest, startOauth, handleOauthCallback } from "../src/gatewayOauth.js";
 import { initGatewayManifests, resetGatewayManifestsForTest } from "../src/gatewayManifests.js";
@@ -12,7 +13,7 @@ import {
   initGatewaysStore, closeGatewaysStoreForTest, setGatewayConfig, loadOauthTokens, saveOauthTokens, oauthState,
 } from "../src/gatewaysStore.js";
 import { initSecretStore, closeSecretStoreForTest } from "../src/secretsStore.js";
-import { applyGatewaysManifest } from "../src/services/gateways.js";
+import { applyGatewaysManifest, platformGatewaysRoutes } from "../src/services/gateways.js";
 import {
   initGatewayEngine, resetGatewayEngineForTest, executeGatewayRequest, GatewayRequestError,
 } from "../src/gatewayEngine.js";
@@ -137,6 +138,19 @@ describe("connect flow", () => {
     expect(oauthState(APP, ALIAS)).toBe("connected");
     // a state can't be replayed
     await expect(handleOauthCallback({ code: "code-123", state: u.searchParams.get("state")! })).rejects.toThrow();
+  });
+
+  it("the callback failure page escapes provider-controlled strings", async () => {
+    setGatewayConfig(APP, ALIAS, "client_id", "interactive.public");
+    const { authorizeUrl } = startOauth(APP, ALIAS);
+    const st = new URL(authorizeUrl).searchParams.get("state")!;
+    const app = new Hono().route("/api/gateways", platformGatewaysRoutes(cfg()));
+    const payload = encodeURIComponent("<img src=x onerror=alert(1)>");
+    const res = await app.request(`/api/gateways/oauth/callback?state=${st}&error=${payload}`);
+    expect(res.status).toBe(400);
+    const html = await res.text();
+    expect(html).not.toContain("<img");
+    expect(html).toContain("&lt;img");
   });
 });
 

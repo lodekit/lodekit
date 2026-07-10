@@ -122,6 +122,12 @@ export function listUses(db: Database.Database): { alias: string; def: UseDef | 
 
 // ---------- HTTP surface (spec §6/§8/§12) ----------
 
+// For the oauth callback's HTML pages (server.ts's fallback-page escape):
+// failure messages can echo provider-controlled strings (?error=, token-
+// endpoint error codes) — never render them unescaped.
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
+
 // Error mapping shared by both routers: typed engine failures carry their
 // reason in the body so the SDK maps them without status-code archaeology.
 function errResponse(err: unknown) {
@@ -255,13 +261,13 @@ export function platformGatewaysRoutes(cfg: Config) {
         return c.html(
           `<!doctype html><meta charset="utf-8"><title>Lodekit</title>
            <body style="font-family:ui-sans-serif,system-ui;max-width:480px;margin:20vh auto;text-align:center">
-           <h2>Connected</h2><p>${appId} · ${alias} is connected. You can close this tab.</p></body>`
+           <h2>Connected</h2><p>${escapeHtml(appId)} · ${escapeHtml(alias)} is connected. You can close this tab.</p></body>`
         );
       } catch (e) {
         return c.html(
           `<!doctype html><meta charset="utf-8"><title>Lodekit</title>
            <body style="font-family:ui-sans-serif,system-ui;max-width:480px;margin:20vh auto;text-align:center">
-           <h2>Connection failed</h2><p>${e instanceof Error ? e.message : String(e)}</p></body>`,
+           <h2>Connection failed</h2><p>${escapeHtml(e instanceof Error ? e.message : String(e))}</p></body>`,
           400
         );
       }
