@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useRef, useState, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useRef, useState, type ComponentType, type FocusEvent, type KeyboardEvent, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
@@ -7,11 +7,12 @@ import {
   Collapsible, CollapsibleContent, CollapsibleTrigger,
   Field as FieldRoot, FieldContent, FieldDescription, FieldError, FieldLabel,
   Input, Label,
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Switch,
+  Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton, Switch,
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@lodekit/ui";
-import { ChevronDown, Circle, CircleDot, Monitor, Moon, RotateCcw, Sun, type LucideIcon } from "lucide-react";
+import { ChevronDown, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 import { SERVICE_ICONS } from "../components/nav";
+import { MARKS } from "../components/logo";
 
 export const Route = createFileRoute("/settings")({
   validateSearch: (s: Record<string, unknown>): { section?: string } =>
@@ -40,14 +41,11 @@ interface AppInfo { appId: string; name: string; icon?: string }
 const SERVICE_ORDER = ["Store", "Files", "Tasks", "Events", "Logs", "Engine"];
 
 // Icons shown beside select options ("<icon> Knockout"), keyed by setting key →
-// option value. Selects without an entry render plain labels.
-const OPTION_ICONS: Record<string, Record<string, LucideIcon>> = {
+// option value. icon_style uses the actual jar-cloud marks (logo.tsx). Selects
+// without an entry render plain labels.
+const OPTION_ICONS: Record<string, Record<string, ComponentType<{ className?: string }>>> = {
   "appearance.theme": { system: Monitor, light: Sun, dark: Moon },
-  "appearance.icon_style": { a: Circle, b: CircleDot, c: Circle },
-};
-// The menubar "Solid" style has no filled lucide twin; fill the outline glyph.
-const OPTION_ICON_FILL: Record<string, Record<string, boolean>> = {
-  "appearance.icon_style": { a: true },
+  "appearance.icon_style": MARKS,
 };
 
 function orderedSections(present: string[]): string[] {
@@ -106,10 +104,9 @@ function FieldControl({ field, fieldKey, value, onChange }: { field: Field; fiel
     const display = (o: { value: string; label: string }) => {
       const Icon = icons?.[o.value];
       if (!Icon) return o.label;
-      const fill = OPTION_ICON_FILL[fieldKey!]?.[o.value];
       return (
         <>
-          <Icon className={`size-4 ${fill ? "fill-current" : ""}`} aria-hidden="true" />
+          <Icon className="size-4" />
           {o.label}
         </>
       );
@@ -121,9 +118,13 @@ function FieldControl({ field, fieldKey, value, onChange }: { field: Field; fiel
       <Select value={String(value)} onValueChange={(v) => { if (v !== null && v !== String(value)) onChange(v); }} items={items}>
         <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
         {/* alignItemWithTrigger=false: drop below the trigger (shadcn-classic)
-            instead of Base UI's macOS-style overlay atop the control. */}
+            instead of Base UI's macOS-style overlay atop the control.
+            SelectGroup carries the popup's inner padding in base-nova (p-1);
+            groupless items would sit flush against the popup edge. */}
         <SelectContent alignItemWithTrigger={false}>
-          {(field.options ?? []).map((o) => <SelectItem key={o.value} value={o.value}>{display(o)}</SelectItem>)}
+          <SelectGroup>
+            {(field.options ?? []).map((o) => <SelectItem key={o.value} value={o.value}>{display(o)}</SelectItem>)}
+          </SelectGroup>
         </SelectContent>
       </Select>
     );
@@ -264,7 +265,12 @@ function ServiceTabs({ tabs, initial, children }: { tabs: ServiceTab[]; initial?
   const names = tabs.map((t) => t.name);
   return (
     <Tabs defaultValue={initial && names.includes(initial) ? initial : names[0]}>
-      <TabsList variant="line" className="max-w-full justify-start overflow-x-auto">
+      {/* pb-[5px]: the line variant's active underline is an ::after 5px below
+          the trigger box; overflow-x-auto forces overflow-y to auto, so without
+          the padding the underline becomes 2px of vertical scrollable overflow
+          (scrollbar + clipped line). no-scrollbar (upstream utility): scroll on
+          narrow screens without chrome, as upstream tab strips do. */}
+      <TabsList variant="line" className="no-scrollbar max-w-full justify-start overflow-x-auto pb-[5px]">
         {tabs.map((t) => {
           const Icon = SERVICE_ICONS[t.name]; // canonical service → icon map (components/nav.ts)
           return (
@@ -439,10 +445,12 @@ function AppSecretsCard({ app }: { app: AppInfo }) {
                     {/* Base UI Select's onValueChange can emit null (controlled reset) — never link an empty slug. */}
                     <Select value="" onValueChange={(slug) => { if (slug) link(s.slot, slug); }}>
                       <SelectTrigger className="w-44"><SelectValue placeholder="Link a secret…" /></SelectTrigger>
-                      <SelectContent>
-                        {(catalog.data?.secrets ?? []).map((c) => (
-                          <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
-                        ))}
+                      <SelectContent alignItemWithTrigger={false}>
+                        <SelectGroup>
+                          {(catalog.data?.secrets ?? []).map((c) => (
+                            <SelectItem key={c.slug} value={c.slug}>{c.label}</SelectItem>
+                          ))}
+                        </SelectGroup>
                       </SelectContent>
                     </Select>
                     <Button variant="ghost" size="sm" onClick={() => setCreating(s.slot)}>New secret…</Button>

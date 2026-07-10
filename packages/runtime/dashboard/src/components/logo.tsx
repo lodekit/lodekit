@@ -44,7 +44,9 @@ function MarkC({ className }: SvgProps) { // "Outline": outline jar + outline cl
   );
 }
 
-const MARKS = { a: MarkA, b: MarkB, c: MarkC } as const;
+// Exported for the settings page: the icon_style select shows each option
+// with its actual mark.
+export const MARKS = { a: MarkA, b: MarkB, c: MarkC } as const;
 
 // Tracks the effective appearance.icon_style setting (live via settings-change SSE).
 // Always the "running" mark — the logo does not reflect runtime state.
