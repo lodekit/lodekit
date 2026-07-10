@@ -1,0 +1,117 @@
+name: release
+
+# Fires on every closed PR against master; everything below exits silently unless
+# the PR merged AND its title is a bare semver — the release skill's PRs only.
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.final.outputs.release }}
+      version: ${{ steps.guard.outputs.version }}
+    steps:
+      - name: Match release PR title
+        id: guard
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ "$TITLE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "version=$TITLE" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.guard.outputs.release == 'true'
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - name: Guard — PR title matches package.json version
+        if: steps.guard.outputs.release == 'true'
+        env:
+          VERSION: ${{ steps.guard.outputs.version }}
+        run: |
+          PKG=$(node -p "require('./package.json').version")
+          if [ "$PKG" != "$VERSION" ]; then
+            echo "::error::release PR title $VERSION != package.json $PKG"
+            exit 1
+          fi
+      - name: Guard — tag does not exist (idempotent re-runs)
+        if: steps.guard.outputs.release == 'true'
+        id: tag
+        env:
+          VERSION: ${{ steps.guard.outputs.version }}
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "v$VERSION already exists — nothing to do."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Final verdict
+        id: final
+        run: |
+          if [ "${{ steps.guard.outputs.release }}" = "true" ] && [ "${{ steps.tag.outputs.release }}" != "false" ]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.release == 'true'
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - runner: macos-14   # Apple silicon → darwin-arm64
+            arch: arm64
+          - runner: macos-15-intel   # Intel → darwin-x64 (runner label: revisit as GitHub retires Intel images)
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.12.0"   # prepare-bundle.mjs hard-asserts this version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @lodekit/manager make
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac-${{ matrix.arch }}
+          path: manager/dist/Lodekit-darwin-${{ matrix.arch }}-*.zip
+          if-no-files-found: error
+
+  publish:
+    needs: [check, build]
+    if: needs.check.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Tag and publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.check.outputs.version }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          printf '%s\n' "$BODY" > notes.md
+          gh release create "v$VERSION" \
+            --target "${{ github.event.pull_request.merge_commit_sha }}" \
+            --title "v$VERSION" \
+            --notes-file notes.md \
+            artifacts/*.zip
