@@ -397,6 +397,7 @@ function AppSecretsCard({ app }: { app: AppInfo }) {
                   </>
                 ) : (
                   <>
+                    {/* Base UI Select's onValueChange can emit null (controlled reset) — never link an empty slug. */}
                     <Select value="" onValueChange={(slug) => { if (slug) link(s.slot, slug); }}>
                       <SelectTrigger className="w-44"><SelectValue placeholder="Link a secret…" /></SelectTrigger>
                       <SelectContent>

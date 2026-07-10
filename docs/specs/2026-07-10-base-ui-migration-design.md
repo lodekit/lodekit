@@ -78,7 +78,7 @@ ui-library spec excluded (chart/calendar remain out); changing the person-themin
   input-otp, react-resizable-panels, lucide-react, cva/clsx/tailwind-merge stay.
   The style's CSS contract is adopted as upstream specifies (the base-nova style item
   imports `tw-animate-css` and `shadcn/tailwind.css`; the latter arrives via the
-  `shadcn` package as upstream prescribes).
+  `shadcn` package as upstream prescribes). next-themes rides along as a stock sonner.tsx dependency.
 
 ## 4. Theming and CSS
 
