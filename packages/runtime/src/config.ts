@@ -10,6 +10,7 @@ export interface Config {
   port: number;
   baseUrl: string;
   secretsKeyProvider: "keychain" | "file";
+  gatewaysDir: string;
 }
 
 // macOS-native canon (spec §3): Caches for regenerable built output, Application
@@ -40,6 +41,7 @@ export function loadConfig(): Config {
     envProvider === "keychain" || envProvider === "file"
       ? envProvider
       : process.platform === "darwin" ? "keychain" : "file";
+  const gatewaysDir = path.join(root, "gateways");
   return {
     root,
     appsDir: path.join(root, "apps"),
@@ -49,5 +51,6 @@ export function loadConfig(): Config {
     port,
     baseUrl: `http://lodekit.localhost:${port}`,
     secretsKeyProvider,
+    gatewaysDir,
   };
 }
