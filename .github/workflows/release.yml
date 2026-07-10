@@ -93,7 +93,7 @@ jobs:
 
   publish:
     needs: [check, build]
-    if: needs.check.outputs.release == 'true'
+    if: needs.check.outputs.release == 'true' && needs.build.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
