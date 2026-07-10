@@ -218,7 +218,7 @@ The decision flow:
    `<root>/gateways/`). If a gateway for the provider exists, just declare a
    connection (step 3).
 2. **Author a manifest** only when none fits:
-   `gateways/<provider-id>/manifest.json` + a `favicon.svg`/`png` beside it.
+   `gateways/<provider-id>/manifest.json` + a `favicon.svg`/`png`/`ico` beside it.
    HTTPS only for public hosts (`http:` is allowed only toward
    localhost/private hosts, e.g. a local Home Assistant).
 
@@ -234,8 +234,8 @@ The decision flow:
 ```
 
 Auth kinds: `none`, `api_key` (query or header), `bearer`, `basic`, `oauth2`
-(authorization/token URLs + a `client_id` config slot; the person clicks
-Connect in the dashboard). Slots are `secret` (the person links a catalog
+(authorization/token URLs + a config slot named by `client_id_slot`; the
+person clicks Connect in the dashboard). Slots are `secret` (the person links a catalog
 secret) or `config` (a plain per-connection value — a personal base URL, an
 account id).
 
@@ -268,9 +268,12 @@ if (res.ok) {
 Paths are relative — the runtime pins requests under the gateway's base URL.
 Failures throw `GatewayError` with a `reason`: `unconfigured`/`needs_reauth`
 mean the person finishes the connection in the dashboard (render a
-"configure me" state); `rate_limited`/`breaker_open`/`timeout`/`network` are
-transient — let the task run fail and its retry policy decide. Every request
-is recorded in Logs under `source=gateway:<provider-id>`.
+"configure me" state); `rate_limited`/`breaker_open`/`timeout`/`network`/
+`unavailable` are transient — let the task run fail and its retry policy
+decide; `too_large` is a permanent request-shape problem (the response
+exceeds the size cap) — don't blind-retry, rethink the request or raise the
+`gateways.max_response_bytes` setting. Every request is recorded in Logs
+under `source=gateway:<provider-id>`.
 
 **The polling recipe** (no webhooks exist): a scheduled task calls through
 the gateway, writes domain records to the Database, emits an event. Tasks is
