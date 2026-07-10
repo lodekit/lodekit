@@ -62,15 +62,16 @@ a fresh `~/Documents/Lodekit` works; clean quit through the supervisor.
 
 `prepare-bundle.mjs`'s single Node-dist constant becomes a
 `(platform, arch) → { url, sha256 }` table with `darwin-arm64` and `darwin-x64` entries.
-The bundle script takes a target (CLI flag or env, defaulting to the host), and `make`
-forwards the matching electron-builder arch flag. The pinned Node version
-(hard-asserted in the script) stays the single source of truth.
+The bundle script takes a target (`LODEKIT_BUNDLE_TARGET` env override, defaulting to
+the host); electron-builder likewise defaults to the host arch, so each CI runner
+builds its native target with no flags. The pinned Node version (hard-asserted in the
+script) stays the single source of truth.
 
 Two separate artifacts, no universal binary — universal would require lipo-ing the
 bundled Node and merging dual-arch native modules (`better-sqlite3` ships neither),
-which is the one surveyed practice that actively conflicts with our design. A local
-Rosetta smoke of the x64 app is optional; CI on an Intel runner is its real
-verification.
+which is the one surveyed practice that actively conflicts with our design. Cross-building
+locally isn't wired (a cross target fails the bundle's native-module
+assert by design); CI on an Intel runner is x64's verification.
 
 ## 4. Dev loop — PR-only, rebase-merged
 
@@ -142,7 +143,7 @@ rather than reconstructed slice by slice.
   | Runner | Target | Artifact |
   | --- | --- | --- |
   | Apple-silicon runner (`macos-14`+) | darwin-arm64 | zip, ad-hoc signed |
-  | Intel runner (`macos-13` at time of writing) | darwin-x64 | zip, ad-hoc signed |
+  | Intel runner (`macos-15-intel` at time of writing) | darwin-x64 | zip, ad-hoc signed |
 
   Each row: checkout the merged tip (`merge_commit_sha`); set up pnpm + the pinned Node
   (`prepare-bundle.mjs` hard-asserts the version); `pnpm install`; `make` with the arch

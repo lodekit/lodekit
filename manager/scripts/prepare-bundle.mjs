@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Builds the packaged manager's bundle inputs (spec §3):
 //   build/platform/{runtime,mcp,skill} — relocatable payload (pnpm deploy)
-//   build/node                         — pinned Lodekit-local Node (darwin-arm64)
+//   build/node                         — pinned Lodekit-local Node (per-target)
 import { execSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
