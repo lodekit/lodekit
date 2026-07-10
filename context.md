@@ -107,7 +107,7 @@ One cloud battery — a capability the runtime provides to apps: storage, secret
 _Avoid_: capability, feature, component (components are UI), battery (marketing metaphor, not the domain word)
 
 **Service catalog**:
-The full set of services Lodekit offers, named AWS-style: kv-store (KV), db-store (the Database), file-store (Files), log-store (Logs), event-store (Events), secret-store, tasks (Tasks — one service; task-queue and task-schedule are its two capabilities), settings. The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
+The full set of services Lodekit offers, named AWS-style: kv-store (KV), db-store (the Database), file-store (Files), log-store (Logs), event-store (Events), secret-store, tasks (Tasks — one service; task-queue and task-schedule are its two capabilities), settings, gateways (Gateways). The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
 _Avoid_: the SDK (the SDK is the layer into the catalog, not the catalog), feature list
 
 The shipped and near-term services:
@@ -155,6 +155,18 @@ _Avoid_: preferences, config, options
 Background work an app hands to the runtime to run on the app's behalf — queued (task-queue) or triggered on a time schedule (task-schedule; a **scheduled task**). Declared in the app's `src/tasks.ts`; the task name is the kebab-case of its export. Each execution is a **run** (queued → running → succeeded/failed/canceled). Tasks are listed with their schedule and last-run state in the dashboard. Shipped: `docs/specs/2026-07-06-tasks-service-design.md` (v1 = queue + schedule + retries + history; hooks/signals deferred).
 _Avoid_: job, cron, worker, workflow
 
+**Gateway**:
+The managed door to one provider (the gateways service): an agent-authored declarative manifest — name, favicon, website, base URL, auth recipe, slots, guardrail defaults — at `gateways/<provider-id>/` under the Lodekit root, plus the runtime machinery that executes its traffic (credential injection, rate limiting, circuit breaking, per-request logging). Countable and person-facing ("the OpenWeatherMap gateway", "3 apps use this gateway"); one gateway per provider. Server-side app code calls through it via the SDK's `gateways` handle — credentials never enter the app worker. Shipped: `docs/specs/2026-07-10-gateways-design.md`.
+_Avoid_: proxy, connector, integration (see Flagged ambiguities), template.
+
+**Provider**:
+The external party a gateway fronts — OpenWeatherMap, an aggregator, a local Home Assistant. The manifest describes it; the provider id (app-id grammar) doubles as the gateway's key.
+_Avoid_: service (a catalog word), API (the surface, not the party).
+
+**Connection**:
+The app × gateway grant: declared in the app's `src/gateways.ts` under an app-local **alias**, completed by the person in the dashboard — **linking** a catalog secret to each secret slot (the secrets verb, verbatim) and **setting** each config slot. The completed connection is the grant; connections key on `(appId, alias)`, so two aliases on one gateway are two accounts.
+_Avoid_: instance (retired), integration config, fill (retired).
+
 ### Storage & filesystem
 
 **Lodekit root**:
@@ -169,8 +181,12 @@ _Avoid_: source dir, workspace
 The `data/` directory under the Lodekit root — each app's persistent storage, one namespace per app id. Internal namespaces own data homes here too — data/_platform/ holds the event bus.
 _Avoid_: db dir, storage
 
+**Gateways tree**:
+The `gateways/` directory under the Lodekit root — one folder per gateway (`manifest.json` + favicon), sibling to `apps/` and `data/`. Part of the Backup tree.
+_Avoid_: providers dir, integrations dir
+
 **Backup tree**:
-The apps tree and data tree together: the durable state worth preserving. Explicitly excludes the cache.
+The apps tree, data tree, and gateways tree together: the durable state worth preserving. Explicitly excludes the cache.
 _Avoid_: the project, the data
 
 **Cache**:
@@ -243,6 +259,7 @@ _Avoid_: the endpoints, the REST API
 - An **App** is identified by its **App id**; that same app id is its URL path and its data namespace.
 - Every **Service** in the **Service catalog** is provided by the **Runtime**; an app reaches its services (**Database**, **KV**, **Files**, **Settings**, **Tasks**) only through the **SDK**, which calls the **Scoped API**.
 - An app's **server functions** run in its **app worker** inside the **runtime**; they reach services through the **SDK** over loopback HTTP.
+- An **App** reaches external **Providers** only through **Gateways**; the runtime injects linked **Secrets** host-side, so credentials never enter the **app worker**.
 - An app's source lives in the **Apps tree**, its built output in the **Cache**, and its persistent state (**Database** + **KV** + **Files**) in the **Data tree**.
 - The **Backup tree** = apps tree + data tree. The **Cache** is deliberately outside it.
 - **Settings** and **Tasks** are declared by an app and surfaced to the person in the **Dashboard**.
@@ -257,3 +274,4 @@ _Avoid_: the endpoints, the REST API
 - **KV vs Database** — both are per-app durable storage. The **Database** holds domain records (entities, relationships, queries); **KV** holds app memory (counters, cursors, preferences, caches, flags). The skill applies this rule by default; the person steers by exception.
 - **Docs vs Skill** — both teach how to use Lodekit, to different readers. **Docs** are the public site for people; the **Skill** is the instruction pack for agents. Content may overlap; the audiences never do.
 - **Skill** — `@lodekit/skill` is the Lodekit skill package (content an agent loads to use Lodekit), not to be confused with agent skills in general.
+- **Integration vs Gateway** — "integration" is the outcome word, deliberately without an artifact: what a person or agent sets out to build ("integrate Greenhouse with the weather"). **You build an integration by using a gateway to the provider — reuse one if it exists, author one if not.** The domain logic of an integration lives in the app; the guarded transport is the gateway. Never name a stored object, route, or table "integration".

@@ -348,15 +348,16 @@ request:
 ## 11. Settings — Services → Gateways
 
 A new `PLATFORM_SETTINGS` section "Gateways" (global scope; per-gateway tuning
-belongs in manifests, not settings):
+belongs in manifests, not settings). Keys use the settings grammar's duration fields
+rather than raw `_ms` numbers:
 
-- `gateways.default_timeout_ms` (default 10 000; hard cap 60 000)
-- `gateways.default_rate` (default `60/min`)
-- `gateways.default_concurrency` (default 4)
-- `gateways.max_response_bytes` (default 10 MB)
-- `gateways.capture_bodies` (default off)
-- `gateways.breaker_failure_threshold` (default 5)
-- `gateways.breaker_cooldown_ms` (default 30 000)
+- `gateways.default_timeout` (duration, default `10s`; max `60s`)
+- `gateways.default_rate` (string, default `60/min`)
+- `gateways.default_concurrency` (number, default 4)
+- `gateways.max_response_bytes` (number, default 10 000 000)
+- `gateways.capture_bodies` (boolean, default off)
+- `gateways.breaker_failure_threshold` (number, default 5, advanced)
+- `gateways.breaker_cooldown` (duration, default `30s`, advanced)
 
 ## 12. Dashboard UX
 

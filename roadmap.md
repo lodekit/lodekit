@@ -111,7 +111,15 @@ Big-picture context that shaped the slice-1 SDK design but was explicitly **not*
 - **Per-app type-checking** — gate builds (or surface warnings) via `tsc`; the slice transpiles
   without type-checking, so app source (which has no `node_modules`/tsconfig) gets no type feedback yet.
 - **Persistence, per-app (inside the data folder):** blob storage, real encrypted secrets, schemas/migrations, and data initialization/fixtures.
-- **Integrations** — gateways, outbound connections, rate limiting.
+- **Integrations** — ~~gateways, outbound connections, rate limiting.~~ **Shipped
+  (2026-07-10) as the gateways service:** `docs/specs/2026-07-10-gateways-design.md` —
+  declarative gateway manifests, per-app connections on the secrets link rail, the
+  host-side engine (rate limit + Retry-After, breaker, timeouts, size/concurrency
+  caps, redacted per-request logs), OAuth 2.0 with transparent refresh, dashboard +
+  MCP + skill, two Greenhouse chapters. Deferred from the slice (spec §16):
+  streaming responses, declarative polling, inbound webhooks, request retries,
+  OAuth extras, response caching, quota budgets, per-gateway settings overrides,
+  MCP write tools.
 - **Tasks** — ~~task-queue/task-schedule, durable execution, hooks, signals; design
   holistically (umbrella spec §2.12).~~ **Shipped (2026-07-07):**
   `docs/specs/2026-07-06-tasks-service-design.md` — queue + schedule + retries + history at
@@ -363,10 +371,11 @@ above; the remainder:
   experience teaching the high-level concepts (showcase-apps spec §9).
 - **Showcase update on manager update** — first-run install never clobbers a person's
   copy; an "update showcase apps" story belongs with auto-update (showcase-apps spec §10).
-- **Greenhouse integrations chapter** — when the integrations layer lands, weather-aware
-  watering is the first integration demo (showcase-apps spec §13); it also carries the
-  **secret-store DoD coverage** deferred from that slice (spec
-  2026-07-07-secret-store-design.md §11): declare a `weather_api_key` slot, link, read.
+- **Greenhouse integrations chapter** — ~~when the integrations layer lands, weather-aware
+  watering is the first integration demo; carries the deferred secret-store DoD (declare a
+  `weather_api_key` slot, link, read).~~ **Shipped (2026-07-10, gateways slice):** the
+  Sky Journal (OpenWeatherMap gateway, `api_key` secret slot — the secret-store DoD
+  retired) + the Duende OAuth demo card.
 - **Greenhouse showcase Part 2 — events integration** — the deferred half of the showcase
   slice, needs its own plan: `events.emit` (client + server, per-emission `ttl`),
   `events.list` (`before`/`after` cursors + server-side), `events.watch` with a type
