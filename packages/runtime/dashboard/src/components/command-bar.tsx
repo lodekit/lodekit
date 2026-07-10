@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Search, Settings } from "lucide-react";
 import {
   Button, Kbd,
-  CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+  Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@lodekit/ui";
 import { SERVICES } from "./nav";
 
@@ -47,36 +47,41 @@ export function CommandBar() {
         <Search className="size-4" />
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
-        <CommandInput placeholder="Search apps and pages…" />
-        <CommandList>
-          <CommandEmpty>No results.</CommandEmpty>
-          {(apps.data ?? []).length > 0 && (
-            <CommandGroup heading="Apps">
-              {(apps.data ?? []).map((a) => (
+        {/* base-nova's CommandDialog (unlike the old Radix flavor's) does not
+            provide the cmdk root; without <Command> the parts crash on open
+            (undefined store.subscribe) — see ui's command-dialog-mount test. */}
+        <Command>
+          <CommandInput placeholder="Search apps and pages…" />
+          <CommandList>
+            <CommandEmpty>No results.</CommandEmpty>
+            {(apps.data ?? []).length > 0 && (
+              <CommandGroup heading="Apps">
+                {(apps.data ?? []).map((a) => (
+                  <CommandItem
+                    key={a.appId}
+                    onSelect={() => { setOpen(false); window.location.assign(`/${a.appId}/`); }}
+                  >
+                    <span aria-hidden="true">{a.icon || "📦"}</span> {a.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            <CommandGroup heading="Pages">
+              {PAGES.map((p) => (
                 <CommandItem
-                  key={a.appId}
-                  onSelect={() => { setOpen(false); window.location.assign(`/${a.appId}/`); }}
+                  key={p.label}
+                  onSelect={() => {
+                    setOpen(false);
+                    if (p.href) window.location.assign(p.href);
+                    else void navigate({ to: p.to });
+                  }}
                 >
-                  <span aria-hidden="true">{a.icon || "📦"}</span> {a.name}
+                  <p.icon className="size-4" aria-hidden="true" /> {p.label}
                 </CommandItem>
               ))}
             </CommandGroup>
-          )}
-          <CommandGroup heading="Pages">
-            {PAGES.map((p) => (
-              <CommandItem
-                key={p.label}
-                onSelect={() => {
-                  setOpen(false);
-                  if (p.href) window.location.assign(p.href);
-                  else void navigate({ to: p.to });
-                }}
-              >
-                <p.icon className="size-4" aria-hidden="true" /> {p.label}
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
+          </CommandList>
+        </Command>
       </CommandDialog>
     </>
   );
