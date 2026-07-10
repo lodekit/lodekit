@@ -12,7 +12,7 @@ export interface PlatformSetting {
 
 export const PLATFORM_KEY_RE = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 
-export const SECTIONS = ["General", "Appearance", "Tasks", "Logs", "Store", "Files", "Events", "Engine"] as const;
+export const SECTIONS = ["General", "Appearance", "Tasks", "Logs", "Store", "Files", "Events", "Gateways", "Engine"] as const;
 
 const g = (field: SettingField, section: string): PlatformSetting => ({ field, scope: "global", section });
 const p = (field: SettingField, section: string): PlatformSetting => ({ field, scope: "per-app", section });
@@ -156,6 +156,42 @@ export const PLATFORM_SETTINGS: Record<string, PlatformSetting> = {
     description: "How often event retention is enforced.",
     default: "60s", min: "5s", advanced: true,
   }, "Events"),
+
+  "gateways.default_timeout": g({
+    type: "duration", label: "Default timeout",
+    description: "How long a gateway request may take, when the gateway and the caller don't set their own.",
+    default: "10s", min: "1s", max: "60s",
+  }, "Gateways"),
+  "gateways.default_rate": g({
+    type: "string", label: "Default rate limit",
+    description: "Requests allowed per gateway when its manifest declares no rate, e.g. \"60/min\".",
+    default: "60/min",
+  }, "Gateways"),
+  "gateways.default_concurrency": g({
+    type: "number", label: "Default concurrency",
+    description: "Parallel requests allowed per gateway when its manifest declares no cap.",
+    default: 4, min: 1, max: 32, integer: true,
+  }, "Gateways"),
+  "gateways.max_response_bytes": g({
+    type: "number", label: "Response size cap",
+    description: "A gateway response larger than this is aborted.",
+    default: 10_000_000, min: 1_024, integer: true,
+  }, "Gateways"),
+  "gateways.capture_bodies": g({
+    type: "boolean", label: "Capture bodies in logs",
+    description: "Record truncated request/response bodies with each gateway log record. Credentials are always masked.",
+    default: false,
+  }, "Gateways"),
+  "gateways.breaker_failure_threshold": g({
+    type: "number", label: "Breaker threshold",
+    description: "Consecutive network/5xx failures that open a gateway's circuit breaker.",
+    default: 5, min: 1, max: 100, integer: true, advanced: true,
+  }, "Gateways"),
+  "gateways.breaker_cooldown": g({
+    type: "duration", label: "Breaker cooldown",
+    description: "How long an open breaker waits before letting one probe request through.",
+    default: "30s", min: "1s", advanced: true,
+  }, "Gateways"),
 
   "hosting.request_timeout": p({
     type: "duration", label: "Request timeout",
