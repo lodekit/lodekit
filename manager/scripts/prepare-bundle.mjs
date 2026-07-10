@@ -125,6 +125,11 @@ function buildPayload() {
   });
   fs.cpSync(path.join(repoRoot, "root", "gateways"), path.join(platformDir, "root", "gateways"), {
     recursive: true,
+    filter: (src) =>
+      !src.includes("node_modules") &&
+      !src.endsWith("routeTree.gen.ts") &&
+      !src.includes(".tanstack") &&
+      !src.endsWith(".DS_Store"),
   });
 }
 

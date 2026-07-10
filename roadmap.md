@@ -198,6 +198,9 @@ above; the remainder:
 - **Accepting destructive db-store migrations** — a person-facing confirmation flow
   that lets a gated schema change apply deliberately (db-store spec §14); until then
   the gate + the skill's expand-copy habit is the whole story.
+- **Gateways SDK per-alias typing** — the `gateways` handle is alias-indexed (any
+  string key type-checks); per-alias inference from `defineGateways` wants the same
+  substrate as per-app type-checking.
 - **Data explorer (dashboard)** — the unified KV + Database surface (schema browser,
   rows, eventually Looker-style assisted querying) — in flight in a separate session;
   `StorePanel` was deleted by the db-store slice; never ship isolated per-service

@@ -166,8 +166,10 @@ export default defineGateways({
 });
 ```
 
-- `defineGateways` is the `defineSecrets` twin: validates shape locally, drives SDK
-  type inference — `gateways.weather` is typed, aliases autocomplete.
+- `defineGateways` is the `defineSecrets` twin: validates shape locally and tags the
+  export so `appWorkerEntry` can find it. The `gateways` SDK handle is alias-indexed
+  (`[alias: string]: ConnectionHandle`) rather than inferred per alias from the
+  declaration — any string key type-checks; no `gateways.weather` autocomplete yet.
 - Alias names: lower `snake_case` (the slot grammar).
 - The Start build includes `src/gateways.ts` as an additional server-bundle entry
   (the settings/tasks/secrets mechanism, `build.ts`). On worker boot the worker posts

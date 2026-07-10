@@ -170,7 +170,7 @@ _Avoid_: instance (retired), integration config, fill (retired).
 ### Storage & filesystem
 
 **Lodekit root**:
-The one directory (`LODEKIT_ROOT`) holding the sibling apps tree and data tree. The thing a person backs up.
+The one directory (`LODEKIT_ROOT`) holding the sibling apps, data, and gateways trees. The thing a person backs up.
 _Avoid_: workspace, home, project directory
 
 **Apps tree**:
