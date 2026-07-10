@@ -91,11 +91,20 @@ export class Breaker {
   }
 
   recordSuccess(): "closed" | null {
-    const reopened = this._state !== "closed";
+    if (this._state === "open") return null; // a stale pre-trip request — the cooldown stands
+    const wasHalfOpen = this._state === "half-open";
     this.failures = 0;
     this.probing = false;
     this._state = "closed";
-    return reopened ? "closed" : null;
+    return wasHalfOpen ? "closed" : null;
+  }
+
+  /** Release an admitted probe slot without recording an outcome — for
+   *  requests that abort before reaching the provider (guard rejections).
+   *  The engine guarantees exactly one of recordSuccess / recordFailure /
+   *  releaseProbe per granted tryPass. */
+  releaseProbe(): void {
+    this.probing = false;
   }
 
   recordFailure(now = Date.now()): "opened" | null {

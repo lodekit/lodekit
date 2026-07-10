@@ -68,6 +68,18 @@ describe("Breaker", () => {
     expect(br.recordFailure(t0 + 1_002)).toBe("opened"); // probe failed → straight back open
     expect(br.state).toBe("open");
   });
+
+  it("a stale success while open never closes the breaker; releaseProbe frees a wedged probe slot", () => {
+    const br = new Breaker(1, 1_000);
+    const t0 = 5_000_000;
+    expect(br.recordFailure(t0)).toBe("opened");
+    expect(br.recordSuccess()).toBeNull();      // stale pre-trip success — cooldown stands
+    expect(br.state).toBe("open");
+    expect(br.tryPass(t0 + 1_001)).toBe(true);  // half-open probe granted
+    br.releaseProbe();                          // probe aborted before the provider (guard rejection)
+    expect(br.tryPass(t0 + 1_002)).toBe(true);  // slot is free again, breaker not wedged
+    expect(br.recordSuccess()).toBe("closed");
+  });
 });
 
 describe("Semaphore", () => {
