@@ -1,0 +1,29 @@
+appId: com.lodekit.manager
+productName: Lodekit
+# Bundle inputs live in build/ — keep electron-builder's buildResources dir
+# (default "build") away from it.
+directories:
+  output: dist
+  buildResources: build-resources
+# Zero prod dependencies; nothing may walk pnpm's symlinked node_modules.
+npmRebuild: false
+# Behavior parity with the Forge build: plain app dir, no asar packing.
+asar: false
+files:
+  - src/**
+  - package.json
+# Bundle inputs from scripts/prepare-bundle.mjs → Resources/node, Resources/platform.
+extraResources:
+  - from: build/node
+    to: node
+  - from: build/platform
+    to: platform
+mac:
+  target: zip
+  # Ad-hoc signature for the assisted alpha (same "-" identity Forge used).
+  # Developer ID is the dormant toggle: replace with the certificate name when it exists.
+  identity: "-"
+  # Menubar-only: no Dock icon, no app switcher entry.
+  extendInfo:
+    LSUIElement: true
+  artifactName: "Lodekit-darwin-${arch}-${version}.zip"

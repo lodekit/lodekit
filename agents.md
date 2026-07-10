@@ -26,7 +26,7 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
 - **`web/main`** (`@lodekit/web-main`) — Astro landing site.
 - **`web/docs`** (`@lodekit/web-docs`) — Starlight docs site (placeholder scaffold).
 - **`manager`** (`@lodekit/manager`) — the menubar app that ships and supervises the
-  platform. Packaged (`make`): an ad-hoc-signed arm64 `Lodekit.app` bundling a pinned
+  platform. Packaged (`make`, electron-builder): an ad-hoc-signed `Lodekit.app` bundling a pinned
   Lodekit-local Node + the platform payload (runtime/mcp/skill via `pnpm deploy`) in
   `Resources/`, spawning the runtime as a single direct child Node process (so
   `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
@@ -47,10 +47,6 @@ Package manager is **pnpm** (workspaces). From the repo root:
   native module via the root `pnpm.onlyBuiltDependencies` allowlist (pnpm v10 gates install
   scripts). **Gotcha:** switching Node versions causes a `better-sqlite3` ABI mismatch
   (`NODE_MODULE_VERSION`) — fix with `pnpm rebuild better-sqlite3`.
-  **Second gotcha:** never run `pnpm install` with CWD inside `manager/` — its `.npmrc`
-  (`node-linker=hoisted`, needed only for Forge's dev-start check) would rewrite the whole
-  workspace to hoisted layout and silently break runtime Vite/Tailwind builds. Install from
-  the repo root; recover with a root-level node_modules wipe + `pnpm install`.
 - `pnpm dev` — run the runtime against the showcase apps
   (`LODEKIT_ROOT=$(pwd)/root pnpm --filter @lodekit/runtime start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
