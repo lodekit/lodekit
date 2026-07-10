@@ -233,7 +233,11 @@ function ServiceTabs({ tabs, initial, children }: { tabs: ServiceTab[]; initial?
   const names = tabs.map((t) => t.name);
   return (
     <Tabs defaultValue={initial && names.includes(initial) ? initial : names[0]}>
-      <TabsList variant="line" className="max-w-full justify-start overflow-x-auto">
+      {/* pb-[5px]: the line variant's active underline sits 5px below the trigger box;
+          with overflow-x-auto that becomes vertical overflow (scrollbar + clipped line)
+          unless the list's padding box contains it. no-scrollbar: strips scroll chrome
+          on narrow screens, matching upstream shadcn tab strips. */}
+      <TabsList variant="line" className="no-scrollbar max-w-full justify-start overflow-x-auto pb-[5px]">
         {tabs.map((t) => {
           const Icon = SERVICE_ICONS[t.name]; // canonical service → icon map (components/nav.ts)
           return (
