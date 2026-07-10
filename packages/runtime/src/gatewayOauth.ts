@@ -160,24 +160,34 @@ async function tokenProvider(
     emitGatewayHealth(appId, { alias, provider: providerId, status: "needs_reauth" });
     throw new GatewayRequestError("needs_reauth", `the ${manifest.name} token expired and no refresh token exists — reconnect`);
   }
+  // clientId/clientSecret can throw GatewayRequestError (unconfigured) or
+  // SecretsUnavailableError (degraded keychain) — those propagate untouched,
+  // the engine maps them without a durable flag. Only a refresh the provider
+  // itself answered and declined (tokenPost's GatewaysError) is sticky.
+  const params: Record<string, string> = {
+    grant_type: "refresh_token",
+    refresh_token: tokens.refreshToken,
+    client_id: clientId(auth, appId, alias),
+  };
+  const secret = clientSecret(auth, appId, alias);
+  if (secret) params.client_secret = secret;
+  let t: { access_token: string; refresh_token?: string; expires_in?: number };
   try {
-    const params: Record<string, string> = {
-      grant_type: "refresh_token",
-      refresh_token: tokens.refreshToken,
-      client_id: clientId(auth, appId, alias),
-    };
-    const secret = clientSecret(auth, appId, alias);
-    if (secret) params.client_secret = secret;
-    const t = await tokenPost(auth, params);
-    saveOauthTokens(appId, alias, {
-      accessToken: t.access_token,
-      refreshToken: t.refresh_token ?? tokens.refreshToken, // rotate when offered
-      ...(t.expires_in ? { expiresAt: Date.now() + t.expires_in * 1000 } : {}),
-    });
-    return { token: t.access_token, redact: [t.refresh_token ?? tokens.refreshToken] };
-  } catch {
-    setNeedsReauth(appId, alias, true);
-    emitGatewayHealth(appId, { alias, provider: providerId, status: "needs_reauth" });
-    throw new GatewayRequestError("needs_reauth", `the ${manifest.name} session could not be refreshed — reconnect in the dashboard`);
+    t = await tokenPost(auth, params);
+  } catch (e) {
+    if (e instanceof GatewaysError) {
+      setNeedsReauth(appId, alias, true);
+      emitGatewayHealth(appId, { alias, provider: providerId, status: "needs_reauth" });
+      throw new GatewayRequestError("needs_reauth", `the ${manifest.name} session could not be refreshed — reconnect in the dashboard`);
+    }
+    // A network/timeout failure reaching the provider — transient, not the
+    // person's problem to fix by reconnecting. Leave needs_reauth untouched.
+    throw new GatewayRequestError("unavailable", "token refresh could not reach the provider");
   }
+  saveOauthTokens(appId, alias, {
+    accessToken: t.access_token,
+    refreshToken: t.refresh_token ?? tokens.refreshToken, // rotate when offered
+    ...(t.expires_in ? { expiresAt: Date.now() + t.expires_in * 1000 } : {}),
+  });
+  return { token: t.access_token, redact: [t.refresh_token ?? tokens.refreshToken] };
 }

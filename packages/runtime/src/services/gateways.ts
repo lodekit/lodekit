@@ -24,7 +24,7 @@ import {
   oauthState, CONFIG_VALUE_MAX_BYTES,
 } from "../gatewaysStore.js";
 import { getGatewayEntry, listGatewayEntries, PROVIDER_ID_RE, type GatewayEntry } from "../gatewayManifests.js";
-import { executeGatewayRequest, getConnectionHealth, GatewayRequestError, REASON_STATUS } from "../gatewayEngine.js";
+import { executeGatewayRequest, getConnectionHealth, clearConnectionHealth, GatewayRequestError, REASON_STATUS } from "../gatewayEngine.js";
 import { SecretsUnavailableError } from "../secretsStore.js";
 import { startOauth, handleOauthCallback } from "../gatewayOauth.js";
 
@@ -365,6 +365,7 @@ export const appGatewaysRoutes = new Hono<GatewaysEnv>()
       const def = requireSlotDef(c.var.usesDb, alias, slot);
       if (def.kind !== "secret") throw new GatewaysError(`slot "${slot}" is a config slot — set a value instead`);
       setGatewayLink(c.var.appId, alias, slot, c.req.valid("json").slug);
+      clearConnectionHealth(c.var.appId, alias);
       emitGatewayChange(c.var.appId, alias);
       return c.json({ ok: true as const });
     }
@@ -374,6 +375,7 @@ export const appGatewaysRoutes = new Hono<GatewaysEnv>()
     const def = requireSlotDef(c.var.usesDb, alias, slot);
     if (def.kind !== "secret") throw new GatewaysError(`slot "${slot}" is a config slot`);
     deleteGatewayLink(c.var.appId, alias, slot);
+    clearConnectionHealth(c.var.appId, alias);
     emitGatewayChange(c.var.appId, alias);
     return c.json({ ok: true as const });
   })
@@ -386,6 +388,7 @@ export const appGatewaysRoutes = new Hono<GatewaysEnv>()
       const def = requireSlotDef(c.var.usesDb, alias, slot);
       if (def.kind !== "config") throw new GatewaysError(`slot "${slot}" is a secret slot — link a secret instead`);
       setGatewayConfig(c.var.appId, alias, slot, c.req.valid("json").value);
+      clearConnectionHealth(c.var.appId, alias);
       emitGatewayChange(c.var.appId, alias);
       return c.json({ ok: true as const });
     }
@@ -395,6 +398,7 @@ export const appGatewaysRoutes = new Hono<GatewaysEnv>()
     const def = requireSlotDef(c.var.usesDb, alias, slot);
     if (def.kind !== "config") throw new GatewaysError(`slot "${slot}" is a secret slot`);
     deleteGatewayConfig(c.var.appId, alias, slot);
+    clearConnectionHealth(c.var.appId, alias);
     emitGatewayChange(c.var.appId, alias);
     return c.json({ ok: true as const });
   })

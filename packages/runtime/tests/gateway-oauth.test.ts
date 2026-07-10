@@ -184,4 +184,33 @@ describe("token injection + refresh", () => {
     expect(oauthState(APP, ALIAS)).toBe("needs_reauth");
     expect(await reason(executeGatewayRequest(APP, ALIAS, { method: "GET", path: "/api/test" }))).toBe("needs_reauth");
   });
+
+  it("a token endpoint the refresh can't reach → unavailable, not a durable needs_reauth", async () => {
+    // Point token_url at a port nothing listens on — the fetch fails with a
+    // network error (not a provider-declined response), so this must NOT
+    // flip the sticky needs_reauth flag (a mere blip shouldn't force a
+    // human reconnect).
+    const dead = http.createServer();
+    await new Promise<void>((r) => dead.listen(0, "127.0.0.1", r));
+    const deadPort = (dead.address() as AddressInfo).port;
+    await new Promise<void>((r) => dead.close(() => r()));
+    fs.writeFileSync(path.join(root, "gateways", "demo", "manifest.json"), JSON.stringify({
+      name: "Demo",
+      base_url: `http://127.0.0.1:${providerPort}`,
+      auth: {
+        kind: "oauth2",
+        authorization_url: `http://127.0.0.1:${providerPort}/authorize`,
+        token_url: `http://127.0.0.1:${deadPort}/token`,
+        scopes: ["openid", "api"],
+        pkce: true,
+        client_id_slot: "client_id",
+      },
+      slots: { client_id: { kind: "config", label: "Client id" } },
+    }));
+    initGatewayManifests(cfg());
+    setGatewayConfig(APP, ALIAS, "client_id", "interactive.public");
+    saveOauthTokens(APP, ALIAS, { accessToken: "at", refreshToken: "rt", expiresAt: Date.now() - 1000 });
+    expect(await reason(executeGatewayRequest(APP, ALIAS, { method: "GET", path: "/api/test" }))).toBe("unavailable");
+    expect(oauthState(APP, ALIAS)).toBe("connected");
+  });
 });

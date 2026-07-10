@@ -13,7 +13,7 @@ import { initGatewayManifests, resetGatewayManifestsForTest } from "../src/gatew
 import { initGatewaysStore, closeGatewaysStoreForTest, setGatewayLink, setGatewayConfig } from "../src/gatewaysStore.js";
 import { initSecretStore, closeSecretStoreForTest, createSecret } from "../src/secretsStore.js";
 import { applyGatewaysManifest } from "../src/services/gateways.js";
-import { initSettingsStore } from "../src/services/settings.js";
+import { initSettingsStore, setPlatformValue } from "../src/services/settings.js";
 import { initLogStore, queryLogs } from "../src/logStore.js";
 
 let root: string, state: string, stub: http.Server, stubPort: number;
@@ -208,6 +208,22 @@ describe("guards", () => {
     expect((await executeGatewayRequest(APP, "probe", { method: "GET", path: "/x" })).status).toBe(500);
     expect((await executeGatewayRequest(APP, "probe", { method: "GET", path: "/x" })).status).toBe(500);
     expect(await reason(executeGatewayRequest(APP, "probe", { method: "GET", path: "/x" }))).toBe("breaker_open");
+  });
+
+  it("a settings edit to the breaker tuning rebuilds the breaker (not just the test hook)", async () => {
+    writeManifest("stub", stubManifest({ kind: "none" }, {}));
+    initGatewayManifests(cfg());
+    declare("stub");
+    setPlatformValue("gateways.breaker_failure_threshold", 2);
+    mode = "fail500";
+    expect((await executeGatewayRequest(APP, "probe", { method: "GET", path: "/x" })).status).toBe(500);
+    expect((await executeGatewayRequest(APP, "probe", { method: "GET", path: "/x" })).status).toBe(500);
+    expect(await reason(executeGatewayRequest(APP, "probe", { method: "GET", path: "/x" }))).toBe("breaker_open");
+    // raising the threshold via settings (no test-hook clear) must replace
+    // the (still-open) cached breaker with a fresh, closed one
+    setPlatformValue("gateways.breaker_failure_threshold", 10);
+    mode = "echo";
+    expect((await executeGatewayRequest(APP, "probe", { method: "GET", path: "/x" })).status).toBe(200);
   });
 
   it("401 → unhealthy (breaker untouched), success clears it", async () => {

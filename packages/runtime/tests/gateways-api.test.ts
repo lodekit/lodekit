@@ -16,6 +16,7 @@ import { initLogStore } from "../src/logStore.js";
 import { setWorkerTokenForTest } from "../src/appWorker.js";
 
 let root: string, state: string, app: Hono, stub: http.Server, stubPort: number;
+let stubMode: "echo" | "unauthorized";
 const APP = "app-a";
 const TOKEN = "test-worker-token";
 
@@ -35,7 +36,9 @@ const json = (body: unknown, method = "POST"): RequestInit => ({
 beforeEach(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-gwapi-"));
   state = fs.mkdtempSync(path.join(os.tmpdir(), "lk-gwapi-state-"));
+  stubMode = "echo";
   stub = http.createServer((rq, rs) => {
+    if (stubMode === "unauthorized") { rs.writeHead(401); rs.end("{}"); return; }
     rs.writeHead(200, { "Content-Type": "application/json" });
     rs.end(JSON.stringify({ url: rq.url }));
   });
@@ -139,6 +142,25 @@ describe("app connections", () => {
     expect((await req(`/api/apps/${APP}/gateways/ghost/slots/api_key/link`, json({ slug: "k" }, "PUT"))).status).toBe(404);
     expect((await req(`/api/apps/${APP}/gateways/weather/slots/ghost/link`, json({ slug: "k" }, "PUT"))).status).toBe(404);
     expect((await req(`/api/apps/NOT!VALID/gateways`)).status).toBe(400);
+  });
+});
+
+describe("connection health", () => {
+  it("re-linking a slot clears an unhealthy connection", async () => {
+    createSecret({ label: "Stub key", value: "sk-1" });
+    expect((await req(`/api/apps/${APP}/gateways/weather/slots/api_key/link`, json({ slug: "stub-key" }, "PUT"))).status).toBe(200);
+    stubMode = "unauthorized";
+    await req(`/api/apps/${APP}/gateways/weather/request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-lodekit-worker-token": TOKEN },
+      body: JSON.stringify({ method: "GET", path: "/hello" }),
+    });
+    let doc = await (await req(`/api/apps/${APP}/gateways`)).json();
+    expect(doc.connections[0].status).toBe("unhealthy");
+    stubMode = "echo";
+    expect((await req(`/api/apps/${APP}/gateways/weather/slots/api_key/link`, json({ slug: "stub-key" }, "PUT"))).status).toBe(200);
+    doc = await (await req(`/api/apps/${APP}/gateways`)).json();
+    expect(doc.connections[0].status).toBe("connected");
   });
 });
 

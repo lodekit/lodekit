@@ -69,7 +69,7 @@ interface Tuning {
 let cfgRef: Config | null = null;
 let tuningOverride: Partial<Tuning> | null = null;
 const buckets = new Map<string, { rate: string; bucket: TokenBucket }>();
-const breakers = new Map<string, Breaker>();
+const breakers = new Map<string, { threshold: number; cooldownMs: number; breaker: Breaker }>();
 const semaphores = new Map<string, { limit: number; sem: Semaphore }>();
 const unhealthy = new Set<string>(); // `${appId}\n${alias}`
 
@@ -122,6 +122,13 @@ export function getConnectionHealth(appId: string, alias: string): "ok" | "unhea
   return unhealthy.has(`${appId}\n${alias}`) ? "unhealthy" : "ok";
 }
 
+/** A slot mutation (link/unlink/set/clear) is a fresh start for this
+ *  connection — drop any stale unhealthy mark so the next request isn't
+ *  penalized for a prior credential that's since been replaced. */
+export function clearConnectionHealth(appId: string, alias: string): void {
+  unhealthy.delete(`${appId}\n${alias}`);
+}
+
 function bucketFor(providerId: string, manifest: GatewayManifest, t: Tuning): TokenBucket {
   const rate = manifest.limits?.rate ?? t.rate;
   const cached = buckets.get(providerId);
@@ -138,12 +145,13 @@ function bucketFor(providerId: string, manifest: GatewayManifest, t: Tuning): To
 }
 
 function breakerFor(providerId: string, t: Tuning): Breaker {
-  let b = breakers.get(providerId);
-  if (!b) {
-    b = new Breaker(t.breakerThreshold, t.breakerCooldownMs);
-    breakers.set(providerId, b);
+  const cached = breakers.get(providerId);
+  if (cached && cached.threshold === t.breakerThreshold && cached.cooldownMs === t.breakerCooldownMs) {
+    return cached.breaker;
   }
-  return b;
+  const breaker = new Breaker(t.breakerThreshold, t.breakerCooldownMs);
+  breakers.set(providerId, { threshold: t.breakerThreshold, cooldownMs: t.breakerCooldownMs, breaker });
+  return breaker;
 }
 
 function semaphoreFor(providerId: string, manifest: GatewayManifest, t: Tuning): Semaphore {
