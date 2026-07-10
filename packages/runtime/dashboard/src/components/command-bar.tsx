@@ -3,7 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Settings } from "lucide-react";
 import {
-  Button,
+  Button, Kbd,
   CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@lodekit/ui";
 import { SERVICES } from "./nav";
@@ -41,7 +41,7 @@ export function CommandBar() {
       >
         <Search className="size-4 shrink-0" aria-hidden="true" />
         <span className="flex-1 text-left">Search…</span>
-        <kbd className="pointer-events-none rounded border bg-muted px-1.5 font-mono text-[10px]">⌘K</kbd>
+        <Kbd>⌘K</Kbd>
       </button>
       <Button variant="ghost" size="icon" className="md:hidden" aria-label="Search" onClick={() => setOpen(true)}>
         <Search className="size-4" />

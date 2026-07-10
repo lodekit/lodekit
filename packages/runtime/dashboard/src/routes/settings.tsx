@@ -5,6 +5,7 @@ import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
   Badge, Button, Card, CardContent, CardHeader, CardTitle,
   Collapsible, CollapsibleContent, CollapsibleTrigger,
+  Field as FieldRoot, FieldContent, FieldDescription, FieldError, FieldLabel,
   Input, Label,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton, Switch,
   Tabs, TabsContent, TabsList, TabsTrigger,
@@ -163,15 +164,15 @@ function SettingRow(props: {
       });
   };
   return (
-    <div className="flex items-start justify-between gap-6 border-b py-3 last:border-b-0">
-      <div className="min-w-0">
-        <Label className="flex items-center gap-2">
+    <FieldRoot orientation="horizontal" className="justify-between gap-6 border-b py-3 last:border-b-0">
+      <FieldContent className="min-w-0">
+        <FieldLabel className="items-center">
           {props.field.label}
           {props.drifted && <Badge variant="outline">was reset to default</Badge>}
-        </Label>
-        <p className="mt-1 text-xs text-muted-foreground">{props.field.description}</p>
-        {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
-      </div>
+        </FieldLabel>
+        <FieldDescription>{props.field.description}</FieldDescription>
+        {error && <FieldError>{error}</FieldError>}
+      </FieldContent>
       <div className="flex shrink-0 flex-col items-end gap-1">
         <div className="flex items-center gap-2">
           <Button
@@ -190,7 +191,7 @@ function SettingRow(props: {
           <p className="text-xs text-muted-foreground">Platform value: {String(props.platformValue)}</p>
         )}
       </div>
-    </div>
+    </FieldRoot>
   );
 }
 
