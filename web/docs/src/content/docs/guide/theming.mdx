@@ -3,4 +3,62 @@ title: Theming
 description: "Customize the look of your apps and dashboard with Lodekit's theming system."
 ---
 
-Content coming in this docs slice.
+Every Lodekit app is styled from one shared theme, so everything feels like
+one product. That theme is built from **tokens** — named values like the
+primary color or the corner radius — and you can override them in a plain CSS
+file. No app code changes, no rebuilding by hand.
+
+## Two files, two scopes
+
+- `theme.css` at the root of your Lodekit folder restyles **everything** —
+  every app and the dashboard.
+- `apps/<app-id>/theme.css` restyles **one app**. It layers on top of the
+  global file, so an app can differ in just one or two tokens and inherit the
+  rest.
+
+Neither file exists until you create it. Save one, and Lodekit rebuilds the
+affected apps automatically — cards on the dashboard flip through *building…*
+and the new look is live moments later.
+
+## An example
+
+```css title="~/Documents/Lodekit/theme.css"
+:root {
+  --primary: oklch(0.55 0.15 150);
+  --radius: 0.5rem;
+}
+```
+
+That turns every button, link, and highlight green and softens the corners —
+across all your apps at once. Dark mode has its own values; override those
+under `.dark`:
+
+```css title="~/Documents/Lodekit/theme.css"
+.dark {
+  --primary: oklch(0.7 0.13 150);
+}
+```
+
+## Tokens are the contract
+
+The token names are the stable, supported surface: colors like `--primary`,
+`--background`, and `--foreground`, plus shape values like `--radius`. You
+*can* write any CSS you like in these files, but only token overrides are
+promised to keep working as Lodekit's components evolve — anything more
+specific may break with an update.
+
+You don't have to hand-pick values yourself. Your agent knows the full token
+list — ask it to "make everything warmer and rounder" or "give the garden app
+a green theme" and it writes the file for you.
+
+## See the whole palette
+
+Lodekit serves a component catalog at
+`http://lodekit.localhost:7777/_ui/` — every button, card, and control the
+apps are built from, rendered under your live theme. It's the quickest way to
+check an override across everything at once, before you've even opened an
+app.
+
+That's the tour of using Lodekit day to day. Next, meet the services your
+apps build on — storage, tasks, events, and more — in the
+[Services overview](/services/overview/).

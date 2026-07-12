@@ -3,4 +3,64 @@ title: The dashboard
 description: "Tour the Lodekit dashboard: browsing apps, services, and settings from your browser."
 ---
 
-Content coming in this docs slice.
+The dashboard is Lodekit's control room — a web page at
+`http://lodekit.localhost:7777` where you see your apps, watch what they're
+doing, and tune how everything behaves. It's a regular browser tab: open it
+from the menubar, bookmark it, keep it pinned.
+
+Across the top you'll find the Lodekit logo (a click takes you home), a
+services menu, and the Settings gear. Press <kbd>⌘K</kbd> anywhere to open the
+command palette and jump straight to any app, service view, or setting by
+typing its name.
+
+## Home
+
+**Home** shows one card per app: its icon, name, and description. The cards
+are live — when your agent saves a change, the card shows *building…*, then
+flips to *ready* (or *error*, with the problem spelled out). If an app still
+needs credentials, its card shows an "N secrets needed" badge so you know
+before you open it. With no apps installed yet, Home simply suggests asking
+your agent to build one.
+
+## Logs
+
+**Logs** is a live feed of what Lodekit and your apps are reporting — new
+lines appear as they happen. Filter by severity (debug, info, warning, error)
+or by app, and expand any row for its full details. When something misbehaves,
+this is the first place to look — and your agent can read the same records to
+debug for you.
+
+## Events
+
+**Events** shows the platform's announcement stream: apps becoming ready,
+records changing, tasks finishing. Like Logs it follows along live, but it
+also keeps history, so you can scroll back and filter by app, type, or text to
+see what happened while you were away.
+
+## Secrets
+
+**Secrets** is where your credentials live — the API keys and tokens your
+apps need. You add a secret once, then link it to any app that asks for one.
+Values are write-only: you can paste a new value, replace it, or delete the
+secret, but the dashboard never shows a value back — not to you, not to your
+agent.
+
+## Settings
+
+**Settings** collects every knob in one place: **General** and **Appearance**
+for the platform, **Services** for how storage, tasks, and the rest behave,
+and one section per app for the knobs its builder declared. Changed values
+are marked as modified and can be reset to their defaults with one click; the
+rarely-needed ones sit in a collapsed *Advanced* group. Each app's section
+can also *override* a service setting just for that app — revert the override
+and the shared value applies again.
+
+:::note
+**Data**, **Tasks**, and **Themes** appear in the services menu but are
+coming soon. Until then, your agent can show you an app's data and task runs,
+and theming works today [through a CSS file](/guide/theming/).
+:::
+
+Everything the dashboard shows lives in one folder on your Mac — see
+[Your Lodekit folder](/guide/your-lodekit-folder/) for what's where and how
+to back it up.

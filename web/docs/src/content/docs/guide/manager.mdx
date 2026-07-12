@@ -3,4 +3,50 @@ title: The menubar manager
 description: "What the menubar manager does day to day: starting, stopping, and supervising the runtime."
 ---
 
-Content coming in this docs slice.
+The manager is the Lodekit icon in your menu bar — the only piece of Lodekit
+that looks like a Mac app. It has one job: keep the platform running. It
+starts Lodekit when you launch it, watches over it while you work, and gives
+you the on/off switches.
+
+It's also self-contained. `Lodekit.app` carries everything it needs to run
+the platform, including its own private copy of Node — it installs nothing
+system-wide and touches nothing else on your Mac. Everything
+you actually *use* is the [dashboard](/guide/dashboard/) in your browser; the
+menubar is just the supervisor.
+
+## The tray menu
+
+Click the menubar icon and you get:
+
+- **Status line** — what Lodekit is doing right now: *starting* while it
+  boots, then *running*. You'll see *stopped* after you stop it yourself, or
+  *error* if something went wrong.
+- **Dashboard** — opens the dashboard in your browser.
+- **Settings** — opens the dashboard straight to its Settings page.
+- **Launch at Login** — start Lodekit automatically when you log in to your
+  Mac. This toggle and the one in the dashboard's Settings → General are the
+  same switch: change either and the other follows. If you change it in
+  macOS System Settings instead, the system's choice wins and Lodekit adopts
+  it.
+- **Start / Stop / Restart** — the power switches. Stop shuts the platform
+  down; Start brings it back; Restart does both in one go.
+- **Quit Lodekit** — quits the manager and stops the platform with it.
+
+## If something goes wrong
+
+Lodekit never restarts itself behind your back. If the platform crashes, the
+status line switches to *error* and stays there until you choose **Restart** —
+so a problem is always visible, never silently looping. Before restarting,
+it's worth a glance at the [Logs view](/guide/dashboard/#logs) (or ask your
+agent to look) to see what happened.
+
+## Quitting
+
+Quitting the manager stops everything: the dashboard and your apps are
+unavailable until you launch `Lodekit.app` again. Nothing is lost — your apps
+and data sit safely in [your Lodekit folder](/guide/your-lodekit-folder/) —
+they're just not being served. If you'd rather never think about it, turn on
+**Launch at Login** and Lodekit is simply always there.
+
+One more thing you can shape from outside an app's code: how everything
+looks. That's [Theming](/guide/theming/).
