@@ -86,7 +86,7 @@ const { records, next } = await events.list({ type: "export-finished", after: 0 
 Your app isn't the only producer. The platform announces app lifecycle
 (`build-state`, `server-state`), and every service publishes a **change
 feed** here — `kv-store-change`, `db-store-change`, `file-store-change`,
-`tasks-change`, `settings-change`. Change-feed payloads carry identity only
+`tasks-change`, `settings-change`, `secrets-change`. Change-feed payloads carry identity only
 (a key, a slug, an op) — never values.
 
 The log itself is durable and precious: one SQLite file at
@@ -99,6 +99,7 @@ survives a restore along with everything else.
 |---|---|
 | Payload size | ≤ 8 KB |
 | Retention | 30 days / 50,000 events |
+| Per-event `ttl` | Optional, up to 30 days |
 | Change-feed events | Kept 7 days |
 
 ## API
