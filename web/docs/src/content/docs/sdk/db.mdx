@@ -1,6 +1,120 @@
 ---
 title: db
-description: "API reference for the db handle: queries, migrations, and typed results."
+description: Typed SQL with Drizzle — the db-store service's SDK handle.
 ---
 
-Content coming in this docs slice.
+Your app's relational database, queried through [Drizzle ORM](https://orm.drizzle.team/).
+For when the database is the right home (and how migrations work), see
+[the Database service](/services/database/).
+
+Unlike the other handles, `db` isn't imported from `@lodekit/sdk` — your app
+builds its own typed handle in `src/db.ts` with `createDb()` and imports it from
+there. Works in the browser and in server functions.
+
+## The src/db.ts contract
+
+Declare your tables with Drizzle's SQLite builders, export them, and export a
+`db` built from them:
+
+```ts title="src/db.ts"
+import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core";
+import { createDb } from "@lodekit/sdk";
+
+export const plants = sqliteTable("plants", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  species: text("species").notNull(),
+  icon: text("icon").notNull(),
+  personality: text("personality").notNull().default(""),
+  adoptedAt: integer("adopted_at").notNull(), // epoch ms
+});
+
+export const careRules = sqliteTable(
+  "care_rules",
+  {
+    plantId: integer("plant_id").notNull().references(() => plants.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // water | feed | mist
+    every: text("every").notNull(), // "3d" / "12h"
+  },
+  (t) => [primaryKey({ columns: [t.plantId, t.kind] })]
+);
+
+export const db = createDb({ plants, careRules });
+export type Plant = typeof plants.$inferSelect;
+```
+
+The runtime imports this module at worker boot and applies your schema to the
+app's database before the app serves requests.
+
+## createDb()
+
+```ts
+createDb<TSchema extends Record<string, unknown>>(schema: TSchema): SqliteRemoteDatabase<TSchema>
+```
+
+- `schema` — an object of your exported Drizzle tables.
+
+Returns a standard Drizzle database instance (Drizzle's `sqlite-proxy` driver).
+Query building happens locally and is fully typed against your schema; execution
+travels over HTTP to the runtime, which owns the SQLite file — app code never
+opens the database directly. Because the transport is plain HTTP, the same `db`
+works in the browser and in server functions.
+
+`createDb()` only builds the query client — schema application happens
+separately, at worker boot, from the same `src/db.ts` file.
+
+## Querying
+
+It's standard Drizzle. Select with a filter:
+
+```ts
+import { eq } from "drizzle-orm";
+import { db, plants } from "../db";
+
+const [plant] = await db.select().from(plants).where(eq(plants.id, plantId));
+```
+
+Upsert with `onConflictDoUpdate`:
+
+```ts
+await db.insert(careState)
+  .values({ plantId, kind, lastAt: now, dueAt, reminderRunId })
+  .onConflictDoUpdate({
+    target: [careState.plantId, careState.kind],
+    set: { lastAt: now, dueAt, dueSince: null, reminderRunId },
+  });
+```
+
+Insert:
+
+```ts
+await db.insert(journal).values({ plantId, at: now, kind, text: `${CARE_VERB[kind]} ${plant.name}.` });
+```
+
+Row types come from the schema, for free:
+
+```ts
+export type Plant = typeof plants.$inferSelect;
+```
+
+## Schema push
+
+When you save `src/db.ts`, the runtime diffs the declared schema against the
+database:
+
+- **Additive changes apply automatically** — `CREATE TABLE`, `CREATE INDEX`,
+  `ADD COLUMN`.
+- **Destructive changes are gated** — instead of applying, the app reports what
+  would be lost; the way forward is an expand-copy migration (new table, copy
+  the data, retire the old one). See
+  [the Database service](/services/database/) for the full migration story.
+- **Reserved names** — table names may not start with `_` or `sqlite_`.
+
+## What's rejected
+
+The query routes accept CRUD only — `SELECT`, `INSERT`, `UPDATE`, `DELETE`.
+Schema-altering or otherwise non-CRUD statements are rejected, as is any query
+referencing `_`- or `sqlite_`-prefixed tables. A rejected query surfaces as a
+rejected promise carrying the server's message.
+
+Query requests ride the scoped API, so its 100 kb request-body cap applies.

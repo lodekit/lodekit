@@ -1,6 +1,81 @@
 ---
 title: Overview
-description: "How the SDK is organized and how your agent imports and calls it."
+description: How the SDK is organized — one import, typed HTTP handles, and where each one runs.
 ---
 
-Content coming in this docs slice.
+Every Lodekit app talks to the platform through `@lodekit/sdk`. One package, one import:
+
+```ts
+import { kv, files, events, tasks, settings, secrets, logs, appId } from "@lodekit/sdk";
+```
+
+The one handle that doesn't come from this import is `db`: your app builds its own
+typed database handle in `src/db.ts` with `createDb()` (exported by `@lodekit/sdk`)
+and imports it from there — see [db](/sdk/db/).
+
+## How it works
+
+Each handle is a typed HTTP client against your app's scoped API on the local
+runtime — `/api/apps/<app-id>/<service>`. There are no URLs to configure: in the
+browser, requests are relative to the page origin; in a server function, the
+runtime hands the app worker its loopback base. Your app id is injected at build
+time by the shared toolchain, and the SDK exports it back:
+
+```ts
+export const appId: string
+```
+
+Outside an app build `appId` is `""` and the singleton handles are inert.
+
+## Where each handle works
+
+| Handle | Browser | Server functions |
+| --- | --- | --- |
+| [`kv`](/sdk/kv/) | Yes | Yes |
+| [`db`](/sdk/db/) | Yes | Yes |
+| [`files`](/sdk/files/) | Yes | Yes |
+| [`events`](/sdk/events/) | Yes | `emit` and `list` only — `watch` is client-only |
+| [`tasks`](/sdk/tasks/) | Yes | Yes |
+| [`settings`](/sdk/settings/) | Yes | `get` and `all` only — `watch` is client-only |
+| [`secrets`](/sdk/secrets/) | No — server-only | Yes |
+| [`logs`](/sdk/logs/) | Yes | Yes |
+
+Calling `events.watch()` or `settings.watch()` on the server throws; calling
+`secrets.get()` in the browser throws. Everything else is isomorphic — the same
+call works on both sides.
+
+## Errors
+
+- A failed call rejects with an `Error` whose message is the server's error
+  string (for example, a validation message like a bad TTL). If the server sent
+  no message, the HTTP status text is used.
+- `logs.*` are fire-and-forget: they return `void` — not a promise — and never
+  throw, so logging is safe on any code path.
+- `secrets.get()` has a dedicated error type, `SecretUnavailableError`, with a
+  `reason` of `"unlinked"` or `"unavailable"` — see [secrets](/sdk/secrets/).
+
+## Conventions
+
+- **TTLs are seconds** — every `ttl` option across `kv`, `files`, and `events`
+  takes seconds.
+- **Timestamps are ms-epoch** — every `createdAt`, `updatedAt`, `expiresAt`, and
+  event `ts` is milliseconds since the Unix epoch.
+- **Pagination is keyset** — list calls return `nextCursor`; pass it back as
+  `cursor` for the next page, and stop when it's `null`.
+- **Request bodies cap at 100 kb** on the scoped API — this bounds kv values and
+  task payloads. File bodies are exempt: `files` has no size cap.
+
+## createClient()
+
+```ts
+createClient({ baseUrl, appId }: { baseUrl: string; appId: string }): LodekitClient
+```
+
+- `baseUrl` — the runtime origin to talk to (`""` for page-relative).
+- `appId` — the app scope to talk to.
+
+Builds a fresh set of all handles bound to an explicit runtime and app id — the
+singleton handles above are exactly `createClient(...)`'s handles bound to your
+own app. You only need this in rare cases, such as a script running outside an
+app build. `LodekitClient` is
+`{ kv, files, logs, tasks, events, settings, secrets }`.

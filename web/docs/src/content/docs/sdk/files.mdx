@@ -1,6 +1,254 @@
 ---
 title: files
-description: "API reference for the files handle: reading, writing, and listing files."
+description: Blob storage — the file-store service's SDK handle.
 ---
 
-Content coming in this docs slice.
+Per-app blob storage with S3-shaped semantics: identity by slug, PUT replaces,
+metadata beside the bytes. For when Files is the right home, see
+[the Files service](/services/files/).
+
+```ts
+import { files } from "@lodekit/sdk";
+```
+
+Works in the browser and in server functions. Bytes stream in both directions
+and have no size cap — the scoped API's 100 kb request cap does not apply to
+file bodies. TTLs are in seconds; timestamps are milliseconds since the epoch.
+
+## files.put()
+
+```ts
+put(
+  body: FilePutBody,
+  opts?: { slug?: string; title?: string; contentType?: string; ttl?: number; metadata?: Record<string, unknown> }
+): Promise<FileStat>
+```
+
+- `body` — the bytes: `string | Blob | ArrayBuffer | Uint8Array | ReadableStream`.
+  A `ReadableStream` uploads without buffering.
+- `opts.slug` — explicit identity. When present, this is a create-or-replace
+  write (S3 PUT semantics): an existing file at that slug is replaced. When
+  absent, the server derives a slug from the title or filename, suffixing `-2`,
+  `-3`, … on collision.
+- `opts.title` — display title, ≤ 512 characters.
+- `opts.contentType` — MIME type. Default `application/octet-stream`.
+- `opts.ttl` — time to live in seconds.
+- `opts.metadata` — a JSON object stored beside the bytes, ≤ 4 KB.
+
+Returns the stored file's `FileStat`.
+
+### Example
+
+Greenhouse's photo upload (browser, from a file input):
+
+```ts
+await files.put(file, {
+  slug: `photo-${id}-${invTs(Date.now())}`,
+  title: caption || file.name,
+  contentType: file.type || "application/octet-stream",
+  metadata: { plantId: id },
+});
+```
+
+And a self-expiring export (server function):
+
+```ts
+const stat = await files.put(
+  JSON.stringify({ exportedAt: Date.now(), stats, plants: allPlants }, null, 2),
+  { slug: `snapshot-${Date.now()}`, contentType: "application/json", title: "Conservatory snapshot", ttl: 3600 }
+);
+```
+
+## files.get()
+
+```ts
+get(slug: string): Promise<Blob | undefined>
+```
+
+- `slug` — the file's slug.
+
+Returns the bytes as a `Blob`, or `undefined` if the file doesn't exist or its
+TTL has expired.
+
+### Example
+
+```ts
+const blob = await files.get("cover-3");
+if (blob) {
+  const text = await blob.text();
+}
+```
+
+## files.url()
+
+```ts
+url(slug: string, opts?: { download?: boolean }): string
+```
+
+- `slug` — the file's slug.
+- `opts.download` — appends `?download=1` so browsers save instead of render.
+
+**Synchronous** — builds the file's public GET URL without a network call, so
+you can use it directly in markup. The URL responds 404 if no such file exists.
+
+### Example
+
+```tsx
+<img src={files.url(photo.slug)} alt={photo.title ?? ""} />
+```
+
+## files.stat()
+
+```ts
+stat(slug: string): Promise<FileStat | undefined>
+```
+
+- `slug` — the file's slug.
+
+Returns the file's metadata without fetching the bytes, or `undefined` if it
+doesn't exist or has expired.
+
+### Example
+
+```ts
+const stat = await files.stat(`cover-${id}`);
+if (stat) logs.info("cover size", { bytes: stat.size });
+```
+
+## files.delete()
+
+```ts
+delete(slug: string): Promise<boolean>
+```
+
+- `slug` — the file's slug.
+
+Deletes the file — row and bytes. Returns `true` if a file was deleted, `false`
+if it didn't exist.
+
+### Example
+
+```ts
+await files.delete(`snapshot-${staleId}`);
+```
+
+## files.list()
+
+```ts
+list(opts?: { prefix?: string; limit?: number; cursor?: string }): Promise<{ entries: FileStat[]; nextCursor: string | null }>
+```
+
+- `opts.prefix` — only slugs starting with this prefix.
+- `opts.limit` — page size. Default 100 (the `files.list_limit` platform
+  setting), clamped to 1–1000.
+- `opts.cursor` — resume after this slug.
+
+Returns entries ordered by slug ascending. Pagination is keyset: `nextCursor` is
+the last slug of the page — pass it back as `cursor`; `null` means done.
+
+### Example
+
+```ts
+const { entries } = await files.list({ prefix: `photo-${id}-` });
+```
+
+## files.copy()
+
+```ts
+copy(from: string, to: string): Promise<FileStat>
+```
+
+- `from` — the source slug.
+- `to` — the destination slug.
+
+Duplicates a file, replacing any existing file at `to`. The copy is a new file:
+`createdAt` and `updatedAt` are reset. Returns the destination's `FileStat`.
+
+### Example
+
+Greenhouse sets a plant's cover photo by copying:
+
+```ts
+await files.copy(f.slug, `cover-${id}`);
+```
+
+## files.move()
+
+```ts
+move(from: string, to: string): Promise<FileStat>
+```
+
+- `from` — the current slug.
+- `to` — the new slug.
+
+Renames the file in place — same file, new identity — preserving `createdAt`.
+Returns the file's `FileStat` under its new slug.
+
+### Example
+
+Greenhouse archives a photo by renaming it out of the gallery prefix:
+
+```ts
+await files.move(f.slug, f.slug.replace(`photo-${id}-`, `archive-${id}-`));
+```
+
+## Slugs
+
+A slug is the file's identity: 1–128 characters matching `^[a-z0-9-]{1,128}$`.
+
+When `put` is called without a slug, the server derives one from the title or
+filename: NFKD-normalize, strip diacritics, lowercase, turn runs of
+non-alphanumerics into `-`, trim, cap at 128 characters; an empty result becomes
+`"file"`. Derived slugs get `-2`, `-3`, … appended on collision. An explicit
+slug that already exists is a replace, never a suffix.
+
+## Behavior notes
+
+- **TTL expiry is lazy** — an expired file is removed (row and bytes) when it's
+  next read, and reported missing.
+- **Bytes are real files on disk** — under
+  `data/<app-id>/files/<YYYY-MM-DD>/<slug>-<hash8>.<ext>`, browsable in Finder;
+  SQLite holds the authoritative index. `stat` and `get` reconcile files deleted
+  outside Lodekit.
+- **Every change emits an event** — `file-store-change` with a payload of
+  `{ slug, op }` where `op` is `"put"`, `"del"`, or `"expire"`. See
+  [events](/sdk/events/).
+
+## Types
+
+### FileStat
+
+```ts
+interface FileStat {
+  slug: string;
+  title: string | null;
+  contentType: string;
+  size: number;
+  hash: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: number;
+  updatedAt: number;
+  expiresAt: number | null;
+  url: string;
+  path: string;
+}
+```
+
+- `slug` — the file's identity.
+- `title` — display title, or `null`.
+- `contentType` — the stored MIME type.
+- `size` — byte count.
+- `hash` — sha256 of the bytes, hex-encoded.
+- `metadata` — the stored JSON object, or `null`.
+- `createdAt` / `updatedAt` — ms-epoch timestamps.
+- `expiresAt` — ms-epoch expiry, or `null` for files without a TTL.
+- `url` — the public GET URL (what `files.url()` returns).
+- `path` — the absolute on-disk path of the bytes.
+
+### FilePutBody
+
+```ts
+type FilePutBody = string | Blob | ArrayBuffer | Uint8Array | ReadableStream;
+```
+
+Anything `put` accepts as bytes.
