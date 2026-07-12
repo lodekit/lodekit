@@ -3,4 +3,82 @@ title: Using the UI library
 description: "The shared UI component library available to every app."
 ---
 
-Content coming in this docs slice.
+Every app builds its interface from `@lodekit/ui` — the **UI library**, part of the
+shared toolchain. Import components like any package:
+
+```ts
+import { Badge, Button, Card, CardContent, Input } from "@lodekit/ui";
+```
+
+That line is from the Greenhouse showcase app, and it's the whole setup — no
+installation, no copy-pasting component files, no configuration.
+
+## One theme, one product
+
+The components are [shadcn/ui](https://ui.shadcn.com/) — the same battle-tested set
+used across the industry — carrying **one shared theme**. Colors, radii, spacing, and
+typography come from theme tokens, not from each app's code. That's why a plant
+tracker and an invoice tool built months apart look like two views of the same
+product, and why restyling happens in one place instead of per app.
+
+An app opts in with a single line in its `src/index.css`:
+
+```css title="src/index.css"
+@import "@lodekit/ui/theme.css";
+```
+
+In Greenhouse, that import is the entire file. It brings in the theme's tokens and
+Tailwind setup, so utility classes and semantic colors like `text-muted-foreground`
+and `text-destructive` work everywhere in the app.
+
+Want different colors? Theming is yours, not the app's — you (or your agent) redefine
+tokens in a plain CSS file, globally or per app, and every component follows. That's
+covered in [Theming](/guide/theming/).
+
+## What's in the box
+
+The set is stock shadcn — Lodekit adds the theme, not custom component internals:
+
+`accordion`, `alert`, `alert-dialog`, `aspect-ratio`, `avatar`, `badge`,
+`breadcrumb`, `button`, `button-group`, `card`, `checkbox`, `collapsible`,
+`combobox`, `command`, `context-menu`, `dialog`, `drawer`, `dropdown-menu`, `empty`,
+`field`, `hover-card`, `input`, `input-group`, `input-otp`, `kbd`, `label`,
+`menubar`, `navigation-menu`, `pagination`, `popover`, `progress`, `radio-group`,
+`resizable`, `scroll-area`, `select`, `separator`, `sheet`, `sidebar`, `skeleton`,
+`slider`, `sonner`, `spinner`, `switch`, `table`, `tabs`, `textarea`, `toggle`,
+`toggle-group`, `tooltip`
+
+— plus the `cn` helper for composing class names. Because the components are stock,
+shadcn's own docs and examples apply directly; your agent already knows them well.
+
+## See them under your theme
+
+The best reference isn't a screenshot — it's the **UI catalog** running on your own
+machine at `http://lodekit.localhost:7777/_ui/`. It renders every component above
+under your live theme, so what you see there is exactly what your apps get, including
+any theme overrides you've made.
+
+## Composing with Tailwind
+
+Components handle the pieces; Tailwind handles the arrangement. Layout, spacing, and
+one-off tweaks are utility classes right on the components:
+
+```tsx title="src/routes/index.tsx"
+<Card>
+  <CardContent className="flex gap-4 p-4">
+    <img
+      src={files.url(`cover-${id}`)}
+      alt={`${plant.name}'s portrait`}
+      className="h-24 w-32 rounded-md object-cover"
+    />
+    <div className="min-w-0 space-y-1">
+      <p className="text-sm text-muted-foreground">{plant.species}</p>
+      {snoozed && <Badge variant="secondary">😴 snoozed</Badge>}
+    </div>
+  </CardContent>
+</Card>
+```
+
+That's the whole building picture: the stack, the anatomy, the data flow, the live
+updates, and the components. For every handle and signature in one place, head to the
+[SDK reference](/sdk/overview/).

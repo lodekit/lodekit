@@ -3,4 +3,85 @@ title: Live updates
 description: "Push live data to the UI as it changes, without polling."
 ---
 
-Content coming in this docs slice.
+Lodekit apps feel alive: water a plant in one tab and the conservatory in another tab
+updates by itself. There's no polling and no WebSocket plumbing behind that — just one
+pattern, built from pieces you already have.
+
+## The pattern
+
+Every service announces changes on the event bus: a database write emits
+`db-store-change`, a kv write emits `kv-store-change`, a file put emits
+`file-store-change`, a task run emits `tasks-change`. The client subscribes with
+`events.watch()` and, on any relevant event, invalidates the router — which re-runs
+the current route's loaders, which re-renders with fresh data.
+
+Here is the Greenhouse conservatory page, verbatim:
+
+```tsx title="src/routes/index.tsx"
+function Conservatory() {
+  const cards = Route.useLoaderData();
+  const router = useRouter();
+
+  // useEffect (not module scope) keeps the watch off the SSR path — it's client-only.
+  // Entity writes ride db-store-change; streak/snooze (app memory) ride kv-store-change.
+  useEffect(
+    () => events.watch({ type: ["db-store-change", "kv-store-change"] }, () => void router.invalidate()),
+    [router]
+  );
+  // ...render cards
+}
+```
+
+Three details are doing quiet work here:
+
+- **`events.watch()` is client-only** — it throws on the server. Wrapping it in
+  `useEffect` keeps it off the server-rendered first paint.
+- **`watch` returns its own unsubscribe function**, so returning it directly from
+  `useEffect` gives you cleanup for free when the component unmounts.
+- **`router.invalidate()` is the whole update path.** No state syncing, no cache
+  keys — the loader you already wrote re-runs, and React does the rest.
+
+## Scope the watch by type
+
+The `type` filter takes one type or a list. Watch only what the page renders: the
+conservatory shows plants (database) and streaks (kv), so it watches exactly those
+two change feeds. A page that only shows task history watches one:
+
+```ts
+events.watch({ type: "tasks-change" }, () => void refetch());
+```
+
+Leaving the filter off subscribes to everything on the app's stream — legal, but then
+every log-worthy twitch re-runs your loaders.
+
+## Filter in the callback
+
+Change events carry **identity, not values** — a `file-store-change` payload says
+which slug changed and how (`{ slug, op }`), never the bytes. When a type filter is
+still too coarse, filter in the callback. Greenhouse's plant page only cares about
+that plant's photos:
+
+```ts title="src/routes/plants.$plantId.tsx"
+events.watch({ type: "file-store-change" }, (ev) => {
+  const slug = (ev.payload as { slug?: string } | undefined)?.slug;
+  if (slug?.startsWith(`photo-${id}-`)) refresh();
+});
+```
+
+Another plant's photo upload no longer refreshes this page.
+
+## Coarse is fine
+
+Be honest about what this pattern is: **coarse invalidation**. Any matching change
+re-runs the whole route's loaders, even if the change touched one row out of a
+thousand. That's a deliberate trade, and at personal scale it's the right one — your
+loaders read a local SQLite file for one user, so re-running them costs milliseconds.
+The precise alternative (tracking which query depends on which row) is real
+complexity with no felt payoff here. Reach for callback filtering when a page
+provably refreshes too often; reach for nothing fancier than that.
+
+The bus does more than change feeds — apps can emit and replay their own events. The
+full story is in [Events](/services/events/).
+
+Next, the components you render all this data with:
+[Using the UI library](/build/using-the-ui-library/).

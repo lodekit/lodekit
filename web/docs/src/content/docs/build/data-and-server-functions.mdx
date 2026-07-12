@@ -3,4 +3,115 @@ title: Data and server functions
 description: "How app UI talks to services through server functions."
 ---
 
-Content coming in this docs slice.
+An app's code runs in two places. Browser code — components, event handlers — runs in
+your browser. Server code — loaders and server functions — runs in the app's **app
+worker**, a per-app worker thread inside the runtime. This page is how data moves
+between the two, and why a trust boundary sits in the middle.
+
+## Server functions
+
+A **server function** is app code that runs on the server side of the contract and is
+callable from the app's own client, defined with TanStack Start's `createServerFn()`.
+The client gets a typed async function; calling it makes an HTTP request under the
+hood. This is how writes happen — here is Greenhouse's `giveCare`, trimmed:
+
+```ts title="src/care.ts"
+const careInput = z.object({
+  plantId: z.number().int(),
+  kind: z.enum(["water", "feed", "mist"]),
+});
+
+export const giveCare = createServerFn()
+  .inputValidator(careInput)
+  .handler(async ({ data }) => {
+    const { plantId, kind } = data;
+    const [plant] = await db.select().from(plants).where(eq(plants.id, plantId));
+    if (!plant) throw new Error(`no plant ${plantId}`);
+    const [rule] = await db.select().from(careRules)
+      .where(and(eq(careRules.plantId, plantId), eq(careRules.kind, kind)));
+    if (!rule) throw new Error(`${plant.name} doesn't take "${kind}"`);
+    const now = Date.now();
+    const streak = await kv.incr(streakKey(plantId));
+    const dueAt = now + parseEvery(rule.every);
+    await db.insert(careState)
+      .values({ plantId, kind, lastAt: now, dueAt })
+      .onConflictDoUpdate({
+        target: [careState.plantId, careState.kind],
+        set: { lastAt: now, dueAt },
+      });
+    logs.info("care given", { plantId, kind, streak });
+    return { dueAt, streak };
+  });
+```
+
+One click on "Water" becomes one round trip that reads the plant, bumps a streak
+counter, and upserts the care state — a multi-step write executed as a single
+sequence on the server.
+
+## Validate at the boundary — always
+
+Note the `.inputValidator(careInput)` before the handler. A server function is, in
+effect, an HTTP endpoint: anything that can reach the runtime can call it with any
+payload — not just your UI. The handler's `data` is only trustworthy because a zod
+schema checked it at the trust boundary; without validation, `plantId` could be a
+string, an object, or missing entirely, and the failure would surface deep inside
+your data instead of at the door.
+
+So the rule is unconditional: **every server function that takes input validates it**.
+The schema doubles as the function's type — `data` above is typed
+`{ plantId: number; kind: "water" | "feed" | "mist" }` with no extra annotations.
+
+## Reads: loaders
+
+Read paths use route **loaders**, which run on the server during the initial render
+(that's the server-rendered part) and re-run on navigation and invalidation. The
+conventional shape is a server function as the loader:
+
+```ts title="src/routes/index.tsx"
+export const getConservatory = createServerFn().handler(async () => {
+  const [rows, rules, states] = await Promise.all([
+    db.select().from(plants).orderBy(plants.id),
+    db.select().from(careRules),
+    db.select().from(careState),
+  ]);
+  const keys = rows.flatMap(({ id }) => [streakKey(id), snoozeKey(id)]);
+  const entries = keys.length ? await kv.getMany(keys) : [];
+  // ...assemble one card per plant from rows + rules + states + entries
+});
+
+export const Route = createFileRoute("/")({
+  loader: () => getConservatory(),
+  component: Conservatory,
+});
+```
+
+The component then reads the result with `Route.useLoaderData()` — already typed,
+already fetched, on both first paint and every refresh.
+
+## The SDK is isomorphic
+
+Notice what the samples above did *not* do: import a different database client for
+the server. The SDK works on both sides of the contract — `db`, `kv`, `files`,
+`tasks`, `events.emit`, `logs` are the same calls in a component as in a handler.
+Under the hood every handle talks HTTP to the app's own scoped API, whether the call
+starts in the browser or in the app worker.
+
+The exceptions are deliberate: `secrets.get()` is **server-only** — credentials never
+reach the browser — while the live subscriptions, `events.watch()` and
+`settings.watch()`, are **client-only** (more in
+[Live updates](/build/live-updates/)).
+
+## Server function or client call?
+
+Since the SDK also works in the browser, when do you need a server function?
+
+- **Secrets — always.** Anything touching `secrets.get()` (an API key, a token) must
+  be a server function; the browser cannot read secrets at all.
+- **Multi-step writes — server.** `giveCare` touches three tables and a counter. As a
+  server function it's one round trip and one consistent sequence; from the client it
+  would be four requests that can interleave with other work or fail halfway.
+- **Simple, single calls — client is fine.** Toggling one kv flag or rendering
+  `files.url(slug)` straight from a component needs no ceremony.
+
+Next, making pages update themselves when data changes:
+[Live updates](/build/live-updates/).
