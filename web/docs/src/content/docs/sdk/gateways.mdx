@@ -135,8 +135,9 @@ soft failure:
 
 ### Example
 
-Greenhouse's weather task treats setup as a graceful idle and lets everything
-else fail the run:
+Greenhouse's weather task treats "not ready yet" — a connection waiting on
+setup, or a degraded engine — as a graceful idle, and lets everything else
+fail the run:
 
 ```ts
 try {
@@ -191,10 +192,11 @@ export const weather_log = task({
 ```
 
 Two habits worth copying. First, the **graceful idle**: while the connection
-is unconfigured, the task logs once and returns — the app stays healthy with
-an empty journal until the person links a key. Second, transient failures are
-*thrown*, not swallowed: the run fails, and the task's own retry policy takes
-it from there. Gateways never retry a request themselves — tasks own retries.
+is unconfigured — or the gateways engine is degraded (`unavailable`) — the
+task logs once and returns; the app stays healthy with an empty journal until
+the person links a key. Second, the other transient failures are *thrown*,
+not swallowed: the run fails, and the task's own retry policy takes it from
+there. Gateways never retry a request themselves — tasks own retries.
 
 ## Types
 
