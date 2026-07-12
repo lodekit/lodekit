@@ -191,6 +191,12 @@ above; the remainder:
   smuggling and page scraping don't fit its provider/connection/guardrails model. When it matters, design scraping as a separate
   service with its own contract (fetching + extraction, session handling, politeness/
   rate limits, change detection feeding Events).
+- **`context.md`'s UI-catalog entry is stale** — it still describes `/_ui/` as a live
+  statically built Storybook, but since the UI revamp the runtime redirects `/_ui/` to
+  the dashboard's empty Themes stub (`server.ts`); the catalog's successor is the
+  "Theme editor / component visualizer" item above. Reword the context.md entry when
+  that surface is designed (docs already say "coming soon" — docs-content slice,
+  2026-07-12).
 - **Revisit "hosting" terminology holistically across the platform** — the dashboard's
   settings section was renamed to **Engine** (UI revamp, 2026-07-10; person-facing label
   only — see the Engine entry in `context.md`), but the underlying vocabulary still says

@@ -23,6 +23,7 @@
 h1[data-page-title],
 .hero h1 {
   font-family: 'Fraunces', Georgia, serif;
-  font-variation-settings: 'SOFT' 75;
+  /* the Google Fonts import pins SOFT@100 — same axis value the landing ships */
+  font-variation-settings: 'SOFT' 100;
   font-weight: 550;
 }
