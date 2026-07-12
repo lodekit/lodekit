@@ -65,7 +65,9 @@ separately, at worker boot, from the same `src/db.ts` file.
 
 ## Querying
 
-It's standard Drizzle. Select with a filter:
+It's standard Drizzle. The examples below come from the Greenhouse showcase app
+(`careState` and `journal` are two more of its tables, declared the same way as
+`plants` above). Select with a filter:
 
 ```ts
 import { eq } from "drizzle-orm";
