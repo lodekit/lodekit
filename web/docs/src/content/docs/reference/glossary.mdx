@@ -3,4 +3,133 @@ title: Glossary
 description: "Definitions of the terms Lodekit uses throughout its docs."
 ---
 
-Content coming in this docs slice.
+The words these docs use, defined once. Lodekit uses each term consistently
+— the same word appears in the docs, the dashboard, and the SDK.
+
+**agent** — The AI assistant you build through, in whatever form you use it:
+a desktop app, an IDE, or a terminal coding agent. Lodekit is agent-agnostic
+— any agent that can load the skill and speak MCP can drive it. See
+[Connect your agent](/start/connect-your-agent/).
+
+**app** — A self-contained personal web app that runs on Lodekit — the thing
+you build. Each app lives at its own URL and keeps its own data. See
+[What is Lodekit?](/start/what-is-lodekit/).
+
+**app contract** — The required shape of an app's source: a manifest,
+TanStack Start routes, and a committed route tree. What "a valid app" means.
+See [App anatomy](/build/app-anatomy/).
+
+**app id** — An app's URL-safe identity: lowercase letters, digits, hyphens.
+It equals the app's folder name and is simultaneously its URL path and its
+data namespace. See [The manifest](/reference/manifest/).
+
+**app worker** — The isolated worker inside the runtime that runs one app's
+server code — server rendering and server functions. See
+[How Lodekit works](/start/how-lodekit-works/).
+
+**backup tree** — The apps and data directories under the Lodekit root,
+together: the durable state worth preserving. Back up that one folder and
+you have everything. See [Your Lodekit folder](/guide/your-lodekit-folder/).
+
+**build state** — Where an app is in its build lifecycle: building → ready
+or error. Shown live on each app's card in the
+[dashboard](/guide/dashboard/).
+
+**bundled** — How apps ship: source is compiled into built output that
+Lodekit serves. You never run a build yourself. See
+[How Lodekit works](/start/how-lodekit-works/).
+
+**Cache** — Regenerable built output at `~/Library/Caches/Lodekit`, kept
+outside the Lodekit root and never backed up. Deleting it costs only a
+rebuild. See [File locations](/reference/file-locations/).
+
+**dashboard** — Lodekit's built-in web UI: every app with its live build
+state and health, plus logs, events, secrets, and settings. See
+[The dashboard](/guide/dashboard/).
+
+**data tree** — The `data/` directory under the Lodekit root: each app's
+saved records, one folder per app id. See
+[Your Lodekit folder](/guide/your-lodekit-folder/).
+
+**Engine** — The dashboard's name for the runtime, used in the Settings
+page's Engine section. Same thing; "Engine" is the label you read, "runtime"
+is the word the docs use.
+
+**event** — A durable message on the platform's event bus: an app announcing
+an export finished, the platform announcing an app became ready. Events
+trigger reactions; they're never the system of record. See
+[Events](/services/events/).
+
+**Lodekit root** — The one folder (`~/Documents/Lodekit` by default) holding
+the apps and data trees side by side. The thing you back up. See
+[Your Lodekit folder](/guide/your-lodekit-folder/).
+
+**manager** — The menubar app that ships and supervises the platform: it
+runs the runtime, shows its status, and opens the dashboard. See
+[The menubar manager](/guide/manager/).
+
+**manifest** — The `manifest.json` at an app's root declaring its name, app
+id, icon, and description — the record that makes a folder an app. See
+[The manifest](/reference/manifest/).
+
+**MCP server** — The agent-facing surface through which your agent drives
+Lodekit — scaffold, list, open, inspect — and reads app data on your behalf.
+See [MCP tools](/reference/mcp-tools/).
+
+**platform** — The installed subset of Lodekit on your machine: runtime,
+SDK, UI library, dashboard, and manager. What downloading Lodekit puts on
+disk.
+
+**runtime** — The single Node process at the heart of the platform: it
+builds, watches, and serves your apps, the dashboard, and the API. See
+[How Lodekit works](/start/how-lodekit-works/).
+
+**scaffold** — To generate a new app's starter files, conforming to the app
+contract. Usually your agent does it, through the MCP server. See
+[Your first app](/start/your-first-app/).
+
+**scoped API** — The per-app HTTP API (`/api/apps/<app-id>/…`) that backs
+the SDK; every app reaches only its own namespace. See the
+[SDK overview](/sdk/overview/).
+
+**SDK** — The typed client (`@lodekit/sdk`) an app imports to reach its
+services. Works on both sides: in the browser and in server code. See the
+[SDK overview](/sdk/overview/).
+
+**server function** — App code that runs on the server: a TanStack Start
+`createServerFn`, callable from the app's own pages, with inputs validated
+at the boundary. See
+[Data and server functions](/build/data-and-server-functions/).
+
+**service** — A capability the runtime provides to every app — the Database,
+KV, Files, Events, Tasks, Logs, Settings, Secrets — reached only through the
+SDK. See the [services overview](/services/overview/).
+
+**settings** — Configuration you view and edit in the dashboard: platform
+settings plus each app's declared knobs. Apps read their settings, never
+write them. See [Settings](/services/settings/).
+
+**shared toolchain** — The one build stack (Vite, React, TypeScript,
+Tailwind) Lodekit installs once and shares across every app, so apps carry
+no dependencies of their own. See [The stack](/build/the-stack/).
+
+**skill** — The instruction pack your agent loads to learn how to build on
+Lodekit: what a valid app looks like and how to use the MCP server and SDK.
+See [Connect your agent](/start/connect-your-agent/).
+
+**stack** — The prescribed way app code is written: TanStack Start +
+TypeScript + Tailwind through the shared toolchain, importing the SDK and
+the UI library. See [The stack](/build/the-stack/).
+
+**State** — Machine-local operational data at
+`~/Library/Application Support/Lodekit` — mainly the log store. Losing it
+costs history, never apps or data. See
+[File locations](/reference/file-locations/).
+
+**storage tiers** — The rule for where data lives, by cost of loss:
+*precious* (the backup tree), *operational history* (State), *regenerable*
+(the Cache). See [File locations](/reference/file-locations/).
+
+**UI library** — The themed component library (`@lodekit/ui`) every app
+imports, so all apps look like one product. See
+[Using the UI library](/build/using-the-ui-library/).

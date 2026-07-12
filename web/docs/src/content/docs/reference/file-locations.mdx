@@ -3,4 +3,78 @@ title: File locations
 description: "Where Lodekit stores apps, data, logs, and configuration on disk."
 ---
 
-Content coming in this docs slice.
+Everything Lodekit puts on your disk, in one table. Each location sits in a
+storage tier chosen by what losing it would cost — the friendly tour is in
+[Your Lodekit folder](/guide/your-lodekit-folder/).
+
+| Location | Path | Override | Contents |
+|---|---|---|---|
+| Lodekit root | `~/Documents/Lodekit` | `LODEKIT_ROOT` | `apps/` + `data/` — everything worth backing up |
+| State | `~/Library/Application Support/Lodekit` | `LODEKIT_STATE_DIR` | `logs.sqlite`, `runtime.pid` |
+| Cache | `~/Library/Caches/Lodekit` | `LODEKIT_CACHE_DIR` | Built app output |
+| Text logs | `~/Library/Logs/Lodekit` | — | `runtime-YYYYMMDD.log`, `manager-YYYYMMDD.log` |
+| Keychain | macOS Keychain | — | The secret-store master key |
+
+## The Lodekit root
+
+The one folder that matters: the **backup tree**. Two sibling directories
+under it:
+
+- `apps/` — one folder per app id, holding app source only. No dependency
+  folders, ever.
+- `data/` — one folder per app id, holding that app's saved state:
+  `db.sqlite` (its database, KV entries, task history, declared settings and
+  secret slots) and, when the app stores documents, a `files/` folder of
+  real, Finder-browsable files.
+
+`data/_platform/` is Lodekit's own record-keeping, and it's just as precious
+as your apps' data:
+
+- `events.sqlite` — the event bus history.
+- `settings.sqlite` — your platform settings.
+- `secrets.sqlite` — your secrets, stored as ciphertext.
+
+## State
+
+Machine-local operational data the platform keeps about itself:
+`logs.sqlite` (the structured log store) and `runtime.pid` (the running
+process's id, used by the manager). Not regenerable, but not precious either
+— losing State costs you history, never apps or data.
+
+## Cache
+
+The built, ready-to-serve version of each app. Fully regenerable: delete it
+and Lodekit rebuilds from source; the cost is a short wait.
+
+## Text logs
+
+Plain-text daily streams from the runtime and the manager, kept 7 days. The
+place to look when the platform itself won't start — they exist even when the
+structured log store can't be reached.
+
+## The Keychain master key
+
+Secrets are encrypted at rest in `data/_platform/secrets.sqlite`. The
+32-byte master key that decrypts them lives in the macOS Keychain — service
+`Lodekit`, account `secret-store-master-key` — deliberately **outside** the
+Lodekit root and outside every backup. That's the point: a copy of your
+backup tree, on its own, never contains a readable credential.
+
+The flip side: restoring a backup onto a new machine restores the ciphertext
+but not the key, so secret values can't be decrypted there. Re-enter them in
+the dashboard's Secrets view — every link and slot is preserved; only the
+values need typing again.
+
+## What to back up
+
+Back up the Lodekit root — nothing else. What each loss costs:
+
+- **Lodekit root** — your apps and their data. This is the one
+  irreplaceable loss; keep it in Time Machine or any backup that covers
+  `~/Documents`.
+- **State** — the log history and a stale pid file. Annoying, never
+  precious.
+- **Cache** — one rebuild per app.
+- **Text logs** — a week of platform diagnostics.
+- **Keychain master key** — stored secret values become unreadable and must
+  be re-entered; apps, data, and the secret catalog's structure survive.

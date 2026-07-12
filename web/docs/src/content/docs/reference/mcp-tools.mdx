@@ -3,4 +3,131 @@ title: MCP tools
 description: "The MCP tools Lodekit exposes to your agent and what each one does."
 ---
 
-Content coming in this docs slice.
+The MCP server is your agent's door into Lodekit. Through it, the agent
+scaffolds new apps, opens them in your browser, and reads what's already
+there — logs, events, records, files, settings — on your behalf. Everything
+else is read-only: the only tools that change anything are `lodekit_scaffold`
+(which creates files) and `lodekit_open_app` (which opens a browser tab).
+Secret **values** are never readable over MCP — the agent can see which
+secrets exist and which slots are linked, nothing more.
+
+How to register the server with your agent is covered in
+[Connect your agent](/start/connect-your-agent/). The server reaches the
+runtime over HTTP at `http://lodekit.localhost:7777` by default; set the
+`LODEKIT_BASE_URL` environment variable to point it elsewhere.
+
+## Apps
+
+### lodekit_scaffold
+
+Create a new app conforming to the app contract. Returns the result and the
+new app's URL.
+
+- `appId` (string, required) — the new app's id: lowercase letters, digits,
+  hyphens.
+- `name` (string, required) — display name.
+- `description` (string, optional).
+- `icon` (string, optional) — an emoji; defaults to 📦.
+
+### lodekit_list_apps
+
+List every app in the Lodekit root. No parameters.
+
+### lodekit_open_app
+
+Open an app in your browser at `/<appId>`.
+
+- `appId` (string, required).
+
+## Observability
+
+### lodekit_logs
+
+Read structured log records — the same records as the dashboard's Logs view.
+
+- `appId` (string, optional) — filter to one app, or `_platform` for the
+  runtime's own records; omit for everything.
+- `level` (`debug` | `info` | `warn` | `error`, optional) — minimum level.
+- `limit` (number, optional).
+- `q` (string, optional) — substring match on the message.
+
+### lodekit_events
+
+Read event bus history — the same stream as the dashboard's Events view.
+
+- `appId` (string, optional) — filter to one namespace: an app id, or
+  `_platform` for the runtime; omit for everything.
+- `type` (string, optional) — event type, e.g. `kv-store-change` or an
+  app-defined type.
+- `after` (number, optional) — replay ascending from this event id (offset);
+  omit for newest-first.
+- `limit` (number, optional).
+
+## Data
+
+### lodekit_kv_list
+
+List an app's KV entries with metadata.
+
+- `appId` (string, required).
+- `prefix` (string, optional) — key prefix filter.
+
+### lodekit_kv_get
+
+Get one KV value. Returns a `{ found }` shape, so a missing key is
+distinguishable from a stored `null`.
+
+- `appId` (string, required).
+- `key` (string, required).
+
+### lodekit_db_schema
+
+Inspect an app's declared database tables.
+
+- `appId` (string, required).
+
+### lodekit_db_query
+
+Run a single `SELECT` statement over an app's tables on a read-only
+connection. Underscore-prefixed service tables are hidden.
+
+- `appId` (string, required).
+- `sql` (string, required) — one `SELECT` statement.
+- `params` (array of string | number | null, optional) — bound parameters.
+
+### lodekit_files_list
+
+List an app's files with their stats.
+
+- `appId` (string, required).
+- `prefix` (string, optional) — slug prefix filter.
+
+### lodekit_files_stat
+
+Stat one file. The result carries the file's serving URL and its on-disk path.
+
+- `appId` (string, required).
+- `slug` (string, required).
+
+## Configuration
+
+### lodekit_settings_list
+
+List settings — schema plus effective values — for the platform or for one app.
+
+- `appId` (string, optional) — an app's settings; omit for platform settings.
+
+### lodekit_settings_get
+
+Get one effective setting value. Returns a `{ found }` shape.
+
+- `appId` (string, required).
+- `key` (string, required).
+
+### lodekit_secrets_list
+
+List the secret catalog, or an app's declared slots with their link status.
+Existence and wiring only — no tool reads a secret's value.
+
+- `appId` (string, optional) — an app's slots and link status; omit for the
+  catalog.
