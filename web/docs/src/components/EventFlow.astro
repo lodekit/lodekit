@@ -1,0 +1,101 @@
+<figure>
+  <svg viewBox="0 0 720 300" role="img" aria-labelledby="ef-title">
+    <title id="ef-title">Diagram: how events flow — your app, the platform, and services' change feeds append to the event-store log; consumers watch it live over SSE or list it to replay from any offset.</title>
+    <defs>
+      <marker id="ef-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="arrowhead" />
+      </marker>
+    </defs>
+
+    <!-- Emitters -->
+    <rect class="box" x="24" y="60" width="160" height="44" rx="8" />
+    <text x="104" y="86">your app</text>
+    <rect class="box" x="24" y="128" width="160" height="44" rx="8" />
+    <text x="104" y="154">the platform</text>
+    <rect class="box" x="24" y="196" width="160" height="56" rx="8" />
+    <text x="104" y="221">services&#8217;</text>
+    <text x="104" y="239">change feeds</text>
+
+    <line class="arrow" x1="184" y1="82" x2="248" y2="139" marker-end="url(#ef-arrow)" />
+    <line class="arrow" x1="184" y1="150" x2="248" y2="152" marker-end="url(#ef-arrow)" />
+    <line class="arrow" x1="184" y1="224" x2="248" y2="165" marker-end="url(#ef-arrow)" />
+
+    <!-- event-store tape -->
+    <text class="strong" x="360" y="94">event-store</text>
+    <text class="label muted" x="360" y="112">append-only log</text>
+    <rect class="box accent" x="250" y="128" width="220" height="48" rx="8" />
+    <line class="divider" x1="305" y1="128" x2="305" y2="176" />
+    <line class="divider" x1="360" y1="128" x2="360" y2="176" />
+    <line class="divider" x1="415" y1="128" x2="415" y2="176" />
+    <text class="muted" x="277" y="157">1</text>
+    <text class="muted" x="332" y="157">2</text>
+    <text class="muted" x="387" y="157">3</text>
+    <text class="muted" x="442" y="157">&#8230;</text>
+
+    <line class="arrow" x1="470" y1="144" x2="538" y2="118" marker-end="url(#ef-arrow)" />
+    <line class="arrow" x1="470" y1="160" x2="538" y2="198" marker-end="url(#ef-arrow)" />
+
+    <!-- Consumers -->
+    <rect class="box" x="540" y="92" width="156" height="56" rx="8" />
+    <text x="618" y="114">watch</text>
+    <text class="label muted" x="618" y="133">live over SSE</text>
+    <rect class="box" x="540" y="176" width="156" height="56" rx="8" />
+    <text x="618" y="198">list</text>
+    <text class="label muted" x="618" y="217">replay from any offset</text>
+  </svg>
+  <figcaption>
+    Events announce; stores remember. The log is durable, ordered, and replayable &#8212; never
+    the system of record.
+  </figcaption>
+</figure>
+
+<style>
+  figure {
+    margin-inline: 0;
+  }
+  svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  figcaption {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  text {
+    font-family: var(--sl-font);
+    font-size: 13px;
+    fill: var(--sl-color-white);
+    text-anchor: middle;
+  }
+  .label {
+    font-size: 11px;
+  }
+  .muted {
+    fill: var(--sl-color-gray-2);
+  }
+  .strong {
+    font-weight: 600;
+  }
+  .box {
+    fill: var(--sl-color-gray-6);
+    stroke: var(--sl-color-gray-4);
+  }
+  .accent {
+    stroke: var(--sl-color-accent);
+    stroke-width: 1.5;
+  }
+  .divider {
+    stroke: var(--sl-color-gray-4);
+  }
+  .arrow {
+    fill: none;
+    stroke: var(--sl-color-gray-3);
+    stroke-width: 1.5;
+  }
+  .arrowhead {
+    fill: var(--sl-color-gray-3);
+  }
+</style>

@@ -1,0 +1,108 @@
+<figure>
+  <svg viewBox="0 0 720 420" role="img" aria-labelledby="sd-title">
+    <title id="sd-title">Diagram: choosing a storage service — credentials go to Secrets, person-tunable values to Settings, domain records to Database, documents and blobs to Files, and everything else to KV.</title>
+    <defs>
+      <marker id="sd-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="arrowhead" />
+      </marker>
+    </defs>
+
+    <!-- Q1 -->
+    <rect class="box" x="46" y="24" width="340" height="48" rx="8" />
+    <text x="216" y="53">A credential or API key?</text>
+    <line class="arrow" x1="386" y1="48" x2="535" y2="48" marker-end="url(#sd-arrow)" />
+    <text class="label muted" x="461" y="40">yes</text>
+    <rect class="box" x="536" y="24" width="140" height="48" rx="8" />
+    <text class="accent-text" x="606" y="53">Secrets</text>
+
+    <line class="arrow" x1="216" y1="72" x2="216" y2="101" marker-end="url(#sd-arrow)" />
+    <text class="label muted start" x="226" y="91">no</text>
+
+    <!-- Q2 -->
+    <rect class="box" x="46" y="102" width="340" height="48" rx="8" />
+    <text x="216" y="131">Should a person tune it in the dashboard?</text>
+    <line class="arrow" x1="386" y1="126" x2="535" y2="126" marker-end="url(#sd-arrow)" />
+    <text class="label muted" x="461" y="118">yes</text>
+    <rect class="box" x="536" y="102" width="140" height="48" rx="8" />
+    <text class="accent-text" x="606" y="131">Settings</text>
+
+    <line class="arrow" x1="216" y1="150" x2="216" y2="179" marker-end="url(#sd-arrow)" />
+    <text class="label muted start" x="226" y="169">no</text>
+
+    <!-- Q3 -->
+    <rect class="box" x="46" y="180" width="340" height="48" rx="8" />
+    <text x="216" y="209">A domain record &#8212; fields, relations, lists?</text>
+    <line class="arrow" x1="386" y1="204" x2="535" y2="204" marker-end="url(#sd-arrow)" />
+    <text class="label muted" x="461" y="196">yes</text>
+    <rect class="box" x="536" y="180" width="140" height="48" rx="8" />
+    <text class="accent-text" x="606" y="209">Database</text>
+
+    <line class="arrow" x1="216" y1="228" x2="216" y2="257" marker-end="url(#sd-arrow)" />
+    <text class="label muted start" x="226" y="247">no</text>
+
+    <!-- Q4 -->
+    <rect class="box" x="46" y="258" width="340" height="48" rx="8" />
+    <text x="216" y="287">A document or binary blob?</text>
+    <line class="arrow" x1="386" y1="282" x2="535" y2="282" marker-end="url(#sd-arrow)" />
+    <text class="label muted" x="461" y="274">yes</text>
+    <rect class="box" x="536" y="258" width="140" height="48" rx="8" />
+    <text class="accent-text" x="606" y="287">Files</text>
+
+    <line class="arrow" x1="216" y1="306" x2="216" y2="335" marker-end="url(#sd-arrow)" />
+    <text class="label muted start" x="226" y="325">no</text>
+
+    <!-- KV -->
+    <rect class="box" x="46" y="336" width="340" height="60" rx="8" />
+    <text class="accent-text" x="216" y="360">KV</text>
+    <text class="label muted" x="216" y="380">the app&#8217;s own memory: counters, cursors, flags</text>
+  </svg>
+  <figcaption>Five homes for data &#8212; pick by what the value is, not by what&#8217;s convenient.</figcaption>
+</figure>
+
+<style>
+  figure {
+    margin-inline: 0;
+  }
+  svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  figcaption {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  text {
+    font-family: var(--sl-font);
+    font-size: 13px;
+    fill: var(--sl-color-white);
+    text-anchor: middle;
+  }
+  .label {
+    font-size: 11px;
+  }
+  .muted {
+    fill: var(--sl-color-gray-2);
+  }
+  .start {
+    text-anchor: start;
+  }
+  .box {
+    fill: var(--sl-color-gray-6);
+    stroke: var(--sl-color-gray-4);
+  }
+  .accent-text {
+    fill: var(--sl-color-accent);
+    font-weight: 600;
+  }
+  .arrow {
+    fill: none;
+    stroke: var(--sl-color-gray-3);
+    stroke-width: 1.5;
+  }
+  .arrowhead {
+    fill: var(--sl-color-gray-3);
+  }
+</style>

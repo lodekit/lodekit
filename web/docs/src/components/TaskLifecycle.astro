@@ -1,0 +1,95 @@
+<figure>
+  <svg viewBox="0 0 720 312" role="img" aria-labelledby="tl-title">
+    <title id="tl-title">Diagram: task run lifecycle — queued to running to succeeded, failed, or canceled; failed runs retry back to queued with exponential backoff, and a catch-up window replays schedule runs missed while asleep.</title>
+    <defs>
+      <marker id="tl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="arrowhead" />
+      </marker>
+    </defs>
+
+    <!-- Side note -->
+    <text class="label start" x="40" y="44">laptop was asleep?</text>
+    <text class="label muted start" x="40" y="60">catch-up window replays missed schedule runs</text>
+
+    <!-- States -->
+    <rect class="box" x="40" y="120" width="130" height="48" rx="8" />
+    <text x="105" y="149">queued</text>
+
+    <line class="arrow" x1="170" y1="144" x2="239" y2="144" marker-end="url(#tl-arrow)" />
+
+    <rect class="box" x="240" y="120" width="130" height="48" rx="8" />
+    <text x="305" y="149">running</text>
+
+    <line class="arrow" x1="370" y1="132" x2="478" y2="82" marker-end="url(#tl-arrow)" />
+    <line class="arrow" x1="370" y1="144" x2="478" y2="154" marker-end="url(#tl-arrow)" />
+    <line class="arrow" x1="370" y1="156" x2="478" y2="226" marker-end="url(#tl-arrow)" />
+
+    <rect class="box accent" x="480" y="60" width="140" height="44" rx="8" />
+    <text class="accent-text" x="550" y="87">succeeded</text>
+
+    <rect class="box" x="480" y="132" width="140" height="44" rx="8" />
+    <text x="550" y="159">failed</text>
+
+    <rect class="box" x="480" y="204" width="140" height="44" rx="8" />
+    <text x="550" y="231">canceled</text>
+
+    <!-- Retry loop: failed back to queued -->
+    <path class="arrow" d="M 620 154 H 650 V 290 H 105 V 169" marker-end="url(#tl-arrow)" />
+    <text class="label muted" x="377" y="280">retries left? backoff 30s &#215; 2&#8319; (cap 10m)</text>
+  </svg>
+  <figcaption>
+    At-least-once: a run can execute more than once, so tasks should be safe to repeat.
+  </figcaption>
+</figure>
+
+<style>
+  figure {
+    margin-inline: 0;
+  }
+  svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  figcaption {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  text {
+    font-family: var(--sl-font);
+    font-size: 13px;
+    fill: var(--sl-color-white);
+    text-anchor: middle;
+  }
+  .label {
+    font-size: 11px;
+  }
+  .muted {
+    fill: var(--sl-color-gray-2);
+  }
+  .start {
+    text-anchor: start;
+  }
+  .box {
+    fill: var(--sl-color-gray-6);
+    stroke: var(--sl-color-gray-4);
+  }
+  .accent {
+    stroke: var(--sl-color-accent);
+    stroke-width: 1.5;
+  }
+  .accent-text {
+    fill: var(--sl-color-accent);
+    font-weight: 600;
+  }
+  .arrow {
+    fill: none;
+    stroke: var(--sl-color-gray-3);
+    stroke-width: 1.5;
+  }
+  .arrowhead {
+    fill: var(--sl-color-gray-3);
+  }
+</style>

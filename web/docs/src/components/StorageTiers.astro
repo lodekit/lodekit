@@ -1,0 +1,68 @@
+<figure>
+  <svg viewBox="0 0 720 280" role="img" aria-labelledby="st-title">
+    <title id="st-title">Diagram: the three storage tiers — the precious backup tree in Documents, regrowable state in Application Support, and regenerable cache in Caches.</title>
+
+    <!-- Backup tree (accent) -->
+    <rect class="box accent" x="22" y="40" width="210" height="200" rx="8" />
+    <text class="strong" x="127" y="76">Backup tree</text>
+    <text class="label muted" x="127" y="96">precious</text>
+    <text class="label muted" x="127" y="152">~/Documents/Lodekit</text>
+    <text x="127" y="208">apps/ + data/</text>
+
+    <!-- State -->
+    <rect class="box" x="256" y="40" width="210" height="200" rx="8" />
+    <text class="strong" x="361" y="76">State</text>
+    <text class="label muted" x="361" y="96">history</text>
+    <text class="label muted" x="361" y="144">~/Library/Application</text>
+    <text class="label muted" x="361" y="160">Support/Lodekit</text>
+    <text x="361" y="208">logs</text>
+
+    <!-- Cache -->
+    <rect class="box" x="490" y="40" width="210" height="200" rx="8" />
+    <text class="strong" x="595" y="76">Cache</text>
+    <text class="label muted" x="595" y="96">regenerable</text>
+    <text class="label muted" x="595" y="152">~/Library/Caches/Lodekit</text>
+    <text x="595" y="208">built output</text>
+  </svg>
+  <figcaption>Back up one folder. Everything else Lodekit can regrow or live without.</figcaption>
+</figure>
+
+<style>
+  figure {
+    margin-inline: 0;
+  }
+  svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  figcaption {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  text {
+    font-family: var(--sl-font);
+    font-size: 13px;
+    fill: var(--sl-color-white);
+    text-anchor: middle;
+  }
+  .label {
+    font-size: 11px;
+  }
+  .muted {
+    fill: var(--sl-color-gray-2);
+  }
+  .strong {
+    font-weight: 600;
+  }
+  .box {
+    fill: var(--sl-color-gray-6);
+    stroke: var(--sl-color-gray-4);
+  }
+  .accent {
+    stroke: var(--sl-color-accent);
+    stroke-width: 1.5;
+  }
+</style>

@@ -1,0 +1,94 @@
+<figure>
+  <svg viewBox="0 0 720 340" role="img" aria-labelledby="bl-title">
+    <title id="bl-title">Diagram: the build lifecycle — you save a file, the watcher notices, the shared toolchain builds, and the app is served or the error is shown on the dashboard.</title>
+    <defs>
+      <marker id="bl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="arrowhead" />
+      </marker>
+    </defs>
+
+    <!-- Pipeline row -->
+    <rect class="box" x="24" y="90" width="160" height="58" rx="8" />
+    <text x="104" y="113">You save a file</text>
+    <text class="label muted" x="104" y="132">{'in apps/<app>/'}</text>
+
+    <line class="arrow" x1="184" y1="119" x2="233" y2="119" marker-end="url(#bl-arrow)" />
+
+    <rect class="box" x="234" y="90" width="160" height="58" rx="8" />
+    <text x="314" y="124">Watcher notices</text>
+
+    <line class="arrow" x1="394" y1="119" x2="443" y2="119" marker-end="url(#bl-arrow)" />
+
+    <rect class="box" x="444" y="90" width="160" height="58" rx="8" />
+    <text x="524" y="113">Build</text>
+    <text class="label muted" x="524" y="132">shared toolchain</text>
+
+    <!-- Fork -->
+    <line class="arrow" x1="490" y1="148" x2="416" y2="228" marker-end="url(#bl-arrow)" />
+    <text class="label muted end" x="440" y="189">ready</text>
+    <line class="arrow" x1="560" y1="148" x2="624" y2="228" marker-end="url(#bl-arrow)" />
+    <text class="label muted start" x="600" y="189">error</text>
+
+    <rect class="box accent" x="330" y="230" width="170" height="58" rx="8" />
+    <text x="415" y="253">App served</text>
+    <text class="label muted" x="415" y="272">{'at /<app-id>/'}</text>
+
+    <rect class="box" x="540" y="230" width="170" height="58" rx="8" />
+    <text x="625" y="253">Error shown</text>
+    <text class="label muted" x="625" y="272">on the dashboard</text>
+
+    <text class="label muted" x="360" y="322">state changes stream live to the dashboard (SSE)</text>
+  </svg>
+  <figcaption>Save a file; Lodekit rebuilds and serves. No terminal, no build commands.</figcaption>
+</figure>
+
+<style>
+  figure {
+    margin-inline: 0;
+  }
+  svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  figcaption {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  text {
+    font-family: var(--sl-font);
+    font-size: 13px;
+    fill: var(--sl-color-white);
+    text-anchor: middle;
+  }
+  .label {
+    font-size: 11px;
+  }
+  .muted {
+    fill: var(--sl-color-gray-2);
+  }
+  .start {
+    text-anchor: start;
+  }
+  .end {
+    text-anchor: end;
+  }
+  .box {
+    fill: var(--sl-color-gray-6);
+    stroke: var(--sl-color-gray-4);
+  }
+  .accent {
+    stroke: var(--sl-color-accent);
+    stroke-width: 1.5;
+  }
+  .arrow {
+    fill: none;
+    stroke: var(--sl-color-gray-3);
+    stroke-width: 1.5;
+  }
+  .arrowhead {
+    fill: var(--sl-color-gray-3);
+  }
+</style>

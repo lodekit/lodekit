@@ -1,0 +1,123 @@
+<figure>
+  <svg viewBox="0 0 720 408" role="img" aria-labelledby="bp-title">
+    <title id="bp-title">Diagram: how Lodekit's pieces fit together — the manager supervises one runtime process; you use the dashboard in the browser, your agent uses MCP and writes code into the apps folder.</title>
+    <defs>
+      <marker id="bp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="arrowhead" />
+      </marker>
+    </defs>
+
+    <!-- Manager -->
+    <rect class="box" x="285" y="24" width="180" height="40" rx="8" />
+    <text x="375" y="49">Manager (menubar)</text>
+    <line class="arrow" x1="375" y1="64" x2="375" y2="103" marker-end="url(#bp-arrow)" />
+    <text class="label muted start" x="385" y="88">starts &amp; watches</text>
+
+    <!-- Runtime -->
+    <rect class="box accent" x="240" y="104" width="270" height="216" rx="8" />
+    <text class="strong" x="375" y="130">Runtime</text>
+    <text class="label muted" x="375" y="148">one local Node process</text>
+    <rect class="chip" x="264" y="164" width="222" height="36" rx="8" />
+    <text x="375" y="186">Dashboard</text>
+    <rect class="chip" x="264" y="210" width="222" height="36" rx="8" />
+    <text x="375" y="232">Your apps</text>
+    <rect class="chip" x="264" y="256" width="222" height="44" rx="8" />
+    <text x="375" y="273">Services</text>
+    <text class="label muted" x="375" y="290">storage &#183; tasks &#183; events &#8230;</text>
+
+    <!-- You -->
+    <rect class="box" x="24" y="162" width="120" height="40" rx="8" />
+    <text x="84" y="187">You</text>
+    <line class="arrow" x1="144" y1="182" x2="263" y2="182" marker-end="url(#bp-arrow)" />
+    <text class="label muted" x="192" y="198">use apps,</text>
+    <text class="label muted" x="192" y="212">tune settings</text>
+
+    <!-- Your agent -->
+    <rect class="box" x="24" y="240" width="120" height="56" rx="8" />
+    <text x="84" y="262">Your agent</text>
+    <text class="label muted" x="84" y="281">Claude, Codex, &#8230;</text>
+    <line class="arrow" x1="144" y1="258" x2="239" y2="258" marker-end="url(#bp-arrow)" />
+    <text class="label" x="192" y="248">MCP</text>
+    <text class="label muted" x="192" y="273">scaffold, inspect</text>
+
+    <!-- apps/ folder -->
+    <rect class="box" x="285" y="352" width="180" height="40" rx="8" />
+    <text x="375" y="377">apps/ folder</text>
+    <path class="arrow" d="M 84 296 V 372 H 284" marker-end="url(#bp-arrow)" />
+    <text class="label muted" x="180" y="362">writes code</text>
+    <line class="connector dashed" x1="375" y1="320" x2="375" y2="352" />
+
+    <!-- Browser -->
+    <rect class="box" x="550" y="154" width="150" height="56" rx="8" />
+    <text x="625" y="177">Browser</text>
+    <text class="label muted" x="625" y="196">lodekit.localhost:7777</text>
+    <line class="connector" x1="486" y1="182" x2="550" y2="182" />
+  </svg>
+  <figcaption>
+    One local process runs everything; you use the browser, your agent uses MCP and the file
+    system.
+  </figcaption>
+</figure>
+
+<style>
+  figure {
+    margin-inline: 0;
+  }
+  svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  figcaption {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  text {
+    font-family: var(--sl-font);
+    font-size: 13px;
+    fill: var(--sl-color-white);
+    text-anchor: middle;
+  }
+  .label {
+    font-size: 11px;
+  }
+  .muted {
+    fill: var(--sl-color-gray-2);
+  }
+  .strong {
+    font-weight: 600;
+  }
+  .start {
+    text-anchor: start;
+  }
+  .box {
+    fill: var(--sl-color-gray-6);
+    stroke: var(--sl-color-gray-4);
+  }
+  .chip {
+    fill: var(--sl-color-black);
+    stroke: var(--sl-color-gray-4);
+  }
+  .accent {
+    stroke: var(--sl-color-accent);
+    stroke-width: 1.5;
+  }
+  .arrow {
+    fill: none;
+    stroke: var(--sl-color-gray-3);
+    stroke-width: 1.5;
+  }
+  .connector {
+    fill: none;
+    stroke: var(--sl-color-gray-4);
+    stroke-width: 1.5;
+  }
+  .dashed {
+    stroke-dasharray: 4 4;
+  }
+  .arrowhead {
+    fill: var(--sl-color-gray-3);
+  }
+</style>
