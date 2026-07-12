@@ -1,6 +1,82 @@
 ---
 title: Your first app
-description: "Walk through creating, running, and viewing your first Lodekit app."
+description: "Ask your agent for a tiny app, watch Lodekit build it, and open it in your browser."
 ---
 
-Content coming in this docs slice.
+You've [installed Lodekit](/start/install/) and
+[connected your agent](/start/connect-your-agent/). Time to build something.
+This walkthrough uses a book log, but the shape works for any first app.
+
+## Pick something tiny
+
+Your first app should be small enough to describe in one breath: track the
+books you're reading, log your workouts, keep a list of movies to watch. Small
+apps arrive fast, and fast is what makes the loop click — describe, look,
+adjust.
+
+Don't worry about getting the idea perfect. Changing an app later is as cheap
+as asking.
+
+## What to say to your agent
+
+Name the app, list what you want to record, and say how you want to see it:
+
+```text
+Build me a Lodekit app called book-log: I want to log books with title,
+author, and the date I finished, and see them newest-first.
+```
+
+That's a complete brief. Your agent knows the rest — how a Lodekit app is put
+together, where the data should live — from the skill you connected.
+
+## What happens next
+
+Your agent scaffolds the app through its Lodekit connection, then writes the
+code. You can watch from the outside:
+
+- New files appear in `apps/book-log/` inside your Lodekit folder.
+- A **book-log** card appears on the dashboard, showing *building…*.
+- A moment later the card flips to *ready*.
+
+If the build hits an error, the card says so — and your agent can read the
+error and fix it. You never touch the machinery.
+
+## Open it
+
+Click the card on the dashboard, or go straight to
+`http://lodekit.localhost:7777/book-log/`. There's your app: a real web page,
+running on your Mac, ready to log its first book.
+
+## Make it yours
+
+The first version is a starting point, not a verdict. Ask for changes the same
+way you asked for the app:
+
+- "Add a rating out of five to each book."
+- "Let me mark a book as abandoned."
+- "Show how many books I finished this year at the top."
+
+Each request follows the same rhythm: your agent edits the files, the card
+shows *building…*, and the change is live when it flips back to *ready*.
+
+## Where your books went
+
+Every book you log lands in `data/book-log/` in your Lodekit folder — sitting
+right beside the app's source in `apps/book-log/`. Back up the folder and the
+app and its records travel together. More in
+[Your Lodekit folder](/guide/your-lodekit-folder/).
+
+## What to try next
+
+Two easy upgrades show off what apps get for free:
+
+- **A settings knob.** Ask for one — "let me choose how many books show per
+  page" — and it appears in the dashboard's Settings, no extra UI needed. See
+  [Settings](/services/settings/).
+- **A weekly summary.** Ask for "a task that adds a summary entry every Sunday
+  of what I finished that week" and Lodekit runs it on schedule, even when the
+  app isn't open in your browser. See [Tasks](/services/tasks/).
+
+From here, the [dashboard guide](/guide/dashboard/) shows you around the
+control room, and the [Services overview](/services/overview/) tours
+everything your apps can lean on.

@@ -1,6 +1,80 @@
 ---
 title: Connect your agent
-description: "Point your AI coding agent at Lodekit's MCP server so it can build and manage apps for you."
+description: "Give your AI coding agent its two connections to Lodekit: the MCP server and the skill."
 ---
 
-Content coming in this docs slice.
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Lodekit is agent-agnostic. Whether you use Claude, Codex, an IDE assistant, or
+a terminal coding agent, any agent that speaks
+[MCP](https://modelcontextprotocol.io) — the connector standard agents use —
+and can load a skill can build on Lodekit.
+
+Connecting takes two steps: register the MCP server, then point your agent at
+the skill.
+
+## 1. Register the MCP server
+
+The MCP server is your agent's door into Lodekit: it lets the agent list,
+scaffold, and open apps, and read logs, events, and app data on your behalf.
+It's read-only beyond that — and it never sees your secret values.
+
+<Tabs>
+
+<TabItem label="Claude Code">
+
+Run this once in your terminal:
+
+```sh
+claude mcp add lodekit -- /Applications/Lodekit.app/Contents/Resources/node/bin/node \
+  /Applications/Lodekit.app/Contents/Resources/platform/mcp/node_modules/tsx/dist/cli.mjs \
+  /Applications/Lodekit.app/Contents/Resources/platform/mcp/index.ts
+```
+
+</TabItem>
+
+<TabItem label="JSON config">
+
+For Claude Desktop and other agents configured with an `mcpServers` block, add:
+
+```json
+{
+  "mcpServers": {
+    "lodekit": {
+      "command": "/Applications/Lodekit.app/Contents/Resources/node/bin/node",
+      "args": [
+        "/Applications/Lodekit.app/Contents/Resources/platform/mcp/node_modules/tsx/dist/cli.mjs",
+        "/Applications/Lodekit.app/Contents/Resources/platform/mcp/index.ts"
+      ]
+    }
+  }
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+These paths are stable — they point inside `Lodekit.app` and don't move between
+releases. The full list of what the connection offers is in
+[MCP tools](/reference/mcp-tools/).
+
+## 2. Point your agent at the skill
+
+The skill is the instruction pack that teaches your agent how to build on
+Lodekit: what a valid app looks like, which building blocks to use, and where
+each kind of data belongs.
+
+Tell your agent to load the skill from:
+
+`/Applications/Lodekit.app/Contents/Resources/platform/skill/SKILL.md`
+
+How you do this depends on your agent — most let you reference a file directly
+or add it to their instructions.
+
+:::note
+Connecting is a manual step during early access; a guided setup is planned.
+:::
+
+With both connections in place, your agent is ready to build. Let's make
+something: [Your first app](/start/your-first-app/).
