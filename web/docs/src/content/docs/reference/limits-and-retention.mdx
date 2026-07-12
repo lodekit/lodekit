@@ -93,3 +93,20 @@ bytes stream outside this cap and have no size limit.
 |---|---|---|
 | Value size | ≤ 4 KB | fixed |
 | Slot keys | snake_case, ≤ 64 characters | fixed |
+
+## Gateways
+
+| Limit | Value | Setting |
+|---|---|---|
+| Request timeout | Default 10 seconds (1 s – 60 s) | `gateways.default_timeout` |
+| Timeout hard cap | 60 seconds | fixed |
+| Rate limit | 60 requests/minute per gateway | `gateways.default_rate` |
+| Concurrency | 4 parallel requests per gateway (1–32) | `gateways.default_concurrency` |
+| Response size | ≤ 10,000,000 bytes — larger responses are aborted | `gateways.max_response_bytes` |
+| Body capture in logs | Off | `gateways.capture_bodies` |
+| Breaker threshold | 5 consecutive failures to open | `gateways.breaker_failure_threshold` (Advanced) |
+| Breaker cooldown | 30 seconds | `gateways.breaker_cooldown` (Advanced) |
+| `Retry-After` pause | Capped at 15 minutes | fixed |
+
+A gateway's manifest can override `rate`, `concurrency`, and `timeout_ms` for
+that gateway alone — see [Gateways](/services/gateways/).

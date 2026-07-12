@@ -28,7 +28,9 @@ your agent to build one.
 lines appear as they happen. Filter by severity (debug, info, warning, error)
 or by app, and expand any row for its full details. When something misbehaves,
 this is the first place to look — and your agent can read the same records to
-debug for you.
+debug for you. Traffic through your gateways lands here too — every request
+gets a line, with credentials always masked — and a source filter shows just
+one provider's traffic.
 
 ## Events
 
@@ -44,6 +46,16 @@ apps need. You add a secret once, then link it to any app that asks for one.
 Values are write-only: you can paste a new value, replace it, or delete the
 secret, but the dashboard never shows a value back — not to you, not to your
 agent.
+
+## Gateways
+
+**Gateways** shows the outside providers your apps can reach — one card per
+provider, with its icon and how many apps use it. Open a gateway to finish an
+app's connection: link a secret into each slot the provider needs, fill in
+any config values, or click **Connect** for providers that use OAuth sign-in.
+Each connection wears a status badge — connected, needs setup, needs reauth,
+or unhealthy — and every gateway has its own Logs link, so you can see
+exactly what's been asked of that provider.
 
 ## Settings
 

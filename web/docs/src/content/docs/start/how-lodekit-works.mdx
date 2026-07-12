@@ -22,9 +22,10 @@ app you build, plus the dashboard, all served in your browser at
 runtime, watches over it, and restarts it if you ask.
 
 **One folder.** Everything you'd ever want to keep lives in the Lodekit root,
-`~/Documents/Lodekit`. Inside it sit two trees, side by side: `apps/` holds
-each app's source files, and `data/` holds what each app stores. That one
-folder is the thing you back up.
+`~/Documents/Lodekit`. Inside it sit three trees, side by side: `apps/` holds
+each app's source files, `data/` holds what each app stores, and `gateways/`
+describes the outside services your apps can reach. That one folder is the
+thing you back up.
 
 ## Two doors
 
@@ -62,7 +63,8 @@ full layout is in [Your Lodekit folder](/guide/your-lodekit-folder/).
 
 Apps don't reinvent the plumbing. Lodekit provides services every app can use:
 a database for records, a small memory for quick notes, file storage, scheduled
-tasks, settings, secrets, logs, and events. Your agent builds with these, which
+tasks, settings, secrets, logs, events, and safe doors to outside services
+(like a weather provider). Your agent builds with these, which
 is why even a quick app gets durable storage and a settings page for free. Meet
 them in the [Services overview](/services/overview/).
 

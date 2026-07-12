@@ -27,9 +27,10 @@ data namespace. See [The manifest](/reference/manifest/).
 server code — server rendering and server functions. See
 [How Lodekit works](/start/how-lodekit-works/).
 
-**backup tree** — The apps and data directories under the Lodekit root,
-together: the durable state worth preserving. Back up that one folder and
-you have everything. See [Your Lodekit folder](/guide/your-lodekit-folder/).
+**backup tree** — The apps, data, and gateways directories under the Lodekit
+root, together: the durable state worth preserving. Back up that one folder
+and you have everything. See
+[Your Lodekit folder](/guide/your-lodekit-folder/).
 
 **build state** — Where an app is in its build lifecycle: building → ready
 or error. Shown live on each app's card in the
@@ -43,8 +44,13 @@ Lodekit serves. You never run a build yourself. See
 outside the Lodekit root and never backed up. Deleting it costs only a
 rebuild. See [File locations](/reference/file-locations/).
 
+**connection** — An app's grant to use a gateway: declared in
+`src/gateways.ts` under an app-local alias, completed in the dashboard by
+linking a secret into each secret slot and setting each config slot. See
+[Gateways](/services/gateways/).
+
 **dashboard** — Lodekit's built-in web UI: every app with its live build
-state and health, plus logs, events, secrets, and settings. See
+state and health, plus logs, events, secrets, gateways, and settings. See
 [The dashboard](/guide/dashboard/).
 
 **data tree** — The `data/` directory under the Lodekit root: each app's
@@ -60,8 +66,17 @@ an export finished, the platform announcing an app became ready. Events
 trigger reactions; they're never the system of record. See
 [Events](/services/events/).
 
+**gateway** — The managed door to one provider: a declarative manifest plus
+the runtime machinery that injects credentials and guards traffic. Apps reach
+outside providers only through gateways. See
+[Gateways](/services/gateways/).
+
+**gateways tree** — The `gateways/` directory under the Lodekit root, one
+folder per provider; part of the backup tree. See
+[Your Lodekit folder](/guide/your-lodekit-folder/).
+
 **Lodekit root** — The one folder (`~/Documents/Lodekit` by default) holding
-the apps and data trees side by side. The thing you back up. See
+the apps, data, and gateways trees side by side. The thing you back up. See
 [Your Lodekit folder](/guide/your-lodekit-folder/).
 
 **manager** — The menubar app that ships and supervises the platform: it
@@ -79,6 +94,9 @@ See [MCP tools](/reference/mcp-tools/).
 **platform** — The installed subset of Lodekit on your machine: runtime,
 SDK, UI library, dashboard, and manager. What downloading Lodekit puts on
 disk.
+
+**provider** — The external party a gateway fronts: whoever sits on the other
+end of a gateway's base URL. See [Gateways](/services/gateways/).
 
 **runtime** — The single Node process at the heart of the platform: it
 builds, watches, and serves your apps, the dashboard, and the API. See
@@ -102,8 +120,8 @@ at the boundary. See
 [Data and server functions](/build/data-and-server-functions/).
 
 **service** — A capability the runtime provides to every app — the Database,
-KV, Files, Events, Tasks, Logs, Settings, Secrets — reached only through the
-SDK. See the [services overview](/services/overview/).
+KV, Files, Events, Tasks, Logs, Settings, Secrets, Gateways — reached only
+through the SDK. See the [services overview](/services/overview/).
 
 **settings** — Configuration you view and edit in the dashboard: platform
 settings plus each app's declared knobs. Apps read their settings, never

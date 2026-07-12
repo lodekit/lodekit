@@ -22,6 +22,7 @@ Greenhouse showcase app:
     - tasks.ts background tasks (optional)
     - settings.ts person-facing knobs (optional)
     - secrets.ts credential slots (optional)
+    - gateways.ts connections to outside providers (optional)
     - index.css imports the shared theme
     - routeTree.gen.ts generated, committed
 </FileTree>
@@ -72,7 +73,7 @@ run.
 
 ## The declaration files
 
-Four optional files under `src/` declare what the app needs from Lodekit's services.
+Five optional files under `src/` declare what the app needs from Lodekit's services.
 Each is plain TypeScript the runtime reads when the app builds.
 
 **`db.ts`** declares the app's database schema as Drizzle tables and exports a typed
@@ -91,6 +92,12 @@ dashboard's Settings page. The app reads values; only you write them. See
 **`secrets.ts`** declares credential slots with `defineSecrets()` — named holes for
 API keys the app needs. You link a secret to each slot in the dashboard, and only
 server-side code can read the value. See [Secrets](/services/secrets/).
+
+**`gateways.ts`** declares the app's connections to outside providers with
+`defineGateways()` — each entry maps an app-local alias to a provider's gateway.
+You complete the connection in the dashboard, and the app calls the provider
+through the `gateways` handle without ever holding a key. See
+[Gateways](/services/gateways/).
 
 Finally, `src/index.css` is a single line — `@import "@lodekit/ui/theme.css";` — that
 pulls in the shared theme. More on that in

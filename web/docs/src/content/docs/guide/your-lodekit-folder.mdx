@@ -26,6 +26,7 @@ sit side by side, as plain files you can open in Finder.
     - book-log/
       - db.sqlite
     - _platform/ Lodekit's own records
+  - gateways/ provider manifests
 </FileTree>
 
 ## apps — the source
@@ -52,11 +53,18 @@ back can corrupt records. To change data, work through the app (or ask your
 agent).
 :::
 
+## gateways — the doors out
+
+`gateways/` holds one folder per outside provider your apps can reach — each
+with the provider's manifest and icon, written by your agent. It's part of
+the same backup.
+
 ## Backups: one folder, whole story
 
 Back up `~/Documents/Lodekit` and you're done. Time Machine, a synced drive,
-a periodic copy — anything that covers that folder covers your apps *and*
-their data. Restoring the folder onto a fresh Lodekit install brings
+a periodic copy — anything that covers that folder covers your apps, their
+data, *and* their gateways. Restoring the folder onto a fresh Lodekit install
+brings
 everything back: the apps rebuild themselves from source, and the records are
 already inside.
 

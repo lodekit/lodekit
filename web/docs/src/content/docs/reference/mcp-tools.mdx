@@ -131,3 +131,12 @@ Existence and wiring only — no tool reads a secret's value.
 
 - `appId` (string, optional) — an app's slots and link status; omit for the
   catalog.
+
+### lodekit_gateways
+
+List gateways — provider id, name, auth kind, slots, limits, and which apps
+use each — or one app's gateway connections with per-slot status. Wiring and
+status only: never a credential or token.
+
+- `appId` (string, optional) — an app's gateway connections and slot status;
+  omit for every gateway and its usage.

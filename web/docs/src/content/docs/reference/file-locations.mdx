@@ -9,7 +9,7 @@ storage tier chosen by what losing it would cost — the friendly tour is in
 
 | Location | Path | Override | Contents |
 |---|---|---|---|
-| Lodekit root | `~/Documents/Lodekit` | `LODEKIT_ROOT` | `apps/` + `data/` — everything worth backing up |
+| Lodekit root | `~/Documents/Lodekit` | `LODEKIT_ROOT` | `apps/` + `data/` + `gateways/` — everything worth backing up |
 | State | `~/Library/Application Support/Lodekit` | `LODEKIT_STATE_DIR` | `logs.sqlite`, `runtime.pid` |
 | Cache | `~/Library/Caches/Lodekit` | `LODEKIT_CACHE_DIR` | Built app output |
 | Text logs | `~/Library/Logs/Lodekit` | — | `runtime-YYYYMMDD.log`, `manager-YYYYMMDD.log` |
@@ -17,7 +17,7 @@ storage tier chosen by what losing it would cost — the friendly tour is in
 
 ## The Lodekit root
 
-The one folder that matters: the **backup tree**. Two sibling directories
+The one folder that matters: the **backup tree**. Three sibling directories
 under it:
 
 - `apps/` — one folder per app id, holding app source only. No dependency
@@ -26,6 +26,8 @@ under it:
   `db.sqlite` (its database, KV entries, task history, declared settings and
   secret slots) and, when the app stores documents, a `files/` folder of
   real, Finder-browsable files.
+- `gateways/` — one folder per provider, holding that gateway's manifest and
+  icon.
 
 `data/_platform/` is Lodekit's own record-keeping, and it's just as precious
 as your apps' data:
@@ -33,6 +35,8 @@ as your apps' data:
 - `events.sqlite` — the event bus history.
 - `settings.sqlite` — your platform settings.
 - `secrets.sqlite` — your secrets, stored as ciphertext.
+- `gateways.sqlite` — gateway connections: secret-slot links, config values,
+  and OAuth tokens (encrypted).
 
 ## State
 
@@ -69,8 +73,8 @@ values need typing again.
 
 Back up the Lodekit root — nothing else. What each loss costs:
 
-- **Lodekit root** — your apps and their data. This is the one
-  irreplaceable loss; keep it in Time Machine or any backup that covers
+- **Lodekit root** — your apps, their data, and their gateways. This is the
+  one irreplaceable loss; keep it in Time Machine or any backup that covers
   `~/Documents`.
 - **State** — the log history and a stale pid file. Annoying, never
   precious.

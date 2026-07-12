@@ -24,6 +24,7 @@ durable storage, scheduled tasks, and a settings page for free.
 | [Logs](/services/logs/) | Structured log records, for watching and debugging | `logs` |
 | [Settings](/services/settings/) | Your knobs — declared by the app, edited by you | `settings` |
 | [Secrets](/services/secrets/) | Credentials — encrypted, read only by server code | `secrets` |
+| [Gateways](/services/gateways/) | Managed doors to outside providers — keys injected, traffic guarded | `gateways` |
 
 Each service page explains the general idea first — the kind of problem this
 class of tool has always solved — and then Lodekit's take on it.
@@ -43,6 +44,11 @@ Walk the questions in order:
   you provide. They're encrypted at rest and readable only by server-side app
   code; your browser and your agent never see them. Never a setting, never a
   KV entry.
+
+  And when the credential's job is *calling* a provider, the app doesn't read
+  the key at all — a [gateway](/services/gateways/) holds it and injects it
+  into each request. The decision here stays about data at rest.
+
 - **Settings are your knobs.** Values a person tunes in the dashboard — a
   reminder hour, a display preference. The app declares them and reads them;
   only human hands change them.
@@ -83,6 +89,7 @@ backup strategy.
 Start with the storage services — [Database](/services/database/),
 [KV](/services/kv/), and [Files](/services/files/) — then meet
 [Events](/services/events/), [Tasks](/services/tasks/),
-[Logs](/services/logs/), [Settings](/services/settings/), and
-[Secrets](/services/secrets/). Each page ends with a link to its SDK
+[Logs](/services/logs/), [Settings](/services/settings/),
+[Secrets](/services/secrets/), and [Gateways](/services/gateways/). Each page
+ends with a link to its SDK
 reference, where every method is specified.
