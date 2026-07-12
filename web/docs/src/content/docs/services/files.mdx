@@ -3,4 +3,106 @@ title: Files
 description: "Store and serve files alongside your app's other data."
 ---
 
-Content coming in this docs slice.
+Every app gets its own blob storage — a home for documents, images, and
+anything else that is fundamentally bytes. In the service catalog this is
+**file-store**, reached through the SDK as the `files` handle.
+
+## The idea
+
+Databases are superb at *fields* and terrible at *bytes*. A photo doesn't have
+columns; you never query "all pixels where…"; and stuffing megabytes into
+database rows bloats the very file the database needs to keep small and fast.
+So the industry long ago split the world in two: structured records go in a
+database, and opaque **blobs** — binary large objects — go in a dedicated
+blob store built for exactly that job.
+
+The shape of that store was settled by Amazon S3, and it's worth knowing
+because nearly every blob store since — Lodekit's included — mirrors its
+contract. A file's identity is its **key**: a name you choose, not a path or a
+database id. Writing to an existing key **replaces** the file — one name,
+one current version, no duplicates to reconcile. And a small amount of
+**metadata** rides alongside the bytes — a title, a content type, whatever
+your app wants to remember about the file — so you can list and reason about
+files without opening them.
+
+## When to use it
+
+Use Files for anything that is a document or a blob: photos a person uploads,
+PDFs, generated exports, files your app ingests from elsewhere.
+
+The boundary runs against the [Database](/services/database/): the facts
+*about* a thing are fields — they belong in a table; the thing itself, when
+it's bytes, belongs here. Greenhouse keeps each plant as a database record,
+and each plant *photo* in Files, with the plant's id in the photo's metadata
+to tie them together.
+
+## How it works in Lodekit
+
+A file's identity is its **slug** — a lowercase name like `photo-12-abc` —
+and putting to an existing slug replaces the file, exactly per the S3
+contract. From Greenhouse, uploading a plant photo:
+
+```ts
+await files.put(file, {
+  slug: `photo-${id}-${invTs(Date.now())}`,
+  title: caption || file.name,
+  contentType: file.type || "application/octet-stream",
+  metadata: { plantId: id },
+});
+```
+
+Two things make Lodekit's take unusual, and both are deliberate.
+
+**Your bytes are real files.** Each blob lands on disk as an ordinary,
+Finder-browsable file at `data/<app-id>/files/<date>/<slug>-<hash>.ext` inside
+your Lodekit folder. Your photos aren't sealed inside some opaque container —
+you can open the folder and see them.
+
+**The index lives in SQLite.** The app's database holds the authoritative
+record of every file: slug, title, metadata, size, and a content hash. This
+split gives each side what it's best at — listing and filtering a thousand
+files means one fast index query, never a directory crawl; the hash lets the
+store verify bytes haven't been corrupted or swapped; and the bytes
+themselves stay ordinary files a human can browse. It's the database/blob
+split from the section above, rebuilt in miniature on your own disk.
+
+Every file also gets a **serving URL**, so showing a stored image is one
+attribute:
+
+```tsx
+<img src={files.url(slug)} alt={title} />
+```
+
+Served bytes carry proper caching headers, so browsers revisit unchanged
+files for free.
+
+Files can expire. Greenhouse writes a data snapshot that cleans itself up
+after an hour — no sweeper task, the TTL does the forgetting:
+
+```ts
+const stat = await files.put(
+  JSON.stringify({ exportedAt: Date.now(), stats, plants: allPlants }, null, 2),
+  { slug: `snapshot-${Date.now()}`, contentType: "application/json", title: "Conservatory snapshot", ttl: 3600 }
+);
+```
+
+Uploads and downloads are **streamed** in both directions — a large file
+flows through in pieces rather than being held in memory whole, so file size
+never strains the runtime. And like the other stores, every put and delete
+lands on the [event bus](/services/events/) as a `file-store-change` event
+carrying the slug, so your UI can react live.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Slug | 1–128 characters, `a–z`, `0–9`, `-` |
+| Title | ≤ 512 characters |
+| Metadata | ≤ 4 KB of JSON |
+| List page size | Default 100, max 1000 |
+| File size | No cap — it's your disk |
+
+## API
+
+Every method — `put`, `get`, `url`, `stat`, `list`, `copy`, `move`,
+`delete` — is specified in the [files SDK reference](/sdk/files/).
