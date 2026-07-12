@@ -7,7 +7,8 @@ import { FileTree } from '@astrojs/starlight/components';
 
 An app is a folder in the apps tree that satisfies the **app contract**: a manifest,
 routes in TanStack Start shape, and a committed route tree. Nothing else is required —
-no HTML entry, no `package.json`, no config files. Here's the Greenhouse showcase app:
+no HTML entry, no `package.json`, no config files. Here's the shape, drawn from the
+Greenhouse showcase app:
 
 <FileTree>
 - apps/greenhouse/
@@ -54,7 +55,7 @@ Pages live under `src/routes/` as file-based routes: `index.tsx` is `/`,
 route `__root.tsx` is the document shell — it renders the `<html>` element, loads
 `index.css`, and holds shared chrome like the nav.
 
-`src/router.tsx` is the wiring, and it's the same six lines in every app:
+`src/router.tsx` is the wiring, and it's nearly identical in every app:
 
 ```ts title="src/router.tsx"
 import { createRouter } from "@tanstack/react-router";

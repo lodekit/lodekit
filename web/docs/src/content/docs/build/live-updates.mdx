@@ -52,7 +52,7 @@ events.watch({ type: "tasks-change" }, () => void refetch());
 ```
 
 Leaving the filter off subscribes to everything on the app's stream — legal, but then
-every log-worthy twitch re-runs your loaders.
+every unrelated change re-runs your loaders.
 
 ## Filter in the callback
 
