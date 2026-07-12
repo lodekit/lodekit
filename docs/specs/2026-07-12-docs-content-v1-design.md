@@ -203,3 +203,42 @@ One `src/styles/custom.css` registered via Starlight's `customCss`:
   color schemes.
 - Work stays on the `docs` branch; the person reviews and folds (no unattended
   integration).
+
+## 11. Addendum (2026-07-13): Gateways coverage
+
+Master folded the gateways v1 slice (`docs/specs/2026-07-10-gateways-design.md`)
+after this spec was written; the `docs` branch rebased onto it. Confirmed by the
+person, the docs grow to 40 pages:
+
+- **Two new pages**, same shapes as their siblings:
+  - `services/gateways.mdx` — five-part teaching page: why outbound calls get a
+    managed door (credential injection — keys never enter app code; egress
+    allowlisted by construction; rate limits, circuit breaker, timeouts; every
+    request logged with redaction); the vocabulary rule (*integration is the
+    outcome, the gateway is the guarded transport*; reuse before authoring);
+    manifest/connection/link-and-set model; OAuth with transparent refresh;
+    limits table; API pointer.
+  - `sdk/gateways.mdx` — `src/gateways.ts` contract (`defineGateways` default
+    export, `gateway({ provider })`, alias rules), the server-only
+    `gateways.<alias>` handle (get/post/put/patch/delete/request,
+    `GatewayRequestOpts`/`GatewayResponse`), `GatewayError` with all reasons and
+    the two-bucket handling pattern, plus the polling recipe (gateway call inside
+    a scheduled task, from the Greenhouse weather chapter).
+- **A seventh diagram** — `GatewayFlow.astro` on `services/gateways`: app worker →
+  runtime (injects linked credential, enforces guardrails) → provider, with the
+  dashboard link/set step drawn in.
+- **BigPicture tweak** — a Gateways chip inside the runtime box.
+- **Ripple updates**: services/overview (catalog row + Secrets↔Gateways boundary),
+  services/secrets (same boundary note), guide/dashboard (Gateways view is live;
+  Logs source filter), guide/your-lodekit-folder + reference/file-locations
+  (gateways tree; backup tree = apps + data + gateways), build/app-anatomy
+  (`src/gateways.ts`), start/install (bundled gateways tree on first run),
+  start/how-lodekit-works (one plain-language sentence), sdk/overview (handle
+  list + environment matrix row, server-only), reference/mcp-tools
+  (`lodekit_gateways`, 15 tools), reference/limits-and-retention (Gateways
+  settings), reference/glossary (Gateway, Provider, Connection, gateways tree;
+  backup-tree update).
+- Not documented: gateways §16 deferrals (webhooks, streaming, caching, retries,
+  device flow), the startup cache prune (internal).
+- Same verification: accuracy pass against `packages/sdk/src/gateways.ts`,
+  `client.ts`, the gateways runtime source, and `platformSettings.ts`.
