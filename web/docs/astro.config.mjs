@@ -42,6 +42,7 @@ export default defineConfig({
             "services/logs",
             "services/settings",
             "services/secrets",
+            "services/gateways",
           ],
         },
         {
@@ -66,6 +67,7 @@ export default defineConfig({
             "sdk/settings",
             "sdk/secrets",
             "sdk/logs",
+            "sdk/gateways",
           ],
         },
         {

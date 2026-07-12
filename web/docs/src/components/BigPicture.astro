@@ -1,5 +1,5 @@
 <figure>
-  <svg viewBox="0 0 720 408" role="img" aria-labelledby="bp-title">
+  <svg viewBox="0 0 720 448" role="img" aria-labelledby="bp-title">
     <title id="bp-title">Diagram: how Lodekit's pieces fit together — the manager supervises one runtime process; you use the dashboard in the browser, your agent uses MCP and writes code into the apps folder.</title>
     <defs>
       <marker id="bp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -14,7 +14,7 @@
     <text class="label muted start" x="385" y="88">starts &amp; watches</text>
 
     <!-- Runtime -->
-    <rect class="box accent" x="240" y="104" width="270" height="216" rx="8" />
+    <rect class="box accent" x="240" y="104" width="270" height="256" rx="8" />
     <text class="strong" x="375" y="130">Runtime</text>
     <text class="label muted" x="375" y="148">one local Node process</text>
     <rect class="chip" x="264" y="164" width="222" height="36" rx="8" />
@@ -24,6 +24,8 @@
     <rect class="chip" x="264" y="256" width="222" height="44" rx="8" />
     <text x="375" y="273">Services</text>
     <text class="label muted" x="375" y="290">storage &#183; tasks &#183; events &#8230;</text>
+    <rect class="chip" x="264" y="310" width="222" height="36" rx="8" />
+    <text x="375" y="332">Gateways</text>
 
     <!-- You -->
     <rect class="box" x="24" y="162" width="120" height="40" rx="8" />
@@ -41,11 +43,11 @@
     <text class="label muted" x="192" y="273">scaffold, inspect</text>
 
     <!-- apps/ folder -->
-    <rect class="box" x="285" y="352" width="180" height="40" rx="8" />
-    <text x="375" y="377">apps/ folder</text>
-    <path class="arrow" d="M 84 296 V 372 H 284" marker-end="url(#bp-arrow)" />
-    <text class="label muted" x="180" y="362">writes code</text>
-    <line class="connector dashed" x1="375" y1="320" x2="375" y2="352" />
+    <rect class="box" x="285" y="392" width="180" height="40" rx="8" />
+    <text x="375" y="417">apps/ folder</text>
+    <path class="arrow" d="M 84 296 V 412 H 284" marker-end="url(#bp-arrow)" />
+    <text class="label muted" x="180" y="402">writes code</text>
+    <line class="connector dashed" x1="375" y1="360" x2="375" y2="392" />
 
     <!-- Browser -->
     <rect class="box" x="550" y="154" width="150" height="56" rx="8" />
