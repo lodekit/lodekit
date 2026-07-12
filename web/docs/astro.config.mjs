@@ -4,6 +4,7 @@ import starlight from "@astrojs/starlight";
 import starlightLinksValidator from "starlight-links-validator";
 
 export default defineConfig({
+  site: "https://docs.lodekit.com",
   integrations: [
     starlight({
       title: "Lodekit",

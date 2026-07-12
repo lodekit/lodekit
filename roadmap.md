@@ -137,10 +137,14 @@ Foundation items deferred by `docs/specs/2026-06-30-monorepo-migration-design.md
 The Vite toolchain, `@lodekit/ui`, and `@lodekit/sdk` are tracked under "Next major step"
 above; the remainder:
 
-- **Starlight docs** — **scaffold shipped (2026-07-06)**: `web/docs` (`@lodekit/web-docs`),
-  a separate Starlight app beside the landing site (`web/main`), per
-  `docs/specs/2026-07-06-docs-site-v1-design.md`. Still parked: docs content and IA,
-  theming/shared design layer with the landing site, and deploy (`docs.lodekit.com`).
+- **Starlight docs** — **scaffold shipped (2026-07-06)**
+  (`docs/specs/2026-07-06-docs-site-v1-design.md`); **content + IA shipped (2026-07-12)**:
+  38 pages (Start here / Using Lodekit / Services / Building apps / SDK reference /
+  Reference), six inline-SVG diagrams, light cork-amber Starlight theming, per
+  `docs/specs/2026-07-12-docs-content-v1-design.md`. Still parked: the full shared
+  design layer with the landing site, screenshots (post-v0.1, once the dashboard UI
+  settles), and deploy (`docs.lodekit.com` — the astro config already carries the
+  `site` URL).
 - **Electron packaging + Lodekit-local Node** — **specced (2026-07-02)** as the manager
   slice: `docs/specs/2026-07-02-manager-v0.1-design.md` (everything bundled in the .app at
   v0.1, incl. a pinned Lodekit-local Node — never the system's; pre-1.0 northstar: thin
