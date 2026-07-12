@@ -3,8 +3,123 @@ title: Tasks
 description: "Run background work outside the request/response cycle."
 ---
 
-Content coming in this docs slice.
-
 import TaskLifecycle from '../../../components/TaskLifecycle.astro';
 
+Some work doesn't belong in the moment a page loads: sending a reminder at
+9 am, sweeping old photos every twelve hours, anything slow. Apps hand that
+work to the **tasks** service, and the runtime runs it on their behalf —
+reached through the SDK as the `tasks` handle.
+
+## The idea
+
+A web request should answer fast and get out of the way. Anything slow, and
+anything that should happen *later* or *on a schedule*, belongs in a
+**background queue**: the app describes the work, the queue runs it outside
+the request path, records what happened, and retries when it fails.
+
+The honest part of every queue is its delivery promise. Lodekit's is
+**at-least-once**: a run will happen, but under failure it may happen more
+than once — a crash after the work but before the bookkeeping means the work
+runs again. The diagram shows why: `failed` loops back to `queued` while
+retries remain.
+
 <TaskLifecycle />
+
+The price of at-least-once is a design habit called **idempotency**: write
+tasks so running them twice is harmless. "Recompute the summary" is naturally
+safe — running it again produces the same summary. "Charge the card" is not —
+it needs a dedupe key so a repeat is recognized and skipped. Personal apps
+rarely charge cards, but the habit still pays: prefer "set the state to X"
+over "add one more X".
+
+Failures are handled politely: each retry waits longer than the last —
+**exponential backoff**, 30 seconds doubling each attempt, capped at 10
+minutes — so a struggling dependency gets room to recover instead of a
+hammering.
+
+Schedules come in two grammars: **cron** for calendar times ("9 am every
+day") and **intervals** for rhythms ("every 12 hours"). And because Lodekit
+runs on a laptop, not a server that's always on, the scheduler needs a
+**catch-up** story: when the machine wakes, runs missed within the catch-up
+window are executed (coalesced into one, not replayed per miss).
+
+## When to use it
+
+Reminders, digests, periodic sweeps, imports, exports — anything scheduled,
+anything slow, anything that should survive the browser tab closing. If a
+server function would keep the person waiting, hand the work to a task and
+return immediately.
+
+## How it works in Lodekit
+
+Tasks are declared in `src/tasks.ts` — plain exported functions wrapped in
+`task()`. The Greenhouse showcase app declares all three kinds:
+
+```ts title="src/tasks.ts"
+import { task } from "@lodekit/sdk";
+
+// Enqueued on demand — a reminder scheduled when care is given.
+export const care_reminder = task({
+  run: async (p: { plantId: number; kind: string }) => {
+    // look up the plant and announce that care is due
+  },
+});
+
+// Calendar schedule with catch-up: runs at 9 am, or on wake if 9 am was slept through.
+export const morning_rounds = task({
+  cron: "0 9 * * *",
+  catchUp: true,
+  run: async () => {
+    // walk every plant, break streaks that lapsed overnight
+  },
+});
+
+// Interval schedule — a sweep every 12 hours.
+export const compost_sweep = task({
+  every: "12h",
+  run: async () => {
+    // prune archived photos and trim old journal entries
+  },
+});
+```
+
+A task's name is the kebab-case of its export: `care_reminder` becomes
+`care-reminder`. Queued tasks are started with `tasks.enqueue` — now, after a
+delay, or at a specific time, with a dedupe key to prevent duplicate queued
+runs:
+
+```ts
+const runId = await tasks.enqueue(
+  "care-reminder",
+  { plantId, kind },
+  { at: dueAt, dedupeKey: `${plantId}:${kind}` }
+);
+// later, if plans change:
+await tasks.cancel(runId);
+```
+
+Runs execute **serially within an app** (no two runs of your app race each
+other) and in parallel across apps. The defaults are sensible and tunable in
+the dashboard: 3 retries, a 5-minute timeout per attempt, a 1-hour catch-up
+window, backoff 30s × 2ⁿ capped at 10 minutes.
+
+Every run is recorded — state, attempt count, duration, error — so nothing
+fails silently.
+
+:::note
+The dashboard's Tasks view is coming soon. Until then, run history is one
+call away — `tasks.runs()` — and your agent can read it for you.
+:::
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Run history | Last 100 runs or 30 days per task (whichever keeps more) |
+| Minimum interval | `every` of at least 1 minute |
+
+## API
+
+The `src/tasks.ts` contract, every `task()` option, and the handle methods —
+`enqueue`, `cancel`, `runs`, `list` — are specified in the
+[tasks SDK reference](/sdk/tasks/).
