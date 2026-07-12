@@ -1,6 +1,248 @@
 ---
 title: tasks
-description: "API reference for the tasks handle: scheduling and running background work."
+description: Background jobs — declaring tasks and driving the tasks service's SDK handle.
 ---
 
-Content coming in this docs slice.
+Background work: scheduled jobs and an on-demand queue. For when tasks are the
+right tool (and how the engine behaves), see [the Tasks service](/services/tasks/).
+
+Tasks have two sides: you **declare** them in `src/tasks.ts` with `task()`, and
+you **drive** them with the `tasks` handle — both imported from the SDK:
+
+```ts
+import { task, tasks } from "@lodekit/sdk";
+```
+
+The handle works in the browser and in server functions.
+
+## The src/tasks.ts contract
+
+Declare each task as a named export of `src/tasks.ts` built with `task()`:
+
+```ts
+task<P = unknown>(config: TaskConfig<P>): DefinedTask<P>
+```
+
+```ts
+interface TaskConfig<P = unknown> {
+  cron?: string;
+  every?: string;
+  catchUp?: string | boolean;
+  retries?: number;
+  timeout?: string;
+  run: (payload: P) => void | Promise<void>;
+}
+```
+
+- `cron` — a 5-field cron expression, machine-local timezone. Mutually
+  exclusive with `every`.
+- `every` — interval sugar (`"30m"`, `"1h"`), minimum `"1m"`. Mutually
+  exclusive with `cron`. Omit both for an on-demand task you run with
+  `enqueue()`.
+- `catchUp` — catch-up window for occurrences missed while the runtime was
+  off (`"6h"`); `true` = always catch up (still coalesced to one run);
+  `false` = on-time only. Default `"1h"`.
+- `retries` — retries after the first attempt, 0–20. Default `3`.
+- `timeout` — per-attempt timeout. Default `"5m"`.
+- `run` — the function that does the work. Required. Receives the payload
+  passed to `enqueue()` (`undefined` for scheduled runs).
+
+The task's name is the **kebab-case of its export identifier** — the export
+`care_reminder` is the task `care-reminder` everywhere else (in `enqueue()`,
+`runs()`, the dashboard). Names match `/^[a-z0-9-]+$/`, max 128 characters.
+
+### Example
+
+Greenhouse declares all three forms — on-demand, cron, and interval:
+
+```ts title="src/tasks.ts"
+import { task } from "@lodekit/sdk";
+
+export const care_reminder = task({
+  run: async (p: { plantId: number; kind: CareKind }) => { /* ... */ },
+});
+
+export const morning_rounds = task({
+  cron: "0 9 * * *",
+  catchUp: true,
+  run: async () => { /* join across careState/plants/careRules, break streaks */ },
+});
+
+export const compost_sweep = task({
+  every: "12h",
+  run: async () => { /* prune archived photos + trim journals */ },
+});
+```
+
+## tasks.enqueue()
+
+```ts
+enqueue(name: string, payload?: unknown, opts?: { delay?: string; at?: number; dedupeKey?: string }): Promise<number>
+```
+
+- `name` — the task's name (kebab-case, as above).
+- `payload` — passed to the task's `run` function.
+- `opts.delay` — run no earlier than this duration from now (`"30m"`).
+  Mutually exclusive with `at`.
+- `opts.at` — run no earlier than this ms-epoch time. Mutually exclusive with
+  `delay`.
+- `opts.dedupeKey` — dedupe handle, 1–256 characters.
+
+Queues a run and resolves to its run id. With a `dedupeKey`, if a **queued**
+run of the same task already holds that key, no new run is created — you get
+the existing run's id back. Throws for an unknown or retired task.
+
+### Example
+
+Greenhouse schedules a reminder at the exact due time, deduped per plant and
+care kind:
+
+```ts
+const runId = await tasks.enqueue(
+  "care-reminder",
+  { plantId, kind },
+  { at: dueAt, dedupeKey: `${plantId}:${kind}` }
+);
+```
+
+"Remind me later" re-queues it an hour out, under its own dedupe key:
+
+```ts
+const runId = await tasks.enqueue("care-reminder", { plantId, kind }, {
+  delay: "1h",
+  dedupeKey: `${plantId}:${kind}:later`,
+});
+```
+
+## tasks.cancel()
+
+```ts
+cancel(runId: number): Promise<boolean>
+```
+
+- `runId` — the id returned by `enqueue()`.
+
+Cancels a run that is still **queued**. Returns `true` if it was canceled,
+`false` when the run already started or finished, or doesn't exist.
+
+### Example
+
+```ts
+if (prev?.reminderRunId != null) await tasks.cancel(prev.reminderRunId).catch(() => false);
+```
+
+## tasks.runs()
+
+```ts
+runs(opts?: { task?: string; state?: TaskRunState; limit?: number }): Promise<TaskRun[]>
+```
+
+- `opts.task` — only runs of this task.
+- `opts.state` — only runs in this state.
+- `opts.limit` — max results. Default 50 (the `tasks.list_limit` platform
+  setting), clamped to 1–200.
+
+Returns run history, newest first.
+
+### Example
+
+```ts
+const failures = await tasks.runs({ task: "morning-rounds", state: "failed" });
+```
+
+## tasks.list()
+
+```ts
+list(): Promise<TaskInfo[]>
+```
+
+Returns every declared task with its schedule, retired flag, config error (if
+its declaration failed validation), next scheduled run, and a summary of its
+last run.
+
+### Example
+
+```ts
+const infos = await tasks.list();
+const rounds = infos.find((t) => t.name === "morning-rounds");
+// rounds.nextRun, rounds.lastRun?.state
+```
+
+## How the engine runs your tasks
+
+:::note
+- **At-least-once.** A run may execute more than once in rare crash windows —
+  make `run` idempotent where it matters.
+- **Retries with backoff.** A failed attempt retries after
+  `30s × 2^(attempt−1)`, capped at 10 minutes. Default 3 retries per run.
+- **Interrupted runs count.** A run cut off by a runtime restart consumes a
+  failed attempt.
+- **Coalescing.** Scheduled occurrences missed inside the catch-up window
+  collapse into a single run, never a burst.
+- **Serial per app.** No two runs of your app execute at once; apps run in
+  parallel with each other.
+
+Run history keeps the newest 100 runs per task, or 30 days — whichever keeps
+more. Every state change emits a `tasks-change` [event](/sdk/events/).
+:::
+
+## Types
+
+### TaskRunState
+
+```ts
+type TaskRunState = "queued" | "running" | "succeeded" | "failed" | "canceled";
+```
+
+### TaskRun
+
+```ts
+interface TaskRun {
+  id: number;
+  task: string;
+  state: TaskRunState;
+  source: "enqueue" | "schedule" | "manual";
+  attempt: number;
+  payload: unknown;
+  notBefore: number;
+  createdAt: number;
+  startedAt: number | null;
+  finishedAt: number | null;
+  durationMs: number | null;
+  error: string | null;
+}
+```
+
+- `id` — the run id.
+- `task` — the task's name.
+- `state` — where the run is in its lifecycle.
+- `source` — how it was created: `enqueue()`, the schedule, or a manual
+  trigger.
+- `attempt` — which attempt this is (1 = first).
+- `payload` — the payload it was enqueued with.
+- `notBefore` — ms-epoch earliest start time.
+- `createdAt` / `startedAt` / `finishedAt` — ms-epoch timestamps (`null`
+  until reached).
+- `durationMs` — wall-clock duration of the finished attempt, or `null`.
+- `error` — the failure message, or `null`.
+
+### TaskInfo
+
+```ts
+interface TaskInfo {
+  name: string;
+  schedule: { kind: "cron" | "every"; expr: string } | null;
+  retired: boolean;
+  error: string | null;
+  nextRun: number | null;
+  lastRun: { runId: number; state: TaskRunState; finishedAt: number | null; error: string | null } | null;
+}
+```
+
+- `name` — the task's name.
+- `schedule` — its schedule, or `null` for on-demand tasks.
+- `retired` — `true` when the task was removed from `src/tasks.ts`; its run
+  history sticks around, but it no longer runs and can't be enqueued.
+- `error` — the declaration's validation error, or `null`.
+- `nextRun` — ms-epoch time of the next scheduled run, or `null`.
+- `lastRun` — a summary of the most recent run, or `null` if it never ran.

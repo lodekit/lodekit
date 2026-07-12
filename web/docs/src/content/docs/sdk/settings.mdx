@@ -1,6 +1,210 @@
 ---
 title: settings
-description: "API reference for the settings handle: defining and reading app settings."
+description: Declared, person-editable settings — the settings service's SDK handle.
 ---
 
-Content coming in this docs slice.
+The knobs a person turns in the dashboard, declared by your app and read
+through the SDK. For the model — who writes, who reads, and why every field
+needs copy — see [the Settings service](/services/settings/).
+
+```ts
+import { defineSettings, boolean, string, number, select, duration, settings } from "@lodekit/sdk";
+```
+
+Apps only ever **read** settings — writing happens in the dashboard. `get()`
+and `all()` work in the browser and in server functions; `watch()` is
+**client-only**.
+
+## The src/settings.ts contract
+
+Declare your fields in `src/settings.ts` and make the result the **default
+export**:
+
+```ts
+defineSettings<S extends SettingsFields>(fields: S): DefinedSettings<S>
+```
+
+- Keys are snake_case (`/^[a-z0-9_]+$/`), max 64 characters.
+- Every field requires a `label` (max 80 characters) and a `description`
+  (max 240 characters) — the dashboard never shows an undocumented knob.
+- Every field requires a `default`.
+
+There are exactly five field builders, one per dashboard control. All of them
+take `label`, `description`, an optional `advanced` (tucks the field into the
+dashboard's advanced group), and `default`:
+
+### boolean()
+
+```ts
+boolean({ label, description, advanced?, default: boolean })
+```
+
+### string()
+
+```ts
+string({ label, description, advanced?, default: string, maxLength?: number, placeholder?: string })
+```
+
+- `maxLength` — cap on the value's length. Values are hard-capped at 4096
+  characters either way.
+- `placeholder` — placeholder text for the dashboard input.
+
+### number()
+
+```ts
+number({ label, description, advanced?, default: number, min?: number, max?: number, step?: number, integer?: boolean })
+```
+
+- `min` / `max` — inclusive bounds.
+- `step` — the input's increment.
+- `integer` — require a whole number.
+
+### select()
+
+```ts
+select({ label, description, advanced?, options: { value: string; label: string }[], default })
+```
+
+- `options` — the choices; each needs a `value` and a display `label`.
+- `default` — must be one of the option values (the type checker enforces it).
+
+### duration()
+
+```ts
+duration({ label, description, advanced?, default: string, min?: string, max?: string })
+```
+
+- Duration values use the grammar `"<number><s|m|h|d>"` — `"30s"`, `"10m"`,
+  `"6h"`, `"7d"`.
+- `min` / `max` — inclusive bounds, same grammar.
+
+### Example
+
+```ts title="src/settings.ts"
+import { defineSettings, boolean, string, number, select, duration } from "@lodekit/sdk";
+
+export default defineSettings({
+  quiet_mode: boolean({
+    label: "Quiet mode",
+    description: "Pause care reminders without touching the schedules.",
+    default: false,
+  }),
+  greeting: string({
+    label: "Greeting",
+    description: "Shown at the top of the conservatory.",
+    default: "Welcome back",
+    maxLength: 80,
+    placeholder: "Welcome back",
+  }),
+  journal_limit: number({
+    label: "Journal entries per plant",
+    description: "How many journal entries to keep before pruning.",
+    default: 50,
+    min: 10,
+    max: 500,
+    integer: true,
+    advanced: true,
+  }),
+  layout: select({
+    label: "Layout",
+    description: "How plant cards are arranged.",
+    options: [
+      { value: "grid", label: "Grid" },
+      { value: "list", label: "List" },
+    ],
+    default: "grid",
+  }),
+  reminder_lead: duration({
+    label: "Reminder lead time",
+    description: "How far ahead of the due time reminders fire.",
+    default: "1h",
+    min: "10m",
+    max: "1d",
+  }),
+});
+```
+
+Importing that default export gives you a **typed facade** with the same
+three read methods, keyed and typed by your fields:
+
+```ts
+import settings from "./settings";
+
+const layout = await settings.get("layout"); // "grid" | "list" | undefined
+```
+
+The untyped singleton `settings` from `@lodekit/sdk` has the same surface.
+
+## settings.get()
+
+```ts
+get<T = unknown>(key: string): Promise<T | undefined>
+```
+
+- `key` — the field's key.
+
+Returns the key's **effective value** — the person's stored override if one
+exists, otherwise the field's declared default. Returns `undefined` for keys
+your app never declared. (More on resolution in
+[the Settings service](/services/settings/).)
+
+### Example
+
+```ts
+const quiet = await settings.get<boolean>("quiet_mode");
+```
+
+## settings.all()
+
+```ts
+all(): Promise<Record<string, unknown>>
+```
+
+Returns every declared key mapped to its effective value. Through the typed
+facade, the result is typed field-by-field.
+
+### Example
+
+```ts
+const { layout, reminder_lead } = await settings.all();
+```
+
+## settings.watch()
+
+```ts
+watch(cb: (change: { key: string }) => void): () => void
+```
+
+- `cb` — called with `{ key }` when a setting changes.
+
+Subscribes to setting changes and returns an unsubscribe function.
+**Client-only** — it rides the same `EventSource` as
+[`events.watch()`](/sdk/events/) (the `settings-change` feed) and throws on
+the server. The payload is identity only: the changed `key`, never the value
+— re-read it with `get()`. `key` can be `""` when settings changed
+wholesale.
+
+### Example
+
+```ts
+useEffect(
+  () => settings.watch(({ key }) => {
+    if (key === "layout" || key === "") refresh();
+  }),
+  []
+);
+```
+
+## Types
+
+### SettingValue
+
+The value type each field reads back:
+
+```ts
+type SettingValue<F> =
+  F extends BooleanSetting ? boolean
+  : F extends NumberSetting ? number
+  : F extends SelectSetting<infer O> ? O[number]["value"]
+  : string; // string and duration fields
+```

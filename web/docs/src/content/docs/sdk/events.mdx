@@ -1,6 +1,146 @@
 ---
 title: events
-description: "API reference for the events handle: emitting and subscribing to events."
+description: The event bus — the event-store service's SDK handle.
 ---
 
-Content coming in this docs slice.
+Per-app pub/sub with history. For what events are for (and how the change feed
+ties services together), see [the Events service](/services/events/).
+
+```ts
+import { events } from "@lodekit/sdk";
+```
+
+`emit()` and `list()` work in the browser and in server functions. `watch()`
+is **client-only** — it throws when called on the server.
+
+## events.emit()
+
+```ts
+emit(type: string, payload?: Record<string, unknown>, opts?: { ttl?: number }): Promise<LodekitEvent>
+```
+
+- `type` — the event type. Must match `/^[a-z0-9-]+$/`, max 128 characters.
+- `payload` — an optional JSON object, max 8 KB.
+- `opts.ttl` — time to live in seconds, up to 30 days.
+
+Publishes an event and resolves to the stored `LodekitEvent`. The event's `ns`
+and `source` are stamped by the runtime with your app's own id — an app cannot
+forge events as another sender or emit into another app's namespace.
+
+### Example
+
+```ts
+const ev = await events.emit("export-finished", {
+  slug: stat.slug,
+  plantCount: allPlants.length,
+});
+// ev.id, ev.ts; ev.ns === ev.source === your app id
+```
+
+## events.watch()
+
+```ts
+watch(filter: { type?: string | string[] }, cb: (event: LodekitEvent) => void): () => void
+```
+
+- `filter.type` — a type, or an array of types. Omit it to receive every event.
+- `cb` — called with each matching event as it arrives.
+
+Subscribes to live events and returns an unsubscribe function. **Client-only**:
+there is no `EventSource` on the server, so calling `watch()` in a server
+function throws. All watchers on a page share one `EventSource` connection —
+it opens with the first watcher and closes with the last unsubscribe.
+
+### Example
+
+Greenhouse refreshes its conservatory whenever its data changes:
+
+```ts
+useEffect(
+  () => events.watch({ type: ["db-store-change", "kv-store-change"] }, () => void router.invalidate()),
+  [router]
+);
+```
+
+Filtering on the payload happens in your callback:
+
+```ts
+events.watch({ type: "file-store-change" }, (ev) => {
+  const slug = (ev.payload as { slug?: string } | undefined)?.slug;
+  if (slug?.startsWith(`photo-${id}-`)) refresh();
+});
+```
+
+## events.list()
+
+```ts
+list(opts?: {
+  type?: string;
+  after?: number;
+  before?: number;
+  limit?: number;
+}): Promise<{ records: LodekitEvent[]; next: number | null }>
+```
+
+- `opts.type` — only events of this type.
+- `opts.after` — only events with an id greater than this.
+- `opts.before` — only events with an id less than this.
+- `opts.limit` — page size.
+
+Reads event history. Every event carries a monotonically increasing `id` that
+doubles as the replay offset: pass the returned `next` back as `after` to
+resume where you left off; `null` means you're caught up.
+
+### Example
+
+```ts
+let after: number | undefined;
+do {
+  const page = await events.list({ type: "export-finished", after });
+  for (const ev of page.records) {
+    // ev.payload
+  }
+  after = page.next ?? undefined;
+} while (after !== undefined);
+```
+
+## Platform event types
+
+The platform emits events into your app's namespace as things change — these
+are the types worth watching:
+
+| Type | Emitted when |
+|---|---|
+| `build-state` | Your app's build starts, succeeds, or fails |
+| `server-state` | Your app's worker starts, stops, or crashes |
+| `kv-store-change` | A kv entry is written, deleted, or expires |
+| `db-store-change` | A database write lands |
+| `file-store-change` | A file is put, deleted, or expires |
+| `tasks-change` | A task run is queued or changes state |
+| `settings-change` | The person changes a setting in the dashboard |
+| `secrets-change` | A secret slot is linked or unlinked |
+
+Change-feed payloads carry **identity only** — keys, slugs, ops — never
+values. On a change event, re-read the data you care about through its handle.
+
+## Types
+
+### LodekitEvent
+
+```ts
+interface LodekitEvent<T extends Record<string, unknown> = Record<string, unknown>> {
+  id: number;
+  ts: number;
+  ns: string;
+  source: string;
+  type: string;
+  payload: T | null;
+}
+```
+
+- `id` — monotonic row id; the replay offset for `list()`.
+- `ts` — ms-epoch timestamp.
+- `ns` — the namespace the event lives in (your app id).
+- `source` — who emitted it: your app id, or the platform for the types above.
+- `type` — the event type.
+- `payload` — the payload object, or `null` if none was given.

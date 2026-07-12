@@ -1,6 +1,74 @@
 ---
 title: logs
-description: "API reference for the logs handle: writing structured log entries."
+description: Structured logging — the log-store service's SDK handle.
 ---
 
-Content coming in this docs slice.
+Structured, per-app logging. For where records go, how to read them, and
+retention, see [the Logs service](/services/logs/).
+
+```ts
+import { logs } from "@lodekit/sdk";
+```
+
+Works in the browser and in server functions.
+
+## logs.debug() / info() / warn() / error()
+
+```ts
+debug(message: string, fields?: Record<string, unknown>): void
+info(message: string, fields?: Record<string, unknown>): void
+warn(message: string, fields?: Record<string, unknown>): void
+error(message: string, fields?: Record<string, unknown>): void
+```
+
+- `message` — the log line, 1–8192 characters.
+- `fields` — an optional object of structured context, stored alongside the
+  message and queryable later.
+
+Writes one record at the method's level. All four are **fire-and-forget**:
+they return `void` (not a Promise) and **never throw** — a failed or rejected
+write is swallowed, so logging is safe on any code path, including error
+handlers. Records from these methods are tagged with source `app`.
+
+### Example
+
+Greenhouse logs each care action with its context:
+
+```ts
+logs.info("care given", { plantId, kind, streak });
+```
+
+And an error path stays an error path — logging can't make it worse:
+
+```ts
+try {
+  await syncForecast(plantId);
+} catch (err) {
+  logs.error("forecast sync failed", { plantId, err: String(err) });
+}
+```
+
+## Console capture
+
+In your app's worker, `console.*` output is captured into the same log store
+automatically — the console methods are replaced, and each call becomes a
+structured record (tagged with source `console`) at the mapped level:
+
+| Console method | Log level |
+|---|---|
+| `console.debug` | `debug` |
+| `console.log` | `info` |
+| `console.info` | `info` |
+| `console.warn` | `warn` |
+| `console.error` | `error` |
+
+So a stray `console.log` in a server function still lands in the log store.
+Prefer the `logs` handle when you have structure to attach — `fields` survive
+as data, while console arguments are flattened into the message (an `Error`
+argument keeps its stack as a `stack` field).
+
+## Where records go
+
+Every record lands in your app's log store, readable in the dashboard's Logs
+view and by your agent. Retention and limits live with
+[the Logs service](/services/logs/).
