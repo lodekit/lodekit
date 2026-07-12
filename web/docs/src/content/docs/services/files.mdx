@@ -77,7 +77,7 @@ Served bytes carry proper caching headers, so browsers revisit unchanged
 files for free.
 
 Files can expire. Greenhouse writes a data snapshot that cleans itself up
-after an hour — no sweeper task, the TTL does the forgetting:
+after an hour — no cleanup code to write, the TTL does the forgetting:
 
 ```ts
 const stat = await files.put(
