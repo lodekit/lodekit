@@ -42,8 +42,8 @@ You'll set that connection up in
 ## How an app gets built
 
 When your agent creates or changes an app, all it does is write files into
-`apps/`. Lodekit's watcher notices the change, builds the app with its shared
-toolchain, and serves the result:
+`apps/`. Lodekit's watcher notices the change, builds the app with its own
+build tools, and serves the result:
 
 <BuildLifecycle />
 
@@ -61,7 +61,7 @@ full layout is in [Your Lodekit folder](/guide/your-lodekit-folder/).
 ## The services
 
 Apps don't reinvent the plumbing. Lodekit provides services every app can use:
-a database for records, a small key–value memory, file storage, scheduled
+a database for records, a small memory for quick notes, file storage, scheduled
 tasks, settings, secrets, logs, and events. Your agent builds with these, which
 is why even a quick app gets durable storage and a settings page for free. Meet
 them in the [Services overview](/services/overview/).
