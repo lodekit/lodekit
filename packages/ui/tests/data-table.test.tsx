@@ -61,14 +61,18 @@ describe("useDataTable client mode", () => {
   });
 
   it("renders the empty state across all columns", () => {
+    let table!: TanstackTable<Row>;
     function Fixture() {
-      const table = useDataTable({ columns, data: [] });
+      table = useDataTable({ columns, data: [] });
       return <DataTable table={table} />;
     }
     const host = mount(<Fixture />);
     const cell = host.querySelector("tbody td")!;
     expect(cell.textContent).toBe("No results.");
     expect(cell.getAttribute("colspan")).toBe("2");
+
+    act(() => table.getColumn("qty")!.toggleVisibility(false));
+    expect(host.querySelector("tbody td")!.getAttribute("colspan")).toBe("1");
   });
 });
 
