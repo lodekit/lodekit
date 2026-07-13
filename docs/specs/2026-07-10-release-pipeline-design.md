@@ -99,7 +99,7 @@ reviewed as part of each slice PR.
 ## 5. The changelog buffer and the release skill
 
 **Notes are frontloaded into the dev loop, not reconstructed at release time.**
-`docs/changelog.next.md` is an append-only buffer (the `docs/defer.md` pattern, pointed
+`docs/changelog.md` is an append-only buffer (the `docs/defer.md` pattern, pointed
 at shipping): a slice that changes something a Lodekit user can see or do appends one
 product-level entry under `## New` or `## Fixed`, in the same PR as the code — written
 while context is fresh, reviewed with the slice. Internal work appends nothing.

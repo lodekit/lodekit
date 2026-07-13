@@ -96,7 +96,7 @@ Simplicity never means cutting safety.
   person drains the file into GitHub issues and clears it). `roadmap.md` is retired;
   never recreate it — where an older spec/plan says "add to roadmap.md", that now means
   `docs/defer.md`.
-- **Changelog buffer:** `docs/changelog.next.md` collects unreleased user-facing
+- **Changelog buffer:** `docs/changelog.md` collects unreleased user-facing
   changes. A slice that ships something a Lodekit user can see or do appends an entry
   under `## New` or `## Fixed`, in the same PR as the code; internal work appends
   nothing. **Append-only** for agents — rewording and cutting happen in the release PR
@@ -116,7 +116,7 @@ Simplicity never means cutting safety.
     merge unattended.
   - Regenerate `pnpm-lock.yaml` conflicts with `pnpm install --lockfile-only` rather than hand-merging.
 - **Releases:** `/release` (skill at `.agents/skills/release/SKILL.md`) assembles a
-  semver release PR: lockstep version bump + drain of `docs/changelog.next.md` into the
+  semver release PR: lockstep version bump + drain of `docs/changelog.md` into the
   docs changelog page. Merging it triggers the GitHub release build; the workflow is
   the only creator of `v*` tags. Portable agent skills live in `.agents/skills/`
   (Claude Code discovers them via the `.claude/skills` symlinks).

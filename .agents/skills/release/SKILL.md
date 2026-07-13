@@ -1,6 +1,6 @@
 ---
 name: release
-description: Cut a Lodekit release — semver bump across the workspace, drain the changelog buffer (docs/changelog.next.md) into release notes, and raise a release PR whose merge triggers the build pipeline. Use when the person asks to release or ship a version. Args: patch|minor|major (bare invocation proposes a bump); --dry-run drafts without touching anything.
+description: Cut a Lodekit release — semver bump across the workspace, drain the changelog buffer (docs/changelog.md) into release notes, and raise a release PR whose merge triggers the build pipeline. Use when the person asks to release or ship a version. Args: patch|minor|major (bare invocation proposes a bump); --dry-run drafts without touching anything.
 ---
 
 # Release
@@ -28,7 +28,7 @@ All must pass. On any failure, stop and report — fix nothing silently.
 - No release PR already open:
   `gh pr list --state open --json title --jq '.[].title' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$'`
   must print nothing.
-- The changelog buffer `docs/changelog.next.md` has at least one entry under `## New`
+- The changelog buffer `docs/changelog.md` has at least one entry under `## New`
   or `## Fixed` — an empty buffer means nothing user-facing shipped; there is nothing
   to release.
 - Previous release tag: `git describe --tags --match 'v*' --abbrev=0` — call it
@@ -44,7 +44,7 @@ version field in all 9 package.json files together. First release: skip (§5).
 ## 3. Notes — drain the buffer
 
 The notes are **not reconstructed** at release time: they accumulate in
-`docs/changelog.next.md` as slices ship (one entry per product change, written for a
+`docs/changelog.md` as slices ship (one entry per product change, written for a
 person *using* Lodekit — see the buffer's own rules header). Here:
 
 - Take the buffer's `## New` / `## Fixed` sections verbatim as the release notes.
@@ -76,7 +76,7 @@ person *using* Lodekit — see the buffer's own rules header). Here:
   (The buffer's `## New`/`## Fixed` become `### New`/`### Fixed` under the version
   heading.)
 
-- **Reset the buffer:** truncate `docs/changelog.next.md` back to its rules header
+- **Reset the buffer:** truncate `docs/changelog.md` back to its rules header
   (everything above and including the `---` separator), removing the drained entries.
 - Branch `release/vX.Y.Z` off `master`; single commit `release: vX.Y.Z` containing
   the 9 version bumps + the changelog edit + the buffer reset.
