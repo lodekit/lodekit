@@ -184,7 +184,8 @@ the canonical changelog, readable in the repo.
 
 ## 8. Deferred seams
 
-Each deferred item has a designed-in seam to land on later; all go to `roadmap.md`:
+Each deferred item has a designed-in seam to land on later; all buffered in `defer.md`
+for the GitHub issue backlog (roadmap.md was retired mid-flight):
 
 - **Linux** (research stage 2): XDG path branches (the runtime config comment already
   marks the spot), hand-written `.desktop` autostart, full-color tray PNGs,
