@@ -17,7 +17,7 @@ Two coupled outcomes, one loop:
   architectures** (arm64 + x64). Windows and Linux are deferred until v1 (decided), but
   after this spec they are additional matrix rows and config targets, not tool
   migrations.
-- **A release process.** Development lands on `master` exclusively via rebase-merged
+- **A release process.** Development lands on `master` exclusively via squash-merged
   PRs; a `/release` skill assembles a semver release PR with **product-level** notes;
   merging that PR triggers a GitHub Actions workflow that builds both mac zips, tags the
   commit, and publishes a GitHub Release; the same notes live as a changelog page in the
@@ -73,28 +73,29 @@ which is the one surveyed practice that actively conflicts with our design. Cros
 locally isn't wired (a cross target fails the bundle's native-module
 assert by design); CI on an Intel runner is x64's verification.
 
-## 4. Dev loop — PR-only, rebase-merged
+## 4. Dev loop — PR-only, squash-merged
 
 Replaces CLAUDE.md's "commit directly to master" convention.
 
 - **All changes to `master` land via PR.** No direct pushes — docs and typo fixes
   included. Slice work happens on a branch/worktree as today; finishing a slice means
   pushing the branch and raising a PR.
-- **Rebase merge only.** Repo settings disable merge commits and squash merges and
-  auto-delete head branches. Rebase-merging preserves the branch's fine-grained
-  conventional commits on `master` and keeps history a single linear line. (A branch
-  protection rule requiring PRs may be enabled, but at solo scale the merge-method
-  settings plus convention are the enforcement.)
+- **Squash merge only.** Repo settings disable merge commits and rebase merges and
+  auto-delete head branches; the squash commit's subject is the PR title and its body
+  the PR body (repo-level defaults). One commit per PR keeps `master` a single linear
+  line at slice granularity; the fine-grained commits stay browsable in the PR. (A
+  branch protection rule requiring PRs may be enabled, but at solo scale the
+  merge-method settings plus convention are the enforcement.)
 - **PR shape:** conventional-prefixed title (`feat:`, `fix:`, scoped variants); body
   with **Summary** (what changed and why, with bullets), **Notes** (decisions taken,
   known follow-ups), and **Test plan** (a checklist of what was verified).
 - **Merging is the person's call.** The agent raises the PR and stops — the existing
   no-unattended-integration rule, unchanged.
 
-Consequence: `master` stays fine-grained conventional commits, every one reachable from
-a merged PR. The changelog does **not** lean on this granularity — its unit is the
-shipped product change, captured incrementally in the changelog buffer (§5) and
-reviewed as part of each slice PR.
+Consequence: `master` is one conventional-titled commit per PR. The changelog does
+**not** lean on commit granularity at all — its unit is the shipped product change,
+captured incrementally in the changelog buffer (§5) and reviewed as part of each
+slice PR.
 
 ## 5. The changelog buffer and the release skill
 
@@ -238,7 +239,7 @@ Each a slice on the `ci` branch (landing via PRs once the conventions slice merg
    smoke.
 2. **Arch table + x64** — dist table in `prepare-bundle.mjs`, arch-aware `make`,
    optional Rosetta smoke.
-3. **Conventions** — CLAUDE.md branching/release rewrite (PR-only, rebase merge, PR
+3. **Conventions** — CLAUDE.md branching/release rewrite (PR-only, squash merge, PR
    shape), repo merge-method settings, `AGENTS.md` pointer.
 4. **Changelog page scaffold** in `web/docs` + sidebar entry.
 5. **Release skill** — `.agents/skills/release/SKILL.md` + `.claude/skills` symlink.

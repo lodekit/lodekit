@@ -105,10 +105,11 @@ Simplicity never means cutting safety.
 - **Branching:** All changes to `master` land via PR — no direct pushes, docs and
   typos included. Slice work happens on a branch/worktree; finishing a slice means
   pushing the branch and raising a PR.
-  - PRs are **rebase-merged only** (repo settings disable merge commits and squash
-    merges; branches auto-delete on merge). `master` stays a single linear line of
-    fine-grained conventional commits — `git rebase master` before raising or
-    updating a PR; never a plain `git merge`.
+  - PRs are **squash-merged only** (repo settings disable merge commits and rebase
+    merges; branches auto-delete on merge). `master` stays a single linear line —
+    one commit per PR, whose subject is the PR title, so **conventional-prefixed PR
+    titles are load-bearing**. Still `git rebase master` to resolve conflicts before
+    merging; never a plain `git merge`.
   - PR shape: conventional-prefixed title (`feat:`, `fix:`, scoped variants); body
     with **Summary** (what changed and why), **Notes** (decisions taken, known
     follow-ups), and **Test plan** (checklist of what was verified).
