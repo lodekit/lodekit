@@ -242,3 +242,25 @@ person, the docs grow to 40 pages:
   device flow), the startup cache prune (internal).
 - Same verification: accuracy pass against `packages/sdk/src/gateways.ts`,
   `client.ts`, the gateways runtime source, and `platformSettings.ts`.
+
+## 12. Addendum (2026-07-13): formal store titles
+
+Person-decided naming refactor, three registers end to end:
+
+1. **Formal titles** — Relational Data Store, Key-Value Data Store, File Store,
+   Log Store, Event Store, Secret Store (Tasks/Settings/Gateways unchanged) —
+   used for page titles, sidebar, headings, and first mentions.
+2. **Bold short terms** — **db-store**, **kv-store**, **file-store**,
+   **log-store**, **event-store**, **secret-store** — the catalog names, used
+   in running prose after a first-mention introduction ("the Relational Data
+   Store (**db-store** for short)"); services/overview explains the convention
+   once; elsewhere a bold short term + link is the introduction.
+3. **Mono** stays reserved for typed code (`db`, `kv.get()`, paths). SDK pages
+   stay handle-titled.
+
+Services slugs renamed to the short terms
+(`/services/db-store/` …). The retired person-facing names (Database, KV,
+Files, Logs, Events, Secrets as service names) moved to context.md Avoid
+lists — context.md canon amended in the same commit so docs and vocabulary
+never fork. Generic common nouns and real dashboard UI labels (the **Logs** /
+**Events** / **Secrets** views) deliberately keep their words.
