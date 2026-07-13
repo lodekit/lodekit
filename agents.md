@@ -37,7 +37,7 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
   its apps into a fresh `~/Documents/Lodekit` on first run.
 
 Deferred subsystems (designed-in, not built): docs content/theming/deploy and packaging
-polish (Developer ID signing/notarization, auto-update). See `roadmap.md`.
+polish (Developer ID signing/notarization, auto-update). See the backlog (GitHub issues).
 
 ## Build & Test
 
@@ -93,7 +93,13 @@ Simplicity never means cutting safety.
 
 ## Conventions
 
-- **Roadmap:** `roadmap.md` is the roadmap file — it tracks deferred work and known gaps. Add parked items there.
+- **Backlog:** deferred work and known gaps live as GitHub issues (`gh issue list`).
+- **Deferrals:** `defer.md` is a transient buffer for work descoped/deferred during a
+  session. Append entries under a dated session header linking the spec/plan/PR that
+  caused them; **append-only** — never reword, resolve, or remove existing entries (the
+  person drains the file into GitHub issues and clears it). `roadmap.md` is retired;
+  never recreate it — where an older spec/plan says "add to roadmap.md", that now means
+  `defer.md`.
 - **Docs:** Specs live in `docs/specs/`. Plans live in `docs/plans/`.
 - **Branching:** Trunk-based — commit directly to `master`. No feature branches.
 - **Linear history:** `master` must stay a single linear line — **no merge commits**.

@@ -265,6 +265,15 @@ _Avoid_: the endpoints, the REST API
 - **Settings** and **Tasks** are declared by an app and surfaced to the person in the **Dashboard**.
 - The **MCP server** may read an app's services on the person's behalf (writes later, behind designed guardrails).
 
+## Principles
+
+- **No dev servers, no terminal builds.** The person never relies on dev servers or
+  terminal build commands. Lodekit ships a runtime / web server; apps are built on
+  Lodekit as the SDK and run inside that one shared instance (per-app instances only if
+  ever proven necessary). Lodekit controls the build chain **programmatically (via
+  code, not shell commands)** — down to provisioning its own Lodekit-local Node, never
+  the system's.
+
 ## Flagged ambiguities
 
 - **Lodekit vs Platform** — Lodekit is the whole product experience; the platform is its installed subset (runtime, SDK, UI library, dashboard, manager). "Download Lodekit" installs the platform.

@@ -202,7 +202,7 @@ const setManyBody = z.object({
 // Chained style is normative: it is what makes hc route-type inference work.
 // onError preserves the shipped semantics: every thrown error in a kv route
 // (KvError from incr included) maps to a 400 { error } — the 400-vs-500 split
-// stays parked in roadmap.md.
+// stays parked in the backlog (issue #3).
 export const kvRoutes = new Hono<KvEnv>()
   .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
   .get("/", zValidator("query", listQuery, validationHook), (c) => {
