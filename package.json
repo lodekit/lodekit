@@ -13,6 +13,7 @@
       "@tailwindcss/oxide",
       "better-sqlite3",
       "electron",
+      "electron-winstaller",
       "esbuild",
       "lightningcss",
       "sharp"
