@@ -83,10 +83,14 @@ export function apiRoutes(cfg: Config) {
     // Global event history (dashboard + MCP); /api/events itself stays the SSE feed.
     .get(
       "/events/history",
-      zValidator("query", eventsQuery.extend({ ns: z.string().regex(NS_RE).optional() }), validationHook),
+      zValidator(
+        "query",
+        eventsQuery.extend({ ns: z.string().regex(NS_RE).optional(), source: z.string().regex(NS_RE).optional() }),
+        validationHook
+      ),
       (c) => {
-        const { ns, type, after, before, limit } = c.req.valid("query");
-        return c.json(queryEvents({ ns, type, after, before, limit }));
+        const { ns, source, type, after, before, limit } = c.req.valid("query");
+        return c.json(queryEvents({ ns, source, type, after, before, limit }));
       }
     )
     .get("/events", (c) => sseHandler()(c))
