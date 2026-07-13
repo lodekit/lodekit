@@ -1,5 +1,5 @@
 ---
-title: Log Store
+title: Logs
 description: "Where your app's logs go and how to inspect them."
 ---
 
@@ -82,3 +82,10 @@ commentary.
 The four methods — `debug`, `info`, `warn`, `error` — plus the
 fire-and-forget contract and console capture are specified in the
 [logs SDK reference](/sdk/logs/).
+
+## MCP
+
+This is the read half of "an app that logs well is an app your agent can
+debug": `lodekit_logs` reads the same records as the dashboard's Logs view,
+filtered by app, level, limit, or a message substring. Parameters and details
+are in [MCP tools](/reference/mcp-tools/).

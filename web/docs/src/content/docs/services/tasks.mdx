@@ -123,3 +123,11 @@ call away — `tasks.runs()` — and your agent can read it for you.
 The `src/tasks.ts` contract, every `task()` option, and the handle methods —
 `enqueue`, `cancel`, `runs`, `list` — are specified in the
 [tasks SDK reference](/sdk/tasks/).
+
+## MCP
+
+There is no dedicated tasks tool yet. Your agent can still watch task
+activity two ways: through the event bus — `lodekit_events` filtered to the
+`tasks-change` feed — and by reading run history inside your app with
+`tasks.runs()`. The event tool is specified in
+[MCP tools](/reference/mcp-tools/).

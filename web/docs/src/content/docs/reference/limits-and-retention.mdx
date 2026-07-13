@@ -15,6 +15,13 @@ caps at **100 kb** (fixed). That bounds **kv-store** values and task payloads.
 File
 bytes stream outside this cap and have no size limit.
 
+## Relational Data Store
+
+| Limit | Value | Setting |
+|---|---|---|
+| Retention | None — the **db-store** is the system of record | — |
+| Request size | 100 kb per request | fixed |
+
 ## Key-Value Data Store
 
 | Limit | Value | Setting |
@@ -24,13 +31,6 @@ bytes stream outside this cap and have no size limit.
 | List page size | Default 1000, max 1000 | `kv.list_limit` |
 | Expiry sweep | Every 60 seconds | `kv.sweep_interval` |
 | Change events | Kept 7 days | fixed |
-
-## Relational Data Store
-
-| Limit | Value | Setting |
-|---|---|---|
-| Retention | None — the **db-store** is the system of record | — |
-| Request size | 100 kb per request | fixed |
 
 ## File Store
 
@@ -70,31 +70,6 @@ bytes stream outside this cap and have no size limit.
 | Dedupe key | 1–256 characters | fixed |
 | Task name | Lowercase letters, digits, hyphens; ≤ 128 characters | fixed |
 
-## Log Store
-
-| Limit | Value | Setting |
-|---|---|---|
-| Retention | 7 days / 200,000 records | `logs.retention_age` / `logs.retention_max_rows` |
-| Message length | ≤ 8192 characters | fixed |
-| Query page size | Default 100, max 1000 | `logs.list_limit` |
-| Text log files | Kept 7 days | fixed |
-
-## Settings
-
-| Limit | Value | Setting |
-|---|---|---|
-| Field types | `boolean`, `string`, `number`, `select`, `duration` | — |
-| Keys | snake_case, ≤ 64 characters | fixed |
-| Label / description | ≤ 80 / ≤ 240 characters | fixed |
-| String values | ≤ 4096 characters | fixed |
-
-## Secret Store
-
-| Limit | Value | Setting |
-|---|---|---|
-| Value size | ≤ 4 KB | fixed |
-| Slot keys | snake_case, ≤ 64 characters | fixed |
-
 ## Gateways
 
 | Limit | Value | Setting |
@@ -111,3 +86,28 @@ bytes stream outside this cap and have no size limit.
 
 A gateway's manifest can override `rate`, `concurrency`, and `timeout_ms` for
 that gateway alone — see [Gateways](/services/gateways/).
+
+## Secret Store
+
+| Limit | Value | Setting |
+|---|---|---|
+| Value size | ≤ 4 KB | fixed |
+| Slot keys | snake_case, ≤ 64 characters | fixed |
+
+## Settings
+
+| Limit | Value | Setting |
+|---|---|---|
+| Field types | `boolean`, `string`, `number`, `select`, `duration` | — |
+| Keys | snake_case, ≤ 64 characters | fixed |
+| Label / description | ≤ 80 / ≤ 240 characters | fixed |
+| String values | ≤ 4096 characters | fixed |
+
+## Log Store
+
+| Limit | Value | Setting |
+|---|---|---|
+| Retention | 7 days / 200,000 records | `logs.retention_age` / `logs.retention_max_rows` |
+| Message length | ≤ 8192 characters | fixed |
+| Query page size | Default 100, max 1000 | `logs.list_limit` |
+| Text log files | Kept 7 days | fixed |

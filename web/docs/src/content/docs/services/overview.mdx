@@ -16,22 +16,23 @@ durable storage, scheduled tasks, and a settings page for free.
 
 | Service | What it's for | Short term | SDK handle |
 |---|---|---|---|
-| [Relational Data Store](/services/db-store/) | Domain records — entities, relationships, queries | **db-store** | `db` |
-| [Key-Value Data Store](/services/kv-store/) | App memory — counters, cursors, caches, flags | **kv-store** | `kv` |
-| [File Store](/services/file-store/) | Documents and blobs, stored as real files on disk | **file-store** | `files` |
-| [Event Store](/services/event-store/) | The durable event bus apps announce on and react to | **event-store** | `events` |
+| [Relational database](/services/db-store/) | Domain records — entities, relationships, queries | **db-store** | `db` |
+| [Key-value database](/services/kv-store/) | App memory — counters, cursors, caches, flags | **kv-store** | `kv` |
+| [Files](/services/file-store/) | Documents and blobs, stored as real files on disk | **file-store** | `files` |
+| [Events](/services/event-store/) | The durable event bus apps announce on and react to | **event-store** | `events` |
 | [Tasks](/services/tasks/) | Background work — queued now or run on a schedule | **tasks** | `tasks` |
-| [Log Store](/services/log-store/) | Structured log records, for watching and debugging | **log-store** | `logs` |
-| [Settings](/services/settings/) | Your knobs — declared by the app, edited by you | **settings** | `settings` |
-| [Secret Store](/services/secret-store/) | Credentials — encrypted, read only by server code | **secret-store** | `secrets` |
 | [Gateways](/services/gateways/) | Managed doors to outside providers — keys injected, traffic guarded | **gateways** | `gateways` |
+| [Secrets](/services/secret-store/) | Credentials — encrypted, read only by server code | **secret-store** | `secrets` |
+| [Settings](/services/settings/) | Your knobs — declared by the app, edited by you | **settings** | `settings` |
+| [Logs](/services/log-store/) | Structured log records, for watching and debugging | **log-store** | `logs` |
 
-Each service has a formal name and a short term, and the docs use both: the
-formal name introduces a service, the bold short term (**db-store**,
-**kv-store**) names it in running prose, and monospace is reserved for things
-you type — handles like `db`, files like `src/db.ts`. Each service page
-explains the general idea first — the kind of problem this
-class of tool has always solved — and then Lodekit's take on it.
+Each service goes by a few names, used consistently: a friendly title (what
+the sidebar and the table above say), a formal name that introduces the
+service inside its own docs (the Relational Data Store), the bold short term
+(**db-store**, **kv-store**) that names it in running prose everywhere, and
+monospace reserved for things you type — handles like `db`, files like
+`src/db.ts`. Each service page explains the general idea first — the kind of
+problem this class of tool has always solved — and then Lodekit's take on it.
 
 ## Choosing where data lives
 
@@ -99,8 +100,9 @@ Start with the storage services — the [**db-store**](/services/db-store/),
 [**kv-store**](/services/kv-store/), and
 [**file-store**](/services/file-store/) — then meet the
 [**event-store**](/services/event-store/), [**tasks**](/services/tasks/),
-[**log-store**](/services/log-store/), [**settings**](/services/settings/),
-[**secret-store**](/services/secret-store/), and
-[**gateways**](/services/gateways/). Each page
+[**gateways**](/services/gateways/),
+[**secret-store**](/services/secret-store/),
+[**settings**](/services/settings/), and
+[**log-store**](/services/log-store/). Each page
 ends with a link to its SDK
 reference, where every method is specified.

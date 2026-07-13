@@ -1,5 +1,5 @@
 ---
-title: Key-Value Data Store
+title: Key-value database
 description: "The simple per-app key-value store for small bits of state."
 ---
 
@@ -96,3 +96,14 @@ can react live to writes.
 
 Every method — `get`, `set`, `del`, `incr`, `list`, batch operations, and the
 `collection` helper — is specified in the [kv SDK reference](/sdk/kv/).
+
+## MCP
+
+Your agent can read the **kv-store** on your behalf — read-only, so "what's
+the current streak?" is a question it can answer directly:
+
+- `lodekit_kv_list` — list an app's entries with metadata, optionally by key
+  prefix.
+- `lodekit_kv_get` — get one value.
+
+Parameters and details are in [MCP tools](/reference/mcp-tools/).

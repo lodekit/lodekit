@@ -134,3 +134,11 @@ Settings → Services → Gateways. A gateway's manifest can also carry its own
 Declaring connections in `src/gateways.ts`, the `gateways` handle's request
 methods, and the `GatewayError` contract are specified in the
 [gateways SDK reference](/sdk/gateways/).
+
+## MCP
+
+Your agent can inspect the wiring with `lodekit_gateways` — every gateway's
+provider, auth kind, slots, and limits, which apps connect to it, and each
+connection's per-slot status. Wiring and status only: the tool never returns
+a credential or token, in keeping with the no-key-in-app-code posture above.
+Parameters and details are in [MCP tools](/reference/mcp-tools/).

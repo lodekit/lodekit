@@ -101,3 +101,13 @@ declared default, and the result is the effective value your app sees.
 `defineSettings()`, all five field builders and their options, and the
 handle methods — `get`, `all`, `watch` — are specified in the
 [settings SDK reference](/sdk/settings/).
+
+## MCP
+
+Your agent can read settings — for the platform or for any app — so it can
+check a knob before reasoning about behavior:
+
+- `lodekit_settings_list` — the declared schema plus effective values.
+- `lodekit_settings_get` — one effective value.
+
+Parameters and details are in [MCP tools](/reference/mcp-tools/).

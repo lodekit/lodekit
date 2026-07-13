@@ -1,5 +1,5 @@
 ---
-title: File Store
+title: Files
 description: "Store and serve files alongside your app's other data."
 ---
 
@@ -107,3 +107,14 @@ carrying the slug, so your UI can react live.
 
 Every method — `put`, `get`, `url`, `stat`, `list`, `copy`, `move`,
 `delete` — is specified in the [files SDK reference](/sdk/files/).
+
+## MCP
+
+Your agent can browse the **file-store** on your behalf — read-only:
+
+- `lodekit_files_list` — list an app's files with their stats, optionally by
+  slug prefix.
+- `lodekit_files_stat` — stat one file; the result carries its serving URL
+  and its on-disk path.
+
+Parameters and details are in [MCP tools](/reference/mcp-tools/).

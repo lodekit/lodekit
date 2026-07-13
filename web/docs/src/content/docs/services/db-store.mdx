@@ -1,5 +1,5 @@
 ---
-title: Relational Data Store
+title: Relational database
 description: "What the per-app relational database is for and when to reach for it."
 ---
 
@@ -116,3 +116,14 @@ services keep for the app are `_`-prefixed and out of your way.
 
 Every method — `createDb`, querying, and the schema push rules — is specified
 in the [db SDK reference](/sdk/db/).
+
+## MCP
+
+Your agent can look inside the **db-store** on your behalf — inspection only,
+never writes:
+
+- `lodekit_db_schema` — inspect an app's declared tables.
+- `lodekit_db_query` — run a single `SELECT` over an app's tables, on a
+  read-only connection.
+
+Parameters and details are in [MCP tools](/reference/mcp-tools/).

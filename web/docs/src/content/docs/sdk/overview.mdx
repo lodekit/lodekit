@@ -6,7 +6,7 @@ description: How the SDK is organized — one import, typed HTTP handles, and wh
 Every Lodekit app talks to the platform through `@lodekit/sdk`. One package, one import:
 
 ```ts
-import { kv, files, events, tasks, settings, secrets, logs, gateways, appId } from "@lodekit/sdk";
+import { kv, files, events, tasks, gateways, secrets, settings, logs, appId } from "@lodekit/sdk";
 ```
 
 The one handle that doesn't come from this import is `db`: your app builds its own
@@ -31,15 +31,15 @@ Outside an app build `appId` is `""` and the singleton handles are inert.
 
 | Handle | Browser | Server functions |
 | --- | --- | --- |
-| [`kv`](/sdk/kv/) | Yes | Yes |
 | [`db`](/sdk/db/) | Yes | Yes |
+| [`kv`](/sdk/kv/) | Yes | Yes |
 | [`files`](/sdk/files/) | Yes | Yes |
 | [`events`](/sdk/events/) | Yes | `emit` and `list` only — `watch` is client-only |
 | [`tasks`](/sdk/tasks/) | Yes | Yes |
-| [`settings`](/sdk/settings/) | Yes | `get` and `all` only — `watch` is client-only |
-| [`secrets`](/sdk/secrets/) | No — server-only | Yes |
-| [`logs`](/sdk/logs/) | Yes | Yes |
 | [`gateways`](/sdk/gateways/) | No — server-only | Yes |
+| [`secrets`](/sdk/secrets/) | No — server-only | Yes |
+| [`settings`](/sdk/settings/) | Yes | `get` and `all` only — `watch` is client-only |
+| [`logs`](/sdk/logs/) | Yes | Yes |
 
 Calling `events.watch()` or `settings.watch()` on the server throws; calling
 `secrets.get()` — or any `gateways` request — in the browser throws. Everything else is isomorphic — the same
@@ -50,12 +50,12 @@ call works on both sides.
 - A failed call rejects with an `Error` whose message is the server's error
   string (for example, a validation message like a bad TTL). If the server sent
   no message, the HTTP status text is used.
-- `logs.*` are fire-and-forget: they return `void` — not a promise — and never
-  throw, so logging is safe on any code path.
-- `secrets.get()` has a dedicated error type, `SecretUnavailableError`, with a
-  `reason` of `"unlinked"` or `"unavailable"` — see [secrets](/sdk/secrets/).
 - Gateway calls reject with `GatewayError`, which carries a typed `reason` —
   see [gateways](/sdk/gateways/).
+- `secrets.get()` has a dedicated error type, `SecretUnavailableError`, with a
+  `reason` of `"unlinked"` or `"unavailable"` — see [secrets](/sdk/secrets/).
+- `logs.*` are fire-and-forget: they return `void` — not a promise — and never
+  throw, so logging is safe on any code path.
 
 ## Conventions
 
@@ -81,4 +81,4 @@ Builds a fresh set of all handles bound to an explicit runtime and app id — th
 singleton handles above are exactly `createClient(...)`'s handles bound to your
 own app. You only need this in rare cases, such as a script running outside an
 app build. `LodekitClient` is
-`{ kv, files, logs, tasks, events, settings, secrets, gateways }`.
+`{ kv, files, events, tasks, gateways, secrets, settings, logs }`.

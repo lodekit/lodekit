@@ -1,5 +1,5 @@
 ---
-title: Event Store
+title: Events
 description: "Emit and subscribe to events so parts of your app can react to change."
 ---
 
@@ -109,3 +109,11 @@ survives a restore along with everything else.
 Every method — `emit`, `watch`, `list` — plus the `LodekitEvent` shape and
 the platform event types are specified in the
 [events SDK reference](/sdk/events/).
+
+## MCP
+
+The bus's history is readable by your agent through one tool:
+`lodekit_events` replays the same stream as the dashboard's Events view,
+filtered by namespace, type, or offset. Ask "what happened overnight?" and
+the agent reads the log for you. Parameters and details are in
+[MCP tools](/reference/mcp-tools/).
