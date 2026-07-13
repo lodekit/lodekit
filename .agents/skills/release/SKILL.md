@@ -26,7 +26,7 @@ All must pass. On any failure, stop and report — fix nothing silently.
   same version.
 - `gh auth status` succeeds.
 - No release PR already open:
-  `gh pr list --state open --json title --jq '.[].title' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$'`
+  `gh pr list --state open --json title --jq '.[].title' | grep -E '^release: v[0-9]+\.[0-9]+\.[0-9]+$'`
   must print nothing.
 - The changelog buffer `docs/changelog.md` has at least one entry under `## New`
   or `## Fixed` — an empty buffer means nothing user-facing shipped; there is nothing
@@ -80,8 +80,10 @@ person *using* Lodekit — see the buffer's own rules header). Here:
   (everything above and including the `---` separator), removing the drained entries.
 - Branch `release/vX.Y.Z` off `master`; single commit `release: vX.Y.Z` containing
   the 9 version bumps + the changelog edit + the buffer reset.
-- Push and open the PR: title **bare `X.Y.Z`** (the workflow's trigger match), body =
-  the new changelog section's content without the `## X.Y.Z` heading line.
+- Push and open the PR: title **`release: vX.Y.Z`** (the workflow's trigger match —
+  it extracts the version from the title, and the squash commit on `master` inherits
+  it as its subject), body = the new changelog section's content without the
+  `## X.Y.Z` heading line.
 - **Stop.** The person reviews, edits the notes if desired, and merges. Never merge
   a release PR yourself.
 
