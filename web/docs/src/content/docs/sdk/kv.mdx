@@ -1,0 +1,239 @@
+---
+title: kv
+description: Key-value storage — the kv-store service's SDK handle.
+---
+
+Per-app key-value storage. For what the **kv-store** is for (and when
+[`db`](/sdk/db/)
+fits better), see [the Key-Value Data Store](/services/kv-store/).
+
+```ts
+import { kv } from "@lodekit/sdk";
+```
+
+Works in the browser and in server functions. Values are JSON-serialized; keys
+are strings of 1–512 characters. TTLs are in seconds; the timestamps in returned
+entries are milliseconds since the epoch. Writes travel in the scoped API's
+request body, which caps at 100 kb per request.
+
+## kv.get()
+
+```ts
+get<T = unknown>(key: string): Promise<T | undefined>
+```
+
+- `key` — the key to read.
+
+Returns the value for `key`, or `undefined` if the key doesn't exist or its TTL
+has expired. Expiry is lazy: an expired row is deleted on read and reported
+missing.
+
+### Example
+
+```ts
+const snoozed = await kv.get<boolean>(snoozeKey(plantId));
+```
+
+## kv.set()
+
+```ts
+set(key: string, value: unknown, opts?: { ttl?: number }): Promise<void>
+```
+
+- `key` — the key to write.
+- `value` — any JSON-serializable value.
+- `opts.ttl` — time to live in seconds. Must be positive.
+
+Upserts. With `ttl`, the entry expires that many seconds from now. Without it,
+the entry never expires — and re-setting an existing key without `ttl` clears
+any previous expiry.
+
+### Example
+
+Greenhouse's snooze flag expires on its own:
+
+```ts
+await kv.set(snoozeKey(data.plantId), true, { ttl: data.hours * 3600 });
+```
+
+## kv.del()
+
+```ts
+del(key: string): Promise<boolean>
+```
+
+Deletes `key`. Returns `true` if a row was deleted, `false` if it didn't exist.
+
+### Example
+
+```ts
+await kv.del(snoozeKey(plantId));
+```
+
+## kv.has()
+
+```ts
+has(key: string): Promise<boolean>
+```
+
+Returns whether `key` exists (and hasn't expired).
+
+### Example
+
+```ts
+if (await kv.has("seeded")) return;
+```
+
+## kv.incr()
+
+```ts
+incr(key: string, by?: number): Promise<number>
+```
+
+- `key` — the counter key.
+- `by` — amount to add. Default `1`.
+
+Atomically increments the number at `key` and returns the new value. A missing
+key starts from 0. If the existing value isn't a number, the call rejects. An
+existing TTL is preserved (Redis `INCR` semantics).
+
+### Example
+
+Greenhouse care streaks:
+
+```ts
+const streak = await kv.incr(streakKey(plantId));
+```
+
+## kv.list()
+
+```ts
+list<T = unknown>(opts?: {
+  prefix?: string;
+  limit?: number;
+  cursor?: string;
+}): Promise<{ entries: KvEntry<T>[]; nextCursor: string | null }>
+```
+
+- `opts.prefix` — only keys starting with this prefix.
+- `opts.limit` — page size. Default 1000 (the `kv.list_limit` platform setting),
+  clamped to 1–1000.
+- `opts.cursor` — resume after this key.
+
+Returns entries ordered by key ascending, excluding expired ones. Pagination is
+keyset: `nextCursor` is the last key of the page — pass it back as `cursor` for
+the next page; `null` means you've reached the end.
+
+### Example
+
+```ts
+let cursor: string | undefined;
+do {
+  const page = await kv.list({ prefix: "streak:", cursor });
+  for (const entry of page.entries) {
+    // entry.key, entry.value, entry.createdAt, ...
+  }
+  cursor = page.nextCursor ?? undefined;
+} while (cursor !== undefined);
+```
+
+## kv.getMany()
+
+```ts
+getMany<T = unknown>(keys: string[]): Promise<KvEntry<T>[]>
+```
+
+- `keys` — the keys to read.
+
+Returns entries for the given keys in one round trip. Missing and expired keys
+are skipped, so the result can be shorter than `keys`.
+
+### Example
+
+Greenhouse fans in every plant's streak and snooze state at once:
+
+```ts
+const keys = rows.flatMap(({ id }) => [streakKey(id), snoozeKey(id)]);
+const entries = keys.length ? await kv.getMany(keys) : [];
+```
+
+## kv.setMany()
+
+```ts
+setMany(entries: { key: string; value: unknown }[], opts?: { ttl?: number }): Promise<void>
+```
+
+- `entries` — key/value pairs to write.
+- `opts.ttl` — time to live in seconds, applied to every entry.
+
+Writes all entries in a single transaction — either all land or none do.
+
+### Example
+
+```ts
+await kv.setMany([
+  { key: streakKey(1), value: 0 },
+  { key: streakKey(2), value: 0 },
+]);
+```
+
+## kv.collection()
+
+```ts
+collection<T>(name: string): Collection<T>
+```
+
+- `name` — the collection's name.
+
+A convenience layer over plain kv for small lists of items with auto-assigned
+numeric ids. Returns a `Collection` handle:
+
+```ts
+interface Collection<T> {
+  add(value: T): Promise<{ id: number; value: T }>;
+  all(): Promise<{ id: number; value: T }[]>;
+  get(id: number): Promise<T | undefined>;
+  set(id: number, value: T): Promise<void>;
+  remove(id: number): Promise<boolean>;
+}
+```
+
+- `add(value)` — stores the item under the next id and returns `{ id, value }`.
+  Never sets a TTL.
+- `all()` — every item, sorted by `createdAt` ascending (insertion order). Pages
+  through the store internally.
+- `get(id)` — one item, or `undefined`.
+- `set(id, value)` — replaces one item.
+- `remove(id)` — deletes one item; `true` if it existed.
+
+Key convention: item `id` of collection `name` lives at the ordinary kv key
+`name:id` (for example `books:3`), and the id sequence is a counter at
+`_seq:name` advanced with `kv.incr()`. Collections are just kv keys — plain kv
+calls see them (`kv.list({ prefix: "books:" })`) and vice versa.
+
+### Example
+
+```ts
+const books = kv.collection<{ title: string; author: string }>("books");
+const { id } = await books.add({ title: "The Overstory", author: "Richard Powers" });
+const shelf = await books.all();
+```
+
+## Types
+
+### KvEntry
+
+```ts
+interface KvEntry<T = unknown> {
+  key: string;
+  value: T;
+  createdAt: number;
+  updatedAt: number;
+  expiresAt: number | null;
+}
+```
+
+- `key` — the entry's key.
+- `value` — the stored value.
+- `createdAt` / `updatedAt` — ms-epoch timestamps.
+- `expiresAt` — ms-epoch expiry, or `null` for entries without a TTL.

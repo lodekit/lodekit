@@ -1,0 +1,119 @@
+---
+title: Events
+description: "Emit and subscribe to events so parts of your app can react to change."
+---
+
+import EventFlow from '../../../components/EventFlow.astro';
+
+Everything that happens on your Lodekit — an app finishing a build, a value
+changing in storage, your app announcing an export is done — lands on one
+shared **event bus**: the Event Store (**event-store** for short), reached
+through the SDK as the `events` handle.
+
+## The idea
+
+An event bus is one of the quiet fundamentals of reliable systems. Instead of
+one piece of code calling another directly, a producer **announces a fact** —
+"the export finished" — and anyone interested reacts. The producer doesn't
+know who's listening; the listeners don't know who announced. That decoupling
+is the whole trick: pieces can be added, removed, or fail independently,
+because nothing is wired to anything else.
+
+Underneath, the bus is an **append-only log**: every event gets the next
+number in a single ordered sequence, and nothing is ever rewritten. That
+ordering is what makes the log **replayable** — a consumer can say "give me
+everything after event 4127" and catch up on what it missed, in order. This
+is the shape Kafka made famous, and it's the same shape here, at personal
+scale.
+
+<EventFlow />
+
+One rule matters above all the others: **events announce, stores remember.**
+An event says a fact became true; the fact itself belongs in the emitting
+app's own [**db-store**](/services/db-store/),
+[**kv-store**](/services/kv-store/), or
+[**file-store**](/services/file-store/). Events age out; stores don't. If losing a record
+would hurt, the record is never the event — the event just points at it.
+
+## When to use it
+
+- **React to change.** Watch the bus and refresh your UI the moment data
+  changes — this is how Lodekit apps feel live without polling.
+- **Announce milestones.** "Export finished", "import complete" — emit the
+  fact so other parts of the app (or a future one) can act on it.
+- **See what happened.** The dashboard's **Events** view is a running record
+  of the platform: builds, changes, announcements, in order.
+
+Events are for **reaction**; [logs](/services/log-store/) are for
+**observation**.
+If code should *do something* when the thing happens, it's an event. If a
+person (or your agent) should be able to *read about it later* while
+debugging, it's a log. The same happening often deserves both.
+
+## How it works in Lodekit
+
+Every event is **addressed** and **attributed**: its `ns` says whose stream
+it belongs to and its `source` says who emitted it. Both are stamped by the
+platform to your app's own id — an app cannot forge events into another
+app's stream.
+
+Your app emits with `events.emit` — a kebab-case type plus a small payload:
+
+```ts
+await events.emit("export-finished", { slug: stat.slug });
+```
+
+Note what the payload carries: the *slug* of the export, not its contents.
+The bytes live in the **file-store**; the event announces and points.
+
+In the browser, `events.watch` delivers events live (over a single streaming
+connection the SDK manages for you). This is the pattern the Greenhouse
+showcase app uses to stay fresh — watch the change feeds, then re-run the
+page's loaders:
+
+```ts title="src/routes/index.tsx"
+useEffect(
+  () => events.watch({ type: ["db-store-change", "kv-store-change"] }, () => void router.invalidate()),
+  [router]
+);
+```
+
+`watch` is for pages — it keeps what's on screen alive. Server code doesn't
+watch; it reads history with `events.list`, which replays from any offset:
+
+```ts
+const { records, next } = await events.list({ type: "export-finished", after: 0 });
+```
+
+Your app isn't the only producer. The platform announces app lifecycle
+(`build-state`, `server-state`), and every service publishes a **change
+feed** here — `kv-store-change`, `db-store-change`, `file-store-change`,
+`tasks-change`, `settings-change`, `secrets-change`. Change-feed payloads carry identity only
+(a key, a slug, an op) — never values.
+
+The log itself is durable and precious: one SQLite file at
+`data/_platform/events.sqlite`, inside the backup tree, so your event history
+survives a restore along with everything else.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Payload size | ≤ 8 KB |
+| Retention | 30 days / 50,000 events |
+| Per-event `ttl` | Optional, up to 30 days |
+| Change-feed events | Kept 7 days |
+
+## API
+
+Every method — `emit`, `watch`, `list` — plus the `LodekitEvent` shape and
+the platform event types are specified in the
+[events SDK reference](/sdk/events/).
+
+## MCP
+
+The bus's history is readable by your agent through one tool:
+`lodekit_events` replays the same stream as the dashboard's Events view,
+filtered by namespace, type, or offset. Ask "what happened overnight?" and
+the agent reads the log for you. Parameters and details are in
+[MCP tools](/reference/mcp-tools/).

@@ -1,0 +1,56 @@
+/* Lodekit docs theme — cork amber + brand type (design.md) */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,100&family=Hanken+Grotesk:wght@400;500;600&display=swap');
+
+:root {
+  /* dark scheme (Starlight default root) */
+  --sl-color-accent-low: #45260e;
+  --sl-color-accent: #ce6f26;
+  --sl-color-accent-high: #f6ad64;
+  --sl-font: 'Hanken Grotesk', system-ui, sans-serif;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #f7e3cf;
+  --sl-color-accent: #ce6f26;
+  --sl-color-accent-high: #9c4d10;
+}
+
+/* Glossary — real headings (so terms land in the page ToC) rendered as a
+   two-column table. Starlight wraps each heading in .sl-heading-wrapper, so
+   the grid children are that wrapper + the definition paragraph, one row each. */
+.sl-markdown-content .glossary-table {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 1.5rem;
+  border-top: 1px solid var(--sl-color-gray-5);
+}
+.sl-markdown-content .glossary-table .sl-heading-wrapper,
+.sl-markdown-content .glossary-table p {
+  margin: 0 !important;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--sl-color-gray-5);
+}
+.sl-markdown-content .glossary-table h3 {
+  font-size: var(--sl-text-base);
+  margin: 0 !important;
+}
+@media (max-width: 50rem) {
+  .sl-markdown-content .glossary-table { grid-template-columns: 1fr; }
+  .sl-markdown-content .glossary-table .sl-heading-wrapper {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.site-title,
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+h1[data-page-title],
+.hero h1 {
+  font-family: 'Fraunces', Georgia, serif;
+  /* the Google Fonts import pins SOFT@100 — same axis value the landing ships */
+  font-variation-settings: 'SOFT' 100;
+  font-weight: 550;
+}

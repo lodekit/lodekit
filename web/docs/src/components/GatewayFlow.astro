@@ -1,0 +1,124 @@
+<figure>
+  <svg viewBox="0 0 720 372" role="img" aria-labelledby="gf-title">
+    <title id="gf-title">Diagram: gateway request flow — your app's server code calls the gateway with no credentials attached; the runtime injects the linked credential, applies rate limit, circuit breaker and timeout, logs every request redacted, and only the runtime talks to the provider. The dashboard is where you link the key once.</title>
+    <defs>
+      <marker id="gf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="arrowhead" />
+      </marker>
+      <marker id="gf-arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" class="arrowhead-accent" />
+      </marker>
+    </defs>
+
+    <!-- Your app -->
+    <rect class="box" x="20" y="100" width="140" height="92" rx="8" />
+    <text x="90" y="124">Your app</text>
+    <text class="label muted" x="90" y="141">(server code)</text>
+    <text class="label muted" x="90" y="161">gateways.weather</text>
+    <text class="label muted" x="90" y="176">.get(&quot;/forecast&quot;)</text>
+
+    <!-- app -> runtime -->
+    <text class="label muted" x="200" y="110">no credentials</text>
+    <text class="label muted" x="200" y="123">attached</text>
+    <line class="arrow" x1="160" y1="132" x2="238" y2="132" marker-end="url(#gf-arrow)" />
+
+    <!-- runtime -> app -->
+    <line class="arrow" x1="240" y1="164" x2="162" y2="164" marker-end="url(#gf-arrow)" />
+    <text class="label muted" x="200" y="182">response &#8212;</text>
+    <text class="label muted" x="200" y="195">key never seen</text>
+
+    <!-- Runtime -->
+    <rect class="box" x="240" y="64" width="240" height="180" rx="8" />
+    <text class="strong" x="360" y="92">Runtime &#8212; the gateway</text>
+    <rect class="chip" x="252" y="108" width="216" height="32" rx="8" />
+    <text class="label" x="360" y="128">injects the linked credential</text>
+    <rect class="chip" x="252" y="150" width="216" height="32" rx="8" />
+    <text class="label" x="360" y="170">rate limit &#183; circuit breaker &#183; timeout</text>
+    <rect class="chip" x="252" y="192" width="216" height="32" rx="8" />
+    <text class="label" x="360" y="212">logs every request (redacted)</text>
+
+    <!-- runtime -> provider (the guarded egress) -->
+    <text class="label accent-text" x="520" y="106">request +</text>
+    <text class="label accent-text" x="520" y="119">injected key</text>
+    <line class="arrow accent-arrow" x1="480" y1="128" x2="558" y2="128" marker-end="url(#gf-arrow-accent)" />
+
+    <!-- provider -> runtime -->
+    <line class="arrow" x1="560" y1="156" x2="482" y2="156" marker-end="url(#gf-arrow)" />
+    <text class="label muted" x="520" y="175">response</text>
+
+    <!-- Provider -->
+    <rect class="box" x="560" y="100" width="140" height="64" rx="8" />
+    <text x="630" y="126">Provider</text>
+    <text class="label muted" x="630" y="145">api.openweathermap.org</text>
+
+    <!-- Dashboard: the one-time link step -->
+    <rect class="box" x="250" y="296" width="220" height="52" rx="8" />
+    <text x="360" y="318">Dashboard</text>
+    <text class="label muted" x="360" y="336">you link the key once</text>
+    <line class="arrow dashed" x1="360" y1="296" x2="360" y2="246" marker-end="url(#gf-arrow)" />
+  </svg>
+  <figcaption>
+    Your code names the gateway and the path. The runtime holds the key, injects it, and
+    guards the traffic &#8212; app code never sees a credential.
+  </figcaption>
+</figure>
+
+<style>
+  figure {
+    margin-inline: 0;
+  }
+  svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+  figcaption {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-2);
+  }
+  text {
+    font-family: var(--sl-font);
+    font-size: 13px;
+    fill: var(--sl-color-white);
+    text-anchor: middle;
+  }
+  .label {
+    font-size: 11px;
+  }
+  .muted {
+    fill: var(--sl-color-gray-2);
+  }
+  .strong {
+    font-weight: 600;
+  }
+  .box {
+    fill: var(--sl-color-gray-6);
+    stroke: var(--sl-color-gray-4);
+  }
+  .chip {
+    fill: var(--sl-color-black);
+    stroke: var(--sl-color-gray-4);
+  }
+  .accent-text {
+    fill: var(--sl-color-accent);
+  }
+  .arrow {
+    fill: none;
+    stroke: var(--sl-color-gray-3);
+    stroke-width: 1.5;
+  }
+  .accent-arrow {
+    stroke: var(--sl-color-accent);
+  }
+  .dashed {
+    stroke-dasharray: 4 4;
+  }
+  .arrowhead {
+    fill: var(--sl-color-gray-3);
+  }
+  .arrowhead-accent {
+    fill: var(--sl-color-accent);
+  }
+</style>

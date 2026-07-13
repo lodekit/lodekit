@@ -1,11 +1,32 @@
 ---
-title: Lodekit
-description: Documentation for Lodekit.
+title: Docs
+description: Build small local apps on a unified stack — no build tooling to manage.
 template: splash
 hero:
-  tagline: Placeholder — docs content coming soon.
+  title: Lodekit
+  tagline: Build small local apps on a unified stack — no build tooling to manage. Lodekit is the local platform where you and your AI agent create personal web apps that run on your own machine.
   actions:
-    - text: Getting started
-      link: /getting-started/
+    - text: What is Lodekit?
+      link: /start/what-is-lodekit/
       variant: primary
+    - text: SDK reference
+      link: /sdk/overview/
+      variant: minimal
 ---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="Start here" icon="rocket">
+    Install Lodekit, connect your agent, and build your first app —
+    no programming required. [Get started](/start/what-is-lodekit/)
+  </Card>
+  <Card title="Services" icon="open-book">
+    Storage, background tasks, events, secrets — learn what each
+    service is for and when to reach for it. [Meet the services](/services/overview/)
+  </Card>
+  <Card title="Building apps" icon="seti:react">
+    The stack, the app contract, and the SDK your agent codes
+    against. [Start building](/build/the-stack/)
+  </Card>
+</CardGrid>

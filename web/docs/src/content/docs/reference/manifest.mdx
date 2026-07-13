@@ -1,0 +1,43 @@
+---
+title: The manifest
+description: "The app manifest file: what it declares and how Lodekit reads it."
+---
+
+`manifest.json` sits at an app's root and is the record that makes a folder
+an app: the runtime discovers apps by finding valid manifests in the apps
+tree. Scaffolding writes it for you; this page is the full schema.
+
+## Fields
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `name` | string | yes | The display name shown on the app's dashboard card. |
+| `appId` | string | yes | Lowercase letters, digits, hyphens (`^[a-z0-9-]+$`). **Must equal the app's folder name.** |
+| `icon` | string | no | An emoji for the app's card. Defaults to 📦 when scaffolded. |
+| `description` | string | no | One sentence shown under the name on the dashboard. |
+
+The `appId` is the app's identity everywhere at once: its folder name in
+`apps/`, its URL path (`/<appId>/`), and its data namespace
+(`data/<appId>/`). Because the grammar has no underscore, an app id can
+never collide with Lodekit's internal `_`-prefixed namespaces.
+
+## Invalid manifests
+
+A folder whose manifest is missing, malformed, or whose `appId` doesn't
+match the folder name is **skipped** — the runtime doesn't serve it, and it
+doesn't appear on the dashboard. Nothing is deleted or modified; fix the
+manifest (or ask your agent to) and the app appears on the next scan.
+
+## Example
+
+```json title="apps/greenhouse/manifest.json"
+{
+  "name": "Greenhouse",
+  "appId": "greenhouse",
+  "icon": "🪴",
+  "description": "Your plants, as characters — care schedules, photo timelines, and a journal."
+}
+```
+
+The manifest is one part of the app contract — the rest of an app's required
+shape is described in [App anatomy](/build/app-anatomy/).

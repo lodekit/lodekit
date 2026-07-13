@@ -1,0 +1,69 @@
+---
+title: Install Lodekit
+description: "Get Lodekit.app onto your Mac, launch it for the first time, and find your way to the dashboard."
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+Lodekit installs like any Mac app: one app bundle, dragged into place. Here's
+the whole process, including the one extra step a first launch needs during
+early access.
+
+<Steps>
+
+1. **Get `Lodekit.app`.**
+
+   Lodekit is in early access: there's no public download yet, so you'll
+   receive the app directly from the Lodekit team. It runs on Apple silicon
+   Macs.
+
+2. **Move it to Applications.**
+
+   If it arrived as a zip, unzip it, then drag `Lodekit.app` into your
+   `Applications` folder.
+
+3. **First launch: right-click, then Open.**
+
+   The early-access app is signed but not yet notarized, so macOS wants a
+   nod from you the first time. Right-click (or Control-click) `Lodekit.app`
+   and choose **Open**, then confirm in the dialog. macOS asks only once —
+   after that, open it normally.
+
+4. **Watch Lodekit set itself up.**
+
+   On first run, three things happen:
+
+   - The Lodekit icon appears in your menubar.
+   - Your Lodekit folder is created at `~/Documents/Lodekit`, with the
+     Greenhouse and Welcome starter apps already inside — plus a couple of
+     ready-made gateway setups Greenhouse uses for its weather and sign-in
+     demos.
+   - The dashboard opens in your browser at `http://lodekit.localhost:7777`.
+
+5. **Optional: turn on Launch at Login.**
+
+   If you want Lodekit running whenever your Mac is on, enable **Launch at
+   Login** — in the menubar menu, or in the dashboard under
+   **Settings → General**.
+
+</Steps>
+
+:::tip
+Open the Greenhouse app from the dashboard and poke around. It's a complete
+garden-care app — adopt a plant, water it, watch the journal fill in. It shows
+what your own apps will feel like.
+:::
+
+## Troubleshooting
+
+**Nothing loads at `lodekit.localhost:7777`.** Click the Lodekit icon in the
+menubar and check the status line. If it says stopped or error, choose
+**Restart** from the same menu, then reload the page.
+
+**macOS says the app "can't be opened".** That dialog appears when you
+double-click instead of using the first-launch dance. Right-click
+`Lodekit.app` and choose **Open** — the dialog gains an Open button, and macOS
+remembers your choice from then on.
+
+Lodekit is running. Next, give your agent its key:
+[Connect your agent](/start/connect-your-agent/).

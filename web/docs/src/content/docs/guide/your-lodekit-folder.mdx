@@ -1,0 +1,88 @@
+---
+title: Your Lodekit folder
+description: "What lives in your Lodekit root folder and how apps and data are organized on disk."
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+import StorageTiers from '../../../components/StorageTiers.astro';
+
+Everything you'd miss lives in one folder: the Lodekit root at
+`~/Documents/Lodekit`. Your apps' source code and every record they've saved
+sit side by side, as plain files you can open in Finder.
+
+<FileTree>
+- Lodekit/
+  - apps/ app source, written by your agent
+    - greenhouse/
+      - manifest.json
+      - src/
+      - …
+    - book-log/
+      - …
+  - data/ each app's saved records
+    - greenhouse/
+      - db.sqlite
+      - files/
+    - book-log/
+      - db.sqlite
+    - _platform/ Lodekit's own records
+  - gateways/ provider manifests
+</FileTree>
+
+## apps — the source
+
+`apps/` holds one folder per app, named by its app id. Inside is the app's
+source code — the files your agent writes and edits. There's nothing else:
+apps carry no dependency folders (no `node_modules`, ever), so the tree stays
+small, readable, and cheap to back up.
+
+## data — the records
+
+`data/` mirrors `apps/`: one folder per app id, holding everything that app
+has saved. Each app gets its own database file (`db.sqlite`) and, when it
+stores documents or images, a `files/` folder of real, ordinary files — the
+photos in the Greenhouse app are JPEGs you can open straight from Finder.
+
+The `_platform/` folder is Lodekit's own record-keeping — the event history,
+your settings, and your secrets (encrypted). It belongs to the same backup.
+
+:::caution
+Browse `data/` freely, but don't move, rename, or edit its files while
+Lodekit is running — apps are actively writing there, and edits behind their
+back can corrupt records. To change data, work through the app (or ask your
+agent).
+:::
+
+## gateways — the doors out
+
+`gateways/` holds one folder per outside provider your apps can reach — each
+with the provider's manifest and icon, written by your agent. It's part of
+the same backup.
+
+## Backups: one folder, whole story
+
+Back up `~/Documents/Lodekit` and you're done. Time Machine, a synced drive,
+a periodic copy — anything that covers that folder covers your apps, their
+data, *and* their gateways. Restoring the folder onto a fresh Lodekit install
+brings
+everything back: the apps rebuild themselves from source, and the records are
+already inside.
+
+<StorageTiers />
+
+## What's deliberately elsewhere
+
+Two things live outside the folder on purpose, because losing them costs you
+nothing precious:
+
+- **Cache** (`~/Library/Caches/Lodekit`) — the built, ready-to-serve version
+  of each app. Delete it and Lodekit simply rebuilds; the cost is a short
+  wait, never lost work.
+- **State** (`~/Library/Application Support/Lodekit`) — operational history,
+  mainly logs. Losing it means losing the diary of what happened, never your
+  apps or data.
+
+That split is why backing up one folder is genuinely the whole story.
+
+The app that keeps all of this running sits in your menu bar — meet it in
+[The menubar manager](/guide/manager/).

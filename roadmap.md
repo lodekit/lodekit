@@ -137,10 +137,14 @@ Foundation items deferred by `docs/specs/2026-06-30-monorepo-migration-design.md
 The Vite toolchain, `@lodekit/ui`, and `@lodekit/sdk` are tracked under "Next major step"
 above; the remainder:
 
-- **Starlight docs** — **scaffold shipped (2026-07-06)**: `web/docs` (`@lodekit/web-docs`),
-  a separate Starlight app beside the landing site (`web/main`), per
-  `docs/specs/2026-07-06-docs-site-v1-design.md`. Still parked: docs content and IA,
-  theming/shared design layer with the landing site, and deploy (`docs.lodekit.com`).
+- **Starlight docs** — **scaffold shipped (2026-07-06)**
+  (`docs/specs/2026-07-06-docs-site-v1-design.md`); **content + IA shipped (2026-07-12)**:
+  38 pages (Start here / Using Lodekit / Services / Building apps / SDK reference /
+  Reference), six inline-SVG diagrams, light cork-amber Starlight theming, per
+  `docs/specs/2026-07-12-docs-content-v1-design.md`. Still parked: the full shared
+  design layer with the landing site, screenshots (post-v0.1, once the dashboard UI
+  settles), and deploy (`docs.lodekit.com` — the astro config already carries the
+  `site` URL).
 - **Electron packaging + Lodekit-local Node** — **specced (2026-07-02)** as the manager
   slice: `docs/specs/2026-07-02-manager-v0.1-design.md` (everything bundled in the .app at
   v0.1, incl. a pinned Lodekit-local Node — never the system's; pre-1.0 northstar: thin
@@ -187,6 +191,12 @@ above; the remainder:
   smuggling and page scraping don't fit its provider/connection/guardrails model. When it matters, design scraping as a separate
   service with its own contract (fetching + extraction, session handling, politeness/
   rate limits, change detection feeding Events).
+- **`context.md`'s UI-catalog entry is stale** — it still describes `/_ui/` as a live
+  statically built Storybook, but since the UI revamp the runtime redirects `/_ui/` to
+  the dashboard's empty Themes stub (`server.ts`); the catalog's successor is the
+  "Theme editor / component visualizer" item above. Reword the context.md entry when
+  that surface is designed (docs already say "coming soon" — docs-content slice,
+  2026-07-12).
 - **Revisit "hosting" terminology holistically across the platform** — the dashboard's
   settings section was renamed to **Engine** (UI revamp, 2026-07-10; person-facing label
   only — see the Engine entry in `context.md`), but the underlying vocabulary still says

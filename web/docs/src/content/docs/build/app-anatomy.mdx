@@ -1,0 +1,117 @@
+---
+title: App anatomy
+description: "The files and folders that make up a Lodekit app."
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+An app is a folder in the apps tree that satisfies the **app contract**: a manifest,
+routes in TanStack Start shape, and a committed route tree. Nothing else is required —
+no HTML entry, no `package.json`, no config files. Here's the shape, drawn from the
+Greenhouse showcase app:
+
+<FileTree>
+- apps/greenhouse/
+  - manifest.json name, appId, icon, description
+  - src/
+    - router.tsx TanStack Start wiring
+    - routes/ file-based routes
+      - \_\_root.tsx
+      - index.tsx
+    - db.ts database schema (optional)
+    - tasks.ts background tasks (optional)
+    - settings.ts person-facing knobs (optional)
+    - secrets.ts credential slots (optional)
+    - gateways.ts connections to outside providers (optional)
+    - index.css imports the shared theme
+    - routeTree.gen.ts generated, committed
+</FileTree>
+
+## The manifest
+
+`manifest.json` is the record that makes a folder an app — the runtime skips any
+folder without a valid one:
+
+```json title="manifest.json"
+{
+  "name": "Greenhouse",
+  "appId": "greenhouse",
+  "icon": "🪴",
+  "description": "Your plants, as characters — care schedules, photo timelines, and a journal."
+}
+```
+
+`name` and `appId` are required; `icon` (an emoji) and `description` feed the app's
+dashboard card. The **app id** is the app's identity everywhere at once: it must match
+`^[a-z0-9-]+$`, it must equal the folder name, it is the app's URL path
+(`http://lodekit.localhost:7777/greenhouse/`), and it is the app's data namespace
+(`data/greenhouse/`). Code that needs the app's own id imports it from the SDK:
+`import { appId } from "@lodekit/sdk"`. Full field reference:
+[The manifest](/reference/manifest/).
+
+## Routes and the router
+
+Pages live under `src/routes/` as file-based routes: `index.tsx` is `/`,
+`almanac.tsx` is `/almanac`, `plants.$plantId.tsx` is `/plants/:plantId`. The root
+route `__root.tsx` is the document shell — it renders the `<html>` element, loads
+`index.css`, and holds shared chrome like the nav.
+
+`src/router.tsx` is the wiring, and it's nearly identical in every app:
+
+```ts title="src/router.tsx"
+import { createRouter } from "@tanstack/react-router";
+import { routeTree } from "./routeTree.gen";
+
+export function getRouter() {
+  return createRouter({ routeTree });
+}
+```
+
+`routeTree.gen.ts` is generated from the routes folder during the build — and
+committed, so the app is complete on disk and type-checks without a build step having
+run.
+
+## The declaration files
+
+Five optional files under `src/` declare what the app needs from Lodekit's services.
+Each is plain TypeScript the runtime reads when the app builds.
+
+**`db.ts`** declares the app's database schema as Drizzle tables and exports a typed
+`db` handle via `createDb()`. Schema changes apply on save — additive ones
+automatically, destructive ones gated. See the
+[**db-store**](/services/db-store/).
+
+**`tasks.ts`** declares background work: queued tasks the app enqueues on demand, and
+scheduled tasks with a `cron` or `every` schedule. Each export becomes a named task
+the runtime executes on the app's behalf. See [Tasks](/services/tasks/).
+
+**`settings.ts`** declares the app's person-facing knobs with `defineSettings()` —
+each field gets a label, description, and default, and shows up as a form in the
+dashboard's Settings page. The app reads values; only you write them. See
+[Settings](/services/settings/).
+
+**`secrets.ts`** declares credential slots with `defineSecrets()` — named holes for
+API keys the app needs. You link a secret to each slot in the dashboard, and only
+server-side code can read the value. See the
+[**secret-store**](/services/secret-store/).
+
+**`gateways.ts`** declares the app's connections to outside providers with
+`defineGateways()` — each entry maps an app-local alias to a provider's gateway.
+You complete the connection in the dashboard, and the app calls the provider
+through the `gateways` handle without ever holding a key. See
+[Gateways](/services/gateways/).
+
+Finally, `src/index.css` is a single line — `@import "@lodekit/ui/theme.css";` — that
+pulls in the shared theme. More on that in
+[Using the UI library](/build/using-the-ui-library/).
+
+## From save to serving
+
+There's no deploy step hiding after all this. When any of these files changes, the
+runtime rebuilds the app — build state *building…* → *ready* on its dashboard card —
+and serves the new version at `/<app-id>/`. Schema changes from `db.ts`, task
+definitions from `tasks.ts`, and settings fields all take effect on that same save.
+The lifecycle in full: [How Lodekit works](/start/how-lodekit-works/).
+
+Next, where code runs and how it reaches your data:
+[Data and server functions](/build/data-and-server-functions/).

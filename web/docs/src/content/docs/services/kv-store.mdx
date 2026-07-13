@@ -1,0 +1,109 @@
+---
+title: Key-value database
+description: "The simple per-app key-value store for small bits of state."
+---
+
+Every app gets a small key-value store — the Key-Value Data Store
+(**kv-store** for short), a place for the notes an app keeps about itself,
+reached through the SDK as the `kv` handle.
+
+## The idea
+
+A **key-value store** is the simplest database that's still useful: you store
+a value under a name, and you get it back by that name. No schema, no tables,
+no query language — one lookup, directly to the answer, no matter how many
+entries there are.
+
+That simplicity buys three things. Lookups are instant and stay instant.
+Writes can be **atomic** — a counter can be incremented safely even when two
+requests race, because the store does the read-modify-write as one indivisible
+step. And values can carry a **TTL** (time to live): store something with an
+expiry, and the store forgets it for you when the time comes — no cleanup code.
+
+The same simplicity is also the limit. A key-value store can't express
+relationships between values, and it can't answer questions — "everything
+where X" requires structure the store deliberately doesn't have. It hands back
+what you put in, by name, and nothing else.
+
+The useful mental model: if the [**db-store**](/services/db-store/) is the
+filing cabinet — labeled folders, cross-references, an index — the
+**kv-store** is the sticky notes
+on the monitor. Quick to write, instantly findable, exactly right for small
+reminders. You wouldn't run a business from sticky notes, and you wouldn't
+open a folder to jot "left off at page 12".
+
+## When to use it
+
+The **kv-store** is your app's **own memory**: counters, cursors, preferences,
+caches, flags — small values the app writes about itself while running.
+
+The rule against the **db-store** is the one from the
+[services overview](/services/overview/): domain records — entities with
+fields and relationships, things you'd list or query — go in the **db-store**.
+The **kv-store**
+holds what the app jots down for itself. A plant is an entity; the plant-care
+*streak counter* is app memory.
+
+Reach for a TTL whenever a value should expire on its own — a snooze, a cached
+result, a "don't ask again today" flag. Letting the store forget is simpler
+and more reliable than remembering to delete.
+
+## How it works in Lodekit
+
+Values are JSON — store a number, a string, an object — under keys of your
+choosing. A convention worth copying from the Greenhouse showcase app: build
+keys with helper functions, so the naming scheme lives in one place:
+
+```ts title="src/lib.ts"
+// App memory (kv): counters and flags about the app's own behavior — the
+// entities live in src/db.ts tables.
+export const streakKey = (id: number) => `streak:${id}`;
+export const snoozeKey = (id: number) => `snooze:${id}`;
+```
+
+Greenhouse uses an atomic counter for care streaks, and a TTL flag for
+snoozing a plant's reminders:
+
+```ts
+// Atomic increment — safe even if two requests race. Missing key starts at 0.
+const streak = await kv.incr(streakKey(plantId));
+
+// A flag that expires by itself: snooze for N hours (ttl is in seconds).
+await kv.set(snoozeKey(plantId), true, { ttl: hours * 3600 });
+```
+
+When the snooze expires, the key is simply gone — `kv.get` returns
+`undefined`, and no cleanup task ever ran. Expiry is lazy (an expired key is
+deleted the moment it's read) backed by a sweep every 60 seconds.
+
+On disk, **kv-store** entries live in the app's own SQLite database at
+`data/<app-id>/db.sqlite` — the same precious, backed-up file as the app's
+**db-store** tables. Every change also lands on the
+[event bus](/services/event-store/)
+as a `kv-store-change` event carrying the key (never the value), so your UI
+can react live to writes.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Key length | ≤ 512 characters |
+| Value size | ≤ 100 kb per request |
+| List page size | ≤ 1000 entries |
+| Change events | Kept 7 days |
+
+## API
+
+Every method — `get`, `set`, `del`, `incr`, `list`, batch operations, and the
+`collection` helper — is specified in the [kv SDK reference](/sdk/kv/).
+
+## MCP
+
+Your agent can read the **kv-store** on your behalf — read-only, so "what's
+the current streak?" is a question it can answer directly:
+
+- `lodekit_kv_list` — list an app's entries with metadata, optionally by key
+  prefix.
+- `lodekit_kv_get` — get one value.
+
+Parameters and details are in [MCP tools](/reference/mcp-tools/).

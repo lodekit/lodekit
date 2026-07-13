@@ -1,0 +1,251 @@
+---
+title: gateways
+description: Guarded calls to external providers — the gateways service's SDK handle.
+---
+
+Outbound HTTP through a managed door. For what a gateway is (manifests,
+connections, guardrails), see [the Gateways service](/services/gateways/).
+
+Gateways have two sides: you **declare** connections in `src/gateways.ts` with
+`defineGateways()`, and you **call** through the `gateways` handle — all
+imported from the SDK:
+
+```ts
+import { gateways, defineGateways, gateway, GatewayError } from "@lodekit/sdk";
+```
+
+The handle is **server-only** — call it from server functions and tasks. In
+the browser it throws immediately: `gateways are server-only; call from a
+server function or task`.
+
+## The src/gateways.ts contract
+
+Declare the gateways your app uses as the **default export** of
+`src/gateways.ts`, one entry per connection:
+
+```ts
+defineGateways<G extends GatewayUses>(uses: G): DefinedGateways<G>
+gateway(cfg: GatewayUse): GatewayUse
+```
+
+```ts
+interface GatewayUse {
+  provider: string;
+  description?: string;
+}
+```
+
+- Each key is the connection's **alias** — snake_case (`/^[a-z0-9_]+$/`), max
+  64 characters. The alias is app-local: it becomes the property you call on
+  the `gateways` handle.
+- `provider` — the gateway's provider id, the folder name under `gateways/`
+  in your Lodekit root: lowercase letters, digits, and dashes
+  (`/^[a-z0-9-]+$/`), max 64 characters.
+- `description` — optional; shown in the dashboard so the person knows why
+  the app wants the connection.
+
+### Example
+
+Greenhouse declares two connections:
+
+```ts title="src/gateways.ts"
+import { defineGateways, gateway } from "@lodekit/sdk";
+
+export default defineGateways({
+  weather: gateway({
+    provider: "openweathermap",
+    description: "Daily forecast for the Sky Journal.",
+  }),
+  oauth_demo: gateway({
+    provider: "duende-demo",
+    description: "OAuth 2.0 rail demo against Duende's public IdentityServer.",
+  }),
+});
+```
+
+## The gateways handle
+
+`gateways.<alias>` is a connection handle with a method per HTTP verb, plus a
+generic `request()`:
+
+```ts
+get(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>
+post(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>
+put(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>
+patch(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>
+delete(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>
+request(desc: { method: string; path: string } & GatewayRequestOpts): Promise<GatewayResponse>
+```
+
+- `path` — **relative**. The runtime assembles the final URL under the
+  manifest's `base_url`; absolute URLs are rejected.
+- `opts.query` — query parameters; `number` values are stringified.
+- `opts.headers` — extra request headers, merged in lowercased.
+  `authorization` (and `proxy-authorization`) are **rejected** — credentials
+  belong in gateway slots; the gateway owns the authorization header. The same
+  applies to whichever header or query parameter the manifest's auth recipe
+  owns.
+- `opts.body` — a `string` is sent as-is; an `object` is JSON-serialized (and
+  `content-type: application/json` is set unless you set one); a `Uint8Array`
+  is transported as base64 and delivered to the provider as raw bytes.
+- `opts.timeoutMs` — per-request timeout. The effective timeout is the
+  smallest of this value, the manifest's `timeout_ms`, and the platform
+  default (10 s) — always capped at 60 s.
+
+Every method resolves to a `GatewayResponse` — `status`, `ok` (true for
+200–299), `headers`, and lazy `json<T>()` / `text()` readers. Responses are
+buffered whole, up to the 10 MB response cap.
+
+### Example
+
+```ts
+const res = await gateways.weather.get("/data/2.5/forecast", {
+  query: { q: "Lisbon,pt", units: "metric" },
+});
+if (res.ok) {
+  const forecast = await res.json<{ list: { dt: number }[] }>();
+}
+```
+
+## GatewayError
+
+A call that the gateway refuses (or that fails in transit) rejects with a
+`GatewayError` carrying a `reason`. The reasons fall into two buckets, and
+the split is the whole point of handling them.
+
+**Person-action reasons** — the app can't fix these; render a "finish setup
+in the dashboard" state and move on:
+
+| Reason | Meaning |
+|---|---|
+| `unconfigured` | The connection isn't complete — required slots are pending, the provider is unknown, or the manifest is invalid. |
+| `needs_reauth` | The OAuth token could not be refreshed — the person must reconnect in the dashboard. |
+
+**Transient reasons** — let the task's retry policy handle them, or surface a
+soft failure:
+
+| Reason | Meaning |
+|---|---|
+| `rate_limited` | The rate budget is exhausted, or the provider's `Retry-After` pause is in effect. |
+| `breaker_open` | The circuit breaker is open after repeated failures — calls are refused until the cooldown probe succeeds. |
+| `timeout` | The request exceeded the effective timeout. |
+| `too_large` | The response exceeded the response-size cap. |
+| `network` | The connection to the provider failed (DNS, TLS, reset). |
+| `unavailable` | The gateways engine itself is degraded. |
+
+### Example
+
+Greenhouse's weather task treats "not ready yet" — a connection waiting on
+setup, or a degraded engine — as a graceful idle, and lets everything else
+fail the run:
+
+```ts
+try {
+  res = await gateways.weather.get("/data/2.5/forecast", {
+    query: { q: location, units: "metric" },
+  });
+} catch (e) {
+  if (e instanceof GatewayError && (e.reason === "unconfigured" || e.reason === "unavailable")) {
+    logs.info("sky journal idle — link an OpenWeatherMap key on the gateway page", { reason: e.reason });
+    return;
+  }
+  throw e; // transient failures fail the run; task retries handle it
+}
+```
+
+## The polling recipe
+
+The standard shape for pulling provider data on a rhythm is a scheduled
+[task](/sdk/tasks/) + a gateway call + an upsert into the
+[**db-store**](/services/db-store/). Greenhouse's Sky Journal, trimmed:
+
+```ts title="src/tasks.ts"
+import { task, logs, gateways, GatewayError, settings } from "@lodekit/sdk";
+import { db, weatherLog } from "./db";
+
+export const weather_log = task({
+  cron: "0 7 * * *",
+  catchUp: true,
+  run: async () => {
+    const location = (await settings.get<string>("weather_location")) ?? "Lisbon,pt";
+    let res;
+    try {
+      res = await gateways.weather.get("/data/2.5/forecast", {
+        query: { q: location, units: "metric" },
+      });
+    } catch (e) {
+      if (e instanceof GatewayError && (e.reason === "unconfigured" || e.reason === "unavailable")) {
+        logs.info("sky journal idle — link an OpenWeatherMap key on the gateway page", { reason: e.reason });
+        return;
+      }
+      throw e; // transient failures fail the run; task retries handle it
+    }
+    if (!res.ok) {
+      logs.warn("weather fetch failed", { status: res.status });
+      return;
+    }
+    const data = await res.json<{ list: { dt: number; main: { temp_min: number; temp_max: number } }[] }>();
+    // ... aggregates today's slots into one row ...
+    await db.insert(weatherLog).values(row).onConflictDoUpdate({ target: weatherLog.day, set: row });
+  },
+});
+```
+
+Two habits worth copying. First, the **graceful idle**: while the connection
+is unconfigured — or the gateways engine is degraded (`unavailable`) — the
+task logs once and returns; the app stays healthy with an empty journal until
+the person links a key. Second, the other transient failures are *thrown*,
+not swallowed: the run fails, and the task's own retry policy takes it from
+there. Gateways never retry a request themselves — tasks own retries.
+
+## Types
+
+### GatewayRequestOpts
+
+```ts
+interface GatewayRequestOpts {
+  query?: Record<string, string | number>;
+  headers?: Record<string, string>;
+  /** string sent as-is; object JSON-serialized (content-type set); Uint8Array as base64 */
+  body?: string | Uint8Array | object;
+  timeoutMs?: number;
+}
+```
+
+### GatewayResponse
+
+```ts
+interface GatewayResponse {
+  status: number;
+  ok: boolean;
+  headers: Record<string, string>;
+  json<T = unknown>(): Promise<T>;
+  text(): Promise<string>;
+}
+```
+
+### GatewayUse
+
+```ts
+interface GatewayUse {
+  provider: string;
+  description?: string;
+}
+```
+
+### GatewayError
+
+```ts
+type GatewayErrorReason =
+  | "unconfigured" | "rate_limited" | "breaker_open" | "needs_reauth"
+  | "timeout" | "too_large" | "network" | "unavailable";
+
+class GatewayError extends Error {
+  readonly reason: GatewayErrorReason;
+}
+```
+
+The `Gateways` handle type is alias-indexed —
+`{ [alias: string]: ConnectionHandle }` — with no per-alias type inference
+from your declaration. That's deliberate: the handle is one shared singleton,
+and aliases are validated at runtime against `src/gateways.ts`.

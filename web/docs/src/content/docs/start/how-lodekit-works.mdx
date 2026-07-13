@@ -1,0 +1,72 @@
+---
+title: How Lodekit works
+description: "The big picture: manager, runtime, dashboard, and your Lodekit folder, and how they fit together."
+---
+
+import BigPicture from '../../../components/BigPicture.astro';
+import BuildLifecycle from '../../../components/BuildLifecycle.astro';
+
+You don't need to understand Lodekit's insides to use it. But a rough map helps
+you know where your apps live, where your data goes, and what your agent is
+actually doing. Here's the whole picture.
+
+<BigPicture />
+
+## One process, one folder
+
+Two facts carry most of the mental model.
+
+**One process.** The runtime is a single program on your Mac. It hosts every
+app you build, plus the dashboard, all served in your browser at
+`http://lodekit.localhost:7777`. The manager — the menubar icon — starts the
+runtime, watches over it, and restarts it if you ask.
+
+**One folder.** Everything you'd ever want to keep lives in the Lodekit root,
+`~/Documents/Lodekit`. Inside it sit three trees, side by side: `apps/` holds
+each app's source files, `data/` holds what each app stores, and `gateways/`
+describes the outside providers your apps can reach. That one folder is the
+thing you back up.
+
+## Two doors
+
+The runtime has two doors, one for each of you.
+
+**The dashboard is yours.** It shows every app with its live status, and it's
+where you tune settings, browse logs, and manage secrets — all in your browser.
+
+**Your agent has its own door.** Through a separate connection, the agent can
+create apps, open them for you, and read an app's logs and data on your
+behalf — so it can answer "show me all my recipes" or debug an app it built.
+You'll set that connection up in
+[Connect your agent](/start/connect-your-agent/).
+
+## How an app gets built
+
+When your agent creates or changes an app, all it does is write files into
+`apps/`. Lodekit's watcher notices the change, builds the app with its own
+build tools, and serves the result:
+
+<BuildLifecycle />
+
+You never run a build. Save (or let your agent save), and the app's card on the
+dashboard flips to *building…*, then *ready*. If something goes wrong, the card
+shows the error instead — and your agent can read the details and fix it.
+
+## Where your data lives
+
+Each app keeps what it stores under `data/` in its own space, right next to the
+`apps/` tree — so an app's records, files, and settings are ordinary contents
+of your Lodekit folder, and backing up that folder preserves all of it. The
+full layout is in [Your Lodekit folder](/guide/your-lodekit-folder/).
+
+## The services
+
+Apps don't reinvent the plumbing. Lodekit provides services every app can use:
+a database for records, a small memory for quick notes, file storage, events,
+scheduled tasks, safe doors to outside providers (like the weather forecast),
+secrets, settings, and logs. Your agent builds with these, which
+is why even a quick app gets durable storage and a settings page for free. Meet
+them in the [Services overview](/services/overview/).
+
+That's the map. Time to put Lodekit on your machine:
+[Install Lodekit](/start/install/).

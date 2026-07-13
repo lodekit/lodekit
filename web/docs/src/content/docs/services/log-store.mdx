@@ -1,0 +1,91 @@
+---
+title: Logs
+description: "Where your app's logs go and how to inspect them."
+---
+
+Every app — and the platform itself — writes a running commentary of what it
+did. That commentary lands in the Log Store (**log-store** for short), reached
+through the SDK as
+the `logs` handle, and read in the dashboard's **Logs** view.
+
+## The idea
+
+Reliable systems record two different accounts of the same happenings, for
+two different readers. **Telemetry** — logs — is the account for observers:
+a person or an agent reading back through what the system did, usually
+because something looks wrong. [Events](/services/event-store/) are the account
+for code: other parts of the system *react* to them. "Care was given" might
+be both — a log record so you can see it happened, and a change event so the
+UI refreshes. Same happening, different consumers: observation vs reaction.
+
+Good logs are **structured**. `"watered plant 12, streak now 4"` is a
+sentence a human can read once; `("care given", { plantId: 12, streak: 4 })`
+is a record that can be filtered, searched, and correlated. Message plus
+fields — not string soup.
+
+Levels are a **severity contract** between writer and reader: `debug` is
+noise you only want while investigating, `info` is the normal narrative,
+`warn` means "worked, but look at this", `error` means something failed.
+Honest levels are what make filtering worth anything.
+
+And logs are **ring buffers, not archives**. Their value decays fast — last
+night's records are gold, last month's are landfill — so log stores retain a
+window and discard the rest. Anything worth keeping forever isn't a log;
+it belongs in a store.
+
+## When to use it
+
+Debugging, and understanding what your app did while you weren't watching:
+did the task run, what did the server function decide, why did that request
+fail. Never for data — a log record is not a stored fact, and it will be
+gone in a week. Facts go in the [**db-store**](/services/db-store/) or
+[**kv-store**](/services/kv-store/); milestones other code should react to go
+on the [event bus](/services/event-store/).
+
+## How it works in Lodekit
+
+Emit a record with a level, a message, and structured fields — from the
+browser or from server code:
+
+```ts
+logs.info("care given", { plantId, kind, streak });
+```
+
+Logging is fire-and-forget: it never throws and never slows the code path
+it's on, so it's safe to sprinkle anywhere. You also get logging for free —
+`console.log` and friends in your app's server code are captured into the
+same store automatically, so even code that never imports the SDK leaves a
+trail. Platform components write to the same store, which means one timeline
+holds everything: your app's records interleaved with the builds and
+lifecycle around them.
+
+Read them in the dashboard's **Logs** view — a live tail with level and
+per-app filters. Your agent reads the same records over MCP, which is worth
+internalizing: when you say "my app is misbehaving", the agent's first move
+is to read your logs. An app that logs well is an app your agent can debug.
+
+Logs live in the platform **State** (`~/Library/Application Support/Lodekit`),
+deliberately outside the backup tree. That's the storage-tier rule working as
+intended: losing history is not losing data. A restored backup brings back
+your apps and every fact they stored — it doesn't need to bring back the
+commentary.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Retention | 7 days / 200,000 records |
+| Message length | ≤ 8192 characters |
+
+## API
+
+The four methods — `debug`, `info`, `warn`, `error` — plus the
+fire-and-forget contract and console capture are specified in the
+[logs SDK reference](/sdk/logs/).
+
+## MCP
+
+This is the read half of "an app that logs well is an app your agent can
+debug": `lodekit_logs` reads the same records as the dashboard's Logs view,
+filtered by app, level, limit, or a message substring. Parameters and details
+are in [MCP tools](/reference/mcp-tools/).

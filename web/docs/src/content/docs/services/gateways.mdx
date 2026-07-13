@@ -1,0 +1,144 @@
+---
+title: Gateways
+description: "Managed doors to external providers — credentials injected by the runtime, guardrails the app can't opt out of."
+---
+
+import GatewayFlow from '../../../components/GatewayFlow.astro';
+
+Sooner or later a personal app wants the outside world: a weather forecast,
+a calendar, a provider with an API. In Lodekit, apps never call out directly —
+every outbound request goes through the **gateways** service, reached through
+the SDK as the `gateways` handle.
+
+## The idea
+
+Calling an external provider looks like one line of `fetch()` — and that
+innocence is the problem. Several hard problems hide behind it, and each is a
+systems fundamental worth knowing:
+
+**The credential problem.** Any code that holds an API key can leak it — into
+a log line, an error message, a chat transcript with your agent. The strongest
+fix isn't handling keys carefully; it's code that **never holds the key**. A
+gateway keeps credentials on the runtime side and injects them into the
+request at the last moment. App code says "call the weather API" — it never
+says "here's my key".
+
+**Egress control.** Code that can reach one URL can usually reach any URL.
+A gateway is **allowlisted by construction**: it can only reach what its
+manifest declares — one provider, one base URL. There is no way for app code
+to widen that from the inside.
+
+**Being a polite client.** Providers rate-limit, and clients that retry
+blindly get banned. A gateway budgets requests against a rate limit and
+respects a provider's `Retry-After` — when the provider says "back off", every
+caller backs off.
+
+**Failing fast.** When a provider is down, hammering it helps no one and slows
+your own app to a crawl of timeouts. The classic answer is a **circuit
+breaker**: after repeated failures, stop calling, wait, then probe gently once
+before resuming.
+
+**Observability.** Every request through a gateway is logged — method, path,
+status, duration — with credentials always redacted. When an integration
+misbehaves, you (and your agent) can see exactly what was asked and what came
+back.
+
+One vocabulary note. An *integration* is the outcome, not a thing you store:
+you build an integration by using a gateway to the provider — reuse one if it
+exists, author one if not. The domain logic of an integration lives in the
+app; the guarded transport is the gateway.
+
+## When to use it
+
+Any call from app code to an external provider — every time, no exceptions.
+Never `fetch()` a provider directly, and never put an API key in
+[**settings**](/services/settings/), the **kv-store**, or code: credentials
+belong in the
+[secrets catalog](/services/secret-store/), linked into a gateway that injects them
+for you. And reuse before you author — if a gateway for the provider already
+exists in your Lodekit root, apps share it.
+
+## How it works in Lodekit
+
+Three artifacts make a working integration: the gateway, the connection, and
+the call.
+
+**The gateway** is a folder at `gateways/<provider-id>/` under your Lodekit
+root — a sibling of `apps/` and `data/`, and part of what you back up. It
+holds a manifest (plus a favicon) that your agent authors: purely declarative,
+no code. Here is the bundled OpenWeatherMap gateway in full:
+
+```json title="gateways/openweathermap/manifest.json"
+{
+  "name": "OpenWeatherMap",
+  "website": "https://openweathermap.org",
+  "base_url": "https://api.openweathermap.org",
+  "auth": { "kind": "api_key", "in": "query", "param": "appid", "slot": "api_key" },
+  "slots": {
+    "api_key": {
+      "kind": "secret",
+      "label": "API key",
+      "description": "An OpenWeatherMap API key — the free tier works."
+    }
+  },
+  "limits": { "rate": "60/min" }
+}
+```
+
+`base_url` is the only place this gateway can reach. `auth` is the recipe for
+injecting the credential (here: an `appid` query parameter). `slots` declare
+what a person must supply — secret slots for credentials, config slots for
+plain values like a region or account id.
+
+**The connection** is an app's grant to use a gateway. The app declares it in
+`src/gateways.ts` under an app-local alias; the person completes it in the
+dashboard by **linking** a catalog secret into each secret slot and
+**setting** each config slot. The completed connection is the grant — and
+because connections key on the alias, two aliases on the same gateway are two
+separate accounts.
+
+**The call** is server-side app code — a server function or a task — going
+through the SDK's `gateways` handle. The runtime resolves the connection,
+applies the guardrails, injects the credential, and forwards the request:
+
+<GatewayFlow />
+
+For OAuth providers there is no key to paste: the connection row in the
+dashboard gets a **Connect** button that sends you through the provider's
+sign-in (authorization code with PKCE). Tokens are stored encrypted and
+refreshed transparently; if the provider revokes access, the connection shows
+a needs-reauth badge until you reconnect.
+
+In the dashboard, the **Gateways** page shows a card per provider, and each
+gateway's detail page lists the apps connected to it with a status badge and
+per-gateway logs. Health changes (a breaker opening, a connection going
+unhealthy) are announced as [events](/services/event-store/), and an app's home
+card shows a pending badge until its connections are completed.
+
+## Limits
+
+The guardrail defaults are settings — tune them in the dashboard under
+Settings → Services → Gateways. A gateway's manifest can also carry its own
+`rate`, `concurrency`, and `timeout_ms` overrides.
+
+| Guardrail | Default |
+|---|---|
+| Request timeout | 10 s (hard cap 60 s) |
+| Rate limit | 60 requests/min per gateway |
+| Concurrency | 4 parallel requests per gateway (max 32) |
+| Response size | 10 MB — larger responses are aborted |
+| Circuit breaker | opens after 5 consecutive failures, 30 s cooldown |
+
+## API
+
+Declaring connections in `src/gateways.ts`, the `gateways` handle's request
+methods, and the `GatewayError` contract are specified in the
+[gateways SDK reference](/sdk/gateways/).
+
+## MCP
+
+Your agent can inspect the wiring with `lodekit_gateways` — every gateway's
+provider, auth kind, slots, and limits, which apps connect to it, and each
+connection's per-slot status. Wiring and status only: the tool never returns
+a credential or token, in keeping with the no-key-in-app-code posture above.
+Parameters and details are in [MCP tools](/reference/mcp-tools/).

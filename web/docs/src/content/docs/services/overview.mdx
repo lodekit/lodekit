@@ -1,0 +1,108 @@
+---
+title: Overview
+description: "A map of the services Lodekit gives every app: storage, background work, and system access."
+---
+
+import StorageDecision from '../../../components/StorageDecision.astro';
+
+Every app needs the same plumbing: somewhere to keep records, somewhere to put
+files, a way to run work in the background, a place for configuration. Most
+software rebuilds this plumbing every time. Lodekit instead provides it once,
+as **services** — capabilities the runtime offers to every app, reached through
+the SDK. Your agent builds with them, which is why even a small app gets
+durable storage, scheduled tasks, and a settings page for free.
+
+## The catalog
+
+| Service | What it's for | Short term | SDK handle |
+|---|---|---|---|
+| [Relational database](/services/db-store/) | Domain records — entities, relationships, queries | **db-store** | `db` |
+| [Key-value database](/services/kv-store/) | App memory — counters, cursors, caches, flags | **kv-store** | `kv` |
+| [Files](/services/file-store/) | Documents and blobs, stored as real files on disk | **file-store** | `files` |
+| [Events](/services/event-store/) | The durable event bus apps announce on and react to | **event-store** | `events` |
+| [Tasks](/services/tasks/) | Background work — queued now or run on a schedule | **tasks** | `tasks` |
+| [Gateways](/services/gateways/) | Managed doors to outside providers — keys injected, traffic guarded | **gateways** | `gateways` |
+| [Secrets](/services/secret-store/) | Credentials — encrypted, read only by server code | **secret-store** | `secrets` |
+| [Settings](/services/settings/) | Your knobs — declared by the app, edited by you | **settings** | `settings` |
+| [Logs](/services/log-store/) | Structured log records, for watching and debugging | **log-store** | `logs` |
+
+Each service goes by a few names, used consistently: a friendly title (what
+the sidebar and the table above say), a formal name that introduces the
+service inside its own docs (the Relational Data Store), the bold short term
+(**db-store**, **kv-store**) that names it in running prose everywhere, and
+monospace reserved for things you type — handles like `db`, files like
+`src/db.ts`. Each service page explains the general idea first — the kind of
+problem this class of tool has always solved — and then Lodekit's take on it.
+
+## Choosing where data lives
+
+Five of these services store things, and the most common design question in
+any app is which one a given piece of data belongs in. The rule that answers
+it is worth learning properly, because it's the same rule that keeps large
+systems sane: **place data by what it is, not by what's convenient to write.**
+
+<StorageDecision />
+
+Walk the questions in order:
+
+- **The secret-store holds credentials.** API keys, tokens, passwords —
+  sensitive values
+  you provide. They're encrypted at rest and readable only by server-side app
+  code; your browser and your agent never see them. Never a setting, never a
+  **kv-store** entry.
+
+  And when the credential's job is *calling* a provider, the app doesn't read
+  the key at all — a [gateway](/services/gateways/) holds it and injects it
+  into each request. The decision here stays about data at rest.
+
+- **Settings are your knobs.** Values a person tunes in the dashboard — a
+  reminder hour, a display preference. The app declares them and reads them;
+  only human hands change them.
+- **The db-store holds domain records.** Anything that is an *entity* — it has
+  fields, relates to other things, gets listed, filtered, or aggregated, and
+  would hurt to lose. This is the default home for what your app is *about*.
+- **The file-store holds documents and blobs.** Photos, PDFs, exports,
+  anything that is
+  fundamentally bytes rather than fields.
+- **The kv-store is the app's own memory.** Everything left over: counters,
+  cursors,
+  caches, flags — small values the app writes about itself while running.
+
+The boundaries matter most where two stores look interchangeable. Settings and
+the **kv-store** both hold small values, but they differ in *who writes*: a
+person edits
+settings, the app writes the **kv-store**. The **db-store** and the
+**kv-store** both hold durable state, but
+they differ in *what the value is*: an entity with structure belongs in the
+**db-store**; a note the app leaves for itself belongs in the **kv-store**.
+
+## Where the bytes end up
+
+Every storage service also answers a second question: how much would it hurt
+to lose this? Lodekit places data on disk by that cost of loss:
+
+- **Precious** — you'd miss it restoring a backup. App records, files, events,
+  your settings and secrets. Lives in the data tree inside your Lodekit
+  folder, the thing you back up.
+- **Operational history** — losing it costs history, never apps or data. Logs
+  live here, outside the backup.
+- **Regenerable** — losing it costs a rebuild. Built app output, in the cache.
+
+A service never silently promotes a value between tiers. If something a
+service keeps temporarily becomes precious to an app — say, a fact first seen
+in a log or an event — the app writes it into its own store, and an event
+announces it. That discipline is what makes "back up one folder" a complete
+backup strategy.
+
+## Reading on
+
+Start with the storage services — the [**db-store**](/services/db-store/),
+[**kv-store**](/services/kv-store/), and
+[**file-store**](/services/file-store/) — then meet the
+[**event-store**](/services/event-store/), [**tasks**](/services/tasks/),
+[**gateways**](/services/gateways/),
+[**secret-store**](/services/secret-store/),
+[**settings**](/services/settings/), and
+[**log-store**](/services/log-store/). Each page
+ends with a link to its SDK
+reference, where every method is specified.

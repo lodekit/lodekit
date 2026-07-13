@@ -1,0 +1,129 @@
+---
+title: Relational database
+description: "What the per-app relational database is for and when to reach for it."
+---
+
+Every app gets its own relational database — the Relational Data Store
+(**db-store** for short), the default home for the records your app is about,
+reached through the SDK as the `db` handle.
+
+## The idea
+
+Relational databases have carried business software for fifty years, and the
+reason is worth understanding rather than taking on faith.
+
+A relational database asks you to declare a **schema** up front: each kind of
+record becomes a *table*, each fact about it a *column* with a type. That
+feels like ceremony until you see what it buys. The data becomes
+self-describing — anyone (including your agent, months later) can read the
+schema and know exactly what a record contains, without reverse-engineering it
+from code. And the database can enforce the shape: a record missing a required
+field simply can't be written.
+
+**Relations** are the second idea. Real domains are webs of things that refer
+to each other — a plant has care rules, an order has line items. Relational
+databases model those links directly, and can enforce them: delete the plant
+and its care rules go with it, never orphaned.
+
+The third idea is the quiet superpower: **queries**. Because the database
+knows the structure of your data, it can answer questions you didn't plan for
+when you stored it. "Which plants haven't been watered in a week?" needs no
+new code path — it's a query over data you already have. Stores without
+structure can't do this; they can only hand back what you put in, by name.
+
+One cost comes with the schema: it must sometimes change, and a **migration**
+is that change applied to data that already exists. *Additive* migrations — a
+new table, a new column — are safe: nothing existing is touched. *Destructive*
+ones — dropping a column, narrowing a type — throw data away, permanently, in
+one keystroke. Treating those two cases very differently is a mark of systems
+that respect their data.
+
+## When to use it
+
+Use the **db-store** for anything that is an **entity**: it has fields, it
+relates to other things, it gets listed, filtered, or aggregated — and it
+would hurt to lose. Plants, recipes, invoices, journal entries.
+
+The boundary to know is **db-store** vs [**kv-store**](/services/kv-store/):
+the **db-store** holds **domain records** — the model of your world; the
+**kv-store** holds **app memory** —
+counters, cursors, caches, flags the app writes about itself. If you'd ever
+want to list it, query it, or relate it to something else, it's an entity, and
+it belongs here.
+
+## How it works in Lodekit
+
+You declare the schema in your app's `src/db.ts` as ordinary
+[Drizzle](https://orm.drizzle.team/) tables. From the Greenhouse showcase app:
+
+```ts title="src/db.ts"
+import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core";
+import { createDb } from "@lodekit/sdk";
+
+export const plants = sqliteTable("plants", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  species: text("species").notNull(),
+  icon: text("icon").notNull(),
+  adoptedAt: integer("adopted_at").notNull(), // epoch ms
+});
+
+export const careRules = sqliteTable(
+  "care_rules",
+  {
+    plantId: integer("plant_id").notNull().references(() => plants.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // water | feed | mist
+    every: text("every").notNull(), // "3d" / "12h"
+  },
+  (t) => [primaryKey({ columns: [t.plantId, t.kind] })]
+);
+
+export const db = createDb({ plants, careRules });
+```
+
+That's the whole setup: tables, relations (with foreign keys enforced — the
+`references` above is a real constraint, not documentation), and a typed `db`
+handle that works in both your server functions and your browser code.
+Querying is plain Drizzle:
+
+```ts
+const [plant] = await db.select().from(plants).where(eq(plants.id, plantId));
+```
+
+**Migrations happen on save.** When the schema file changes, Lodekit compares
+it against the live database. Additive changes — new tables, new columns, new
+indexes — apply automatically; you never run a migration command. Destructive
+changes are **gated**: they are never applied automatically. Instead the app
+reports exactly what would be lost, and your agent takes the safe route —
+*expand-copy*: create the new shape alongside the old, copy the data across,
+then retire the old table. The gate exists so that no schema edit, however
+casual, can silently destroy your records.
+
+Under the hood, each app's database is a single SQLite file at
+`data/<app-id>/db.sqlite` inside your Lodekit folder — precious data, part of
+what you back up. Your tables live there unprefixed; tables the platform's
+services keep for the app are `_`-prefixed and out of your way.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Retention | None — the **db-store** is the system of record |
+| Request size | 100 kb per request |
+| Table names | Must not start with `_` or `sqlite_` |
+
+## API
+
+Every method — `createDb`, querying, and the schema push rules — is specified
+in the [db SDK reference](/sdk/db/).
+
+## MCP
+
+Your agent can look inside the **db-store** on your behalf — inspection only,
+never writes:
+
+- `lodekit_db_schema` — inspect an app's declared tables.
+- `lodekit_db_query` — run a single `SELECT` over an app's tables, on a
+  read-only connection.
+
+Parameters and details are in [MCP tools](/reference/mcp-tools/).

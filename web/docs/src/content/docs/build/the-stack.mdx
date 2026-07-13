@@ -1,0 +1,75 @@
+---
+title: The stack
+description: "The technology stack every Lodekit app is built on, and why."
+---
+
+Every Lodekit app is written the same way: [TanStack Start](https://tanstack.com/start)
+with React 19 and TypeScript, styled with Tailwind CSS, importing `@lodekit/sdk` for
+services and `@lodekit/ui` for components. This page is what that stack is, how it gets
+built, and why Lodekit prescribes exactly one.
+
+## What's in the stack
+
+- **TanStack Start** — the app framework: file-based routes under `src/routes/`,
+  loaders for data, server functions for writes, and server-side rendering. Apps are
+  **server-rendered**: the first paint comes from the server, then React hydrates in
+  the browser.
+- **TypeScript** — everything is typed, end to end. The SDK's handles, your database
+  schema, and your route params all carry types, so your agent catches mistakes at
+  compile time instead of at runtime.
+- **Tailwind CSS** — utility classes for layout and spacing, on top of the shared
+  theme's tokens.
+- **`@lodekit/sdk`** — the typed client into the service catalog: `db`, `kv`, `files`,
+  `tasks`, `events`, `settings`, `secrets`, `logs`. It works on both sides of the
+  contract — the browser and the server. See
+  [Data and server functions](/build/data-and-server-functions/).
+- **`@lodekit/ui`** — the themed component library every app imports, so all apps look
+  like one product. See [Using the UI library](/build/using-the-ui-library/).
+
+An app's server code runs in an **app worker** — a per-app worker thread inside the
+runtime that executes the app's built server bundle. Its browser code runs in your
+browser, like any web app. Both reach services through the same SDK.
+
+## One toolchain, shared by every app
+
+Apps carry no dependencies of their own. The build stack — Vite, React, TypeScript,
+Tailwind — is the **shared toolchain**: Lodekit installs it once and every app builds
+against it. There is no `package.json` and no `node_modules` inside an app folder.
+
+That single decision buys three things:
+
+- **A clean backup tree.** The apps tree is source files only — a few kilobytes per
+  app. Backing up your Lodekit root never means backing up dependency trees.
+- **No version drift.** Every app compiles against the same React, the same Vite, the
+  same Tailwind. Two apps can never disagree about a dependency, because neither has
+  any.
+- **No installs.** Creating an app is writing files. Nothing to download, nothing to
+  resolve, nothing to audit per app.
+
+## Bundled for apps — no builds for you
+
+Apps are **bundled**: when a source file is saved, the runtime notices, compiles the
+app into static client assets plus a server bundle, and serves the result. You never
+run a build, and neither does your agent — saving *is* deploying. While that happens,
+the app's card on the dashboard shows its build state: *building…*, then *ready* — or
+*error*, with details your agent can read and fix. The full lifecycle is in
+[How Lodekit works](/start/how-lodekit-works/).
+
+Built output lands in the Cache, outside your Lodekit root — it's regenerable, so it's
+never part of what you back up.
+
+## Why one stack
+
+Lodekit could have stayed neutral and let every app pick its own framework. It
+deliberately doesn't, for two reasons.
+
+**Agents write best against one well-lit path.** Your agent isn't choosing between
+frameworks, state libraries, and CSS approaches on every app — the skill teaches one
+stack with clear guardrails, and every line it writes lands on patterns the platform
+was built to serve. Fewer choices, fewer novel failure modes, better code.
+
+**Every app looks and behaves like one product.** Same components, same theme, same
+routing conventions. The tenth app your agent builds feels like a sibling of the
+first — and a change to the shared theme restyles all of them at once.
+
+Next, what an app actually looks like on disk: [App anatomy](/build/app-anatomy/).

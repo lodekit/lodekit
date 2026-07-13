@@ -1,0 +1,113 @@
+---
+title: Settings
+description: "Give your app durable, typed configuration that people can edit from the dashboard."
+---
+
+Every knob a person should be able to turn — reminder toggles, display
+units, snooze lengths — is a **setting**: declared by the app, edited in the
+dashboard, read through the SDK as the `settings` handle.
+
+## The idea
+
+Configuration is a contract between the builder and the user, and the
+traditional way to write it down — a config file — is a bad contract. A file
+says nothing about what the values mean, what's valid, or what happens if
+you mistype; editing one is programming with the safety off.
+
+A **declared schema** is the better contract: the app states each knob's
+type, label, description, and default, and the platform can then render a
+real form — a switch for a boolean, a dropdown for a choice — validate every
+edit, and always know the correct value when nothing has been set.
+
+The deeper principle is that **who writes matters more than what's stored**.
+Settings hold small per-app values, and so does the
+[**kv-store**](/services/kv-store/) — the
+difference is the hand on the pen. Settings are *the person's knobs*: a
+human writes them, the app only reads. The **kv-store** is *the app's memory*:
+the app
+writes it at runtime. Keeping the two apart keeps a boundary crisp — no app
+code silently overwriting a choice the person made, no human hand-editing
+the app's internal state.
+
+## When to use it
+
+Any value a human should tune: feature toggles, units and formats, cadences
+and thresholds. If the app computes the value itself, it belongs in the
+[**kv-store**](/services/kv-store/).
+If the value is an API key or a credential, it belongs in the
+[**secret-store**](/services/secret-store/)
+— never a setting.
+
+## How it works in Lodekit
+
+An app declares its settings in `src/settings.ts` — the schema is the
+default export:
+
+```ts title="src/settings.ts"
+import { defineSettings, boolean, select, duration } from "@lodekit/sdk";
+
+export default defineSettings({
+  water_reminders: boolean({
+    label: "Water reminders",
+    description: "Nudge you when a plant is due for watering.",
+    default: true,
+  }),
+  temperature_unit: select({
+    label: "Temperature unit",
+    description: "How temperatures are shown throughout the app.",
+    options: [
+      { value: "celsius", label: "Celsius" },
+      { value: "fahrenheit", label: "Fahrenheit" },
+    ],
+    default: "celsius",
+  }),
+  snooze_length: duration({
+    label: "Snooze length",
+    description: "How long a snoozed reminder stays quiet.",
+    default: "6h",
+  }),
+});
+```
+
+Save the file and the dashboard's **Settings** page grows a section for your
+app: real controls, the descriptions as help text, a marker on anything
+changed from its default, and one-click reset.
+
+The app reads **effective values** — the person's stored choice if one
+exists, otherwise the declared default — with `get` or `all`:
+
+```ts
+const unit = await settings.get("temperature_unit"); // "celsius" until changed
+```
+
+In the browser, `settings.watch` tells the page the moment a setting
+changes, so the UI can react without a reload. Watching is a page thing —
+server code simply reads the current value with `get` when it runs.
+
+Platform services expose their own tuning through the same system — the
+Services section of dashboard Settings — and those values can be
+**overridden per app**: resolution is app override → platform value →
+declared default, and the result is the effective value your app sees.
+
+## Limits
+
+| Limit | Value |
+|---|---|
+| Field types | `boolean`, `string`, `number`, `select`, `duration` |
+| Keys | snake_case, ≤ 64 characters |
+
+## API
+
+`defineSettings()`, all five field builders and their options, and the
+handle methods — `get`, `all`, `watch` — are specified in the
+[settings SDK reference](/sdk/settings/).
+
+## MCP
+
+Your agent can read settings — for the platform or for any app — so it can
+check a knob before reasoning about behavior:
+
+- `lodekit_settings_list` — the declared schema plus effective values.
+- `lodekit_settings_get` — one effective value.
+
+Parameters and details are in [MCP tools](/reference/mcp-tools/).
