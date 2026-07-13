@@ -57,6 +57,8 @@ is the living checklist — extend it with every new surface.
 | `logs.debug` / `info` / `warn` / `error` | compost sweep / care & seed / wilting & reset / upload failures + Shed demo row |
 | `appId` export | Potting Shed's SDK exercises card |
 | `@lodekit/ui`, `theme.css` | throughout |
+| `@lodekit/ui` chart (`ChartContainer` + `--chart-*` tokens) | Sky Journal temperature lines |
+| `@lodekit/ui` `useDataTable` + `DataTable` (client mode, header sort, pagination) | Almanac care history |
 | `src/gateways.ts` + `defineGateways` | the `weather` + `oauth_demo` connections |
 | `gateways.<alias>.get` (server-only, host-side key injection) | weather_log task, Shed identity card |
 | gateway secret slot (link = grant) | OpenWeatherMap `api_key` — retires the deferred secret-store DoD |
@@ -80,3 +82,8 @@ DoD (declare + linked server-side read) now lives through the OpenWeatherMap
 gateway's `api_key` slot. Settings gets its first Greenhouse declaration
 (`weather_location`); `settings.watch` and the richer field types still await a
 dedicated settings chapter.
+
+**Covered by unit tests, pending the data explorer (#60):** `useDataTable` manual mode
+(server-driven sort/filter/page) and the `DataTableViewOptions` / `DataTableFacetedFilter`
+companions — `packages/ui/tests/data-table.test.tsx` until the explorer exercises them
+for real.
