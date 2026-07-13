@@ -32,3 +32,25 @@ Entry template:
   the dashboard's empty Themes stub (`server.ts`); the catalog's successor is the theme
   editor / component visualizer (issue #61). Reword the entry when that surface is
   designed (docs already say "coming soon").
+
+## 2026-07-13 — release pipeline (PR #2, docs/specs/2026-07-10-release-pipeline-design.md)
+
+Deferred cross-platform seams (spec §8) — originally roadmap bullets, redirected here in
+the PR #2 rebase after roadmap.md's retirement. Each has a designed-in seam; all are
+deliberate v1 deferrals, safe to cut because macOS (arm64 + x64) ships without them.
+
+- **Linux support** — XDG path branches (runtime config comment marks the spot),
+  hand-written `.desktop` autostart, full-color tray PNGs, AppImage + deb targets, an
+  `ubuntu-22.04` release-matrix row; document AppIndicator/libfuse2 caveats.
+- **Windows support** — `%APPDATA%` path branches, node.exe-at-dist-root layout,
+  Node-native rewrite of the bundle script's shell-outs, stdin-close shutdown sentinel
+  (no graceful SIGTERM on Windows), `.ico` tray icons, unsigned NSIS + SmartScreen
+  click-through docs, MCP `openInBrowser` Windows fix, a `windows-latest` matrix row;
+  Azure Trusted Signing (~$10/mo) as the signing toggle when adoption justifies it.
+- **Update surfacing** — notify-only first (manager polls GitHub Releases, menubar hint
+  + download link, a setting to silence it); `electron-updater` later — electron-builder's
+  `latest*.yml` manifests make it additive; mac auto-update stays impossible until
+  Developer ID signing exists.
+- **Per-PR CI tests** — natural now that all changes land via PR; not part of the
+  release-pipeline slice.
+- **Flathub** — the eventual Linux store channel (after Linux support).

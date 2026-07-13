@@ -97,17 +97,23 @@ Simplicity never means cutting safety.
   never recreate it — where an older spec/plan says "add to roadmap.md", that now means
   `defer.md`.
 - **Docs:** Specs live in `docs/specs/`. Plans live in `docs/plans/`.
-- **Branching:** Trunk-based — commit directly to `master`. No feature branches.
-- **Linear history:** `master` must stay a single linear line — **no merge commits**.
-  - Integrate any diverged work by rebasing, not merging: `git pull --rebase` (set once with
-    `git config pull.rebase true`) and `git merge --ff-only` (never a plain `git merge`). 
-  - If you're on a worktree/side branch, `git rebase master` before folding it in.
-  - **Folding in is the person's call.** When work happens on a worktree/side branch, finish
-    it and leave it on the branch — never fold into `master` unattended. The person reviews
-    (and may follow up on the branch) before deciding when to integrate.
-  - To flatten an accidental merge, tag a backup first (`git tag backup/<desc> master`) then
-    `git rebase <fork-point>` — it drops merge commits and replays the rest linearly.
+- **Branching:** All changes to `master` land via PR — no direct pushes, docs and
+  typos included. Slice work happens on a branch/worktree; finishing a slice means
+  pushing the branch and raising a PR.
+  - PRs are **rebase-merged only** (repo settings disable merge commits and squash
+    merges; branches auto-delete on merge). `master` stays a single linear line of
+    fine-grained conventional commits — `git rebase master` before raising or
+    updating a PR; never a plain `git merge`.
+  - PR shape: conventional-prefixed title (`feat:`, `fix:`, scoped variants); body
+    with **Summary** (what changed and why), **Notes** (decisions taken, known
+    follow-ups), and **Test plan** (checklist of what was verified).
+  - **Merging is the person's call.** The agent raises the PR and stops — never
+    merge unattended.
   - Regenerate `pnpm-lock.yaml` conflicts with `pnpm install --lockfile-only` rather than hand-merging.
+- **Releases:** `/release` (skill at `.agents/skills/release/SKILL.md`) assembles a
+  semver release PR with product-level notes — one changelog entry per shipped spec,
+  not per commit. Merging it triggers the GitHub release build; the workflow is the
+  only creator of `v*` tags.
 - **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
 - **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
   showcase app exercises it (`root/readme.md` holds the living coverage checklist).
