@@ -26,7 +26,7 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
 - **`web/main`** (`@lodekit/web-main`) — Astro landing site.
 - **`web/docs`** (`@lodekit/web-docs`) — Starlight docs site (placeholder scaffold).
 - **`manager`** (`@lodekit/manager`) — the menubar app that ships and supervises the
-  platform. Packaged (`make`): an ad-hoc-signed arm64 `Lodekit.app` bundling a pinned
+  platform. Packaged (`make`, electron-builder): an ad-hoc-signed `Lodekit.app` bundling a pinned
   Lodekit-local Node + the platform payload (runtime/mcp/skill via `pnpm deploy`) in
   `Resources/`, spawning the runtime as a single direct child Node process (so
   `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
@@ -47,10 +47,6 @@ Package manager is **pnpm** (workspaces). From the repo root:
   native module via the root `pnpm.onlyBuiltDependencies` allowlist (pnpm v10 gates install
   scripts). **Gotcha:** switching Node versions causes a `better-sqlite3` ABI mismatch
   (`NODE_MODULE_VERSION`) — fix with `pnpm rebuild better-sqlite3`.
-  **Second gotcha:** never run `pnpm install` with CWD inside `manager/` — its `.npmrc`
-  (`node-linker=hoisted`, needed only for Forge's dev-start check) would rewrite the whole
-  workspace to hoisted layout and silently break runtime Vite/Tailwind builds. Install from
-  the repo root; recover with a root-level node_modules wipe + `pnpm install`.
 - `pnpm dev` — run the runtime against the showcase apps
   (`LODEKIT_ROOT=$(pwd)/root pnpm --filter @lodekit/runtime start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
@@ -94,24 +90,37 @@ Simplicity never means cutting safety.
 ## Conventions
 
 - **Backlog:** deferred work and known gaps live as GitHub issues (`gh issue list`).
-- **Deferrals:** `defer.md` is a transient buffer for work descoped/deferred during a
-  session. Append entries under a dated session header linking the spec/plan/PR that
+- **Deferrals:** `docs/defer.md` is a transient buffer for work descoped/deferred during
+  a session. Append entries under a dated session header linking the spec/plan/PR that
   caused them; **append-only** — never reword, resolve, or remove existing entries (the
   person drains the file into GitHub issues and clears it). `roadmap.md` is retired;
   never recreate it — where an older spec/plan says "add to roadmap.md", that now means
-  `defer.md`.
+  `docs/defer.md`.
+- **Changelog buffer:** `docs/changelog.md` collects unreleased user-facing
+  changes. A slice that ships something a Lodekit user can see or do appends an entry
+  under `## New` or `## Fixed`, in the same PR as the code; internal work appends
+  nothing. **Append-only** for agents — rewording and cutting happen in the release PR
+  review.
 - **Docs:** Specs live in `docs/specs/`. Plans live in `docs/plans/`.
-- **Branching:** Trunk-based — commit directly to `master`. No feature branches.
-- **Linear history:** `master` must stay a single linear line — **no merge commits**.
-  - Integrate any diverged work by rebasing, not merging: `git pull --rebase` (set once with
-    `git config pull.rebase true`) and `git merge --ff-only` (never a plain `git merge`). 
-  - If you're on a worktree/side branch, `git rebase master` before folding it in.
-  - **Folding in is the person's call.** When work happens on a worktree/side branch, finish
-    it and leave it on the branch — never fold into `master` unattended. The person reviews
-    (and may follow up on the branch) before deciding when to integrate.
-  - To flatten an accidental merge, tag a backup first (`git tag backup/<desc> master`) then
-    `git rebase <fork-point>` — it drops merge commits and replays the rest linearly.
+- **Branching:** All changes to `master` land via PR — no direct pushes, docs and
+  typos included. Slice work happens on a branch/worktree; finishing a slice means
+  pushing the branch and raising a PR.
+  - PRs are **squash-merged only** (repo settings disable merge commits and rebase
+    merges; branches auto-delete on merge). `master` stays a single linear line —
+    one commit per PR, whose subject is the PR title, so **conventional-prefixed PR
+    titles are load-bearing**. Still `git rebase master` to resolve conflicts before
+    merging; never a plain `git merge`.
+  - PR shape: conventional-prefixed title (`feat:`, `fix:`, scoped variants); body
+    with **Summary** (what changed and why), **Notes** (decisions taken, known
+    follow-ups), and **Test plan** (checklist of what was verified).
+  - **Merging is the person's call.** The agent raises the PR and stops — never
+    merge unattended.
   - Regenerate `pnpm-lock.yaml` conflicts with `pnpm install --lockfile-only` rather than hand-merging.
+- **Releases:** `/release` (skill at `.agents/skills/release/SKILL.md`) assembles a
+  semver release PR: lockstep version bump + drain of `docs/changelog.md` into the
+  docs changelog page. Merging it triggers the GitHub release build; the workflow is
+  the only creator of `v*` tags. Portable agent skills live in `.agents/skills/`
+  (Claude Code discovers them via the `.claude/skills` symlinks).
 - **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
 - **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
   showcase app exercises it (`root/readme.md` holds the living coverage checklist).

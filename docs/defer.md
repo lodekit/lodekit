@@ -1,0 +1,56 @@
+# Defer buffer
+
+Transient buffer for work descoped or deferred during a session. Agents append entries
+here; the person periodically drains them into GitHub issues and clears the file.
+
+Rules:
+
+- **Append-only for agents** — never reword, resolve, or remove existing entries; only
+  the person's drain clears the file.
+- **Group entries under a dated session header** naming the body of work that caused
+  them (spec/plan/PR/branch), so provenance survives the drain.
+- **Keep entries short** — what was cut, and why it was safe to cut. No priority/area
+  classification here; that happens at drain time.
+- **This file is not the backlog** — the backlog is GitHub issues.
+
+Entry template:
+
+```markdown
+## YYYY-MM-DD — <slice name> (<spec/plan path or PR>)
+
+- **<Item>** — what was cut, and why it was safe to cut.
+```
+
+---
+
+## 2026-07-13 — docs content v1 (PR #70, docs/specs/2026-07-12-docs-content-v1-design.md)
+
+- **Docs screenshots** — pages ship without screenshots; parked post-v0.1 until the
+  dashboard UI settles, so they aren't retaken on every visual change.
+- **context.md UI-catalog entry is stale** — it still describes `/_ui/` as a live
+  statically built Storybook, but since the UI revamp the runtime redirects `/_ui/` to
+  the dashboard's empty Themes stub (`server.ts`); the catalog's successor is the theme
+  editor / component visualizer (issue #61). Reword the entry when that surface is
+  designed (docs already say "coming soon").
+
+## 2026-07-13 — release pipeline (PR #2, docs/specs/2026-07-10-release-pipeline-design.md)
+
+Deferred cross-platform seams (spec §8) — originally roadmap bullets, redirected here in
+the PR #2 rebase after roadmap.md's retirement. Each has a designed-in seam; all are
+deliberate v1 deferrals, safe to cut because macOS (arm64 + x64) ships without them.
+
+- **Linux support** — XDG path branches (runtime config comment marks the spot),
+  hand-written `.desktop` autostart, full-color tray PNGs, AppImage + deb targets, an
+  `ubuntu-22.04` release-matrix row; document AppIndicator/libfuse2 caveats.
+- **Windows support** — `%APPDATA%` path branches, node.exe-at-dist-root layout,
+  Node-native rewrite of the bundle script's shell-outs, stdin-close shutdown sentinel
+  (no graceful SIGTERM on Windows), `.ico` tray icons, unsigned NSIS + SmartScreen
+  click-through docs, MCP `openInBrowser` Windows fix, a `windows-latest` matrix row;
+  Azure Trusted Signing (~$10/mo) as the signing toggle when adoption justifies it.
+- **Update surfacing** — notify-only first (manager polls GitHub Releases, menubar hint
+  + download link, a setting to silence it); `electron-updater` later — electron-builder's
+  `latest*.yml` manifests make it additive; mac auto-update stays impossible until
+  Developer ID signing exists.
+- **Per-PR CI tests** — natural now that all changes land via PR; not part of the
+  release-pipeline slice.
+- **Flathub** — the eventual Linux store channel (after Linux support).
