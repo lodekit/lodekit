@@ -16,3 +16,11 @@ Rules:
   empty section is fine.
 
 ---
+
+## New
+
+- **Charts and data tables** — the UI library gains charts (recharts via the stock
+  shadcn chart port, themed by the `--chart-*` tokens) and a reusable data table
+  (`useDataTable` + `DataTable`: sorting, filtering, pagination — client-side or
+  server-driven). The Greenhouse Almanac shows both: a Sky Journal temperature chart
+  and a sortable care-history table.

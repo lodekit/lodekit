@@ -3,7 +3,13 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { desc } from "drizzle-orm";
 import { events, tasks, type TaskInfo, type TaskRun, type TaskRunState } from "@lodekit/sdk";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@lodekit/ui";
+import {
+  Badge, Button, Card, CardContent, CardHeader, CardTitle,
+  ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent,
+  DataTable, DataTableColumnHeader, DataTablePagination, useDataTable,
+  type ChartConfig, type ColumnDef,
+} from "@lodekit/ui";
+import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 import { db, weatherLog, type WeatherDay } from "../db";
 
 export const getAlmanac = createServerFn().handler(async () => ({
@@ -27,6 +33,55 @@ export const Route = createFileRoute("/almanac")({
 const STATES: TaskRunState[] = ["queued", "running", "succeeded", "failed", "canceled"];
 const fmt = (ms: number | null) => (ms == null ? "—" : new Date(ms).toLocaleString());
 
+const runColumns: ColumnDef<TaskRun>[] = [
+  {
+    accessorKey: "state",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="State" />,
+    cell: ({ row }) => (
+      <Badge
+        variant={
+          row.original.state === "failed" ? "destructive"
+          : row.original.state === "succeeded" ? "secondary"
+          : "outline"
+        }
+      >
+        {row.original.state}
+      </Badge>
+    ),
+  },
+  {
+    accessorKey: "task",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Task" />,
+    cell: ({ row }) => <span className="font-medium">{row.original.task}</span>,
+  },
+  { accessorKey: "source", header: "Source" },
+  { accessorKey: "attempt", header: "Attempt" },
+  {
+    id: "when",
+    accessorFn: (r) => r.finishedAt ?? r.startedAt ?? r.createdAt,
+    header: ({ column }) => <DataTableColumnHeader column={column} title="When" />,
+    cell: ({ getValue }) => (
+      <span className="text-muted-foreground">{fmt(getValue<number>())}</span>
+    ),
+  },
+  {
+    accessorKey: "durationMs",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Duration" />,
+    cell: ({ getValue }) => {
+      const ms = getValue<number | null>();
+      return <span className="text-muted-foreground">{ms == null ? "—" : `${ms}ms`}</span>;
+    },
+  },
+  {
+    accessorKey: "error",
+    header: "Error",
+    cell: ({ getValue }) => {
+      const error = getValue<string | null>();
+      return error ? <span className="text-destructive">{error}</span> : null;
+    },
+  },
+];
+
 function Almanac() {
   const router = useRouter();
   const { almanac, sky } = Route.useLoaderData();
@@ -38,6 +93,12 @@ function Almanac() {
   const [state, setState] = useState<TaskRunState | "all">("all");
   const [task, setTask] = useState<string | "all">("all");
   const [live, setLive] = useState(false);
+
+  const runsTable = useDataTable({
+    columns: runColumns,
+    data: runs,
+    initialState: { pagination: { pageSize: 10 } },
+  });
 
   const refetch = useCallback(async () => {
     const [filteredRuns, queuedRuns, taskDefs] = await Promise.all([
@@ -122,23 +183,8 @@ function Almanac() {
               </Button>
             ))}
           </div>
-          <ul className="space-y-1 text-sm">
-            {runs.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center gap-2">
-                <Badge
-                  variant={r.state === "failed" ? "destructive" : r.state === "succeeded" ? "secondary" : "outline"}
-                >
-                  {r.state}
-                </Badge>
-                <span className="font-medium">{r.task}</span>
-                <span className="text-muted-foreground">
-                  {r.source} · attempt {r.attempt} · {fmt(r.finishedAt ?? r.startedAt ?? r.createdAt)}
-                  {r.durationMs != null && ` · ${r.durationMs}ms`}
-                </span>
-                {r.error && <span className="text-destructive">{r.error}</span>}
-              </li>
-            ))}
-          </ul>
+          <DataTable table={runsTable} />
+          <DataTablePagination table={runsTable} />
         </CardContent>
       </Card>
 
@@ -165,8 +211,17 @@ function Almanac() {
   );
 }
 
+const skyConfig = {
+  high: { label: "High °C", color: "var(--chart-1)" },
+  low: { label: "Low °C", color: "var(--chart-2)" },
+} satisfies ChartConfig;
+
+const weekday = (day: string) =>
+  new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(new Date(`${day}T12:00:00`));
+
 function SkyJournal({ rows, onFetch }: { rows: WeatherDay[]; onFetch: () => void }) {
   const latest = rows[0];
+  const series = [...rows].reverse(); // chart reads left→right, oldest→newest
   return (
     <Card>
       <CardHeader>
@@ -188,13 +243,17 @@ function SkyJournal({ rows, onFetch }: { rows: WeatherDay[]; onFetch: () => void
               {latest.low.toFixed(0)}–{latest.high.toFixed(0)} °C, {latest.humidity}% humidity,
               wind {latest.wind.toFixed(1)} m/s{latest.rained ? ", rain" : ""}
             </p>
-            <div className="mt-2 space-y-1">
-              {rows.slice(1).map((r) => (
-                <p key={r.day} className="text-xs text-muted-foreground">
-                  {r.day}: {r.low.toFixed(0)}–{r.high.toFixed(0)} °C{r.rained ? " · rain" : ""}
-                </p>
-              ))}
-            </div>
+            <ChartContainer config={skyConfig} className="mt-3 aspect-[3/1] w-full">
+              <LineChart data={series} margin={{ left: 0, right: 8, top: 4 }}>
+                <CartesianGrid vertical={false} />
+                <XAxis dataKey="day" tickLine={false} axisLine={false} tickFormatter={weekday} />
+                <YAxis width={28} tickLine={false} axisLine={false} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartLegend content={<ChartLegendContent />} />
+                <Line dataKey="high" type="monotone" stroke="var(--color-high)" strokeWidth={2} dot={false} />
+                <Line dataKey="low" type="monotone" stroke="var(--color-low)" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ChartContainer>
           </>
         )}
       </CardContent>

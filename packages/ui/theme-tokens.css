@@ -26,11 +26,13 @@
   --border: #dbe6f0;
   --input: #dbe6f0;
   --ring: #ce6f26;
+  /* Categorical series (fixed order, never cycled) — CVD- and
+     contrast-validated against the card surfaces; slot 1 is the brand amber. */
   --chart-1: #ce6f26;
-  --chart-2: #79b356;
-  --chart-3: #4c7ca6;
-  --chart-4: #c07b3a;
-  --chart-5: #a9cef2;
+  --chart-2: #3d7ab8;
+  --chart-3: #5d9440;
+  --chart-4: #7a63c9;
+  --chart-5: #c25e88;
   --sidebar: #ffffff;
   --sidebar-foreground: #132c44;
   --sidebar-primary: #ce6f26;
@@ -61,11 +63,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: #e08a3c;
-  --chart-1: #e08a3c;
-  --chart-2: #79b356;
-  --chart-3: #a9cef2;
-  --chart-4: #b57a42;
-  --chart-5: #4c7ca6;
+  --chart-1: #cd7c2c;
+  --chart-2: #4e8ec7;
+  --chart-3: #69a648;
+  --chart-4: #9280dd;
+  --chart-5: #cc6d94;
   --sidebar: #152634;
   --sidebar-foreground: #f4f9fd;
   --sidebar-primary: #e08a3c;
