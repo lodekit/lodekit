@@ -1,7 +1,7 @@
 name: release
 
 # Fires on every closed PR against master; everything below exits silently unless
-# the PR merged AND its title is a bare semver — the release skill's PRs only.
+# the PR merged AND its title matches `release: vX.Y.Z` — the release skill's PRs only.
 on:
   pull_request:
     types: [closed]
@@ -23,9 +23,10 @@ jobs:
         env:
           TITLE: ${{ github.event.pull_request.title }}
         run: |
-          if [[ "$TITLE" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          RE='^release: v([0-9]+\.[0-9]+\.[0-9]+)$'
+          if [[ "$TITLE" =~ $RE ]]; then
             echo "release=true" >> "$GITHUB_OUTPUT"
-            echo "version=$TITLE" >> "$GITHUB_OUTPUT"
+            echo "version=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
           else
             echo "release=false" >> "$GITHUB_OUTPUT"
           fi
