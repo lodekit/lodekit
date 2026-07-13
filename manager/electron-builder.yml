@@ -9,8 +9,11 @@ directories:
 npmRebuild: false
 # Behavior parity with the Forge build: plain app dir, no asar packing.
 asar: false
+# Packed-app sanity: every runtime-read path made it into the app dir.
+afterPack: ./scripts/assert-pack.cjs
 files:
   - src/**
+  - assets/**
   - package.json
 # Bundle inputs from scripts/prepare-bundle.mjs → Resources/node, Resources/platform.
 extraResources:

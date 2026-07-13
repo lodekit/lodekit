@@ -39,7 +39,7 @@ carries over untouched. What migrates is the thin packaging config:
 | `extendInfo: { LSUIElement: true }` | `mac.extendInfo` — same key |
 | `extraResource: build/node, build/platform` | `extraResources` — same `Resources/` layout |
 | `osxSign: { identity: "-" }` (ad-hoc) | ad-hoc mac signing preserved; Developer ID stays the dormant toggle |
-| `prune: false` + `ignore` regex | `files` whitelist: `package.json` + `src/` only, plus `npmRebuild: false` (manager has zero prod deps; nothing may walk pnpm's symlinked layout) |
+| `prune: false` + `ignore` regex | `files` whitelist: `package.json` + `src/` + `assets/` (every runtime-read path — an `afterPack` assert guards the list), plus `npmRebuild: false` (manager has zero prod deps; nothing may walk pnpm's symlinked layout) |
 | `maker-zip` (darwin) | `mac.target: zip`, per-arch |
 
 Two deliberate choices:
