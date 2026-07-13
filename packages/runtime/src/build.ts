@@ -17,11 +17,12 @@ const require = createRequire(import.meta.url);
 // Point Vite at the runtime's copy of each package so apps (which have no
 // node_modules) resolve bare imports into Lodekit's shared install.
 const pkgDir = (id: string) => path.dirname(require.resolve(`${id}/package.json`));
-// lucide-react is @lodekit/ui's dependency, not the runtime's — resolve the exact copy
-// the vendored components themselves use, so apps and components share one icon set.
+// lucide-react and recharts are @lodekit/ui's dependencies, not the runtime's —
+// resolve the exact copies the UI library uses, so apps and components share one copy.
 export const uiDir = pkgDir("@lodekit/ui");
 const uiRequire = createRequire(path.join(uiDir, "package.json"));
 const lucideDir = path.dirname(uiRequire.resolve("lucide-react/package.json"));
+const rechartsDir = path.dirname(uiRequire.resolve("recharts/package.json"));
 
 const DASHBOARD_ROOT = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -238,6 +239,7 @@ const appAliases = (themeOverridesFile: string) => [
   { find: "@lodekit/sdk", replacement: pkgDir("@lodekit/sdk") },
   { find: "@lodekit/ui", replacement: uiDir },
   { find: "lucide-react", replacement: lucideDir },
+  { find: "recharts", replacement: rechartsDir },
 ];
 
 export async function buildStart(t: StartBuildTarget): Promise<void> {
