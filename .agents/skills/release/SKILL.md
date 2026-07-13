@@ -1,6 +1,6 @@
 ---
 name: release
-description: Cut a Lodekit release — semver bump across the workspace, product-level release notes, and a release PR whose merge triggers the build pipeline. Use when the person asks to release or ship a version. Args: patch|minor|major (bare invocation proposes a bump); --dry-run drafts without touching anything.
+description: Cut a Lodekit release — semver bump across the workspace, drain the changelog buffer (docs/changelog.next.md) into release notes, and raise a release PR whose merge triggers the build pipeline. Use when the person asks to release or ship a version. Args: patch|minor|major (bare invocation proposes a bump); --dry-run drafts without touching anything.
 ---
 
 # Release
@@ -28,9 +28,11 @@ All must pass. On any failure, stop and report — fix nothing silently.
 - No release PR already open:
   `gh pr list --state open --json title --jq '.[].title' | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$'`
   must print nothing.
+- The changelog buffer `docs/changelog.next.md` has at least one entry under `## New`
+  or `## Fixed` — an empty buffer means nothing user-facing shipped; there is nothing
+  to release.
 - Previous release tag: `git describe --tags --match 'v*' --abbrev=0` — call it
   `vPREV`. If it fails, no release exists yet: this is the **first release** (§5).
-  Otherwise `git rev-list vPREV..HEAD --count` must be > 0.
 
 ## 2. Bump
 
@@ -39,19 +41,20 @@ Compute the new version from the lockstep version and the requested bump
 minor, fixes only → patch) and confirm with the person before proceeding. Edit the
 version field in all 9 package.json files together. First release: skip (§5).
 
-## 3. Notes — product-level
+## 3. Notes — drain the buffer
 
-The changelog unit is the **shipped product change**, not the commit.
+The notes are **not reconstructed** at release time: they accumulate in
+`docs/changelog.next.md` as slices ship (one entry per product change, written for a
+person *using* Lodekit — see the buffer's own rules header). Here:
 
-- Find shipped slices: `git log vPREV..HEAD --diff-filter=A --name-only -- docs/specs/`
-  (new specs = shipped slices), plus
-  `gh pr list --state merged --base master --limit 50 --json title,body,mergedAt`
-  for the evidence trail, plus `git log vPREV..HEAD --oneline` for anything unspecced.
-- Draft **one entry per product change**, written for a person *using* Lodekit —
-  what they can do now, never how it was built.
-- Buckets: `### New`, then `### Fixed` (user-noticeable fixes only). Internal work,
-  refactors, docs, and bookkeeping are dropped. Omit an empty bucket.
-- Optionally one narrative line under the version heading if the release has a theme.
+- Take the buffer's `## New` / `## Fixed` sections verbatim as the release notes.
+  Optionally draft one narrative line for the top if the release has a theme.
+- **Completeness cross-check:** scan
+  `gh pr list --state merged --base master --limit 50 --json title,mergedAt` (and
+  `git log vPREV..HEAD --oneline`) for user-facing work with no buffer entry. If
+  something is missing, **surface it to the person** — never silently add entries.
+- Do not reword existing entries; editorial changes belong to the person in the
+  release PR review.
 
 ## 4. Changelog + release PR
 
@@ -70,8 +73,13 @@ The changelog unit is the **shipped product change**, not the commit.
   - What was broken from the user's view…
   ```
 
+  (The buffer's `## New`/`## Fixed` become `### New`/`### Fixed` under the version
+  heading.)
+
+- **Reset the buffer:** truncate `docs/changelog.next.md` back to its rules header
+  (everything above and including the `---` separator), removing the drained entries.
 - Branch `release/vX.Y.Z` off `master`; single commit `release: vX.Y.Z` containing
-  the 9 version bumps + the changelog edit.
+  the 9 version bumps + the changelog edit + the buffer reset.
 - Push and open the PR: title **bare `X.Y.Z`** (the workflow's trigger match), body =
   the new changelog section's content without the `## X.Y.Z` heading line.
 - **Stop.** The person reviews, edits the notes if desired, and merges. Never merge
@@ -81,6 +89,6 @@ The changelog unit is the **shipped product change**, not the commit.
 
 The workspace already says `0.1.0` and it was never released: the first run is the
 one permitted **zero-bump** release. Skip §2 entirely — version stays `0.1.0`. The
-notes baseline is everything so far, summarized coarsely as an initial-release
-narrative (what Lodekit is, plus its headline capabilities) — do not reconstruct
-the history slice by slice.
+buffer was seeded with the initial-release narrative (what Lodekit is, plus its
+headline capabilities); drain it like any other release — do not reconstruct the
+history slice by slice.

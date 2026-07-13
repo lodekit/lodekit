@@ -93,42 +93,47 @@ Replaces CLAUDE.md's "commit directly to master" convention.
 
 Consequence: `master` stays fine-grained conventional commits, every one reachable from
 a merged PR. The changelog does **not** lean on this granularity — its unit is the
-shipped spec (§5) — but PR bodies are the evidence trail the release skill reads.
+shipped product change, captured incrementally in the changelog buffer (§5) and
+reviewed as part of each slice PR.
 
-## 5. The release skill
+## 5. The changelog buffer and the release skill
 
-Agent-agnostic: canonical home **`.agents/skills/release/SKILL.md`** (portable
-frontmatter: `name`, `description`; body plain `git`/`gh`/`pnpm` instructions).
-Discovery wiring: symlink `.claude/skills/release` → `../../.agents/skills/release`; a
-pointer line in `AGENTS.md`.
+**Notes are frontloaded into the dev loop, not reconstructed at release time.**
+`docs/changelog.next.md` is an append-only buffer (the `docs/defer.md` pattern, pointed
+at shipping): a slice that changes something a Lodekit user can see or do appends one
+product-level entry under `## New` or `## Fixed`, in the same PR as the code — written
+while context is fresh, reviewed with the slice. Internal work appends nothing.
+Releasing is collecting: the skill drains the buffer verbatim.
+
+The skill is agent-agnostic: canonical home **`.agents/skills/release/SKILL.md`**
+(portable frontmatter: `name`, `description`; body plain `git`/`gh`/`pnpm`
+instructions). Discovery wiring: symlink `.claude/skills/release` →
+`../../.agents/skills/release`; a pointer line in `AGENTS.md`.
 
 Invoked as `/release patch|minor|major` (bare `/release` proposes a bump from what
 shipped). Runs entirely locally:
 
 1. **Pre-flight** — on `master`; clean tree; up to date with `origin`; `pnpm test`
    passes; all workspace `package.json` versions in lockstep (versioning design
-   2026-07-06 §2); `gh` authenticated; no release PR already open; at least one shipped
-   change since the last `v*` tag. Any failure stops with a report — nothing fixed
-   silently.
+   2026-07-06 §2); `gh` authenticated; no release PR already open; the buffer has at
+   least one entry. Any failure stops with a report — nothing fixed silently.
 2. **Bump** — edit the root and all workspace `package.json` files together.
-3. **Notes — product-level, one entry per shipped spec.** The unit of the changelog is
-   the product change, not the commit. The skill identifies the specs/slices shipped
-   since the last `v*` tag (new `docs/specs/` entries and the feature work merged for
-   them, with PR bodies via `gh` as the evidence trail) and drafts **one user-facing
-   entry per product change**, written for a person *using* Lodekit. Notable fixes get
-   a Fixed bucket; internal work, docs, and bookkeeping are dropped. The git log is
-   evidence, never the outline.
-4. **Changelog entry** — prepend the new section to the docs-site changelog page (§7).
+3. **Notes — drain the buffer.** The buffer's sections become the release notes
+   verbatim; the skill's only editorial step is a completeness cross-check (merged PRs
+   since the last `v*` tag with user-facing work but no buffer entry are surfaced to
+   the person, never silently added).
+4. **Changelog entry** — prepend the drained section to the docs-site changelog page
+   (§7) and reset the buffer to its rules header.
 5. **Release PR** — branch `release/vX.Y.Z`; single commit `release: vX.Y.Z` (bumps +
-   changelog); PR titled bare `X.Y.Z` with the notes as body. Then stop: the person
-   reviews, edits notes if desired, and merges — the merge is the release trigger.
+   changelog + buffer reset); PR titled bare `X.Y.Z` with the notes as body. Then
+   stop: the person reviews, edits notes if desired, and merges — the merge is the
+   release trigger.
 
 `--dry-run` runs pre-flight and drafts notes, touches nothing.
 
 **First release:** no `v*` tag exists and the workspace already says `0.1.0`, so the
-first run is the one permitted zero-bump release — version stays `0.1.0`, notes
-baseline is everything so far, summarized coarsely as an initial-release narrative
-rather than reconstructed slice by slice.
+first run is the one permitted zero-bump release — version stays `0.1.0`; the buffer
+is pre-seeded with the initial-release narrative and drains like any other release.
 
 ## 6. GitHub Actions release workflow
 
@@ -184,8 +189,8 @@ the canonical changelog, readable in the repo.
 
 ## 8. Deferred seams
 
-Each deferred item has a designed-in seam to land on later; all buffered in `defer.md`
-for the GitHub issue backlog (roadmap.md was retired mid-flight):
+Each deferred item has a designed-in seam to land on later; all buffered in
+`docs/defer.md` for the GitHub issue backlog (roadmap.md was retired mid-flight):
 
 - **Linux** (research stage 2): XDG path branches (the runtime config comment already
   marks the spot), hand-written `.desktop` autostart, full-color tray PNGs,

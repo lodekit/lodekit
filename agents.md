@@ -90,12 +90,17 @@ Simplicity never means cutting safety.
 ## Conventions
 
 - **Backlog:** deferred work and known gaps live as GitHub issues (`gh issue list`).
-- **Deferrals:** `defer.md` is a transient buffer for work descoped/deferred during a
-  session. Append entries under a dated session header linking the spec/plan/PR that
+- **Deferrals:** `docs/defer.md` is a transient buffer for work descoped/deferred during
+  a session. Append entries under a dated session header linking the spec/plan/PR that
   caused them; **append-only** — never reword, resolve, or remove existing entries (the
   person drains the file into GitHub issues and clears it). `roadmap.md` is retired;
   never recreate it — where an older spec/plan says "add to roadmap.md", that now means
-  `defer.md`.
+  `docs/defer.md`.
+- **Changelog buffer:** `docs/changelog.next.md` collects unreleased user-facing
+  changes. A slice that ships something a Lodekit user can see or do appends an entry
+  under `## New` or `## Fixed`, in the same PR as the code; internal work appends
+  nothing. **Append-only** for agents — rewording and cutting happen in the release PR
+  review.
 - **Docs:** Specs live in `docs/specs/`. Plans live in `docs/plans/`.
 - **Branching:** All changes to `master` land via PR — no direct pushes, docs and
   typos included. Slice work happens on a branch/worktree; finishing a slice means
@@ -111,10 +116,10 @@ Simplicity never means cutting safety.
     merge unattended.
   - Regenerate `pnpm-lock.yaml` conflicts with `pnpm install --lockfile-only` rather than hand-merging.
 - **Releases:** `/release` (skill at `.agents/skills/release/SKILL.md`) assembles a
-  semver release PR with product-level notes — one changelog entry per shipped spec,
-  not per commit. Merging it triggers the GitHub release build; the workflow is the
-  only creator of `v*` tags. Portable agent skills live in `.agents/skills/` (Claude Code
-  discovers them via the `.claude/skills` symlinks).
+  semver release PR: lockstep version bump + drain of `docs/changelog.next.md` into the
+  docs changelog page. Merging it triggers the GitHub release build; the workflow is
+  the only creator of `v*` tags. Portable agent skills live in `.agents/skills/`
+  (Claude Code discovers them via the `.claude/skills` symlinks).
 - **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
 - **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
   showcase app exercises it (`root/readme.md` holds the living coverage checklist).
