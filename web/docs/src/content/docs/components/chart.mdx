@@ -1,0 +1,59 @@
+---
+title: Chart
+description: "Charts with recharts and the stock shadcn chart port, themed by tokens."
+---
+
+Charts are [recharts](https://recharts.org/), wrapped by the stock
+[shadcn chart components](https://ui.shadcn.com/docs/components/chart):
+`ChartContainer`, `ChartTooltip` / `ChartTooltipContent`,
+`ChartLegend` / `ChartLegendContent`, and the `ChartConfig` type. You compose
+recharts primitives yourself — the wrapper adds theming and consistent
+tooltip/legend styling.
+
+```tsx
+import {
+  ChartContainer, ChartTooltip, ChartTooltipContent,
+  ChartLegend, ChartLegendContent, type ChartConfig,
+} from "@lodekit/ui";
+import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
+
+const config = {
+  high: { label: "High °C", color: "var(--chart-1)" },
+  low: { label: "Low °C", color: "var(--chart-2)" },
+} satisfies ChartConfig;
+
+export function TemperatureChart({ data }: { data: { day: string; high: number; low: number }[] }) {
+  return (
+    <ChartContainer config={config} className="aspect-[3/1] w-full">
+      <LineChart data={data}>
+        <CartesianGrid vertical={false} />
+        <XAxis dataKey="day" tickLine={false} axisLine={false} />
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
+        <Line dataKey="high" stroke="var(--color-high)" strokeWidth={2} dot={false} />
+        <Line dataKey="low" stroke="var(--color-low)" strokeWidth={2} dot={false} />
+      </LineChart>
+    </ChartContainer>
+  );
+}
+```
+
+Each key in the config becomes a CSS variable — `--color-high`, `--color-low` —
+scoped to that chart, in both light and dark mode.
+
+## Series colors
+
+The theme defines five categorical series tokens, `--chart-1` through
+`--chart-5`, derived from the Lodekit palette and validated for color-vision
+deficiency separation and surface contrast in both modes. Use them **in order,
+starting from `--chart-1`** — the fixed order is what keeps adjacent series
+distinguishable. A config can also hard-code a color or provide a per-mode pair
+(`theme: { light, dark }`), but for ordinary series the tokens are the right
+default — and they follow [theme overrides](/guide/theming/) automatically.
+
+For the full recharts surface (areas, bars, pies, radial charts…), shadcn's
+[chart examples](https://ui.shadcn.com/charts) all work as-is — swap their
+`ChartContainer` import for `@lodekit/ui`.
+
+The Greenhouse showcase renders one: the Sky Journal temperature chart on the
+Almanac page.

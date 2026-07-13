@@ -1,0 +1,44 @@
+---
+title: Components overview
+description: "Every component in the UI library — stock shadcn, one shared theme."
+---
+
+Every app imports its interface from `@lodekit/ui` — no installation, no copying
+component files. The components are [shadcn/ui](https://ui.shadcn.com/) (the
+Base UI-based `base-nova` style), kept **stock**: Lodekit adds one shared theme
+through tokens, never custom component internals. Because they're stock, shadcn's
+own docs and examples apply directly, and your agent already knows them well.
+
+## The stock set
+
+`accordion`, `alert`, `alert-dialog`, `aspect-ratio`, `avatar`, `badge`,
+`breadcrumb`, `button`, `button-group`, `card`, `checkbox`, `collapsible`,
+`combobox`, `command`, `context-menu`, `dialog`, `drawer`, `dropdown-menu`, `empty`,
+`field`, `hover-card`, `input`, `input-group`, `input-otp`, `kbd`, `label`,
+`menubar`, `navigation-menu`, `pagination`, `popover`, `progress`, `radio-group`,
+`resizable`, `scroll-area`, `select`, `separator`, `sheet`, `sidebar`, `skeleton`,
+`slider`, `sonner`, `spinner`, `switch`, `table`, `tabs`, `textarea`, `toggle`,
+`toggle-group`, `tooltip`
+
+— plus the `cn` helper for composing class names.
+
+## Beyond the stock set
+
+Two capabilities get their own pages, because they carry API surface of their own:
+
+- **[Chart](/components/chart/)** — recharts through the stock shadcn chart port,
+  themed by the `--chart-*` tokens.
+- **[Data table](/components/data-table/)** — a reusable table engine over
+  `@tanstack/react-table`, client-side or server-driven.
+
+## One theme
+
+Colors, radii, and typography come from theme tokens, not from each app's code.
+An app opts in with one line in `src/index.css`:
+
+```css
+@import "@lodekit/ui/theme.css";
+```
+
+Redefining tokens — globally or per app — restyles every component at once; see
+[Theming](/guide/theming/).

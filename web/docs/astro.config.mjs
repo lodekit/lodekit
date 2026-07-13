@@ -41,6 +41,14 @@ export default defineConfig({
           ],
         },
         {
+          label: "Components",
+          items: [
+            "components/overview",
+            "components/chart",
+            "components/data-table",
+          ],
+        },
+        {
           label: "Services",
           items: [
             "services/overview",

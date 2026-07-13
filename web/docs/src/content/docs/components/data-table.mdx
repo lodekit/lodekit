@@ -1,0 +1,91 @@
+---
+title: Data table
+description: "A reusable table engine — sorting, filtering, pagination — client-side or server-driven."
+---
+
+`useDataTable` wraps [TanStack Table](https://tanstack.com/table/latest) and
+pairs with `DataTable`, which renders the instance over the stock Table
+primitives. Columns are TanStack `ColumnDef`s — shadcn's
+[data-table guide](https://ui.shadcn.com/docs/components/data-table) applies
+directly.
+
+## Client mode
+
+For ordinary app tables, pass columns and rows; sorting, filtering, and
+pagination run in the browser:
+
+```tsx
+import {
+  useDataTable, DataTable, DataTableColumnHeader, DataTablePagination,
+  type ColumnDef,
+} from "@lodekit/ui";
+
+type Run = { task: string; state: string; durationMs: number };
+
+const columns: ColumnDef<Run>[] = [
+  {
+    accessorKey: "task",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Task" />,
+  },
+  { accessorKey: "state", header: "State" },
+  {
+    accessorKey: "durationMs",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Duration" />,
+  },
+];
+
+export function RunsTable({ runs }: { runs: Run[] }) {
+  const table = useDataTable({
+    columns,
+    data: runs,
+    initialState: { pagination: { pageSize: 10 } },
+  });
+  return (
+    <>
+      <DataTable table={table} />
+      <DataTablePagination table={table} />
+    </>
+  );
+}
+```
+
+## Manual mode (server-driven)
+
+With `manual: true`, the table stops computing anything itself: sorting,
+filtering, and pagination become *state you own*. Interactions call your
+`on*Change` callbacks; you execute the query (typically SQL via a server
+function) and pass the resulting page back as `data`. Multi-column sorting
+state is the standard TanStack shape, `[{ id, desc }]`.
+
+```tsx
+const [sorting, setSorting] = useState<SortingState>([]);
+const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 });
+
+// Re-query whenever sorting/pagination change; ORDER BY from `sorting`,
+// LIMIT/OFFSET from `pagination`. `rows` and `total` come from the server.
+const table = useDataTable({
+  columns,
+  data: rows,
+  manual: true,
+  rowCount: total,
+  state: { sorting, pagination },
+  onSortingChange: setSorting,
+  onPaginationChange: setPagination,
+});
+```
+
+Manual mode requires `rowCount` (or `pageCount`) so the pager can do its math.
+Everything else — `DataTable`, `DataTableColumnHeader`, `DataTablePagination` —
+works unchanged.
+
+## Companions
+
+- **`DataTableColumnHeader`** — drop into a column's `header` to get a sort
+  toggle (asc/desc/hide) that reflects sort state.
+- **`DataTablePagination`** — page-size select and first/prev/next/last
+  controls; takes an optional `pageSizeOptions` array.
+- **`DataTableViewOptions`** — a column-visibility dropdown for the toolbar.
+- **`DataTableFacetedFilter`** — a multi-select filter with per-value counts
+  (client mode only — the counts come from client-side faceting).
+
+The Greenhouse showcase renders one: the care-history table on the Almanac page.
