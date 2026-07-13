@@ -64,7 +64,16 @@ is the word the docs use.
 **event** — A durable message on the platform's event bus: an app announcing
 an export finished, the platform announcing an app became ready. Events
 trigger reactions; they're never the system of record. See
-[Events](/services/events/).
+[the Event Store](/services/event-store/).
+
+**Event Store** — The platform-wide event bus and its history (**event-store**
+for short): every event lands in one ordered, replayable log, reached through
+the SDK as the `events` handle. See
+[the Event Store](/services/event-store/).
+
+**File Store** — Every app's own blob storage (**file-store** for short):
+documents and images kept as real, Finder-browsable files, reached through
+the SDK as the `files` handle. See [the File Store](/services/file-store/).
 
 **gateway** — The managed door to one provider: a declarative manifest plus
 the runtime machinery that injects credentials and guards traffic. Apps reach
@@ -75,9 +84,19 @@ outside providers only through gateways. See
 folder per provider; part of the backup tree. See
 [Your Lodekit folder](/guide/your-lodekit-folder/).
 
+**Key-Value Data Store** — Every app's own key-value store (**kv-store** for
+short): the app's memory — counters, cursors, caches, flags — reached through
+the SDK as the `kv` handle. See
+[the Key-Value Data Store](/services/kv-store/).
+
 **Lodekit root** — The one folder (`~/Documents/Lodekit` by default) holding
 the apps, data, and gateways trees side by side. The thing you back up. See
 [Your Lodekit folder](/guide/your-lodekit-folder/).
+
+**Log Store** — Structured log records from your apps and the platform
+(**log-store** for short), kept for a week, written through the SDK as the
+`logs` handle, and read in the dashboard's Logs view. See
+[the Log Store](/services/log-store/).
 
 **manager** — The menubar app that ships and supervises the platform: it
 runs the runtime, shows its status, and opens the dashboard. See
@@ -98,6 +117,11 @@ disk.
 **provider** — The external party a gateway fronts: whoever sits on the other
 end of a gateway's base URL. See [Gateways](/services/gateways/).
 
+**Relational Data Store** — Every app's own relational database (**db-store**
+for short): the default home for domain records — entities, relationships,
+queries — reached through the SDK as the `db` handle. See
+[the Relational Data Store](/services/db-store/).
+
 **runtime** — The single Node process at the heart of the platform: it
 builds, watches, and serves your apps, the dashboard, and the API. See
 [How Lodekit works](/start/how-lodekit-works/).
@@ -114,13 +138,19 @@ the SDK; every app reaches only its own namespace. See the
 services. Works on both sides: in the browser and in server code. See the
 [SDK overview](/sdk/overview/).
 
+**Secret Store** — The platform-wide encrypted catalog of credentials
+(**secret-store** for short): API keys and tokens you manage in the dashboard,
+linked into apps slot by slot and read only by server code through the
+`secrets` handle. See [the Secret Store](/services/secret-store/).
+
 **server function** — App code that runs on the server: a TanStack Start
 `createServerFn`, callable from the app's own pages, with inputs validated
 at the boundary. See
 [Data and server functions](/build/data-and-server-functions/).
 
-**service** — A capability the runtime provides to every app — the Database,
-KV, Files, Events, Tasks, Logs, Settings, Secrets, Gateways — reached only
+**service** — A capability the runtime provides to every app — the
+**db-store**, **kv-store**, **file-store**, **event-store**, **tasks**,
+**log-store**, **settings**, **secret-store**, **gateways** — reached only
 through the SDK. See the [services overview](/services/overview/).
 
 **settings** — Configuration you view and edit in the dashboard: platform
@@ -140,7 +170,7 @@ TypeScript + Tailwind through the shared toolchain, importing the SDK and
 the UI library. See [The stack](/build/the-stack/).
 
 **State** — Machine-local operational data at
-`~/Library/Application Support/Lodekit` — mainly the log store. Losing it
+`~/Library/Application Support/Lodekit` — mainly the **log-store**. Losing it
 costs history, never apps or data. See
 [File locations](/reference/file-locations/).
 

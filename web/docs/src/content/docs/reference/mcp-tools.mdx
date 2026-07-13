@@ -67,14 +67,14 @@ Read event bus history — the same stream as the dashboard's Events view.
 
 ### lodekit_kv_list
 
-List an app's KV entries with metadata.
+List an app's **kv-store** entries with metadata.
 
 - `appId` (string, required).
 - `prefix` (string, optional) — key prefix filter.
 
 ### lodekit_kv_get
 
-Get one KV value. Returns a `{ found }` shape, so a missing key is
+Get one **kv-store** value. Returns a `{ found }` shape, so a missing key is
 distinguishable from a stored `null`.
 
 - `appId` (string, required).

@@ -1,11 +1,11 @@
 ---
-title: Files
+title: File Store
 description: "Store and serve files alongside your app's other data."
 ---
 
-Every app gets its own blob storage — a home for documents, images, and
-anything else that is fundamentally bytes. In the service catalog this is
-**file-store**, reached through the SDK as the `files` handle.
+Every app gets its own blob storage — the File Store (**file-store** for
+short), a home for documents, images, and anything else that is fundamentally
+bytes, reached through the SDK as the `files` handle.
 
 ## The idea
 
@@ -27,13 +27,14 @@ files without opening them.
 
 ## When to use it
 
-Use Files for anything that is a document or a blob: photos a person uploads,
-PDFs, generated exports, files your app ingests from elsewhere.
+Use the **file-store** for anything that is a document or a blob: photos a
+person uploads, PDFs, generated exports, files your app ingests from elsewhere.
 
-The boundary runs against the [Database](/services/database/): the facts
+The boundary runs against the [**db-store**](/services/db-store/): the facts
 *about* a thing are fields — they belong in a table; the thing itself, when
 it's bytes, belongs here. Greenhouse keeps each plant as a database record,
-and each plant *photo* in Files, with the plant's id in the photo's metadata
+and each plant *photo* in the **file-store**, with the plant's id in the
+photo's metadata
 to tie them together.
 
 ## How it works in Lodekit
@@ -89,7 +90,7 @@ const stat = await files.put(
 Uploads and downloads are **streamed** in both directions — a large file
 flows through in pieces rather than being held in memory whole, so file size
 never strains the runtime. And like the other stores, every put and delete
-lands on the [event bus](/services/events/) as a `file-store-change` event
+lands on the [event bus](/services/event-store/) as a `file-store-change` event
 carrying the slug, so your UI can react live.
 
 ## Limits

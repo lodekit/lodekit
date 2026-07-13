@@ -1,15 +1,15 @@
 ---
-title: KV
+title: Key-Value Data Store
 description: "The simple per-app key-value store for small bits of state."
 ---
 
-Every app gets a small key–value store — a place for the notes an app keeps
-about itself. In the service catalog this is **kv-store**, reached through the
-SDK as the `kv` handle.
+Every app gets a small key-value store — the Key-Value Data Store
+(**kv-store** for short), a place for the notes an app keeps about itself,
+reached through the SDK as the `kv` handle.
 
 ## The idea
 
-A **key–value store** is the simplest database that's still useful: you store
+A **key-value store** is the simplest database that's still useful: you store
 a value under a name, and you get it back by that name. No schema, no tables,
 no query language — one lookup, directly to the answer, no matter how many
 entries there are.
@@ -20,25 +20,27 @@ requests race, because the store does the read-modify-write as one indivisible
 step. And values can carry a **TTL** (time to live): store something with an
 expiry, and the store forgets it for you when the time comes — no cleanup code.
 
-The same simplicity is also the limit. A key–value store can't express
+The same simplicity is also the limit. A key-value store can't express
 relationships between values, and it can't answer questions — "everything
 where X" requires structure the store deliberately doesn't have. It hands back
 what you put in, by name, and nothing else.
 
-The useful mental model: if the [Database](/services/database/) is the filing
-cabinet — labeled folders, cross-references, an index — KV is the sticky notes
+The useful mental model: if the [**db-store**](/services/db-store/) is the
+filing cabinet — labeled folders, cross-references, an index — the
+**kv-store** is the sticky notes
 on the monitor. Quick to write, instantly findable, exactly right for small
 reminders. You wouldn't run a business from sticky notes, and you wouldn't
 open a folder to jot "left off at page 12".
 
 ## When to use it
 
-KV is your app's **own memory**: counters, cursors, preferences, caches,
-flags — small values the app writes about itself while running.
+The **kv-store** is your app's **own memory**: counters, cursors, preferences,
+caches, flags — small values the app writes about itself while running.
 
-The rule against the Database is the one from the
+The rule against the **db-store** is the one from the
 [services overview](/services/overview/): domain records — entities with
-fields and relationships, things you'd list or query — go in the Database. KV
+fields and relationships, things you'd list or query — go in the **db-store**.
+The **kv-store**
 holds what the app jots down for itself. A plant is an entity; the plant-care
 *streak counter* is app memory.
 
@@ -74,9 +76,10 @@ When the snooze expires, the key is simply gone — `kv.get` returns
 `undefined`, and no cleanup task ever ran. Expiry is lazy (an expired key is
 deleted the moment it's read) backed by a sweep every 60 seconds.
 
-On disk, KV entries live in the app's own SQLite database at
+On disk, **kv-store** entries live in the app's own SQLite database at
 `data/<app-id>/db.sqlite` — the same precious, backed-up file as the app's
-Database tables. Every change also lands on the [event bus](/services/events/)
+**db-store** tables. Every change also lands on the
+[event bus](/services/event-store/)
 as a `kv-store-change` event carrying the key (never the value), so your UI
 can react live to writes.
 

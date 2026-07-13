@@ -11,10 +11,11 @@ toggle). Rows marked **fixed** are hard limits that can't be changed.
 ## Scoped API
 
 Every SDK call except file bodies rides the scoped API, whose request body
-caps at **100 kb** (fixed). That bounds KV values and task payloads. File
+caps at **100 kb** (fixed). That bounds **kv-store** values and task payloads.
+File
 bytes stream outside this cap and have no size limit.
 
-## KV
+## Key-Value Data Store
 
 | Limit | Value | Setting |
 |---|---|---|
@@ -24,14 +25,14 @@ bytes stream outside this cap and have no size limit.
 | Expiry sweep | Every 60 seconds | `kv.sweep_interval` |
 | Change events | Kept 7 days | fixed |
 
-## Database
+## Relational Data Store
 
 | Limit | Value | Setting |
 |---|---|---|
-| Retention | None — the Database is the system of record | — |
+| Retention | None — the **db-store** is the system of record | — |
 | Request size | 100 kb per request | fixed |
 
-## Files
+## File Store
 
 | Limit | Value | Setting |
 |---|---|---|
@@ -43,7 +44,7 @@ bytes stream outside this cap and have no size limit.
 | Expiry sweep | Every 60 seconds | `files.sweep_interval` |
 | Change events | Kept 7 days | fixed |
 
-## Events
+## Event Store
 
 | Limit | Value | Setting |
 |---|---|---|
@@ -69,7 +70,7 @@ bytes stream outside this cap and have no size limit.
 | Dedupe key | 1–256 characters | fixed |
 | Task name | Lowercase letters, digits, hyphens; ≤ 128 characters | fixed |
 
-## Logs
+## Log Store
 
 | Limit | Value | Setting |
 |---|---|---|
@@ -87,7 +88,7 @@ bytes stream outside this cap and have no size limit.
 | Label / description | ≤ 80 / ≤ 240 characters | fixed |
 | String values | ≤ 4096 characters | fixed |
 
-## Secrets
+## Secret Store
 
 | Limit | Value | Setting |
 |---|---|---|

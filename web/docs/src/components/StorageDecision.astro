@@ -1,6 +1,6 @@
 <figure>
   <svg viewBox="0 0 720 420" role="img" aria-labelledby="sd-title">
-    <title id="sd-title">Diagram: choosing a storage service — credentials go to Secrets, person-tunable values to Settings, domain records to Database, documents and blobs to Files, and everything else to KV.</title>
+    <title id="sd-title">Diagram: choosing a storage service — credentials go to the secret-store, person-tunable values to settings, domain records to the db-store, documents and blobs to the file-store, and everything else to the kv-store.</title>
     <defs>
       <marker id="sd-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
         <path d="M0,0 L10,5 L0,10 z" class="arrowhead" />
@@ -13,7 +13,7 @@
     <line class="arrow" x1="386" y1="48" x2="535" y2="48" marker-end="url(#sd-arrow)" />
     <text class="label muted" x="461" y="40">yes</text>
     <rect class="box" x="536" y="24" width="140" height="48" rx="8" />
-    <text class="accent-text" x="606" y="53">Secrets</text>
+    <text class="accent-text" x="606" y="53">secret-store</text>
 
     <line class="arrow" x1="216" y1="72" x2="216" y2="101" marker-end="url(#sd-arrow)" />
     <text class="label muted start" x="226" y="91">no</text>
@@ -24,7 +24,7 @@
     <line class="arrow" x1="386" y1="126" x2="535" y2="126" marker-end="url(#sd-arrow)" />
     <text class="label muted" x="461" y="118">yes</text>
     <rect class="box" x="536" y="102" width="140" height="48" rx="8" />
-    <text class="accent-text" x="606" y="131">Settings</text>
+    <text class="accent-text" x="606" y="131">settings</text>
 
     <line class="arrow" x1="216" y1="150" x2="216" y2="179" marker-end="url(#sd-arrow)" />
     <text class="label muted start" x="226" y="169">no</text>
@@ -35,7 +35,7 @@
     <line class="arrow" x1="386" y1="204" x2="535" y2="204" marker-end="url(#sd-arrow)" />
     <text class="label muted" x="461" y="196">yes</text>
     <rect class="box" x="536" y="180" width="140" height="48" rx="8" />
-    <text class="accent-text" x="606" y="209">Database</text>
+    <text class="accent-text" x="606" y="209">db-store</text>
 
     <line class="arrow" x1="216" y1="228" x2="216" y2="257" marker-end="url(#sd-arrow)" />
     <text class="label muted start" x="226" y="247">no</text>
@@ -46,14 +46,14 @@
     <line class="arrow" x1="386" y1="282" x2="535" y2="282" marker-end="url(#sd-arrow)" />
     <text class="label muted" x="461" y="274">yes</text>
     <rect class="box" x="536" y="258" width="140" height="48" rx="8" />
-    <text class="accent-text" x="606" y="287">Files</text>
+    <text class="accent-text" x="606" y="287">file-store</text>
 
     <line class="arrow" x1="216" y1="306" x2="216" y2="335" marker-end="url(#sd-arrow)" />
     <text class="label muted start" x="226" y="325">no</text>
 
     <!-- KV -->
     <rect class="box" x="46" y="336" width="340" height="60" rx="8" />
-    <text class="accent-text" x="216" y="360">KV</text>
+    <text class="accent-text" x="216" y="360">kv-store</text>
     <text class="label muted" x="216" y="380">the app&#8217;s own memory: counters, cursors, flags</text>
   </svg>
   <figcaption>Five homes for data &#8212; pick by what the value is, not by what&#8217;s convenient.</figcaption>

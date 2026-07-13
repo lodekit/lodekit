@@ -1,11 +1,11 @@
 ---
-title: Database
+title: Relational Data Store
 description: "What the per-app relational database is for and when to reach for it."
 ---
 
-Every app gets its own relational database — the default home for the records
-your app is about. In the service catalog this is **db-store**, reached
-through the SDK as the `db` handle.
+Every app gets its own relational database — the Relational Data Store
+(**db-store** for short), the default home for the records your app is about,
+reached through the SDK as the `db` handle.
 
 ## The idea
 
@@ -40,12 +40,13 @@ that respect their data.
 
 ## When to use it
 
-Use the Database for anything that is an **entity**: it has fields, it relates
-to other things, it gets listed, filtered, or aggregated — and it would hurt
-to lose. Plants, recipes, invoices, journal entries.
+Use the **db-store** for anything that is an **entity**: it has fields, it
+relates to other things, it gets listed, filtered, or aggregated — and it
+would hurt to lose. Plants, recipes, invoices, journal entries.
 
-The boundary to know is Database vs [KV](/services/kv/): the Database holds
-**domain records** — the model of your world; KV holds **app memory** —
+The boundary to know is **db-store** vs [**kv-store**](/services/kv-store/):
+the **db-store** holds **domain records** — the model of your world; the
+**kv-store** holds **app memory** —
 counters, cursors, caches, flags the app writes about itself. If you'd ever
 want to list it, query it, or relate it to something else, it's an entity, and
 it belongs here.
@@ -107,7 +108,7 @@ services keep for the app are `_`-prefixed and out of your way.
 
 | Limit | Value |
 |---|---|
-| Retention | None — the Database is the system of record |
+| Retention | None — the **db-store** is the system of record |
 | Request size | 100 kb per request |
 | Table names | Must not start with `_` or `sqlite_` |
 

@@ -13,7 +13,7 @@ storage tier chosen by what losing it would cost — the friendly tour is in
 | State | `~/Library/Application Support/Lodekit` | `LODEKIT_STATE_DIR` | `logs.sqlite`, `runtime.pid` |
 | Cache | `~/Library/Caches/Lodekit` | `LODEKIT_CACHE_DIR` | Built app output |
 | Text logs | `~/Library/Logs/Lodekit` | — | `runtime-YYYYMMDD.log`, `manager-YYYYMMDD.log` |
-| Keychain | macOS Keychain | — | The secret-store master key |
+| Keychain | macOS Keychain | — | The **secret-store** master key |
 
 ## The Lodekit root
 
@@ -23,7 +23,8 @@ under it:
 - `apps/` — one folder per app id, holding app source only. No dependency
   folders, ever.
 - `data/` — one folder per app id, holding that app's saved state:
-  `db.sqlite` (its database, KV entries, task history, declared settings and
+  `db.sqlite` (its **db-store** tables, **kv-store** entries, task history,
+  declared settings and
   secret slots) and, when the app stores documents, a `files/` folder of
   real, Finder-browsable files.
 - `gateways/` — one folder per provider, holding that gateway's manifest and

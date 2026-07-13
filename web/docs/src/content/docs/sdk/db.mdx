@@ -5,7 +5,7 @@ description: Typed SQL with Drizzle — the db-store service's SDK handle.
 
 Your app's relational database, queried through [Drizzle ORM](https://orm.drizzle.team/).
 For when the database is the right home (and how migrations work), see
-[the Database service](/services/database/).
+[the Relational Data Store](/services/db-store/).
 
 Unlike the other handles, `db` isn't imported from `@lodekit/sdk` — your app
 builds its own typed handle in `src/db.ts` with `createDb()` and imports it from
@@ -109,7 +109,7 @@ database:
 - **Destructive changes are gated** — instead of applying, the app reports what
   would be lost; the way forward is an expand-copy migration (new table, copy
   the data, retire the old one). See
-  [the Database service](/services/database/) for the full migration story.
+  [the Relational Data Store](/services/db-store/) for the full migration story.
 - **Reserved names** — table names may not start with `_` or `sqlite_`.
 
 ## What's rejected

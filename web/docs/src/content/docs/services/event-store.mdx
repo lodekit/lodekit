@@ -1,5 +1,5 @@
 ---
-title: Events
+title: Event Store
 description: "Emit and subscribe to events so parts of your app can react to change."
 ---
 
@@ -7,7 +7,7 @@ import EventFlow from '../../../components/EventFlow.astro';
 
 Everything that happens on your Lodekit — an app finishing a build, a value
 changing in storage, your app announcing an export is done — lands on one
-shared **event bus**. In the service catalog this is **event-store**, reached
+shared **event bus**: the Event Store (**event-store** for short), reached
 through the SDK as the `events` handle.
 
 ## The idea
@@ -30,8 +30,9 @@ scale.
 
 One rule matters above all the others: **events announce, stores remember.**
 An event says a fact became true; the fact itself belongs in the emitting
-app's own [Database](/services/database/), [KV](/services/kv/), or
-[Files](/services/files/). Events age out; stores don't. If losing a record
+app's own [**db-store**](/services/db-store/),
+[**kv-store**](/services/kv-store/), or
+[**file-store**](/services/file-store/). Events age out; stores don't. If losing a record
 would hurt, the record is never the event — the event just points at it.
 
 ## When to use it
@@ -40,10 +41,11 @@ would hurt, the record is never the event — the event just points at it.
   changes — this is how Lodekit apps feel live without polling.
 - **Announce milestones.** "Export finished", "import complete" — emit the
   fact so other parts of the app (or a future one) can act on it.
-- **See what happened.** The dashboard Events view is a running record of
-  the platform: builds, changes, announcements, in order.
+- **See what happened.** The dashboard's **Events** view is a running record
+  of the platform: builds, changes, announcements, in order.
 
-Events are for **reaction**; [Logs](/services/logs/) are for **observation**.
+Events are for **reaction**; [logs](/services/log-store/) are for
+**observation**.
 If code should *do something* when the thing happens, it's an event. If a
 person (or your agent) should be able to *read about it later* while
 debugging, it's a log. The same happening often deserves both.
@@ -62,7 +64,7 @@ await events.emit("export-finished", { slug: stat.slug });
 ```
 
 Note what the payload carries: the *slug* of the export, not its contents.
-The bytes live in Files; the event announces and points.
+The bytes live in the **file-store**; the event announces and points.
 
 In the browser, `events.watch` delivers events live (over a single streaming
 connection the SDK manages for you). This is the pattern the Greenhouse

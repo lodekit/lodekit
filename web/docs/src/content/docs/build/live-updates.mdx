@@ -9,8 +9,9 @@ pattern, built from pieces you already have.
 
 ## The pattern
 
-Every service announces changes on the event bus: a database write emits
-`db-store-change`, a kv write emits `kv-store-change`, a file put emits
+Every service announces changes on the event bus: a **db-store** write emits
+`db-store-change`, a **kv-store** write emits `kv-store-change`, a
+**file-store** put emits
 `file-store-change`, a task run emits `tasks-change`. The client subscribes with
 `events.watch()` and, on any relevant event, invalidates the router — which re-runs
 the current route's loaders, which re-renders with fresh data.
@@ -44,7 +45,8 @@ Three details are doing quiet work here:
 ## Scope the watch by type
 
 The `type` filter takes one type or a list. Watch only what the page renders: the
-conservatory shows plants (database) and streaks (kv), so it watches exactly those
+conservatory shows plants (**db-store**) and streaks (**kv-store**), so it
+watches exactly those
 two change feeds. A page that only shows task history watches one:
 
 ```ts
@@ -81,7 +83,7 @@ complexity with no felt payoff here. Reach for callback filtering when a page
 provably refreshes too often; reach for nothing fancier than that.
 
 The bus does more than change feeds — apps can emit and replay their own events. The
-full story is in [Events](/services/events/).
+full story is in [the Event Store](/services/event-store/).
 
 Next, the components you render all this data with:
 [Using the UI library](/build/using-the-ui-library/).

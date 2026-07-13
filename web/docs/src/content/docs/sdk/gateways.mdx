@@ -157,7 +157,7 @@ try {
 
 The standard shape for pulling provider data on a rhythm is a scheduled
 [task](/sdk/tasks/) + a gateway call + an upsert into the
-[Database](/services/database/). Greenhouse's Sky Journal, trimmed:
+[**db-store**](/services/db-store/). Greenhouse's Sky Journal, trimmed:
 
 ```ts title="src/tasks.ts"
 import { task, logs, gateways, GatewayError, settings } from "@lodekit/sdk";

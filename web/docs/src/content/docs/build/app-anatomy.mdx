@@ -78,7 +78,8 @@ Each is plain TypeScript the runtime reads when the app builds.
 
 **`db.ts`** declares the app's database schema as Drizzle tables and exports a typed
 `db` handle via `createDb()`. Schema changes apply on save — additive ones
-automatically, destructive ones gated. See [Database](/services/database/).
+automatically, destructive ones gated. See the
+[**db-store**](/services/db-store/).
 
 **`tasks.ts`** declares background work: queued tasks the app enqueues on demand, and
 scheduled tasks with a `cron` or `every` schedule. Each export becomes a named task
@@ -91,7 +92,8 @@ dashboard's Settings page. The app reads values; only you write them. See
 
 **`secrets.ts`** declares credential slots with `defineSecrets()` — named holes for
 API keys the app needs. You link a secret to each slot in the dashboard, and only
-server-side code can read the value. See [Secrets](/services/secrets/).
+server-side code can read the value. See the
+[**secret-store**](/services/secret-store/).
 
 **`gateways.ts`** declares the app's connections to outside providers with
 `defineGateways()` — each entry maps an app-local alias to a provider's gateway.

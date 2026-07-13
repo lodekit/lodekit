@@ -1,18 +1,19 @@
 ---
-title: Logs
+title: Log Store
 description: "Where your app's logs go and how to inspect them."
 ---
 
 Every app — and the platform itself — writes a running commentary of what it
-did. In the service catalog this is **log-store**, reached through the SDK as
-the `logs` handle, and read in the dashboard's Logs view.
+did. That commentary lands in the Log Store (**log-store** for short), reached
+through the SDK as
+the `logs` handle, and read in the dashboard's **Logs** view.
 
 ## The idea
 
 Reliable systems record two different accounts of the same happenings, for
 two different readers. **Telemetry** — logs — is the account for observers:
 a person or an agent reading back through what the system did, usually
-because something looks wrong. [Events](/services/events/) are the account
+because something looks wrong. [Events](/services/event-store/) are the account
 for code: other parts of the system *react* to them. "Care was given" might
 be both — a log record so you can see it happened, and a change event so the
 UI refreshes. Same happening, different consumers: observation vs reaction.
@@ -37,9 +38,9 @@ it belongs in a store.
 Debugging, and understanding what your app did while you weren't watching:
 did the task run, what did the server function decide, why did that request
 fail. Never for data — a log record is not a stored fact, and it will be
-gone in a week. Facts go in the [Database](/services/database/) or
-[KV](/services/kv/); milestones other code should react to go on the
-[event bus](/services/events/).
+gone in a week. Facts go in the [**db-store**](/services/db-store/) or
+[**kv-store**](/services/kv-store/); milestones other code should react to go
+on the [event bus](/services/event-store/).
 
 ## How it works in Lodekit
 

@@ -52,8 +52,9 @@ app; the guarded transport is the gateway.
 
 Any call from app code to an external provider — every time, no exceptions.
 Never `fetch()` a provider directly, and never put an API key in
-[Settings](/services/settings/), KV, or code: credentials belong in the
-[secrets catalog](/services/secrets/), linked into a gateway that injects them
+[**settings**](/services/settings/), the **kv-store**, or code: credentials
+belong in the
+[secrets catalog](/services/secret-store/), linked into a gateway that injects them
 for you. And reuse before you author — if a gateway for the provider already
 exists in your Lodekit root, apps share it.
 
@@ -111,7 +112,7 @@ a needs-reauth badge until you reconnect.
 In the dashboard, the **Gateways** page shows a card per provider, and each
 gateway's detail page lists the apps connected to it with a status badge and
 per-gateway logs. Health changes (a breaker opening, a connection going
-unhealthy) are announced as [events](/services/events/), and an app's home
+unhealthy) are announced as [events](/services/event-store/), and an app's home
 card shows a pending badge until its connections are completed.
 
 ## Limits

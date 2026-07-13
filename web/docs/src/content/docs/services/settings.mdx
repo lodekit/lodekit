@@ -20,9 +20,11 @@ real form — a switch for a boolean, a dropdown for a choice — validate every
 edit, and always know the correct value when nothing has been set.
 
 The deeper principle is that **who writes matters more than what's stored**.
-Settings hold small per-app values, and so does [KV](/services/kv/) — the
+Settings hold small per-app values, and so does the
+[**kv-store**](/services/kv-store/) — the
 difference is the hand on the pen. Settings are *the person's knobs*: a
-human writes them, the app only reads. KV is *the app's memory*: the app
+human writes them, the app only reads. The **kv-store** is *the app's memory*:
+the app
 writes it at runtime. Keeping the two apart keeps a boundary crisp — no app
 code silently overwriting a choice the person made, no human hand-editing
 the app's internal state.
@@ -30,8 +32,10 @@ the app's internal state.
 ## When to use it
 
 Any value a human should tune: feature toggles, units and formats, cadences
-and thresholds. If the app computes the value itself, it's [KV](/services/kv/).
-If the value is an API key or a credential, it's [Secrets](/services/secrets/)
+and thresholds. If the app computes the value itself, it belongs in the
+[**kv-store**](/services/kv-store/).
+If the value is an API key or a credential, it belongs in the
+[**secret-store**](/services/secret-store/)
 — never a setting.
 
 ## How it works in Lodekit
