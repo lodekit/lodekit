@@ -58,6 +58,9 @@ function) and pass the resulting page back as `data`. Multi-column sorting
 state is the standard TanStack shape, `[{ id, desc }]`.
 
 ```tsx
+import { useState } from "react";
+import { useDataTable, type SortingState } from "@lodekit/ui";
+
 const [sorting, setSorting] = useState<SortingState>([]);
 const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 25 });
 
