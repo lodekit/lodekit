@@ -264,3 +264,29 @@ Files, Logs, Events, Secrets as service names) moved to context.md Avoid
 lists — context.md canon amended in the same commit so docs and vocabulary
 never fork. Generic common nouns and real dashboard UI labels (the **Logs** /
 **Events** / **Secrets** views) deliberately keep their words.
+
+## 13. Addendum (2026-07-13): IA restructure
+
+Person-directed, five changes:
+
+1. **Section order**: Start here → Using Lodekit → Building apps → Services →
+   Reference. The old "SDK reference" and "Reference" groups merged into one
+   **Reference** group: a nested **SDK** subgroup (overview + the nine handle
+   pages) followed by MCP tools, Limits and retention, File locations, The
+   manifest, Glossary.
+2. **Friendly service titles** (frontmatter/H1/sidebar): Relational database,
+   Key-value database, Files, Events, Tasks, Gateways, Secrets, Settings,
+   Logs — a fourth register on top of §12's three; body prose keeps the
+   formal names and bold short terms. No slug changes.
+3. **Canonical service order** (person-confirmed, Tasks after Events):
+   db-store, kv-store, file-store, events, tasks, gateways, secrets,
+   settings, logs — applied to every service listing (sidebar, catalog
+   table, SDK matrix, limits sections, MCP tool groups, the Start-here
+   services sentence). The glossary stays alphabetical.
+4. **Per-service MCP sections**: every service page ends with `## MCP`
+   naming that service's agent tools (Tasks honestly states none exist yet),
+   linking the central MCP tools reference.
+5. **Glossary as a table**: terms are real `###` headings inside a
+   CSS-grid wrapper styled as a two-column table, so the right-hand "On this
+   page" ToC lists all terms (a pipe-table would leave the ToC empty —
+   Starlight builds it from markdown headings only).
