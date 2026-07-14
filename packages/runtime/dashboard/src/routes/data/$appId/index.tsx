@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Badge, Card, CardContent, CardHeader, CardTitle,
+  Badge, Button, Card, CardContent, CardHeader, CardTitle,
   ChartContainer, ChartTooltip, ChartTooltipContent, Skeleton,
   type ChartConfig,
 } from "@lodekit/ui";
@@ -39,7 +39,13 @@ function Overview() {
   const { appId } = Route.useParams();
   const q = useQuery({ queryKey: ["data", appId, "summary"], queryFn: () => fetchSummary(appId) });
 
-  if (q.isError) return <p className="text-destructive text-sm">Failed to load summary: {(q.error as Error).message}</p>;
+  if (q.isError)
+    return (
+      <div className="text-sm">
+        <p className="text-destructive">Failed to load summary: {(q.error as Error).message}</p>
+        <Button variant="outline" size="sm" className="mt-3" onClick={() => void q.refetch()}>Retry</Button>
+      </div>
+    );
   if (!q.data) return <Skeleton className="h-64" />;
   const s = q.data;
   const totalRows = s.tables.reduce((n, t) => n + t.rows, 0);
@@ -89,7 +95,21 @@ function Overview() {
                 <BarChart data={sizes} layout="vertical" margin={{ left: 8, right: 8 }}>
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="table" width={100} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent formatter={(v) => formatBytes(Number(v))} />} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(v) => (
+                          <>
+                            <div className="size-2.5 shrink-0 rounded-[2px]" style={{ background: "var(--color-size)" }} />
+                            <div className="flex flex-1 items-center justify-between gap-4 leading-none">
+                              <span className="text-muted-foreground">Size</span>
+                              <span className="text-foreground font-mono font-medium tabular-nums">{formatBytes(Number(v))}</span>
+                            </div>
+                          </>
+                        )}
+                      />
+                    }
+                  />
                   <Bar dataKey="size" fill="var(--color-size)" radius={4} />
                 </BarChart>
               </ChartContainer>
