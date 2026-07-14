@@ -1,10 +1,11 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Badge, Button, Card, CardContent, CardHeader, CardTitle,
+  Button, Card, CardAction, CardContent, CardHeader, CardTitle,
   ChartContainer, ChartTooltip, ChartTooltipContent, Skeleton,
   type ChartConfig,
 } from "@lodekit/ui";
+import { ArrowUpRight, Database, Folder, KeyRound, Zap, type LucideIcon } from "lucide-react";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { fetchSummary, type DataSummary } from "../../../lib/data-api";
 import { formatBytes, formatCount, relativeTime } from "../../../lib/format";
@@ -16,10 +17,34 @@ export const Route = createFileRoute("/data/$appId/")({
 const objectsConfig = { count: { label: "Objects", color: "var(--chart-1)" } } satisfies ChartConfig;
 const sizeConfig = { size: { label: "Size", color: "var(--chart-2)" } } satisfies ChartConfig;
 
-function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
+// Service identity per store — same icons the explorer sidebar uses.
+const STORES: Record<DataSummary["recent"][number]["store"], { label: string; icon: LucideIcon; to: string }> = {
+  table: { label: "Tables", icon: Database, to: "/data/$appId/tables/$table" },
+  kv: { label: "Key-value", icon: KeyRound, to: "/data/$appId/kv" },
+  file: { label: "Files", icon: Folder, to: "/data/$appId/files" },
+  event: { label: "Events", icon: Zap, to: "/data/$appId/events" },
+};
+
+function Stat({ icon: Icon, label, value, hint, to, params }: {
+  icon: LucideIcon; label: string; value: string; hint?: string;
+  to?: string; params?: Record<string, string>;
+}) {
   return (
     <Card>
-      <CardHeader className="pb-1"><CardTitle className="text-muted-foreground text-xs font-medium">{label}</CardTitle></CardHeader>
+      <CardHeader className="pb-1">
+        <CardTitle className="text-muted-foreground flex items-center gap-1.5 text-xs font-medium">
+          <Icon className="size-3.5" aria-hidden="true" />
+          {label}
+        </CardTitle>
+        {to && (
+          <CardAction>
+            <Link to={to} params={params} className="text-muted-foreground hover:text-foreground">
+              <ArrowUpRight className="size-4" aria-hidden="true" />
+              <span className="sr-only">Open {label}</span>
+            </Link>
+          </CardAction>
+        )}
+      </CardHeader>
       <CardContent>
         <p className="text-2xl font-semibold tabular-nums">{value}</p>
         {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
@@ -27,13 +52,6 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
     </Card>
   );
 }
-
-const STORE_VIEW: Record<DataSummary["recent"][number]["store"], { label: string; to: string }> = {
-  table: { label: "table", to: "/data/$appId/tables/$table" },
-  kv: { label: "kv", to: "/data/$appId/kv" },
-  file: { label: "file", to: "/data/$appId/files" },
-  event: { label: "event", to: "/data/$appId/events" },
-};
 
 function Overview() {
   const { appId } = Route.useParams();
@@ -62,10 +80,17 @@ function Overview() {
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold">Overview</h1>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Table rows" value={formatCount(totalRows)} hint={`${s.tables.length} table${s.tables.length === 1 ? "" : "s"}`} />
-        <Stat label="Key-value entries" value={formatCount(s.kv.count)} />
-        <Stat label="Files" value={formatCount(s.files.count)} hint={formatBytes(s.files.totalBytes)} />
-        <Stat label="Events" value={formatCount(s.events.count)} />
+        <Stat
+          icon={STORES.table.icon}
+          label="Tables"
+          value={formatCount(totalRows)}
+          hint={`rows · ${s.tables.length} table${s.tables.length === 1 ? "" : "s"}`}
+          to={s.tables.length > 0 ? STORES.table.to : undefined}
+          params={s.tables.length > 0 ? { appId, table: s.tables[0].name } : undefined}
+        />
+        <Stat icon={STORES.kv.icon} label="Key-value" value={formatCount(s.kv.count)} hint="entries" to={STORES.kv.to} params={{ appId }} />
+        <Stat icon={STORES.file.icon} label="Files" value={formatCount(s.files.count)} hint={formatBytes(s.files.totalBytes)} to={STORES.file.to} params={{ appId }} />
+        <Stat icon={STORES.event.icon} label="Events" value={formatCount(s.events.count)} hint="events" to={STORES.event.to} params={{ appId }} />
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
@@ -82,6 +107,37 @@ function Overview() {
             </ChartContainer>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Recent activity</CardTitle></CardHeader>
+          <CardContent>
+            {s.recent.length === 0 ? (
+              <p className="text-muted-foreground text-sm">Nothing stored yet.</p>
+            ) : (
+              <div className="divide-y">
+                {s.recent.map((r, i) => {
+                  const Icon = STORES[r.store].icon;
+                  return (
+                    <Link
+                      key={i}
+                      to={STORES[r.store].to}
+                      params={r.store === "table" ? { appId, table: r.label } : { appId }}
+                      className="hover:bg-accent/50 flex items-center gap-3 px-1 py-2 text-sm"
+                    >
+                      <Icon className="text-muted-foreground size-4 shrink-0" aria-hidden="true" />
+                      <span className="sr-only">{STORES[r.store].label}</span>
+                      <span className="min-w-0 truncate font-mono text-xs">{r.label}</span>
+                      {r.detail && <span className="text-muted-foreground text-xs">{r.detail}</span>}
+                      <span className="text-muted-foreground ml-auto shrink-0 text-xs">{relativeTime(r.at)}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm">
@@ -120,49 +176,30 @@ function Overview() {
             )}
           </CardContent>
         </Card>
-      </div>
-
-      {s.tables.length > 0 && (
-        <div>
-          <h2 className="mb-2 text-sm font-medium">Tables</h2>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {s.tables.map((t) => (
-              <Link key={t.name} to="/data/$appId/tables/$table" params={{ appId, table: t.name }}>
-                <Card className="hover:bg-accent/50 transition-colors">
-                  <CardContent className="pt-4">
+        <Card>
+          <CardHeader><CardTitle className="text-sm">Tables</CardTitle></CardHeader>
+          <CardContent>
+            {s.tables.length === 0 ? (
+              <p className="text-muted-foreground text-sm">No tables yet.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {s.tables.map((t) => (
+                  <Link
+                    key={t.name}
+                    to="/data/$appId/tables/$table"
+                    params={{ appId, table: t.name }}
+                    className="hover:bg-accent/50 rounded-md border px-3 py-2 transition-colors"
+                  >
                     <p className="truncate font-mono text-sm">{t.name}</p>
                     <p className="text-muted-foreground text-xs">
                       {formatCount(t.rows)} rows{t.sizeBytes != null ? ` · ${formatBytes(t.sizeBytes)}` : ""}
                     </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div>
-        <h2 className="mb-2 text-sm font-medium">Recent activity</h2>
-        {s.recent.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Nothing stored yet.</p>
-        ) : (
-          <div className="divide-y rounded-md border">
-            {s.recent.map((r, i) => (
-              <Link
-                key={i}
-                to={STORE_VIEW[r.store].to}
-                params={r.store === "table" ? { appId, table: r.label } : { appId }}
-                className="hover:bg-accent/50 flex items-center gap-3 px-3 py-2 text-sm"
-              >
-                <Badge variant="secondary" className="w-14 justify-center">{STORE_VIEW[r.store].label}</Badge>
-                <span className="min-w-0 truncate font-mono text-xs">{r.label}</span>
-                {r.detail && <span className="text-muted-foreground text-xs">{r.detail}</span>}
-                <span className="text-muted-foreground ml-auto shrink-0 text-xs">{relativeTime(r.at)}</span>
-              </Link>
-            ))}
-          </div>
-        )}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
