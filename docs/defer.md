@@ -23,6 +23,15 @@ Entry template:
 
 ---
 
+## 2026-07-14 — deflake events-wiring/mcp tests (issue #48, branch deflake-events-wiring)
+
+- **Watcher blind spot for app folders created at the ready boundary** — the deflake
+  investigation showed macOS fs-watch streams go live some time after chokidar's
+  `ready` under load; an `apps/<id>/` folder whose addDir lands in that gap is never
+  watched, so its edits rebuild nothing until restart. Vanishingly small window in
+  production (boot-time only), so the slice only hardened the tests around it; a
+  product-side heal (e.g. periodic registry rescan) is a separate decision.
+
 ## 2026-07-13 — docs content v1 (PR #70, docs/specs/2026-07-12-docs-content-v1-design.md)
 
 - **Docs screenshots** — pages ship without screenshots; parked post-v0.1 until the

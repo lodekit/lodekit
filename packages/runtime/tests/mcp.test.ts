@@ -1,20 +1,25 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { Server } from "node:http";
-import { start } from "../src/server.js";
+import { start, watcherShutdown } from "../src/server.js";
 import { loadConfig } from "../src/config.js";
 import { scaffold, listApps, fetchSecrets, fetchDbSchema, selectDb } from "../../mcp/client.js";
 import { createClient } from "@lodekit/sdk";
 import { getSettingsDb, applySettingsManifest } from "../src/services/settings.js";
 
-let root: string, server: Server, base: string, dataDir: string;
-beforeEach(async () => {
+// One server for the whole file (every test drives its own app id): per-test boots
+// re-run pruneBuildCache against the shared cache dir while the previous test's
+// scaffold-triggered build is still in flight, and pay for a dashboard build each time.
+let root: string, cache: string, server: Server, base: string, dataDir: string;
+beforeAll(async () => {
   root = fs.mkdtempSync(path.join(os.tmpdir(), "lk-"));
+  cache = fs.mkdtempSync(path.join(os.tmpdir(), "lk-cache-"));
   process.env.LODEKIT_ROOT = root;
   process.env.LODEKIT_PORT = "0";
   process.env.LODEKIT_STATE_DIR = path.join(root, "state");
+  process.env.LODEKIT_CACHE_DIR = cache;
   process.env.LODEKIT_SECRETS_KEY_PROVIDER = "file";
   const cfg = loadConfig();
   dataDir = cfg.dataDir;
@@ -22,14 +27,22 @@ beforeEach(async () => {
   const addr = server.address();
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
 }, 60000);
-afterEach(() => {
-  server.close();
+afterAll(async () => {
+  // Fully quiesce before removing the root (see watcher.test.ts): drop lingering
+  // connections so the server's "close" fires, then await the shutdown it kicks off
+  // (watcher close → drain in-flight scaffold builds → stop workers). Otherwise a
+  // build or worker outlives this file and races the rmSync below.
+  server.closeAllConnections();
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  await watcherShutdown.get(server);
   fs.rmSync(root, { recursive: true, force: true });
+  fs.rmSync(cache, { recursive: true, force: true });
   delete process.env.LODEKIT_ROOT;
   delete process.env.LODEKIT_PORT;
   delete process.env.LODEKIT_STATE_DIR;
+  delete process.env.LODEKIT_CACHE_DIR;
   delete process.env.LODEKIT_SECRETS_KEY_PROVIDER;
-});
+}, 180_000);
 
 describe("mcp tool helpers", () => {
   it("scaffolds and lists an app via http", async () => {
@@ -70,13 +83,13 @@ describe("mcp tool helpers", () => {
     logs.error("render failed", { stack: "TRACE" });
     const { fetchLogs } = await import("../../mcp/client.js");
     await expect
-      .poll(async () => (await fetchLogs(base, { appId: "diary", level: "error" })).records, { timeout: 5000 })
+      .poll(async () => (await fetchLogs(base, { appId: "diary", level: "error" })).records, { timeout: 10_000 })
       .toHaveLength(1);
     const app = await fetchLogs(base, { appId: "diary" });
     expect(app.records[0]).toMatchObject({ source: "app", message: "render failed" });
     const platform = await fetchLogs(base, { appId: "_platform" });
     expect(platform.records.length).toBeGreaterThan(0); // boot + scaffold activity
-  });
+  }, 15_000);
 
   it("reads events through the helper the events tool uses", async () => {
     await scaffold(base, { appId: "pantry", name: "Pantry" });
@@ -84,14 +97,14 @@ describe("mcp tool helpers", () => {
     await kv.set("item:1", { n: "rice" });
     const { fetchEvents } = await import("../../mcp/client.js");
     await expect
-      .poll(async () => (await fetchEvents(base, { appId: "pantry", type: "kv-store-change" })).records, { timeout: 5000 })
+      .poll(async () => (await fetchEvents(base, { appId: "pantry", type: "kv-store-change" })).records, { timeout: 10_000 })
       .toHaveLength(1);
     // apps-changed only fires once the watcher's fs-change debounce elapses, unlike
     // kv-store-change above (emitted synchronously by the kv route) — poll for it too.
     await expect
-      .poll(async () => (await fetchEvents(base, { appId: "_platform", type: "apps-changed" })).records.length, { timeout: 5000 })
+      .poll(async () => (await fetchEvents(base, { appId: "_platform", type: "apps-changed" })).records.length, { timeout: 10_000 })
       .toBeGreaterThan(0); // the scaffold's registry churn
-  });
+  }, 30_000);
 
   it("reads settings through the helper the settings tools use", async () => {
     await scaffold(base, { appId: "notes", name: "Notes" });
