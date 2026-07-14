@@ -22,6 +22,17 @@ needs credentials, its card shows an "N secrets needed" badge so you know
 before you open it. With no apps installed yet, Home simply suggests asking
 your agent to build one.
 
+## Data
+
+**Data** is the explorer for everything your apps have stored. Pick an app and
+you get an overview — how many rows, keys, files, and events it holds, small
+charts of where the space goes, and a feed of what was added recently. From
+there, browse each store directly: any table (with filtering, multi-column
+sorting, search, and paging), the key-value entries, uploaded files with their
+metadata, and the app's own events. Everything is read-only — looking never
+changes your data — and a refresh button picks up whatever your apps wrote in
+the meantime. A per-app storage breakdown is coming soon.
+
 ## Logs
 
 **Logs** is a live feed of what Lodekit and your apps are reporting — new
@@ -68,10 +79,8 @@ can also *override* a service setting just for that app — revert the override
 and the shared value applies again.
 
 :::note
-**Data**, **Tasks**, and **Themes** appear in the services menu but are
-coming soon. Until then, your agent can show you an app's data and recent
-activity,
-and theming works today [through a CSS file](/guide/theming/).
+**Tasks** and **Themes** appear in the services menu but are coming soon.
+Theming works today [through a CSS file](/guide/theming/).
 :::
 
 Everything the dashboard shows lives in one folder on your Mac — see

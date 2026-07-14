@@ -37,6 +37,11 @@ export function SSEProvider({ children }: { children: ReactNode }) {
         if (d.type === "settings-change") void queryClient.invalidateQueries({ queryKey: ["settings", d.ns] });
         if (d.type === "secrets-change") void queryClient.invalidateQueries({ queryKey: ["secrets", d.ns] });
         if (d.type === "kv-store-change") void queryClient.invalidateQueries({ queryKey: ["kv", d.ns] });
+        if (d.type === "db-store-change" || d.type === "file-store-change") {
+          void queryClient.invalidateQueries({ queryKey: ["data", d.ns, "summary"] });
+        }
+        if (d.type === "db-store-change") void queryClient.invalidateQueries({ queryKey: ["data", d.ns, "schema"] });
+        if (d.type === "file-store-change") void queryClient.invalidateQueries({ queryKey: ["data", d.ns, "files"] });
         if (d.type === "tasks-change") {
           void queryClient.invalidateQueries({ queryKey: ["tasks", d.ns] });
           void queryClient.invalidateQueries({ queryKey: ["task-runs", d.ns] });

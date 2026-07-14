@@ -84,7 +84,7 @@ per-app services. Response:
 - **Sizes:** `SELECT name, SUM(pgsize) FROM dbstat GROUP BY name` on a short-lived
   read-only connection. If the `dbstat` vtab is unavailable in the better-sqlite3
   build, every `sizeBytes` is `null` and the UI falls back to `dbFileBytes` only.
-- **No db file yet:** all zeros/empty — the endpoint never 404s for a valid app.
+- **No db file yet:** tables/kv/files zero out (the endpoint never 404s for a valid app); the events count and event recents stay real — they live in the platform event store, not the app db.
 - **Recent list sources:** `_kv.created_at`, `_files.created_at`, events `ts`
   (filtered as above), and each user table that has a **heuristic timestamp
   column** — first case-insensitive match among `created_at`, `createdAt`,
