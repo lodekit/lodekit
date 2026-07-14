@@ -107,7 +107,7 @@ function FilesView() {
                         <TableCell className="text-xs tabular-nums">{formatBytes(f.size)}</TableCell>
                         <TableCell className="text-muted-foreground text-xs">{relativeTime(f.createdAt)}</TableCell>
                         <TableCell className="text-muted-foreground text-xs">{f.expiresAt ? formatTs(f.expiresAt) : "—"}</TableCell>
-                        <TableCell onClick={(e) => e.stopPropagation()}>
+                        <TableCell onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                           <a href={f.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground">
                             <ExternalLink className="size-4" /><span className="sr-only">Open raw file</span>
                           </a>
