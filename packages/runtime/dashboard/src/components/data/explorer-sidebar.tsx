@@ -43,7 +43,7 @@ export function ExplorerSidebar() {
           <SelectContent>
             <SelectGroup>
               {apps.data.map((a) => (
-                <SelectItem key={a.appId} value={a.appId}>{a.name}</SelectItem>
+                <SelectItem key={a.appId} value={a.appId}>{a.icon ? `${a.icon} ` : ""}{a.name}</SelectItem>
               ))}
             </SelectGroup>
           </SelectContent>
