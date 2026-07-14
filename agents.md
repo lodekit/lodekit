@@ -23,6 +23,9 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
   **over HTTP only** — no import-time dependency on the runtime. The dependency-free HTTP
   helpers live in `client.ts`; the MCP-SDK wiring in `index.ts`.
 - **`packages/skill`** (`@lodekit/skill`) — the Claude skill (content only).
+- **`packages/integration-tests`** (`@lodekit/integration-tests`) — cross-package
+  integration tests (runtime↔MCP); imports the siblings by package specifier
+  (`@lodekit/runtime/*`, `@lodekit/mcp/client`), never by relative reach-in.
 - **`web/main`** (`@lodekit/web-main`) — Astro landing site.
 - **`web/docs`** (`@lodekit/web-docs`) — Starlight docs site (placeholder scaffold).
 - **`manager`** (`@lodekit/manager`) — the menubar app that ships and supervises the
@@ -50,9 +53,10 @@ Package manager is **pnpm** (workspaces). From the repo root:
 - `pnpm dev` — run the runtime against the showcase apps
   (`LODEKIT_ROOT=$(pwd)/root pnpm --filter @lodekit/runtime start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
-- `pnpm test` — runs `pnpm -r test`: `@lodekit/runtime` (vitest, incl. the runtime↔MCP
-  integration test), `@lodekit/sdk`, and `@lodekit/manager` (supervisor/paths/logs).
-  Per-package: `pnpm --filter @lodekit/runtime test`.
+- `pnpm test` — runs `pnpm -r test`: `@lodekit/runtime`, `@lodekit/sdk`, `@lodekit/ui`,
+  `@lodekit/manager` (supervisor/paths/logs), and `@lodekit/integration-tests`
+  (`packages/integration-tests` — cross-package tests like runtime↔MCP, importing
+  siblings by package specifier). Per-package: `pnpm --filter @lodekit/runtime test`.
 - `pnpm --filter @lodekit/web-main dev` | `build` — the landing site.
 - `pnpm --filter @lodekit/web-docs dev` | `build` — the docs site.
 - `pnpm --filter @lodekit/manager start` — the menubar manager in dev mode (system Node;
