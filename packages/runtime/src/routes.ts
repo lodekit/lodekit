@@ -10,6 +10,7 @@ import { addClient } from "./sse.js";
 import { validationHook } from "./validation.js";
 import { kvRoutes, withDb, CATALOG_NAME } from "./services/kv-store.js";
 import { dbRoutes, withDbStore, CATALOG_NAME as DB } from "./services/db-store.js";
+import { dataRoutes, CATALOG_NAME as DATA } from "./services/data-explorer.js";
 import { filesRoutes, withFiles, CATALOG_NAME as FILES } from "./services/file-store.js";
 import { logRoutes, withLogs, logsQuery, CATALOG_NAME as LOGS } from "./services/log-store.js";
 import { queryLogs } from "./logStore.js";
@@ -60,6 +61,8 @@ export function apiRoutes(cfg: Config) {
     .route(`/apps/:appId/${CATALOG_NAME}`, kvRoutes)
     .use(`/apps/:appId/${DB}/*`, withDbStore(cfg))
     .route(`/apps/:appId/${DB}`, dbRoutes)
+    .use(`/apps/:appId/${DATA}/*`, withDbStore(cfg))
+    .route(`/apps/:appId/${DATA}`, dataRoutes)
     .use(`/apps/:appId/${LOGS}/*`, withLogs())
     .route(`/apps/:appId/${LOGS}`, logRoutes)
     .use(`/apps/:appId/${EVENTS}/*`, withEvents())
