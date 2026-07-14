@@ -43,7 +43,13 @@ export function TableToolbar({ columns, filters, onFiltersChange, sorts, onSorts
           />
           <PopoverContent align="start" className="w-72 p-3">
             <div className="flex flex-col gap-2">
-              <Select value={draft.column} onValueChange={(v) => v && setDraft((d) => ({ ...d, column: v }))}>
+              {/* items: Base UI resolves the closed SelectValue through it — without
+                  it the trigger shows the raw stored value ("gte") instead of the label. */}
+              <Select
+                value={draft.column}
+                onValueChange={(v) => v && setDraft((d) => ({ ...d, column: v }))}
+                items={columns.map((c) => ({ value: c.name, label: c.name }))}
+              >
                 <SelectTrigger className="h-8 w-full"><SelectValue placeholder="Column" /></SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -51,7 +57,11 @@ export function TableToolbar({ columns, filters, onFiltersChange, sorts, onSorts
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <Select value={draft.op} onValueChange={(v) => v && setDraft((d) => ({ ...d, op: v as FilterOp }))}>
+              <Select
+                value={draft.op}
+                onValueChange={(v) => v && setDraft((d) => ({ ...d, op: v as FilterOp }))}
+                items={OPS.map((op) => ({ value: op, label: OP_LABELS[op] }))}
+              >
                 <SelectTrigger className="h-8 w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -110,7 +120,11 @@ export function TableToolbar({ columns, filters, onFiltersChange, sorts, onSorts
                 </div>
               ))}
               {unsorted.length > 0 && (
-                <Select value="" onValueChange={(v) => { if (v) onSortsChange([...sorts, { column: v, desc: false }]); }}>
+                <Select
+                  value=""
+                  onValueChange={(v) => { if (v) onSortsChange([...sorts, { column: v, desc: false }]); }}
+                  items={unsorted.map((c) => ({ value: c.name, label: c.name }))}
+                >
                   <SelectTrigger className="h-8 w-full"><SelectValue placeholder="Add a column to sort by" /></SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
