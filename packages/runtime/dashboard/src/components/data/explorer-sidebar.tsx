@@ -31,13 +31,16 @@ export function ExplorerSidebar() {
   });
 
   return (
-    <aside className="w-56 shrink-0 border-r px-3 py-4">
+    <aside className="rounded-xl border bg-card p-3 shadow-sm md:sticky md:top-24 md:w-56 md:shrink-0 md:self-start">
       {apps.data ? (
         <Select
           value={appId ?? ""}
           onValueChange={(v) => { if (v) void navigate({ to: "/data/$appId", params: { appId: v } }); }}
+          // items: Base UI resolves the closed SelectValue through it — without it the
+          // trigger shows the raw stored value ("greenhouse") instead of the label.
+          items={apps.data.map((a) => ({ value: a.appId, label: `${a.icon ? `${a.icon} ` : ""}${a.name}` }))}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="h-10 w-full font-medium">
             <SelectValue placeholder="Select an app" />
           </SelectTrigger>
           <SelectContent>
@@ -49,7 +52,7 @@ export function ExplorerSidebar() {
           </SelectContent>
         </Select>
       ) : (
-        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-10 w-full" />
       )}
       {appId && (
         <nav className="mt-4 flex flex-col gap-0.5">
