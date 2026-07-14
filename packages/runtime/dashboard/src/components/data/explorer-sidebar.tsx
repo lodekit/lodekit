@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton, cn } from "@lodekit/ui";
-import { Database, Folder, KeyRound, LayoutDashboard, Table2, Zap, HardDrive, type LucideIcon } from "lucide-react";
+import { Database, Folder, KeyRound, LayoutDashboard, Table2, HardDrive, type LucideIcon } from "lucide-react";
 import { fetchApps, fetchSchema } from "../../lib/data-api";
 
 const itemClass =
@@ -77,7 +77,6 @@ export function ExplorerSidebar() {
           <div className="mt-3 flex flex-col gap-0.5">
             <NavItem to="/data/$appId/kv" params={{ appId }} icon={KeyRound} label="Key-value" />
             <NavItem to="/data/$appId/files" params={{ appId }} icon={Folder} label="Files" />
-            <NavItem to="/data/$appId/events" params={{ appId }} icon={Zap} label="Events" />
             <NavItem to="/data/$appId/storage" params={{ appId }} icon={HardDrive} label="Storage" badge="Soon" />
           </div>
         </nav>

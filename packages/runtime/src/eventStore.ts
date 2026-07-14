@@ -113,20 +113,6 @@ export function queryEvents(opts: EventQuery = {}): { records: EventRecord[]; ne
   }
 }
 
-export function countEvents(opts: { ns?: string; source?: string } = {}): number {
-  if (!db) return 0;
-  const where: string[] = ["(expires_at IS NULL OR expires_at > ?)"];
-  const params: unknown[] = [Date.now()];
-  if (opts.ns) { where.push("ns = ?"); params.push(opts.ns); }
-  if (opts.source) { where.push("source = ?"); params.push(opts.source); }
-  try {
-    return (db.prepare(`SELECT COUNT(*) AS c FROM events WHERE ${where.join(" AND ")}`).get(...params) as { c: number }).c;
-  } catch (e) {
-    process.stderr.write(`[events] event count failed: ${e}\n`);
-    return 0;
-  }
-}
-
 export function sweepEventStore(opts: { maxAgeMs?: number; maxRows?: number; nsAges?: Map<string, number> } = {}): number {
   if (!db) return 0;
   const maxAgeMs = opts.maxAgeMs ?? RETENTION_MAX_AGE_MS;

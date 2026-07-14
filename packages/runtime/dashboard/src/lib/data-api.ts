@@ -8,9 +8,8 @@ export interface DataSummary {
   tables: { name: string; rows: number; sizeBytes: number | null }[];
   kv: { count: number };
   files: { count: number; totalBytes: number };
-  events: { count: number };
   dbFileBytes: number;
-  recent: { store: "table" | "kv" | "file" | "event"; label: string; detail?: string; at: number }[];
+  recent: { store: "table" | "kv" | "file"; label: string; detail?: string; at: number }[];
 }
 export interface KvEntry { key: string; value: unknown; createdAt: number; updatedAt: number; expiresAt: number | null }
 export interface FileStat {
@@ -18,8 +17,6 @@ export interface FileStat {
   metadata: Record<string, unknown> | null; createdAt: number; updatedAt: number; expiresAt: number | null;
   url: string; path: string;
 }
-export interface EventRecord { id: number; ts: number; ns: string; source: string; type: string; payload: Record<string, unknown> | null }
-
 async function json<T>(r: Response): Promise<T> {
   const body: unknown = await r.json().catch(() => null);
   if (!r.ok) throw new Error((body as { error?: string } | null)?.error ?? `HTTP ${r.status}`);
@@ -59,12 +56,4 @@ export function fetchFiles(appId: string, opts: { prefix?: string; cursor?: stri
   if (opts.cursor) q.set("cursor", opts.cursor);
   q.set("limit", String(opts.limit ?? 50));
   return fetch(`/api/apps/${appId}/file-store?${q}`).then((r) => json<{ entries: FileStat[]; nextCursor: string | null }>(r));
-}
-
-// App events only: ns = source = appId (design §2.2).
-export function fetchAppEvents(appId: string, opts: { type?: string; before?: number; limit?: number } = {}): Promise<{ records: EventRecord[]; next: number | null }> {
-  const q = new URLSearchParams({ ns: appId, source: appId, limit: String(opts.limit ?? 50) });
-  if (opts.type) q.set("type", opts.type);
-  if (opts.before != null) q.set("before", String(opts.before));
-  return fetch(`/api/events/history?${q}`).then((r) => json<{ records: EventRecord[]; next: number | null }>(r));
 }

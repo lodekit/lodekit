@@ -5,16 +5,14 @@ import fs from "node:fs";
 import BetterSqlite3 from "better-sqlite3";
 import { Hono } from "hono";
 import { userSchema, type DbEnv } from "./db-store.js";
-import { countEvents, queryEvents } from "../eventStore.js";
 
 export const CATALOG_NAME = "data";
 
-export interface RecentItem { store: "table" | "kv" | "file" | "event"; label: string; detail?: string; at: number }
+export interface RecentItem { store: "table" | "kv" | "file"; label: string; detail?: string; at: number }
 export interface DataSummary {
   tables: { name: string; rows: number; sizeBytes: number | null }[];
   kv: { count: number };
   files: { count: number; totalBytes: number };
-  events: { count: number };
   dbFileBytes: number;
   recent: RecentItem[];
 }
@@ -61,18 +59,12 @@ export function parseTsValue(v: unknown): number | null {
 
 const quoteIdent = (name: string) => `"${name.replaceAll('"', '""')}"`;
 
-export function buildSummary(dbPath: string, appId: string): DataSummary {
-  const eventsCount = countEvents({ ns: appId, source: appId });
-  const recent: RecentItem[] = queryEvents({ ns: appId, source: appId, limit: RECENT_PER_SOURCE }).records.map(
-    (r) => ({ store: "event" as const, label: r.type, at: r.ts })
-  );
+export function buildSummary(dbPath: string): DataSummary {
+  const recent: RecentItem[] = [];
   const top = (items: RecentItem[]) => items.sort((a, b) => b.at - a.at).slice(0, RECENT_TOTAL);
 
   if (!fs.existsSync(dbPath)) {
-    return {
-      tables: [], kv: { count: 0 }, files: { count: 0, totalBytes: 0 },
-      events: { count: eventsCount }, dbFileBytes: 0, recent: top(recent),
-    };
+    return { tables: [], kv: { count: 0 }, files: { count: 0, totalBytes: 0 }, dbFileBytes: 0, recent: [] };
   }
 
   const db = new BetterSqlite3(dbPath, { readonly: true, fileMustExist: true });
@@ -129,7 +121,7 @@ export function buildSummary(dbPath: string, appId: string): DataSummary {
 
     return {
       tables, kv: { count: kvCount }, files: { count: f.c, totalBytes: f.b },
-      events: { count: eventsCount }, dbFileBytes: fs.statSync(dbPath).size, recent: top(recent),
+      dbFileBytes: fs.statSync(dbPath).size, recent: top(recent),
     };
   } finally {
     db.close();
@@ -139,6 +131,6 @@ export function buildSummary(dbPath: string, appId: string): DataSummary {
 // Chained style is normative; onError mirrors the other services (400 { error }).
 export const dataRoutes = new Hono<DbEnv>()
   .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
-  .get("/summary", (c) => c.json(buildSummary(c.var.dbPath, c.var.appId)));
+  .get("/summary", (c) => c.json(buildSummary(c.var.dbPath)));
 
 export type DataRoutes = typeof dataRoutes;

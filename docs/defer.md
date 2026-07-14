@@ -63,3 +63,4 @@ deliberate v1 deferrals, safe to cut because macOS (arm64 + x64) ships without t
 - Files view: thumbnails/media previews.
 - SQL editor (read-only query console) in the explorer.
 - Summary recent-list ordering: a user table whose heuristic timestamp column mixes epoch-int and ISO-text encodings can mis-order its top-5 recent candidates (raw-value ORDER BY happens before parse; silent, narrow).
+- Data explorer events view removed post-build (product consistency: the global dashboard Events page at /events is the one events explorer; its revamp is a future session). The `GET /api/events/history?source=` filter stays — generic event-store API the revamp will want for app-only filtering.

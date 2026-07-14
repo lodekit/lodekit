@@ -5,7 +5,7 @@ import {
   ChartContainer, ChartTooltip, ChartTooltipContent, Skeleton,
   type ChartConfig,
 } from "@lodekit/ui";
-import { ArrowUpRight, Database, Folder, KeyRound, Zap, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Database, Folder, KeyRound, type LucideIcon } from "lucide-react";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { fetchSummary, type DataSummary } from "../../../lib/data-api";
 import { formatBytes, formatCount, relativeTime } from "../../../lib/format";
@@ -22,7 +22,6 @@ const STORES: Record<DataSummary["recent"][number]["store"], { label: string; ic
   table: { label: "Tables", icon: Database, to: "/data/$appId/tables/$table" },
   kv: { label: "Key-value", icon: KeyRound, to: "/data/$appId/kv" },
   file: { label: "Files", icon: Folder, to: "/data/$appId/files" },
-  event: { label: "Events", icon: Zap, to: "/data/$appId/events" },
 };
 
 function Stat({ icon: Icon, label, value, hint, to, params }: {
@@ -71,7 +70,6 @@ function Overview() {
     { store: "Tables", count: totalRows },
     { store: "Key-value", count: s.kv.count },
     { store: "Files", count: s.files.count },
-    { store: "Events", count: s.events.count },
   ];
   const sized = s.tables.filter((t) => t.sizeBytes != null);
   const sizes = sized.map((t) => ({ table: t.name, size: t.sizeBytes! })).sort((a, b) => b.size - a.size).slice(0, 8);
@@ -79,7 +77,7 @@ function Overview() {
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-2xl font-semibold">Overview</h1>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <Stat
           icon={STORES.table.icon}
           label="Tables"
@@ -90,7 +88,6 @@ function Overview() {
         />
         <Stat icon={STORES.kv.icon} label="Key-value" value={formatCount(s.kv.count)} hint="entries" to={STORES.kv.to} params={{ appId }} />
         <Stat icon={STORES.file.icon} label="Files" value={formatCount(s.files.count)} hint={formatBytes(s.files.totalBytes)} to={STORES.file.to} params={{ appId }} />
-        <Stat icon={STORES.event.icon} label="Events" value={formatCount(s.events.count)} hint="events" to={STORES.event.to} params={{ appId }} />
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
