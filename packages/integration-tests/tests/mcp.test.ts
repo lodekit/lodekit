@@ -3,11 +3,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { Server } from "node:http";
-import { start, watcherShutdown } from "../src/server.js";
-import { loadConfig } from "../src/config.js";
-import { scaffold, listApps, fetchSecrets, fetchDbSchema, selectDb } from "../../mcp/client.js";
+import { start, watcherShutdown } from "@lodekit/runtime/server";
+import { loadConfig } from "@lodekit/runtime/config";
+import { scaffold, listApps, fetchSecrets, fetchDbSchema, selectDb } from "@lodekit/mcp/client";
 import { createClient } from "@lodekit/sdk";
-import { getSettingsDb, applySettingsManifest } from "../src/services/settings.js";
+import { getSettingsDb, applySettingsManifest } from "@lodekit/runtime/services/settings";
 
 // One server for the whole file (every test drives its own app id): per-test boots
 // re-run pruneBuildCache against the shared cache dir while the previous test's
@@ -28,7 +28,8 @@ beforeAll(async () => {
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
 }, 60000);
 afterAll(async () => {
-  // Fully quiesce before removing the root (see watcher.test.ts): drop lingering
+  // Fully quiesce before removing the root (see packages/runtime/tests/watcher.test.ts):
+  // drop lingering
   // connections so the server's "close" fires, then await the shutdown it kicks off
   // (watcher close → drain in-flight scaffold builds → stop workers). Otherwise a
   // build or worker outlives this file and races the rmSync below.
@@ -81,7 +82,7 @@ describe("mcp tool helpers", () => {
     await scaffold(base, { appId: "diary", name: "Diary" });
     const { logs } = createClient({ baseUrl: base, appId: "diary" });
     logs.error("render failed", { stack: "TRACE" });
-    const { fetchLogs } = await import("../../mcp/client.js");
+    const { fetchLogs } = await import("@lodekit/mcp/client");
     await expect
       .poll(async () => (await fetchLogs(base, { appId: "diary", level: "error" })).records, { timeout: 10_000 })
       .toHaveLength(1);
@@ -95,7 +96,7 @@ describe("mcp tool helpers", () => {
     await scaffold(base, { appId: "pantry", name: "Pantry" });
     const kv = createClient({ baseUrl: base, appId: "pantry" }).kv;
     await kv.set("item:1", { n: "rice" });
-    const { fetchEvents } = await import("../../mcp/client.js");
+    const { fetchEvents } = await import("@lodekit/mcp/client");
     await expect
       .poll(async () => (await fetchEvents(base, { appId: "pantry", type: "kv-store-change" })).records, { timeout: 10_000 })
       .toHaveLength(1);
@@ -108,7 +109,7 @@ describe("mcp tool helpers", () => {
 
   it("reads settings through the helper the settings tools use", async () => {
     await scaffold(base, { appId: "notes", name: "Notes" });
-    const { fetchSettings } = await import("../../mcp/client.js");
+    const { fetchSettings } = await import("@lodekit/mcp/client");
     const platformSettings = await fetchSettings(base);
     expect(platformSettings.settings).toBeDefined();
     expect(platformSettings.settings.some((s: { key: string }) => s.key === "appearance.theme")).toBe(true);
@@ -148,7 +149,7 @@ describe("mcp tool helpers", () => {
   });
 
   it("fetchGateways lists gateways and app connections — wiring only", async () => {
-    const { fetchGateways } = await import("../../mcp/client.js");
+    const { fetchGateways } = await import("@lodekit/mcp/client");
     const platform = await fetchGateways(base);
     expect(platform).toHaveProperty("gateways");
     const forApp = await fetchGateways(base, "start-app");
@@ -156,7 +157,7 @@ describe("mcp tool helpers", () => {
   });
 
   it("db tools: schema lists user tables, select reads rows, writes refused", async () => {
-    const { getAppDb } = await import("../src/db.js");
+    const { getAppDb } = await import("@lodekit/runtime/db");
     const db = getAppDb(dataDir, "mcp-db");
     db.exec("CREATE TABLE IF NOT EXISTS recipes (id INTEGER PRIMARY KEY, title TEXT NOT NULL)");
     db.prepare("INSERT INTO recipes (title) VALUES ('Toast')").run();
