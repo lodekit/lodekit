@@ -92,13 +92,13 @@ function KvView() {
             </Table>
           </div>
           <div className="flex items-center justify-end gap-2">
-            <Button variant="outline" size="sm" disabled={cursors.length === 0} onClick={() => setCursors((c) => c.slice(0, -1))}>
+            <Button variant="outline" size="sm" disabled={cursors.length === 0 || q.isFetching} onClick={() => setCursors((c) => c.slice(0, -1))}>
               <ChevronLeft /> Prev
             </Button>
             <Button
               variant="outline"
               size="sm"
-              disabled={q.data.nextCursor == null}
+              disabled={q.data.nextCursor == null || q.isFetching}
               onClick={() => q.data.nextCursor != null && setCursors((c) => [...c, q.data.nextCursor!])}
             >
               Next <ChevronRight />
