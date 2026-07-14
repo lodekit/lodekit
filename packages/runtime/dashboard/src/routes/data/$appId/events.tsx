@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge, Button, Input, Skeleton } from "@lodekit/ui";
 import { RefreshCw } from "lucide-react";
 import { fetchAppEvents, type EventRecord } from "../../../lib/data-api";
@@ -34,6 +34,7 @@ function EventsView() {
   const [next, setNext] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const reqRef = useRef(0);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(type), 250);
@@ -42,18 +43,21 @@ function EventsView() {
   useEffect(() => { setType(""); setDebounced(""); }, [appId]);
 
   async function load(reset: boolean) {
+    const req = ++reqRef.current;
     setLoading(true);
     setError(null);
     try {
       const before = reset ? undefined : (next ?? undefined);
       const d = await fetchAppEvents(appId, { type: debounced || undefined, before });
+      if (req !== reqRef.current) return; // superseded — a newer request owns the state
       setRecords((rs) => (reset ? d.records : [...(rs ?? []), ...d.records]));
       setNext(d.next);
     } catch (e) {
+      if (req !== reqRef.current) return;
       setError((e as Error).message);
       if (reset) setRecords([]);
     } finally {
-      setLoading(false);
+      if (req === reqRef.current) setLoading(false);
     }
   }
 
