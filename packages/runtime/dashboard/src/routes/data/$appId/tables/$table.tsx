@@ -156,7 +156,18 @@ function TableBrowser() {
               <TableBody>
                 {dt.getRowModel().rows.length ? (
                   dt.getRowModel().rows.map((row) => (
-                    <TableRow key={row.id} className="cursor-pointer" onClick={() => setDetailRow(row.original)}>
+                    <TableRow
+                      key={row.id}
+                      tabIndex={0}
+                      className="cursor-pointer focus-visible:bg-accent/50 focus-visible:outline-none"
+                      onClick={() => setDetailRow(row.original)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setDetailRow(row.original);
+                        }
+                      }}
+                    >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                       ))}
