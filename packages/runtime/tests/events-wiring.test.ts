@@ -39,19 +39,41 @@ describe("platform emitters land on the bus", () => {
     expect(records[0]).toMatchObject({ source: "_platform", payload: { status: "error" } });
   });
 
+  // Real chokidar on macOS: the OS event stream goes live some time AFTER ready under
+  // load, and changes in the gap are dropped outright — including the addDir for a new
+  // app folder, which leaves that folder permanently unwatched (watcher.test.ts works
+  // around the same gap). So first re-touch a top-level probe file — appsDir itself is
+  // watched from startup — until an event proves the stream is live, and only then
+  // assert on real churn.
   it("watcher: app-folder churn stores one debounced apps-changed event in _platform", async () => {
     const watcher = await startWatcher(cfg);
+    const count = () => queryEvents({ ns: "_platform", type: "apps-changed" }).records.length;
+    const probe = path.join(cfg.appsDir, "probe.txt"); // invalid app id — fires apps-changed, never a build
+    let tick = 0;
+    await expect
+      .poll(() => {
+        fs.writeFileSync(probe, `live?${tick++}`);
+        return count();
+      }, { interval: 500, timeout: 15_000 })
+      .toBeGreaterThanOrEqual(1);
+    // App-folder churn lands on the bus: with the stream live, the newapp addDir is
+    // delivered even if the writes inside race chokidar's watch of the new folder.
+    await new Promise((r) => setTimeout(r, 1000)); // drain the last priming write's debounce
+    const beforeChurn = count();
     const dir = path.join(cfg.appsDir, "newapp");
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({ name: "New", appId: "newapp" }));
-    await expect
-      .poll(() => queryEvents({ ns: "_platform", type: "apps-changed" }).records.length, { timeout: 5000 })
-      .toBeGreaterThanOrEqual(1);
-    // Debounced: the burst of add/addDir events collapsed (allow the mkdir/write pair
-    // to straddle one debounce boundary, but never one event per raw fs event).
-    expect(queryEvents({ ns: "_platform", type: "apps-changed" }).records.length).toBeLessThanOrEqual(2);
+    await expect.poll(count, { timeout: 15_000 }).toBeGreaterThan(beforeChurn);
+    // Debounced: a tight burst on the (definitely watched) probe collapses — allow one
+    // debounce-boundary straddle, but never one event per raw fs event.
+    await new Promise((r) => setTimeout(r, 1000)); // drain the churn's debounce
+    const beforeBurst = count();
+    for (let i = 0; i < 5; i++) fs.writeFileSync(probe, `burst${i}`);
+    await expect.poll(count, { timeout: 15_000 }).toBeGreaterThan(beforeBurst);
+    await new Promise((r) => setTimeout(r, 600)); // a straddled second window gets to fire
+    expect(count() - beforeBurst).toBeLessThanOrEqual(2);
     await watcher.close();
-  });
+  }, 60_000);
 
   it("kv writes store change events with identity-only payloads and a service ttl", async () => {
     const { Hono } = await import("hono");
