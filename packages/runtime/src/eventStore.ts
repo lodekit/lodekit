@@ -25,6 +25,7 @@ export interface EventWrite {
 export interface EventQuery {
   ns?: string;
   type?: string;
+  source?: string;
   after?: number; // ascending replay: id > after
   before?: number; // newest-first pagination: id < before
   limit?: number;
@@ -93,6 +94,7 @@ export function queryEvents(opts: EventQuery = {}): { records: EventRecord[]; ne
   const params: unknown[] = [Date.now()];
   if (opts.ns) { where.push("ns = ?"); params.push(opts.ns); }
   if (opts.type) { where.push("type = ?"); params.push(opts.type); }
+  if (opts.source) { where.push("source = ?"); params.push(opts.source); }
   if (asc) { where.push("id > ?"); params.push(opts.after); }
   else if (opts.before != null) { where.push("id < ?"); params.push(opts.before); }
   try {

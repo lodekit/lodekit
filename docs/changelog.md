@@ -24,3 +24,8 @@ Rules:
   (`useDataTable` + `DataTable`: sorting, filtering, pagination — client-side or
   server-driven). The Greenhouse Almanac shows both: a Sky Journal temperature chart
   and a sortable care-history table.
+
+- **Data explorer.** The dashboard's Data page is now a real explorer: pick an
+  app and browse its tables (filter, multi-column sort, search, paging),
+  key-value entries, files, and events — read-only, with storage insights and
+  recent activity on the overview.
