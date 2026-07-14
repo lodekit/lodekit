@@ -46,6 +46,16 @@ describe("summary heuristics", () => {
     expect(heuristicTsColumn([{ name: "id" }, { name: "title" }])).toBeNull();
   });
 
+  it("heuristicTsColumn falls back to the wider timestamp-shaped rule", () => {
+    expect(heuristicTsColumn([{ name: "id" }, { name: "adopted_at" }])).toBe("adopted_at");
+    expect(heuristicTsColumn([{ name: "id" }, { name: "at" }])).toBe("at");
+    expect(heuristicTsColumn([{ name: "id" }, { name: "adoptedAt" }])).toBe("adoptedAt");
+    // creation-ish names still outrank the wider rule
+    expect(heuristicTsColumn([{ name: "adopted_at" }, { name: "created_at" }])).toBe("created_at");
+    // no false positives on at-ish words
+    expect(heuristicTsColumn([{ name: "chat" }, { name: "format" }])).toBeNull();
+  });
+
   it("parseTsValue handles epoch ms, epoch s, ISO text, junk", () => {
     expect(parseTsValue(1760400000000)).toBe(1760400000000);          // ms
     expect(parseTsValue(1760400000)).toBe(1760400000000);             // s -> ms

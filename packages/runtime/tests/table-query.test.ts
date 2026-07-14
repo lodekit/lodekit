@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildRowsQuery, buildCountQuery } from "../dashboard/src/lib/table-query.js";
-import { formatBytes, relativeTime } from "../dashboard/src/lib/format.js";
+import { formatBytes, isTimestampColumn, parseTimestampValue, relativeTime } from "../dashboard/src/lib/format.js";
 
 const COLS = [
   { name: "id", type: "INTEGER" },
@@ -89,5 +89,25 @@ describe("format", () => {
     expect(relativeTime(now - 30_000, now)).toMatch(/second/);
     expect(relativeTime(now - 5 * 60_000, now)).toMatch(/minute/);
     expect(relativeTime(now - 3 * 3_600_000, now)).toMatch(/hour/);
+  });
+
+  // Mirrors the runtime rule in services/data-explorer.ts — shared cases pinned
+  // on both sides so the client and server heuristics can't drift.
+  it("isTimestampColumn matches timestamp-shaped names only", () => {
+    for (const name of ["created_at", "createdAt", "adopted_at", "adoptedAt", "at", "ts", "timestamp", "date", "logged_time"]) {
+      expect(isTimestampColumn(name), name).toBe(true);
+    }
+    for (const name of ["chat", "format", "name", "state", "rate"]) {
+      expect(isTimestampColumn(name), name).toBe(false);
+    }
+  });
+
+  it("parseTimestampValue handles epoch ms, epoch s, ISO text, junk", () => {
+    expect(parseTimestampValue(1760400000000)).toBe(1760400000000);
+    expect(parseTimestampValue(1760400000)).toBe(1760400000000);
+    expect(parseTimestampValue("2026-07-14T10:00:00Z")).toBe(Date.parse("2026-07-14T10:00:00Z"));
+    expect(parseTimestampValue("banana")).toBeNull();
+    expect(parseTimestampValue(42)).toBeNull();
+    expect(parseTimestampValue(null)).toBeNull();
   });
 });

@@ -9,6 +9,7 @@ import {
 } from "@lodekit/ui";
 import { KeyRound } from "lucide-react";
 import { fetchSchema, selectRows } from "../../../../lib/data-api";
+import { formatTs, isTimestampColumn, parseTimestampValue } from "../../../../lib/format";
 import { buildCountQuery, buildRowsQuery, type FilterRule, type SortRule } from "../../../../lib/table-query";
 import { TableToolbar } from "../../../../components/data/table-toolbar";
 import { DetailSheet } from "../../../../components/data/detail-sheet";
@@ -19,8 +20,20 @@ export const Route = createFileRoute("/data/$appId/tables/$table")({
 
 type Row = Record<string, unknown>;
 
-function CellValue({ value }: { value: unknown }) {
+function CellValue({ value, timestamp }: { value: unknown; timestamp?: boolean }) {
   if (value === null || value === undefined) return <span className="text-muted-foreground/60 italic">NULL</span>;
+  if (timestamp) {
+    // Human-readable time for timestamp-shaped columns; the raw stored value
+    // stays reachable on hover (and verbatim in the row detail sheet).
+    const at = parseTimestampValue(value);
+    if (at != null) {
+      return (
+        <span className="block max-w-64 truncate text-xs" title={String(value)}>
+          {formatTs(at)}
+        </span>
+      );
+    }
+  }
   const text = typeof value === "object" ? JSON.stringify(value) : String(value);
   return <span className="block max-w-64 truncate font-mono text-xs">{text}</span>;
 }
@@ -84,7 +97,7 @@ function TableBrowser() {
             <span className="text-muted-foreground text-[10px] font-normal lowercase">{c.type}</span>
           </div>
         ),
-        cell: ({ getValue }) => <CellValue value={getValue()} />,
+        cell: ({ getValue }) => <CellValue value={getValue()} timestamp={isTimestampColumn(c.name)} />,
         enableSorting: true,
         enableHiding: true,
       })),

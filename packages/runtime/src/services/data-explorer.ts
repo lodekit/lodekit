@@ -21,15 +21,27 @@ export interface DataSummary {
 
 const RECENT_PER_SOURCE = 5;
 const RECENT_TOTAL = 10;
-// Priority order; matched case-insensitively against column names.
+// Priority order; matched case-insensitively against column names. Creation-ish
+// names win; the wider isTimestampColumn rule (any *_at/*Ts/date-shaped name)
+// is the fallback. Mirrored client-side in dashboard/src/lib/format.ts — keep
+// the two rules in sync (tests on both sides pin the shared cases).
 const TS_COLUMNS = ["created_at", "createdat", "created", "inserted_at", "timestamp", "ts"];
+const TS_EXACT = new Set([...TS_COLUMNS, "at", "time", "date", "updated_at", "updatedat"]);
+const TS_SUFFIX = /_(at|ts|time|date)$/;
+const TS_CAMEL = /[a-z0-9](At|Ts|Time|Date)$/;
+
+export function isTimestampColumn(name: string): boolean {
+  const lower = name.toLowerCase();
+  return TS_EXACT.has(lower) || TS_SUFFIX.test(lower) || TS_CAMEL.test(name);
+}
 
 export function heuristicTsColumn(columns: { name: string }[]): string | null {
   for (const want of TS_COLUMNS) {
     const hit = columns.find((c) => c.name.toLowerCase() === want);
     if (hit) return hit.name;
   }
-  return null;
+  const hit = columns.find((c) => isTimestampColumn(c.name));
+  return hit?.name ?? null;
 }
 
 // Epoch numbers: >1e11 reads as ms, >1e8 as seconds; anything smaller is not a
