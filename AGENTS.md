@@ -3,6 +3,8 @@
 lodekit is a local, self-hosted runtime on which a person — working with an AI coding
 agent — builds and runs their own personal web tools. See `docs/specs/` for detail.
 `CONTEXT.md` fixes the domain language — use its canonical terms in code, docs, and specs.
+Visual identity — palette, typography, token rules — lives in `DESIGN.md`; consult it
+before any UI, landing, or docs styling work.
 
 Behavioral guardrails for development workflow.
 Standard workflow uses the Superpowers skills.
@@ -128,3 +130,11 @@ Simplicity never means cutting safety.
 - **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
 - **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
   showcase app exercises it (`root/README.md` holds the living coverage checklist).
+- **Steering docs:** root steering docs are uppercase (`AGENTS.md`, `CLAUDE.md`
+  symlink, `CONTEXT.md`, `DESIGN.md`). `CLAUDE.md` is a committed symlink to
+  `AGENTS.md` — never diverge them. Do not set `askUserQuestionTimeout` in user
+  settings; interactive questions must block until answered.
+- **Codebase graph:** for structure questions (call paths, impact of a change, where
+  a symbol is used), query the `codebase-memory-mcp` tools (`search_graph`,
+  `trace_path`, `detect_changes`) first; fall back to grep when results are thin.
+  Index the current worktree on demand (`index_repository`) if missing or stale.

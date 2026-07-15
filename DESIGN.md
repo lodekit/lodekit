@@ -50,6 +50,11 @@ Single accent color across all product graphics: **cork amber** (higher-contrast
 - Grass green appears as landscape illustration (e.g. footer meadow with the jar sitting on grass), not as a semantic or interactive color.
 - Dark mode is a blue night sky (`#0E1B26`), not neutral gray. Illustrations swap to their dark variants (dimmer glass, muted grass, softened cloud whites).
 
+## Component sourcing
+
+- Prefer stock upstream shadcn artifacts; express identity via tokens only — never
+  fork or restyle component internals.
+
 ## CSS variables
 
 ```css
