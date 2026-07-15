@@ -2,7 +2,7 @@
 
 lodekit is a local, self-hosted runtime on which a person — working with an AI coding
 agent — builds and runs their own personal web tools. See `docs/specs/` for detail.
-`context.md` fixes the domain language — use its canonical terms in code, docs, and specs.
+`CONTEXT.md` fixes the domain language — use its canonical terms in code, docs, and specs.
 
 Behavioral guardrails for development workflow.
 Standard workflow uses the Superpowers skills.
@@ -35,7 +35,7 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
   `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
   app supervising the workspace runtime against `root/` on the system Node.
 - **`root/`** — the checked-in Lodekit root: the Greenhouse showcase app (the SDK's
-  smoke-testing ground — see `root/readme.md` for the definition-of-done convention) and
+  smoke-testing ground — see `root/README.md` for the definition-of-done convention) and
   the Welcome app. Used in dev via `LODEKIT_ROOT=./root`; the packaged manager installs
   its apps into a fresh `~/Documents/Lodekit` on first run.
 
@@ -127,4 +127,4 @@ Simplicity never means cutting safety.
   (Claude Code discovers them via the `.claude/skills` symlinks).
 - **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
 - **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
-  showcase app exercises it (`root/readme.md` holds the living coverage checklist).
+  showcase app exercises it (`root/README.md` holds the living coverage checklist).

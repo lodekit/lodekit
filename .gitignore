@@ -1,5 +1,4 @@
 .idea
-claude.md
 node_modules/
 *.log
 
@@ -14,7 +13,7 @@ manager/.vite/
 pnpm-debug.log*
 web/*/dist/
 web/*/.astro/
-# The app contract (context.md) calls routeTree.gen.ts "build-generated, committed" — these
+# The app contract (CONTEXT.md) calls routeTree.gen.ts "build-generated, committed" — these
 # are ignored deliberately: this repo's runtime rebuilds them at dev/test time, so committing
 # them here would just churn diffs. Apps in the wild commit theirs.
 packages/runtime/tests/fixtures/start-app/src/routeTree.gen.ts

@@ -220,7 +220,7 @@ function Shed() {
           <p className="text-sm text-muted-foreground">
             Reserved for SDK methods that lose their natural home as the platform grows.
             Almost empty — the <code>appId</code> export lives here; every other method has
-            a real feature (see <code>root/readme.md</code>).
+            a real feature (see <code>root/README.md</code>).
           </p>
           <p className="text-sm text-muted-foreground">
             This page belongs to app "<code>{appId}</code>" — the SDK's <code>appId</code>{" "}
