@@ -41,7 +41,7 @@ wiring. No product code changes.
 | D9 | `DESIGN.md` stays at the root with a discoverability pointer in `AGENTS.md` (it is currently referenced by nothing); the "stock shadcn, identity via tokens only" rule migrates into it from auto memory. |
 | D10 | codebase-memory-mcp: manual per-project wiring only (`.mcp.json` + AGENTS.md nudge); never its `install` auto-configurator. |
 | D11 | Codex day-one via `.agents/scripts/setup.mjs` (idempotent bootstrap + doctor) for the parts Codex can't read from the repo. |
-| D12 | Process evolves on a slow deliberate cadence (~quarterly resync sessions), tracked in `.agents/upstream.md`. |
+| D12 | Process evolves on a slow deliberate cadence (~quarterly resync sessions), tracked in `.agents/UPSTREAM.md`. |
 
 ## 1. Repo layout after this work
 
@@ -57,7 +57,7 @@ DESIGN.md                      # renamed from design.md (+ tokens-only rule, see
   scripts/
     setup.mjs                  # bootstrap + doctor (Codex config, binary checks)
   internal/                    # GITIGNORED — handoff/, sdd/, research/, scratch
-  upstream.md                  # divergence ledger (see §9)
+  UPSTREAM.md                  # divergence ledger (see §9)
 .claude/
   skills/<name> -> ../../.agents/skills/<name>   # committed symlinks, one per skill
   settings.json                # committed (see §2)
@@ -115,7 +115,7 @@ All under `.agents/skills/`, plain SKILL.md dirs (Agent Skills standard — Code
 | mattpocock/skills (SHA at vendor time) | codebase-design, domain-modeling |
 | ours | session (new, §4), drain-deferrals (new, §5), release (existing) |
 
-**Uniform adaptations** (each recorded in `.agents/upstream.md`):
+**Uniform adaptations** (each recorded in `.agents/UPSTREAM.md`):
 
 - **Names/namespaces:** internal `Skill(beads-superpowers:x)` references become plain
   `x` (project-skill invocation).
@@ -270,7 +270,7 @@ The script doubles as the fresh-machine doctor for the Claude Code side.
 
 ## 9. Upstream ledger and resync ritual
 
-`.agents/upstream.md` records, per vendored source: upstream repo, pinned
+`.agents/UPSTREAM.md` records, per vendored source: upstream repo, pinned
 version/SHA, vendor date, and every local divergence with its one-line reason
 (the beads-superpowers "Known Deliberate Divergences" pattern, one level down).
 
@@ -325,8 +325,5 @@ serving until PR 3 swaps it out atomically.)
 
 ## 13. Deferred (filed as beads once §5 lands)
 
-- Headless `auto` (`claude -p --permission-mode dontAsk` + allowlist).
 - `semantic_query` adoption when brew ships ≥ 0.9.x.
-- CONTEXT.md glossary/app-contract split decision.
 - Watcher-load revisit if worktree count hurts.
-- Uppercase symlinks for Linux, if ever needed.
