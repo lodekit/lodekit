@@ -55,6 +55,12 @@ Rules:
 
 - **Events explorer** — the dashboard Events view can now filter by app, kind (engine / services / apps), component, event type, and date range, with a live filtered count and time histogram.
 
+- **Theme library in the dashboard.** The dashboard's Themes page shows every
+  installed theme as a card — its palette swatches and a light/dark preview,
+  parsed from the theme itself. Switch a theme on everywhere, assign one to a
+  specific app (with inline unassign), and duplicate, rename, or delete your own
+  themes — all applied live, no rebuild.
+
 ## Fixed
 
 - **kv-store error statuses** — internal faults in the kv API now return 500
