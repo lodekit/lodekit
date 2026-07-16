@@ -24,13 +24,16 @@ export interface EventWrite {
   ttl?: number; // seconds
 }
 
-export interface EventQuery {
+export interface EventFilter {
   app?: string;
   kind?: string;
   component?: string;
   type?: string;
   since?: number;
   until?: number;
+}
+
+export interface EventQuery extends EventFilter {
   after?: number; // ascending replay: id > after
   before?: number; // newest-first pagination: id < before
   limit?: number;
@@ -74,6 +77,19 @@ const toRecord = (r: Row): EventRecord => ({
   payload: r.payload ? (JSON.parse(r.payload) as Record<string, unknown>) : null,
 });
 
+// Shared by history and stats: the filter WHERE plus read-time expiry (lazy, kv-style).
+function filterWhere(f: EventFilter): { where: string[]; params: unknown[] } {
+  const where: string[] = ["(expires_at IS NULL OR expires_at > ?)"];
+  const params: unknown[] = [Date.now()];
+  if (f.app) { where.push("app = ?"); params.push(f.app); }
+  if (f.kind) { where.push("kind = ?"); params.push(f.kind); }
+  if (f.component) { where.push("component = ?"); params.push(f.component); }
+  if (f.type) { where.push("type = ?"); params.push(f.type); }
+  if (f.since != null) { where.push("ts >= ?"); params.push(f.since); }
+  if (f.until != null) { where.push("ts < ?"); params.push(f.until); }
+  return { where, params };
+}
+
 export function insertEvent(w: EventWrite): EventRecord | null {
   if (!db) return null;
   try {
@@ -96,14 +112,7 @@ export function queryEvents(opts: EventQuery = {}): { records: EventRecord[]; ne
   if (!db) return { records: [], next: null };
   const limit = Math.min(Math.max(1, Math.floor(opts.limit ?? 100)), 1000);
   const asc = opts.after != null;
-  const where: string[] = ["(expires_at IS NULL OR expires_at > ?)"];
-  const params: unknown[] = [Date.now()];
-  if (opts.app) { where.push("app = ?"); params.push(opts.app); }
-  if (opts.kind) { where.push("kind = ?"); params.push(opts.kind); }
-  if (opts.component) { where.push("component = ?"); params.push(opts.component); }
-  if (opts.type) { where.push("type = ?"); params.push(opts.type); }
-  if (opts.since != null) { where.push("ts >= ?"); params.push(opts.since); }
-  if (opts.until != null) { where.push("ts < ?"); params.push(opts.until); }
+  const { where, params } = filterWhere(opts);
   if (asc) { where.push("id > ?"); params.push(opts.after); }
   else if (opts.before != null) { where.push("id < ?"); params.push(opts.before); }
   try {
@@ -119,6 +128,48 @@ export function queryEvents(opts: EventQuery = {}): { records: EventRecord[]; ne
   } catch (e) {
     process.stderr.write(`[events] event query failed: ${e}\n`);
     return { records: [], next: null };
+  }
+}
+
+export interface EventStatsQuery extends EventFilter {
+  bucket: number; // ms — caller-chosen histogram interval
+}
+
+export interface EventStats {
+  total: number;
+  buckets: { t: number; n: number }[];
+  byKind: Record<string, number>;
+  byComponent: Record<string, number>;
+  byType: Record<string, number>;
+  byApp: Record<string, number>;
+}
+
+const emptyStats = (): EventStats => ({ total: 0, buckets: [], byKind: {}, byComponent: {}, byType: {}, byApp: {} });
+
+// Explorer-header aggregates (spec §6): one histogram GROUP BY plus one GROUP BY per
+// facet, all under the same WHERE; the events_ts index carries the range scan. Facet
+// maps are complete — cardinality is bounded by the taxonomy plus app count at Lodekit
+// scale. Null app is keyed "" in byApp (JSON object keys are strings).
+export function queryEventStats(opts: EventStatsQuery): EventStats {
+  if (!db) return emptyStats();
+  const bucket = Math.max(1, Math.floor(opts.bucket));
+  const { where, params } = filterWhere(opts);
+  const w = where.join(" AND ");
+  try {
+    const total = (db.prepare(`SELECT COUNT(*) AS n FROM events WHERE ${w}`).get(...params) as { n: number }).n;
+    const buckets = db
+      .prepare(`SELECT (ts / CAST(? AS INTEGER)) * CAST(? AS INTEGER) AS t, COUNT(*) AS n FROM events WHERE ${w} GROUP BY t ORDER BY t`)
+      .all(bucket, bucket, ...params) as { t: number; n: number }[];
+    const facet = (col: string): Record<string, number> =>
+      Object.fromEntries(
+        (db!.prepare(`SELECT ${col} AS k, COUNT(*) AS n FROM events WHERE ${w} GROUP BY k`).all(...params) as { k: string; n: number }[]).map(
+          (r) => [r.k, r.n]
+        )
+      );
+    return { total, buckets, byKind: facet("kind"), byComponent: facet("component"), byType: facet("type"), byApp: facet("COALESCE(app, '')") };
+  } catch (e) {
+    process.stderr.write(`[events] event stats failed: ${e}\n`);
+    return emptyStats();
   }
 }
 
