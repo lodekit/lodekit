@@ -131,7 +131,7 @@ Simplicity never means cutting safety.
   docs changelog page. Merging it triggers the GitHub release build; the workflow is
   the only creator of `v*` tags. Portable agent skills live in `.agents/skills/`
   (Claude Code discovers them via the `.claude/skills` symlinks).
-- **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
+- **Commits & PRs:** no `Co-Authored-By` trailers in commit messages; no "Generated with Claude Code" attribution in PR bodies.
 - **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
   showcase app exercises it (`root/README.md` holds the living coverage checklist).
 - **Steering docs:** root steering docs are uppercase (`AGENTS.md`, `CLAUDE.md`
