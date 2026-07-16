@@ -7,8 +7,7 @@
 // in-memory only — a restart forgives.
 import type { Config } from "./config.js";
 import { emitLog } from "./logger.js";
-import { PLATFORM_NS } from "./events.js";
-import { emitGatewayHealth } from "./gatewayEvents.js";
+import { emitGatewayEvent } from "./gatewayEvents.js";
 import { getGatewayEntry, isPrivateHost, type GatewayManifest } from "./gatewayManifests.js";
 import { parseRate, TokenBucket, Breaker, Semaphore } from "./gatewayGuards.js";
 import {
@@ -383,7 +382,7 @@ export async function executeGatewayRequest(
       const timedOut = e instanceof Error && e.name === "TimeoutError";
       breakerSettled = true;
       const opened = breaker.recordFailure();
-      if (opened) emitGatewayHealth(PLATFORM_NS, { provider: providerId, breaker: "open" });
+      if (opened) emitGatewayEvent(null, "breaker-opened", { provider: providerId });
       const outcome = timedOut ? "timeout" : "network";
       record("error", outcome, null, Date.now() - started, {
         error: scrub(String(e instanceof Error ? e.message : e), redact),
@@ -424,19 +423,19 @@ export async function executeGatewayRequest(
     breakerSettled = true;
     if (res.status >= 500) {
       const opened = breaker.recordFailure();
-      if (opened) emitGatewayHealth(PLATFORM_NS, { provider: providerId, breaker: "open" });
+      if (opened) emitGatewayEvent(null, "breaker-opened", { provider: providerId });
     } else {
       const closed = breaker.recordSuccess();
-      if (closed) emitGatewayHealth(PLATFORM_NS, { provider: providerId, breaker: "closed" });
+      if (closed) emitGatewayEvent(null, "breaker-closed", { provider: providerId });
     }
     // Connection health: 401/403 mark this connection, one event per transition.
     if (res.status === 401 || res.status === 403) {
       if (!unhealthy.has(healthKey)) {
         unhealthy.add(healthKey);
-        emitGatewayHealth(appId, { alias, provider: providerId, status: "unhealthy" });
+        emitGatewayEvent(appId, "connection-failed", { alias, provider: providerId });
       }
     } else if (res.status < 400 && unhealthy.delete(healthKey)) {
-      emitGatewayHealth(appId, { alias, provider: providerId, status: "ok" });
+      emitGatewayEvent(appId, "connection-recovered", { alias, provider: providerId });
     }
     // Retry-After: pause the shared bucket so nobody hammers a throttling provider.
     if (res.status === 429) {

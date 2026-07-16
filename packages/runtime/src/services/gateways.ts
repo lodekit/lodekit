@@ -16,7 +16,7 @@ import type { Config } from "../config.js";
 import { emitLog } from "../logger.js";
 import { validationHook } from "../validation.js";
 import { verifyWorkerToken } from "../appWorker.js";
-import { emitGatewayChange } from "../gatewayEvents.js";
+import { emitGatewayEvent } from "../gatewayEvents.js";
 import {
   GatewaysError, GatewaysNotFoundError, pruneGatewayConnections,
   setGatewayLink, deleteGatewayLink, getGatewayLink,
@@ -103,13 +103,13 @@ export function registerGatewaysManifest(cfg: Config, appId: string, uses: Recor
   if (!isValidAppId(appId)) return; // _dashboard sits outside the app-id grammar
   if (loadError) {
     emitLog("error", "gateways", "gateways module failed to load", { stack: loadError }, appId);
-    emitGatewayChange(appId, "*");
+    emitGatewayEvent(appId, "defs-changed");
     return;
   }
   // Never materialize a data dir for an app that has never used gateways.
   if (Object.keys(uses).length === 0 && !fs.existsSync(path.join(cfg.dataDir, appId, "db.sqlite"))) return;
   applyGatewaysManifest(cfg, appId, uses, Date.now());
-  emitGatewayChange(appId, "*"); // declarations changed — dashboard refetches
+  emitGatewayEvent(appId, "defs-changed"); // declarations changed — dashboard refetches
 }
 
 export function listUses(db: Database.Database): { alias: string; def: UseDef | null; error: string | null }[] {
@@ -366,7 +366,7 @@ export const appGatewaysRoutes = new Hono<GatewaysEnv>()
       if (def.kind !== "secret") throw new GatewaysError(`slot "${slot}" is a config slot — set a value instead`);
       setGatewayLink(c.var.appId, alias, slot, c.req.valid("json").slug);
       clearConnectionHealth(c.var.appId, alias);
-      emitGatewayChange(c.var.appId, alias);
+      emitGatewayEvent(c.var.appId, "connection-linked", { alias, slot });
       return c.json({ ok: true as const });
     }
   )
@@ -376,7 +376,7 @@ export const appGatewaysRoutes = new Hono<GatewaysEnv>()
     if (def.kind !== "secret") throw new GatewaysError(`slot "${slot}" is a config slot`);
     deleteGatewayLink(c.var.appId, alias, slot);
     clearConnectionHealth(c.var.appId, alias);
-    emitGatewayChange(c.var.appId, alias);
+    emitGatewayEvent(c.var.appId, "connection-unlinked", { alias, slot });
     return c.json({ ok: true as const });
   })
   .put(
@@ -389,7 +389,7 @@ export const appGatewaysRoutes = new Hono<GatewaysEnv>()
       if (def.kind !== "config") throw new GatewaysError(`slot "${slot}" is a secret slot — link a secret instead`);
       setGatewayConfig(c.var.appId, alias, slot, c.req.valid("json").value);
       clearConnectionHealth(c.var.appId, alias);
-      emitGatewayChange(c.var.appId, alias);
+      emitGatewayEvent(c.var.appId, "connection-configured", { alias, slot });
       return c.json({ ok: true as const });
     }
   )
@@ -399,7 +399,7 @@ export const appGatewaysRoutes = new Hono<GatewaysEnv>()
     if (def.kind !== "config") throw new GatewaysError(`slot "${slot}" is a secret slot`);
     deleteGatewayConfig(c.var.appId, alias, slot);
     clearConnectionHealth(c.var.appId, alias);
-    emitGatewayChange(c.var.appId, alias);
+    emitGatewayEvent(c.var.appId, "connection-cleared", { alias, slot });
     return c.json({ ok: true as const });
   })
   .post("/:alias/oauth/start", zValidator("param", aliasParam, validationHook), (c) => {

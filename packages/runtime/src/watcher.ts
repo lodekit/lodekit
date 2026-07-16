@@ -2,13 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import chokidar from "chokidar";
 import type { Config } from "./config.js";
-import { emitEvent, PLATFORM_NS } from "./events.js";
+import { emitEvent } from "./events.js";
 import { isValidAppId } from "./registry.js";
 import { buildAll, buildApp, buildDashboard, dropBuild } from "./build.js";
 import { evictApp } from "./taskEngine.js";
 import { createLogger } from "./logger.js";
 import { reloadGatewayManifests } from "./gatewayManifests.js";
-import { emitGatewayChange } from "./gatewayEvents.js";
+import { emitGatewayEvent } from "./gatewayEvents.js";
 
 const DEBOUNCE_MS = 150;
 
@@ -118,7 +118,7 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
   const onGateways = () => {
     clearTimeout(gatewaysTimer);
     gatewaysTimer = setTimeout(() => {
-      for (const id of reloadGatewayManifests()) emitGatewayChange(PLATFORM_NS, id);
+      for (const id of reloadGatewayManifests()) emitGatewayEvent(null, "provider-changed", { provider: id });
     }, DEBOUNCE_MS);
   };
   const gatewaysWatcher = chokidar.watch(cfg.gatewaysDir, { ignoreInitial: true });

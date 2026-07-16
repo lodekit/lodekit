@@ -14,7 +14,7 @@ import {
 } from "./gatewaysStore.js";
 import { readValueBySlug } from "./secretsStore.js";
 import { getUsesDb, listUses } from "./services/gateways.js";
-import { emitGatewayChange, emitGatewayHealth } from "./gatewayEvents.js";
+import { emitGatewayEvent } from "./gatewayEvents.js";
 
 const PENDING_TTL_MS = 10 * 60_000;
 const EXPIRY_SKEW_MS = 30_000;
@@ -137,7 +137,7 @@ export async function handleOauthCallback(query: { code?: string; state?: string
     ...(t.refresh_token ? { refreshToken: t.refresh_token } : {}),
     ...(t.expires_in ? { expiresAt: Date.now() + t.expires_in * 1000 } : {}),
   });
-  emitGatewayChange(p.appId, p.alias);
+  emitGatewayEvent(p.appId, "connection-authorized", { alias: p.alias });
   return { appId: p.appId, alias: p.alias };
 }
 
@@ -157,7 +157,7 @@ async function tokenProvider(
   if (!expired) return { token: tokens.accessToken, redact };
   if (!tokens.refreshToken) {
     setNeedsReauth(appId, alias, true);
-    emitGatewayHealth(appId, { alias, provider: providerId, status: "needs_reauth" });
+    emitGatewayEvent(appId, "auth-expired", { alias, provider: providerId });
     throw new GatewayRequestError("needs_reauth", `the ${manifest.name} token expired and no refresh token exists — reconnect`);
   }
   // clientId/clientSecret can throw GatewayRequestError (unconfigured) or
@@ -177,7 +177,7 @@ async function tokenProvider(
   } catch (e) {
     if (e instanceof GatewaysError) {
       setNeedsReauth(appId, alias, true);
-      emitGatewayHealth(appId, { alias, provider: providerId, status: "needs_reauth" });
+      emitGatewayEvent(appId, "auth-expired", { alias, provider: providerId });
       throw new GatewayRequestError("needs_reauth", `the ${manifest.name} session could not be refreshed — reconnect in the dashboard`);
     }
     // A network/timeout failure reaching the provider — transient, not the

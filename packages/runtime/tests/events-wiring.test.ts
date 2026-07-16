@@ -114,4 +114,15 @@ describe("platform emitters land on the bus", () => {
     expect(queryEvents({ app: "notes", type: "run-queued" }).records).toHaveLength(0);
     vi.useRealTimers();
   });
+
+  it("gateway slot link lands connection-linked with names-only payload and the service ttl", async () => {
+    const { emitGatewayEvent } = await import("../src/gatewayEvents.js");
+    emitGatewayEvent("notes", "connection-linked", { alias: "mail", slot: "api-key" });
+    emitGatewayEvent(null, "breaker-opened", { provider: "google" });
+    const linked = queryEvents({ app: "notes", type: "connection-linked" });
+    expect(linked.records).toHaveLength(1);
+    expect(linked.records[0]).toMatchObject({ kind: "service", component: "gateways", payload: { alias: "mail", slot: "api-key" } });
+    const breaker = queryEvents({ kind: "service", type: "breaker-opened" });
+    expect(breaker.records[0]).toMatchObject({ app: null, component: "gateways", payload: { provider: "google" } });
+  });
 });
