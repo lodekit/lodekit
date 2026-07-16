@@ -74,11 +74,11 @@ Runtime and MCP are **buildless** — `tsx`, no build step.
 
 ## Lazy, Not Negligent
 
-Simplicity never means cutting safety.
-
-- Always keep trust-boundary validation, data-loss handling, security, and accessibility.
-- A single smoke test or assert is the minimum, not bloat.
-- Only unnecessary complexity gets removed.
+Simplicity never means cutting safety. The `ponytail` skill (vendored, default
+intensity `full`) owns this discipline during implementation — the ladder, the
+never-simplify floor (trust-boundary validation, data-loss handling, security,
+accessibility; one runnable check per non-trivial logic), and the shortcut-marker
+rule (`ponytail`-labeled bead + `// ponytail: <bead-id>` anchor).
 
 ## Surgical Changes
 

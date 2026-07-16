@@ -113,6 +113,10 @@ digraph brainstorming {
 - Cover: architecture, components, data flow, error handling, security, testing
 - Be ready to go back and clarify if something doesn't make sense
 
+When a design section touches module boundaries or interfaces, use the
+codebase-design vocabulary (deep modules, seams, adapters). When a domain term is
+being coined or an existing one bends, invoke domain-modeling.
+
 **Design for isolation and clarity:**
 
 - Break the system into smaller units that each have one clear purpose, communicate through well-defined interfaces, and can be understood and tested independently

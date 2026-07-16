@@ -11,8 +11,8 @@ re-verifies (writing-skills discipline), and updates this ledger.
 |---|---|---|---|
 | github.com/DollarDill/beads-superpowers | v0.13.0 (`53371f69b02164640745e8c4cfa16897b93517b7`) | 2026-07-16 | 21 skills + session-start hook |
 | github.com/obra/superpowers | v6.1.1 | 2026-07-16 | writing-skills |
-| github.com/DietrichGebert/ponytail | `<sha>` | (pending — Phase 4) | ponytail, ponytail-review, ponytail-audit, ponytail-debt |
-| github.com/mattpocock/skills | `<sha>` | (pending — Phase 4) | codebase-design, domain-modeling |
+| github.com/DietrichGebert/ponytail | `16f29800fd2681bdf24f3eb4ccffe38be3baec6b` | 2026-07-16 | ponytail, ponytail-review, ponytail-audit, ponytail-debt |
+| github.com/mattpocock/skills | `9603c1cc8118d08bc1b3bf34cf714f62178dea3b` | 2026-07-16 | codebase-design, domain-modeling |
 
 Tooling versions last verified against: `bd` 1.1.0, `codebase-memory-mcp` 0.8.1.
 `bd`/`codebase-memory-mcp` upgrades are deliberate events — re-verify and update this
@@ -27,11 +27,14 @@ line.
 - defer.md/roadmap/markdown-TODO references → `defer`-labeled beads (AGENTS.md).
 - Partner-approval gate sites carry a "Session mode note" pointing at the `session`
   skill's gate table.
-- session-start hook: paths as above; missing `bd` fails loud (stderr + context note).
+- session-start hook: paths as above; missing `bd` fails loud (stderr + context note);
+  the remedy message points at `.agents/scripts/setup.mjs`.
 - Not vendored: `writing-skills` (kept from obra instead), the yegge example workflow
   (its lean-router triage table is folded into our `session` skill, credited),
   `auditing-upstream-drift` (maintainer-only upstream).
 - using-superpowers: added a one-line session-mode nudge (spec §4) — undeclared sessions route through the `session` skill.
+- brainstorming: added pull-based pointers to codebase-design vocabulary and domain-modeling (spec §3).
+- requesting-code-review (+ code-reviewer.md): added the optional ponytail-review over-engineering lens (spec §3).
 
 ### obra/superpowers
 - writing-skills: plan-location references → `docs/plans/`; namespace refs → bare.
@@ -42,6 +45,7 @@ line.
   comment at the site.
 - ponytail-debt: grep harvest → bd query + two-way orphan check.
 - Not vendored: ponytail-gain, ponytail-help.
+- Persistence: session-mode note scoping ponytail to implementation (spec §6).
 
 ### mattpocock/skills
 - CONTEXT.md path: repo root (matches our existing file).
@@ -50,3 +54,5 @@ line.
 
 ### ours (no upstream)
 - session, drain-deferrals, release.
+- setup.mjs deliberately does not run bd setup codex (repo-mutating in project mode;
+  person-approved spec §8 deviation) — Codex bd-priming is defer bead lk-u3y.

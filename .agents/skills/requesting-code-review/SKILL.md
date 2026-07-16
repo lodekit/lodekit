@@ -45,6 +45,9 @@ Use Task tool with `general-purpose` type, fill template at `code-reviewer.md`
 - Note Minor issues for later
 - Push back if reviewer is wrong (with reasoning)
 
+Optional extra lens: ponytail-review (over-engineering only — what to delete,
+stdlib/native replacements). Cheap to run on any diff that adds abstraction.
+
 ## Example
 
 ```

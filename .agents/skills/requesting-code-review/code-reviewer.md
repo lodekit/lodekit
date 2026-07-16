@@ -59,6 +59,7 @@ git diff {BASE_SHA}..{HEAD_SHA}
 - Backward compatibility considered?
 - Documentation complete?
 - No obvious bugs?
+- Over-engineering (optional ponytail-review lens): unneeded abstraction, reinvented stdlib/platform features, speculative flexibility — name what to cut and what replaces it
 
 ## Output Format
 

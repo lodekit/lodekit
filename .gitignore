@@ -2,7 +2,6 @@
 node_modules/
 *.log
 
-.superpowers/
 .DS_Store
 /data/
 root/data/
