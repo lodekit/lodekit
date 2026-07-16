@@ -139,7 +139,7 @@ function EventsView() {
         setStats(d);
         setHistogram({ bars: fillBuckets(d.buckets, s, u, bucket), bucket });
       })
-      .catch(() => { if (cancelled) setStats(null); });
+      .catch(() => { if (!cancelled) setStats(null); });
     return () => { cancelled = true; };
   }, [app, kind, component, search.type, range, since, until, statsTick]);
 
@@ -185,6 +185,8 @@ function EventsView() {
   const hasRecordsRef = useRef(false);
   const statsNudgeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => () => { if (statsNudgeRef.current) clearTimeout(statsNudgeRef.current); }, []);
+
   useEffect(() => {
     let cancelled = false;
     pendingRef.current = [];
@@ -216,7 +218,12 @@ function EventsView() {
   useSSEEvent("event", (e) => {
     const r = JSON.parse(e.data) as EventRecord;
     const f = filtersRef.current;
-    if (!matchesFilters(r, f) || !matchesQ(r, f.q)) return;
+    if (!matchesFilters(r, f)) return;
+    // Live events nudge a debounced stats refresh — never per-event recompute (spec §7).
+    // Stats ignore the client-side q search, so this fires on server-filter match alone.
+    if (statsNudgeRef.current) clearTimeout(statsNudgeRef.current);
+    statsNudgeRef.current = setTimeout(() => setStatsTick((t) => t + 1), 2000);
+    if (!matchesQ(r, f.q)) return;
     if (!hasRecordsRef.current) {
       pendingRef.current.push(r);
       return;
@@ -226,9 +233,6 @@ function EventsView() {
         ? [r, ...rs].slice(0, Math.max(MAX_LIVE_ROWS, rs.length))
         : rs
     );
-    // Live events nudge a debounced stats refresh — never per-event recompute (spec §7).
-    if (statsNudgeRef.current) clearTimeout(statsNudgeRef.current);
-    statsNudgeRef.current = setTimeout(() => setStatsTick((t) => t + 1), 2000);
   });
 
   useEffect(() => {
