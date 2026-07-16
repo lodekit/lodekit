@@ -111,9 +111,10 @@ After all tasks complete and verified:
 - You don't understand an instruction
 - Verification fails repeatedly
 
-(Session mode note: in an `auto` session, this approval is substituted per the
-`session` skill's gate table — stress-test replaces partner approval; never skip the
-gate itself.)
+(Session mode note: STOP conditions apply verbatim in every mode; in an `auto`
+session, "stop and ask for help" resolves per the `session` skill's STOP protocol —
+file a `human`-labeled bead, write a handoff, store a continuation memory, end the
+turn — never a substituted gate.)
 
 **Structured blocker handling:** When you hit a blocker, classify it and use the appropriate response:
 

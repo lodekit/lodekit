@@ -31,6 +31,7 @@ line.
 - Not vendored: `writing-skills` (kept from obra instead), the yegge example workflow
   (its lean-router triage table is folded into our `session` skill, credited),
   `auditing-upstream-drift` (maintainer-only upstream).
+- using-superpowers: added a one-line session-mode nudge (spec §4) — undeclared sessions route through the `session` skill.
 
 ### obra/superpowers
 - writing-skills: plan-location references → `docs/plans/`; namespace refs → bare.

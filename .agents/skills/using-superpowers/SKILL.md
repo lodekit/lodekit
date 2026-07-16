@@ -30,6 +30,8 @@ When multiple skills apply, process skills come first — they set the approach,
 - "Let's build X" → brainstorming first, then implementation skills.
 - "Fix this bug" → systematic-debugging first, then domain skills.
 
+**Session mode:** if no session mode was declared this session, invoke the `session` skill first — it resolves pair|auto × spec|task and routes triage.
+
 ## Red Flags
 
 These thoughts mean STOP—you're rationalizing:
