@@ -73,23 +73,28 @@ function ThemesView() {
   const apps = appsQ.data ?? [];
   const names = new Set(themes.map((t) => t.name));
 
-  async function saveConfig(next: ThemesIndex["config"]) {
+  // Build the PUT from the freshest cached config, never the render-closure
+  // snapshot: a PUT sends the whole config object, so two rapid actions must
+  // each layer onto the latest state or the second silently drops the first.
+  async function saveConfig(mutate: (current: ThemesIndex["config"]) => ThemesIndex["config"]) {
+    const current = queryClient.getQueryData<ThemesIndex>(["themes"])?.config ?? {};
     try {
-      await putThemesConfig(next);
+      await putThemesConfig(mutate(current));
       await queryClient.invalidateQueries({ queryKey: ["themes"] });
     } catch (err) {
       toast.error((err as Error).message);
     }
   }
 
-  const useEverywhere = (name: string) => saveConfig({ ...config, global: name });
+  const useEverywhere = (name: string) => saveConfig((c) => ({ ...c, global: name }));
   const assign = (name: string, appId: string) =>
-    saveConfig({ ...config, apps: { ...(config.apps ?? {}), [appId]: name } });
-  const unassign = (appId: string) => {
-    const apps = { ...(config.apps ?? {}) };
-    delete apps[appId];
-    return saveConfig({ ...config, apps });
-  };
+    saveConfig((c) => ({ ...c, apps: { ...(c.apps ?? {}), [appId]: name } }));
+  const unassign = (appId: string) =>
+    saveConfig((c) => {
+      const apps = { ...(c.apps ?? {}) };
+      delete apps[appId];
+      return { ...c, apps };
+    });
 
   const slugTaken = names.has(slug.trim()) && slug.trim() !== dialog?.from;
   const slugValid = NAME_RE.test(slug.trim());
