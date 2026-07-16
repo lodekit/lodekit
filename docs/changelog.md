@@ -29,3 +29,9 @@ Rules:
   app and browse its tables (filter, multi-column sort, search, paging),
   key-value entries, files, and events — read-only, with storage insights and
   recent activity on the overview.
+
+## Fixed
+
+- **Oversized requests to apps are refused** — a request body over 5 MB sent to
+  an app page or server function now gets a 413 instead of being buffered
+  without limit.

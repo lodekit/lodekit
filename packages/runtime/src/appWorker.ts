@@ -246,6 +246,32 @@ export function stopAllWorkers(): void { for (const appId of [...managed.keys()]
 /** Test hook — the underlying Worker (crash-containment tests terminate it). */
 export function workerForTest(appId: string): Worker | undefined { return managed.get(appId)?.worker; }
 
+// Hard cap on a forwarded request body (the scoped API's 100kb bodyLimit does not
+// cover app-worker forwards; hard caps stay code — platformSettings.ts header).
+// Bodies are fully buffered here and transferred to the worker, so an unbounded
+// body is an unbounded allocation. Generous vs the API's cap: _serverFn payloads
+// carry user content.
+export const FORWARD_BODY_MAX_BYTES = 5 * 1024 * 1024;
+
+// Buffers a request body, refusing beyond maxBytes: a lying or absent
+// Content-Length is caught by counting; breaking out cancels the source stream.
+// Returns a fresh Uint8Array so its buffer is safe to transfer via postMessage.
+async function readBodyCapped(request: Request, maxBytes: number): Promise<Uint8Array<ArrayBuffer> | "too-large"> {
+  if (Number(request.headers.get("content-length")) > maxBytes) return "too-large";
+  if (!request.body) return new Uint8Array(0);
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for await (const chunk of request.body as unknown as AsyncIterable<Uint8Array>) {
+    total += chunk.byteLength;
+    if (total > maxBytes) return "too-large";
+    chunks.push(chunk);
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) { out.set(c, offset); offset += c.byteLength; }
+  return out;
+}
+
 export async function forwardToWorker(appId: string, request: Request): Promise<Response> {
   const m = managed.get(appId);
   if (!m) throw new Error(`no app worker for ${appId}`);
@@ -255,11 +281,14 @@ export async function forwardToWorker(appId: string, request: Request): Promise<
   // or postMessage would silently go to a dead Worker and hang until the request timeout
   // instead of failing fast.
   if (m.failed || m.stopped) throw new Error(`app worker for ${appId} is down`);
-  const id = m.nextId++;
   const body =
     request.method === "GET" || request.method === "HEAD"
       ? null
-      : new Uint8Array(await request.arrayBuffer()); // bodies are small (100kb-class); streams come back, not in
+      : await readBodyCapped(request, FORWARD_BODY_MAX_BYTES); // streams come back, not in
+  if (body === "too-large") {
+    return Response.json({ error: "request body too large" }, { status: 413 });
+  }
+  const id = m.nextId++;
   const timeoutMs = effectiveMs("hosting.request_timeout", appId);
   return await new Promise<Response>((resolve, reject) => {
     const timer = setTimeout(() => {
