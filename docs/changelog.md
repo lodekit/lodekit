@@ -29,3 +29,9 @@ Rules:
   app and browse its tables (filter, multi-column sort, search, paging),
   key-value entries, files, and events — read-only, with storage insights and
   recent activity on the overview.
+
+## Fixed
+
+- **Deleting an app stops its scheduled tasks immediately** — the task engine
+  used to keep materializing a deleted app's schedule runs (and emitting their
+  events) until the next restart.
