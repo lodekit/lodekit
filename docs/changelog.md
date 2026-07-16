@@ -46,6 +46,13 @@ Rules:
   "/_ui/theme.css?app=<id>" }`) added to their `__root.tsx` `head().links` to
   follow theme switching.
 
+- **Five themes in the box.** Alongside the Lodekit default, the runtime now
+  ships four faithful ports — Dracula, Catppuccin, Nord, and Rosé Pine — each
+  with a light and dark mode. Select one globally or per app via
+  `themes/config.json`, no files to write. A theme can also switch the whole
+  UI's icon set: Nord uses Tabler and Rosé Pine uses Phosphor, while the rest
+  stay on Lucide.
+
 ## Fixed
 
 - **kv-store error statuses** — internal faults in the kv API now return 500

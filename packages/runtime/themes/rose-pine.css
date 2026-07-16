@@ -1,0 +1,83 @@
+/* Rosé Pine — ported from github.com/rose-pine (MIT). Light = Dawn,
+   dark = main. Selects the phosphor icon set. Canonical theme format:
+   :root (light) + .dark, full shadcn token set, plus
+   --font-ui/--font-display/--radius/--spacing/--icon-library. */
+
+:root {
+  color-scheme: light;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-display: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --radius: 0.625rem;
+  --spacing: 0.25rem;
+  --icon-library: phosphor;
+  --background: #faf4ed;         /* Dawn base */
+  --foreground: #575279;         /* Dawn text — 6.66:1 */
+  --card: #fffaf3;              /* Dawn surface */
+  --card-foreground: #575279;
+  --popover: #fffaf3;
+  --popover-foreground: #575279;
+  --primary: #a8586f;            /* Dawn love darkened for AA button text */
+  --primary-foreground: #ffffff; /* 4.89:1 */
+  --secondary: #f2e9e1;          /* Dawn overlay */
+  --secondary-foreground: #575279;
+  --muted: #f2e9e1;
+  --muted-foreground: #67637e;   /* Dawn subtle darkened — 5.25:1 vs bg, 4.78:1 vs muted */
+  --accent: #f2e9e1;
+  --accent-foreground: #575279;
+  --destructive: #b4637a;        /* Dawn love */
+  --border: #dfdad9;             /* Dawn highlight-med */
+  --input: #dfdad9;
+  --ring: #a8586f;
+  /* Dawn rose/pine/gold/iris/foam — dark pine+iris intersperse the warm rose
+     and gold so no adjacent pair is red-green-confusable. */
+  --chart-1: #d7827e;            /* rose */
+  --chart-2: #286983;            /* pine */
+  --chart-3: #ea9d34;            /* gold */
+  --chart-4: #907aa9;            /* iris */
+  --chart-5: #56949f;            /* foam */
+  --sidebar: #fffaf3;
+  --sidebar-foreground: #575279;
+  --sidebar-primary: #a8586f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f2e9e1;
+  --sidebar-accent-foreground: #575279;
+  --sidebar-border: #dfdad9;
+  --sidebar-ring: #a8586f;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #191724;         /* main base */
+  --foreground: #e0def4;         /* main text — 13.39:1 */
+  --card: #1f1d2e;              /* main surface */
+  --card-foreground: #e0def4;
+  --popover: #1f1d2e;
+  --popover-foreground: #e0def4;
+  --primary: #ebbcba;            /* main rose */
+  --primary-foreground: #191724; /* 10.45:1 */
+  --secondary: #26233a;          /* main overlay */
+  --secondary-foreground: #e0def4;
+  --muted: #26233a;
+  --muted-foreground: #908caa;   /* main subtle — 5.48:1 vs bg, 4.71:1 vs muted */
+  --accent: #26233a;
+  --accent-foreground: #e0def4;
+  --destructive: #eb6f92;        /* main love */
+  --border: #403d52;             /* main highlight-med */
+  --input: #403d52;
+  --ring: #ebbcba;
+  /* main rose/pine/gold/iris/foam — dark pine (L 0.15) splits the light rose
+     (L 0.57) and gold (L 0.59); foam ends the row away from rose. */
+  --chart-1: #ebbcba;            /* rose */
+  --chart-2: #31748f;            /* pine */
+  --chart-3: #f6c177;            /* gold */
+  --chart-4: #c4a7e7;            /* iris */
+  --chart-5: #9ccfd8;            /* foam */
+  --sidebar: #1f1d2e;
+  --sidebar-foreground: #e0def4;
+  --sidebar-primary: #ebbcba;
+  --sidebar-primary-foreground: #191724;
+  --sidebar-accent: #26233a;
+  --sidebar-accent-foreground: #e0def4;
+  --sidebar-border: #403d52;
+  --sidebar-ring: #ebbcba;
+}

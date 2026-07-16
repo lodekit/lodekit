@@ -1,0 +1,82 @@
+/* Dracula — ported from github.com/dracula (MIT). Light = official Alucard,
+   dark = Dracula. Canonical theme format: :root (light) + .dark, full shadcn
+   token set, plus --font-ui/--font-display/--radius/--spacing/--icon-library. */
+
+:root {
+  color-scheme: light;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 0.5rem;
+  --spacing: 0.25rem;
+  --icon-library: lucide;
+  --background: #f8f8f2;         /* Alucard background */
+  --foreground: #1f1f1f;         /* Alucard foreground */
+  --card: #ffffff;
+  --card-foreground: #1f1f1f;
+  --popover: #ffffff;
+  --popover-foreground: #1f1f1f;
+  --primary: #644ac9;            /* Alucard purple */
+  --primary-foreground: #ffffff; /* 6.24:1 */
+  --secondary: #eeede4;
+  --secondary-foreground: #1f1f1f;
+  --muted: #eeede4;
+  --muted-foreground: #57544a;   /* 7.11:1 vs bg, 6.45:1 vs muted */
+  --accent: #eeede4;
+  --accent-foreground: #1f1f1f;
+  --destructive: #cb3a2a;        /* Alucard red */
+  --border: #dcdbcf;
+  --input: #dcdbcf;
+  --ring: #644ac9;
+  /* Alucard pink/purple/green/cyan/orange — monotonic lightness (L 0.088→0.131);
+     cool purple+cyan separate the red/green/orange warms for deuteranopia. */
+  --chart-1: #a3144d;            /* pink */
+  --chart-2: #644ac9;            /* purple */
+  --chart-3: #14710a;            /* green */
+  --chart-4: #036a96;            /* cyan */
+  --chart-5: #a34d14;            /* orange */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1f1f1f;
+  --sidebar-primary: #644ac9;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eeede4;
+  --sidebar-accent-foreground: #1f1f1f;
+  --sidebar-border: #dcdbcf;
+  --sidebar-ring: #644ac9;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #282a36;         /* Dracula background */
+  --foreground: #f8f8f2;         /* Dracula foreground — 13.36:1 */
+  --card: #343746;
+  --card-foreground: #f8f8f2;
+  --popover: #343746;
+  --popover-foreground: #f8f8f2;
+  --primary: #bd93f9;            /* Dracula purple */
+  --primary-foreground: #282a36; /* 5.90:1 */
+  --secondary: #44475a;          /* Dracula current-line */
+  --secondary-foreground: #f8f8f2;
+  --muted: #343746;
+  --muted-foreground: #9aa4d0;   /* lightened comment — 5.83:1 vs bg, 4.83:1 vs muted */
+  --accent: #44475a;
+  --accent-foreground: #f8f8f2;
+  --destructive: #ff5555;        /* Dracula red */
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: #bd93f9;
+  /* Dracula purple/pink/cyan/orange/green — cyan (L 0.71) and green (L 0.72)
+     split to non-adjacent slots so they never collide under deuteranopia. */
+  --chart-1: #bd93f9;            /* purple */
+  --chart-2: #ff79c6;            /* pink */
+  --chart-3: #8be9fd;            /* cyan */
+  --chart-4: #ffb86c;            /* orange */
+  --chart-5: #50fa7b;            /* green */
+  --sidebar: #343746;
+  --sidebar-foreground: #f8f8f2;
+  --sidebar-primary: #bd93f9;
+  --sidebar-primary-foreground: #282a36;
+  --sidebar-accent: #44475a;
+  --sidebar-accent-foreground: #f8f8f2;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #bd93f9;
+}

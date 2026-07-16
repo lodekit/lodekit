@@ -1,0 +1,81 @@
+/* Catppuccin — ported from github.com/catppuccin (MIT). Light = Latte,
+   dark = Mocha. Canonical theme format: :root (light) + .dark, full shadcn
+   token set, plus --font-ui/--font-display/--radius/--spacing/--icon-library. */
+
+:root {
+  color-scheme: light;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-display: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --radius: 0.75rem;
+  --spacing: 0.25rem;
+  --icon-library: lucide;
+  --background: #eff1f5;         /* Latte base */
+  --foreground: #4c4f69;         /* Latte text — 7.06:1 */
+  --card: #ffffff;
+  --card-foreground: #4c4f69;
+  --popover: #ffffff;
+  --popover-foreground: #4c4f69;
+  --primary: #8839ef;            /* Latte mauve */
+  --primary-foreground: #ffffff; /* 5.41:1 */
+  --secondary: #e6e9ef;          /* Latte mantle */
+  --secondary-foreground: #4c4f69;
+  --muted: #e6e9ef;
+  --muted-foreground: #5c5f77;   /* Latte subtext1 — 5.53:1 vs bg, 5.14:1 vs muted */
+  --accent: #e6e9ef;
+  --accent-foreground: #4c4f69;
+  --destructive: #d20f39;        /* Latte red */
+  --border: #ccd0da;             /* Latte surface0 */
+  --input: #ccd0da;
+  --ring: #8839ef;
+  /* Latte green/mauve/peach/blue/pink — warm hues (green,peach,pink) held apart
+     by the cool mauve+blue so no adjacent pair is red-green-confusable. */
+  --chart-1: #40a02b;            /* green */
+  --chart-2: #8839ef;            /* mauve */
+  --chart-3: #fe640b;            /* peach */
+  --chart-4: #1e66f5;            /* blue */
+  --chart-5: #ea76cb;            /* pink */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #4c4f69;
+  --sidebar-primary: #8839ef;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e6e9ef;
+  --sidebar-accent-foreground: #4c4f69;
+  --sidebar-border: #ccd0da;
+  --sidebar-ring: #8839ef;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #1e1e2e;         /* Mocha base */
+  --foreground: #cdd6f4;         /* Mocha text — 11.34:1 */
+  --card: #313244;              /* Mocha surface0 */
+  --card-foreground: #cdd6f4;
+  --popover: #313244;
+  --popover-foreground: #cdd6f4;
+  --primary: #cba6f7;            /* Mocha mauve */
+  --primary-foreground: #1e1e2e; /* 8.07:1 */
+  --secondary: #313244;
+  --secondary-foreground: #cdd6f4;
+  --muted: #313244;
+  --muted-foreground: #a6adc8;   /* Mocha subtext0 — 7.37:1 vs bg, 5.65:1 vs muted */
+  --accent: #313244;
+  --accent-foreground: #cdd6f4;
+  --destructive: #f38ba8;        /* Mocha red */
+  --border: #45475a;             /* Mocha surface1 */
+  --input: #45475a;
+  --ring: #cba6f7;
+  /* Mocha green/mauve/peach/blue/pink — same warm/cool interleave as Latte. */
+  --chart-1: #a6e3a1;            /* green */
+  --chart-2: #cba6f7;            /* mauve */
+  --chart-3: #fab387;            /* peach */
+  --chart-4: #89b4fa;            /* blue */
+  --chart-5: #f5c2e7;            /* pink */
+  --sidebar: #313244;
+  --sidebar-foreground: #cdd6f4;
+  --sidebar-primary: #cba6f7;
+  --sidebar-primary-foreground: #1e1e2e;
+  --sidebar-accent: #313244;
+  --sidebar-accent-foreground: #cdd6f4;
+  --sidebar-border: #45475a;
+  --sidebar-ring: #cba6f7;
+}
