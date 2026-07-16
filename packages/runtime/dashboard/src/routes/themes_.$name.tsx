@@ -17,9 +17,14 @@ import {
   DialogTitle,
   Input,
   Skeleton,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   toast,
 } from "@lodekit/ui";
 import { useSSEEvent } from "../components/sse";
+import { ThemeCanvas } from "../components/theme-editor/canvas";
 import { Controls } from "../components/theme-editor/controls";
 import { COLOR_TOKENS, parseTheme, type ThemeModel } from "../lib/theme-css";
 import { duplicateTheme, fetchThemeCss, fetchThemes } from "../lib/themes-api";
@@ -157,27 +162,29 @@ function ThemeEditor() {
             <Controls model={model} mode={mode} disabled={disabled} onMode={setMode} update={update} />
           </aside>
 
-          {/* Temporary preview pane — task 12 replaces this with the canvas. The
-              cssVarsFor div makes every model edit visibly restyle these samples. */}
-          <div
-            className="flex-1 rounded-lg border bg-background p-6 text-foreground"
-            style={cssVarsFor(model, mode) as CSSProperties}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle style={{ fontFamily: "var(--font-display)" }}>Preview</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3" style={{ fontFamily: "var(--font-ui)" }}>
-                <p className="text-sm">Edits apply live to this sample, with zero network.</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button>Primary</Button>
-                  <Button variant="secondary">Secondary</Button>
-                  <Button variant="outline">Outline</Button>
-                  <Button variant="destructive">Destructive</Button>
+          <div className="max-h-[calc(100vh-12rem)] flex-1 overflow-y-auto">
+            <Tabs defaultValue="components">
+              <TabsList>
+                <TabsTrigger value="components">Components</TabsTrigger>
+                <TabsTrigger value="app">App</TabsTrigger>
+              </TabsList>
+              <TabsContent value="components">
+                {/* The cssVarsFor div makes every model edit visibly restyle
+                    the canvas — see canvas.tsx for the self-contained sample
+                    composition (task 12). */}
+                <div
+                  className="rounded-lg border bg-background p-6 text-foreground"
+                  style={cssVarsFor(model, mode) as CSSProperties}
+                >
+                  <ThemeCanvas />
                 </div>
-                <Input placeholder="Sample input" />
-              </CardContent>
-            </Card>
+              </TabsContent>
+              <TabsContent value="app">
+                <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                  App preview — coming in the next slice
+                </p>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       )}
