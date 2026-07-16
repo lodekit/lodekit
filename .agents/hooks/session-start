@@ -277,7 +277,7 @@ fi
 # Warning goes to stderr; the model-facing note rides INSIDE the context that the
 # JSON envelope below carries, so stdout stays a single valid JSON document.
 if ! command -v bd >/dev/null 2>&1; then
-  echo "WARNING: bd (beads) not found — persistent memory is OFF. Install with 'brew install beads'." >&2
+  echo "WARNING: bd (beads) not found — persistent memory is OFF. Install with 'brew install beads', then run node .agents/scripts/setup.mjs." >&2
   session_context_raw="${session_context_raw}
 
 <system-note>bd missing: memory and task tracking unavailable this session.</system-note>"
