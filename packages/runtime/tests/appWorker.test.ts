@@ -54,6 +54,12 @@ describe("appWorker", () => {
     expect(getServerState("start-app")?.status).toBe("running");
   }, 30_000);
 
+  it("an unknown path renders the root route's notFoundComponent", async () => {
+    const res = await forwardToWorker("start-app", new Request("http://x/start-app/no-such-page"));
+    expect(res.status).toBe(404);
+    expect(await res.text()).toContain("fixture not found");
+  }, 30_000);
+
   it("a dead worker surfaces as error and respawns; runtime survives", async () => {
     // The crash server fn calls process.exit(1). Trigger it via the fetch handler:
     // Start dispatches POST <serverFns.base>/<fn-id>; we don't know the id, so kill

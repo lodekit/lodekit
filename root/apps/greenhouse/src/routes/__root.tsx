@@ -6,6 +6,12 @@ export const Route = createRootRoute({
     meta: [{ title: "Greenhouse" }],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
+  notFoundComponent: () => (
+    <main className="mx-auto max-w-4xl space-y-2 p-4">
+      <p className="text-muted-foreground">Nothing grows here — page not found.</p>
+      <Link to="/" className="underline">Back to the Conservatory</Link>
+    </main>
+  ),
   component: () => (
     <html lang="en">
       <head>

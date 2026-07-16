@@ -48,6 +48,7 @@ describe("scaffoldApp", () => {
     expect(root_).toContain("Notes");
     expect(root_).toContain('from "../styles.css?url"');
     expect(root_).toContain('src="/_ui/theme.js"');
+    expect(root_).toContain("notFoundComponent"); // TanStack warns in SSR without one
     const indexTsx = fs.readFileSync(path.join(d, "src", "routes", "index.tsx"), "utf8");
     expect(indexTsx).toContain('from "@lodekit/sdk"');
     expect(indexTsx).toContain('from "@lodekit/ui"');

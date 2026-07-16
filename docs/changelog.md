@@ -29,3 +29,9 @@ Rules:
   app and browse its tables (filter, multi-column sort, search, paging),
   key-value entries, files, and events — read-only, with storage insights and
   recent activity on the overview.
+
+## Fixed
+
+- **Apps get a real not-found page** — newly scaffolded apps (and Welcome and
+  Greenhouse) now render a styled 404 with a link back home instead of a bare
+  "Not Found" fallback.

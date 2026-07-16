@@ -2,6 +2,7 @@ import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-r
 
 export const Route = createRootRoute({
   head: () => ({ meta: [{ title: "start fixture" }] }),
+  notFoundComponent: () => <p>fixture not found</p>,
   component: () => (
     <html>
       <head>
