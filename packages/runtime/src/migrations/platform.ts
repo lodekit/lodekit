@@ -21,6 +21,27 @@ export const EVENTS_CHAIN: Migration[] = [
         CREATE INDEX IF NOT EXISTS events_ts ON events(ts);
       `),
   },
+  {
+    // Canonical envelope (spec 2026-07-16-events §3): app/kind/component replace
+    // ns/source; no backfill — nothing is released, dev databases reset.
+    name: "002-canonical-envelope",
+    up: (db) =>
+      db.exec(`
+        DROP TABLE events;
+        CREATE TABLE events (
+          id         INTEGER PRIMARY KEY,
+          ts         INTEGER NOT NULL,
+          app        TEXT,
+          kind       TEXT NOT NULL,
+          component  TEXT NOT NULL,
+          type       TEXT NOT NULL,
+          payload    TEXT,
+          expires_at INTEGER
+        );
+        CREATE INDEX events_app ON events(app, id);
+        CREATE INDEX events_ts  ON events(ts);
+      `),
+  },
 ];
 
 export const LOGS_CHAIN: Migration[] = [

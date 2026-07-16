@@ -8,24 +8,29 @@ import { EVENTS_CHAIN } from "./migrations/platform.js";
 export interface EventRecord {
   id: number;
   ts: number;
-  ns: string;
-  source: string;
+  app: string | null;
+  kind: string;
+  component: string;
   type: string;
   payload: Record<string, unknown> | null;
 }
 
 export interface EventWrite {
-  ns: string;
-  source: string;
+  app: string | null;
+  kind: string;
+  component: string;
   type: string;
   payload?: Record<string, unknown> | null;
   ttl?: number; // seconds
 }
 
 export interface EventQuery {
-  ns?: string;
+  app?: string;
+  kind?: string;
+  component?: string;
   type?: string;
-  source?: string;
+  since?: number;
+  until?: number;
   after?: number; // ascending replay: id > after
   before?: number; // newest-first pagination: id < before
   limit?: number;
@@ -57,13 +62,14 @@ export function initEventStore(dataDir: string): boolean {
   }
 }
 
-interface Row { id: number; ts: number; ns: string; source: string; type: string; payload: string | null }
+interface Row { id: number; ts: number; app: string | null; kind: string; component: string; type: string; payload: string | null }
 
 const toRecord = (r: Row): EventRecord => ({
   id: r.id,
   ts: r.ts,
-  ns: r.ns,
-  source: r.source,
+  app: r.app,
+  kind: r.kind,
+  component: r.component,
   type: r.type,
   payload: r.payload ? (JSON.parse(r.payload) as Record<string, unknown>) : null,
 });
@@ -73,9 +79,9 @@ export function insertEvent(w: EventWrite): EventRecord | null {
   try {
     const ts = Date.now();
     const info = db
-      .prepare("INSERT INTO events (ts, ns, source, type, payload, expires_at) VALUES (?, ?, ?, ?, ?, ?)")
-      .run(ts, w.ns, w.source, w.type, w.payload ? JSON.stringify(w.payload) : null, w.ttl ? ts + w.ttl * 1000 : null);
-    return { id: Number(info.lastInsertRowid), ts, ns: w.ns, source: w.source, type: w.type, payload: w.payload ?? null };
+      .prepare("INSERT INTO events (ts, app, kind, component, type, payload, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
+      .run(ts, w.app, w.kind, w.component, w.type, w.payload ? JSON.stringify(w.payload) : null, w.ttl ? ts + w.ttl * 1000 : null);
+    return { id: Number(info.lastInsertRowid), ts, app: w.app, kind: w.kind, component: w.component, type: w.type, payload: w.payload ?? null };
   } catch (e) {
     process.stderr.write(`[events] event write failed: ${e}\n`);
     emitLog("error", "event-store", "event write failed — history gap", { stack: String(e) });
@@ -92,15 +98,18 @@ export function queryEvents(opts: EventQuery = {}): { records: EventRecord[]; ne
   const asc = opts.after != null;
   const where: string[] = ["(expires_at IS NULL OR expires_at > ?)"];
   const params: unknown[] = [Date.now()];
-  if (opts.ns) { where.push("ns = ?"); params.push(opts.ns); }
+  if (opts.app) { where.push("app = ?"); params.push(opts.app); }
+  if (opts.kind) { where.push("kind = ?"); params.push(opts.kind); }
+  if (opts.component) { where.push("component = ?"); params.push(opts.component); }
   if (opts.type) { where.push("type = ?"); params.push(opts.type); }
-  if (opts.source) { where.push("source = ?"); params.push(opts.source); }
+  if (opts.since != null) { where.push("ts >= ?"); params.push(opts.since); }
+  if (opts.until != null) { where.push("ts < ?"); params.push(opts.until); }
   if (asc) { where.push("id > ?"); params.push(opts.after); }
   else if (opts.before != null) { where.push("id < ?"); params.push(opts.before); }
   try {
     const rows = db
       .prepare(
-        `SELECT id, ts, ns, source, type, payload FROM events
+        `SELECT id, ts, app, kind, component, type, payload FROM events
          WHERE ${where.join(" AND ")}
          ORDER BY id ${asc ? "ASC" : "DESC"} LIMIT ?`
       )
@@ -113,20 +122,21 @@ export function queryEvents(opts: EventQuery = {}): { records: EventRecord[]; ne
   }
 }
 
-export function sweepEventStore(opts: { maxAgeMs?: number; maxRows?: number; nsAges?: Map<string, number> } = {}): number {
+export function sweepEventStore(opts: { maxAgeMs?: number; maxRows?: number; appAges?: Map<string, number> } = {}): number {
   if (!db) return 0;
   const maxAgeMs = opts.maxAgeMs ?? RETENTION_MAX_AGE_MS;
   const maxRows = opts.maxRows ?? RETENTION_MAX_ROWS;
-  const nsAges = opts.nsAges ?? new Map<string, number>();
+  const appAges = opts.appAges ?? new Map<string, number>();
   try {
     let deleted = db.prepare("DELETE FROM events WHERE expires_at IS NOT NULL AND expires_at <= ?").run(Date.now()).changes;
-    // Per-ns override ages first, then the global age for every other ns.
-    for (const [ns, ageMs] of nsAges) {
-      deleted += db.prepare("DELETE FROM events WHERE ns = ? AND ts < ?").run(ns, Date.now() - ageMs).changes;
+    // Per-app override ages first, then the global age for every other stream.
+    for (const [app, ageMs] of appAges) {
+      deleted += db.prepare("DELETE FROM events WHERE app = ? AND ts < ?").run(app, Date.now() - ageMs).changes;
     }
-    const skip = [...nsAges.keys()];
+    // NULL never matches NOT IN — the IS NULL arm keeps platform-wide rows sweepable.
+    const skip = [...appAges.keys()];
     deleted += db
-      .prepare(`DELETE FROM events WHERE ts < ? AND ns NOT IN (${skip.map(() => "?").join(",") || "''"})`)
+      .prepare(`DELETE FROM events WHERE ts < ? AND (app IS NULL OR app NOT IN (${skip.map(() => "?").join(",") || "''"}))`)
       .run(Date.now() - maxAgeMs, ...skip).changes;
     // Row at OFFSET maxRows (newest-first) is the first over the cap; NULL subselect (under cap) deletes nothing.
     deleted += db

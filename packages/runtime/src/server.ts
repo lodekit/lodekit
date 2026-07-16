@@ -196,7 +196,7 @@ export async function start(cfg: Config): Promise<Server> {
       sweepEventStore({
         maxAgeMs: effectiveMs("events.retention_age"),
         maxRows: effectiveNumber("events.retention_max_rows"),
-        nsAges: new Map([...collectAppOverrides(cfg, "events.retention_age")].map(([a, v]) => [a, parseDuration(v as string)])),
+        appAges: new Map([...collectAppOverrides(cfg, "events.retention_age")].map(([a, v]) => [a, parseDuration(v as string)])),
       })
     );
     every("tasks-dispatch", effectiveMs("tasks.dispatch_poll"), dispatchTasks);
