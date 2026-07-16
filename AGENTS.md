@@ -95,13 +95,17 @@ Simplicity never means cutting safety.
 
 ## Conventions
 
-- **Backlog:** deferred work and known gaps live as GitHub issues (`gh issue list`).
-- **Deferrals:** `docs/defer.md` is a transient buffer for work descoped/deferred during
-  a session. Append entries under a dated session header linking the spec/plan/PR that
-  caused them; **append-only** — never reword, resolve, or remove existing entries (the
-  person drains the file into GitHub issues and clears it). `roadmap.md` is retired;
-  never recreate it — where an older spec/plan says "add to roadmap.md", that now means
-  `docs/defer.md`.
+- **Backlog:** deferred work and known gaps live as GitHub issues (`gh issue list`) —
+  the only durable human backlog.
+- **Deferrals:** work descoped or deferred during a session is filed as a bead labeled
+  `defer` (severity/confidence stamp, provenance — spec/plan/PR — in the body); list
+  deferrals filed in the PR body. The person periodically drains them with the
+  `drain-deferrals` skill. `docs/defer.md` and `roadmap.md` are retired — never
+  recreate either; where an older spec/plan says "append to defer.md" or "add to
+  roadmap.md", that now means: file a `defer`-labeled bead.
+- **Task tracking:** beads (`bd`) for ALL work tracking — TodoWrite/TaskCreate/markdown
+  TODOs are forbidden. Bead IDs go in commit messages and PR bodies. Session close =
+  land the plane: `bd close` → `bd dolt push` → `git push`.
 - **Changelog buffer:** `docs/changelog.md` collects unreleased user-facing
   changes. A slice that ships something a Lodekit user can see or do appends an entry
   under `## New` or `## Fixed`, in the same PR as the code; internal work appends
