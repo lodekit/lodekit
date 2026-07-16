@@ -7,8 +7,10 @@ Visual identity — palette, typography, token rules — lives in `DESIGN.md`; c
 before any UI, landing, or docs styling work.
 
 Behavioral guardrails for development workflow.
-Standard workflow uses the Superpowers skills.
-For trivial tasks, use judgment.
+Sessions start with the `session` skill (`/session [pair|auto] [spec|task]`; default
+`pair`, ceremony inferred and confirmed). The dev process is vendored in
+`.agents/skills/` — see `.agents/UPSTREAM.md` for provenance. For trivial requests the
+session skill's triage table applies: use judgment.
 
 ## Architecture
 
@@ -130,7 +132,8 @@ Simplicity never means cutting safety.
   semver release PR: lockstep version bump + drain of `docs/changelog.md` into the
   docs changelog page. Merging it triggers the GitHub release build; the workflow is
   the only creator of `v*` tags. Portable agent skills live in `.agents/skills/`
-  (Claude Code discovers them via the `.claude/skills` symlinks).
+  (Claude Code discovers them via committed `.claude/skills` symlinks; Codex reads
+  `.agents/skills/` natively).
 - **Commits & PRs:** no `Co-Authored-By` trailers in commit messages; no "Generated with Claude Code" attribution in PR bodies.
 - **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
   showcase app exercises it (`root/README.md` holds the living coverage checklist).
