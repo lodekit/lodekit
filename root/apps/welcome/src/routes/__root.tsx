@@ -4,7 +4,10 @@ import appCss from "../index.css?url";
 export const Route = createRootRoute({
   head: () => ({
     meta: [{ title: "Welcome to Lodekit" }],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: "/_ui/theme.css?app=welcome" },
+    ],
   }),
   notFoundComponent: () => (
     <main className="mx-auto max-w-2xl space-y-2 p-8">

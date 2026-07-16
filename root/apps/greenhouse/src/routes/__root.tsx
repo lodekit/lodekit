@@ -4,7 +4,10 @@ import appCss from "../index.css?url";
 export const Route = createRootRoute({
   head: () => ({
     meta: [{ title: "Greenhouse" }],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: "/_ui/theme.css?app=greenhouse" },
+    ],
   }),
   notFoundComponent: () => (
     <main className="mx-auto max-w-4xl space-y-2 p-4">

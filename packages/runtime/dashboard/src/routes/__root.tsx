@@ -15,7 +15,10 @@ const versionLine = `lodekit v${__LODEKIT_VERSION__}${__LODEKIT_COMMIT__ ? ` ${_
 export const Route = createRootRoute({
   head: () => ({
     meta: [{ title: "Lodekit" }],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: "/_ui/theme.css" },
+    ],
   }),
   component: () => (
     <html lang="en">

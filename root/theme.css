@@ -1,8 +1,0 @@
-/* Example global theme — applies to every app in this Lodekit root and the dashboard.
-   Redefine any token from @lodekit/ui's theme (colors, --radius, --font-ui, …).
-   Per-app apps/<app-id>/theme.css files layer after this one and win where both set
-   the same token. Here: slightly rounder corners, keeping the default brand palette
-   (DESIGN.md) visible. */
-:root {
-  --radius: 0.75rem;
-}

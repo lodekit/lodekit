@@ -172,43 +172,6 @@ describe("watcher", () => {
     expect(buf).toContain(`"type":"theme-change"`);
   }, 20000);
 
-  it("rebuilds only that app when apps/<id>/theme.css changes", async () => {
-    await new Promise((r) => setTimeout(r, 100));
-    writeApp(
-      "pt",
-      `import { createFileRoute } from "@tanstack/react-router";\nimport { Button } from "@lodekit/ui";\nexport const Route = createFileRoute("/")({\n  component: () => <Button>pt</Button>,\n});\n`
-    );
-    // retrofit a theme.css import (writeApp's __root has no stylesheet link)
-    fs.writeFileSync(
-      path.join(root, "apps", "pt", "src", "index.css"),
-      `@import "@lodekit/ui/theme.css";\n`
-    );
-    fs.writeFileSync(
-      path.join(root, "apps", "pt", "src", "routes", "__root.tsx"),
-      `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";\nimport appCss from "../index.css?url";\n\nexport const Route = createRootRoute({\n  head: () => ({ meta: [{ title: "pt" }], links: [{ rel: "stylesheet", href: appCss }] }),\n  component: () => (\n    <html>\n      <head><HeadContent /></head>\n      <body><Outlet /><Scripts /></body>\n    </html>\n  ),\n});\n`
-    );
-    // Same app-scoping as the global-theme test above — anchor to "pt" so a dashboard
-    // ready (app "_dashboard") can't satisfy this wait.
-    await collectEvents(base, `"app":"pt","kind":"engine","component":"build","type":"build-ready"`, 90000); // initial build settles
-    fs.writeFileSync(path.join(root, "apps", "pt", "theme.css"), ":root { --primary: #22cc78; }\n");
-
-    // Poll the built CSS rather than a second collectEvents — unambiguous vs. racing the
-    // same debounce window twice.
-    const deadline = Date.now() + 150000;
-    let css = "";
-    while (Date.now() < deadline) {
-      const assetsDir = path.join(cache, "pt", "client", "assets");
-      if (fs.existsSync(assetsDir)) {
-        const cssFile = fs.readdirSync(assetsDir).find((f) => f.endsWith(".css"));
-        if (cssFile) {
-          css = fs.readFileSync(path.join(assetsDir, cssFile), "utf8");
-          if (css.includes("22cc78")) break;
-        }
-      }
-      await new Promise((r) => setTimeout(r, 500));
-    }
-    expect(css).toContain("22cc78");
-  }, 180000);
 });
 
 describe("isGeneratedPath", () => {

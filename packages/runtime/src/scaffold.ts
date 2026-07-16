@@ -23,13 +23,16 @@ declare module "@tanstack/react-router" {
 }
 `;
 
-const rootTsx = (name: string) => `import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+const rootTsx = (name: string, appId: string) => `import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [{ title: "${name}" }],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "stylesheet", href: "/_ui/theme.css?app=${appId}" },
+    ],
   }),
   notFoundComponent: () => (
     <main className="mx-auto max-w-2xl space-y-2 p-8">
@@ -121,7 +124,7 @@ export function scaffoldApp(cfg: Config, input: ScaffoldInput) {
   };
   fs.writeFileSync(path.join(appDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
   writeIfAbsent(path.join(srcDir, "router.tsx"), routerTsx);
-  writeIfAbsent(path.join(routesDir, "__root.tsx"), rootTsx(manifest.name));
+  writeIfAbsent(path.join(routesDir, "__root.tsx"), rootTsx(manifest.name, input.appId));
   writeIfAbsent(path.join(routesDir, "index.tsx"), indexTsx(manifest.name));
   writeIfAbsent(path.join(srcDir, "styles.css"), stylesCss);
   return {
