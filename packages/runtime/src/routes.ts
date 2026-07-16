@@ -20,6 +20,7 @@ import { eventRoutes, withEvents, eventsQuery, CATALOG_NAME as EVENTS } from "./
 import { queryEvents } from "./eventStore.js";
 import { ID_RE, KINDS } from "./events.js";
 import { platformSettingsRoutes, settingsRoutes, withSettings, CATALOG_NAME as SETTINGS } from "./services/settings.js";
+import { themesRoutes } from "./services/themes.js";
 import { platformSecretsRoutes, appSecretsRoutes, withSecrets } from "./services/secret-store.js";
 import { platformGatewaysRoutes, appGatewaysRoutes, withGateways, bindGatewaysConfig, CATALOG_NAME as GATEWAYS } from "./services/gateways.js";
 
@@ -43,6 +44,7 @@ export function apiRoutes(cfg: Config) {
     // Express's express.json() default (100 kb), preserved explicitly.
     .use(bodyLimit({ maxSize: 100 * 1024 }))
     .route("/settings", platformSettingsRoutes)
+    .route("/themes", themesRoutes(cfg))
     .get("/apps", (c) => c.json(scanApps(cfg.appsDir)))
     .post("/apps", async (c) => {
       let body: { appId?: string; name?: string; description?: string; icon?: string } = {};

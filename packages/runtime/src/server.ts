@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import type { Server } from "node:http";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -33,6 +32,7 @@ import { parseDuration } from "./duration.js";
 import { createLogger } from "./logger.js";
 import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskEngine.js";
 import { sweepAllTaskRuns } from "./services/tasks.js";
+import { resolveThemeCss, extractIconLibrary, getPreviewCss, warnLegacyThemeFiles } from "./services/themes.js";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
@@ -52,17 +52,37 @@ const themeResolverJs = (mode: string) => `(() => {
   const apply = () => document.documentElement.classList.toggle("dark", mode === "dark" || (mode === "system" && mq.matches));
   apply();
   mq.addEventListener("change", apply);
+
+  const link = document.querySelector('link[href^="/_ui/theme.css"]');
+  const KEY = "lodekit-theme-preview";
+  try { if (new URLSearchParams(location.search).has(KEY)) sessionStorage.setItem(KEY, "1"); } catch {}
+  let preview = false;
+  try { preview = sessionStorage.getItem(KEY) === "1"; } catch {}
+  const baseQuery = preview ? "?preview=1" : (link ? new URL(link.href, location.origin).search : "");
+  const themeHref = (bust) => "/_ui/theme.css" + baseQuery + (bust ? (baseQuery ? "&" : "?") + "v=" + bust : "");
+  if (link && preview) link.href = themeHref();
+
+  const sync = () => {
+    fetch("/_ui/theme.json" + baseQuery).then((r) => r.json()).then((t) => {
+      mode = t.theme; apply();
+      if (t.iconLibrary) document.documentElement.setAttribute("data-icon-library", t.iconLibrary);
+    }).catch(() => {});
+  };
+  sync();
+
   if (typeof EventSource !== "undefined") {
     const es = new EventSource("/api/events");
     es.addEventListener("event", (e) => {
       const d = JSON.parse(e.data);
       if (
-        d.component !== "settings" ||
-        (d.type !== "value-set" && d.type !== "value-cleared") ||
-        d.app !== null ||
-        d.payload?.key !== "appearance.theme"
-      ) return;
-      fetch("/_ui/theme.json").then((r) => r.json()).then((t) => { mode = t.theme; apply(); }).catch(() => {});
+        d.component === "settings" &&
+        (d.type === "value-set" || d.type === "value-cleared") &&
+        d.app === null &&
+        d.payload?.key === "appearance.theme"
+      ) { sync(); return; }
+      if (d.component !== "themes" || d.type !== "theme-change") return;
+      if (link) link.href = themeHref(Date.now());
+      sync();
     });
   }
 })();
@@ -82,22 +102,19 @@ export function createApp(cfg: Config): Hono {
     })
     .route("/api", apiRoutes(cfg))
     .get("/_ui", (c) => c.redirect("/_ui/", 301))
-    // Live theme overrides for the /_ui preview: global file, optionally composed
-    // with one app's file (?app=<id>) — read per request, never cached, so theme
-    // edits show on reload.
+    // Serve-time theme delivery: the resolved whole theme for the target
+    // (?app=<id>, absent → global; ?preview=1 → the in-memory draft), read per
+    // request, never cached. Always 200 with usable CSS — blocking resource.
     .get("/_ui/theme.css", (c) => {
-      const read = (f: string) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "");
-      let css = read(path.join(cfg.root, "theme.css"));
-      const app = c.req.query("app");
-      if (app !== undefined) {
-        if (!isValidAppId(app) || !scanApps(cfg.appsDir).some((a) => a.appId === app)) {
-          return c.text("unknown app", 404);
-        }
-        css += "\n" + read(path.join(cfg.appsDir, app, "theme.css"));
-      }
       c.header("Cache-Control", "no-store");
       c.header("Content-Type", "text/css; charset=utf-8");
-      return c.body(css);
+      if (c.req.query("preview") === "1") {
+        const draft = getPreviewCss();
+        if (draft !== null) return c.body(draft);
+      }
+      const app = c.req.query("app");
+      const appId = app !== undefined && isValidAppId(app) && scanApps(cfg.appsDir).some((a) => a.appId === app) ? app : undefined;
+      return c.body(resolveThemeCss(cfg, appId));
     })
     // Theme mode resolver (settings spec §8): a classic blocking script so the
     // class lands before paint. Generated per request from the effective
@@ -110,7 +127,11 @@ export function createApp(cfg: Config): Hono {
     })
     .get("/_ui/theme.json", (c) => {
       c.header("Cache-Control", "no-store");
-      return c.json({ theme: effectiveString("appearance.theme") });
+      const preview = c.req.query("preview") === "1" ? getPreviewCss() : null;
+      const app = c.req.query("app");
+      const appId = app !== undefined && isValidAppId(app) ? app : undefined;
+      const css = preview ?? resolveThemeCss(cfg, appId);
+      return c.json({ theme: effectiveString("appearance.theme"), iconLibrary: extractIconLibrary(css) });
     })
     // The Themes stub inside the dashboard (the future theme editor's slot)
     // replaced the standalone /_ui/ page; keep old links landing somewhere.
@@ -183,6 +204,7 @@ export async function start(cfg: Config): Promise<Server> {
   // down never got their dropBuild, so their cache output would accumulate forever.
   pruneBuildCache(cfg);
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
+  warnLegacyThemeFiles(cfg);
   const watcher = await startWatcher(cfg);
   // Loop intervals and retention are settings (spec §6): every() is last-wins by
   // name, so re-arming on a relevant write is a plain re-registration. Retention

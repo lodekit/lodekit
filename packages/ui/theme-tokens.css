@@ -1,6 +1,7 @@
 /* Brand palette from DESIGN.md (cork amber + blue neutrals). The brand doc's
    --accent maps to shadcn's --primary (buttons, fills, active states); shadcn's
    own --accent stays a neutral hover wash and must not carry the amber. */
+@layer lodekit-tokens {
 :root {
   /* Native scrollbars and form controls follow the theme; without this the
      browser paints them light-scheme even under .dark. */
@@ -8,6 +9,8 @@
   --font-display: "Fraunces", Georgia, serif;
   --font-ui: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --radius: 0.625rem;
+  --spacing: 0.25rem;
+  --icon-library: lucide;
   --background: #f7fafd;
   --foreground: #132c44;
   --card: #ffffff;
@@ -76,6 +79,7 @@
   --sidebar-accent-foreground: #f4f9fd;
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: #e08a3c;
+}
 }
 
 @theme inline {

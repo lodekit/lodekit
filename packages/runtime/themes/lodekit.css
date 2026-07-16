@@ -1,0 +1,79 @@
+/* Lodekit — cork amber, the platform default (DESIGN.md). Canonical theme format:
+   one @import block, :root (light) + .dark, full shadcn token set, plus
+   --font-ui/--font-display/--radius/--spacing/--icon-library. */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,100&family=Hanken+Grotesk:wght@400;500&display=swap");
+
+:root {
+  color-scheme: light;
+  --font-ui: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-display: "Fraunces", Georgia, serif;
+  --radius: 0.625rem;
+  --spacing: 0.25rem;
+  --icon-library: lucide;
+  --background: #f7fafd;
+  --foreground: #132c44;
+  --card: #ffffff;
+  --card-foreground: #132c44;
+  --popover: #ffffff;
+  --popover-foreground: #132c44;
+  --primary: #ce6f26;
+  --primary-foreground: #ffffff;
+  --secondary: #e9f1f8;
+  --secondary-foreground: #132c44;
+  --muted: #e9f1f8;
+  --muted-foreground: #2e4b66;
+  --accent: #e9f1f8;
+  --accent-foreground: #132c44;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: #dbe6f0;
+  --input: #dbe6f0;
+  --ring: #ce6f26;
+  --chart-1: #ce6f26;
+  --chart-2: #3d7ab8;
+  --chart-3: #5d9440;
+  --chart-4: #7a63c9;
+  --chart-5: #c25e88;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #132c44;
+  --sidebar-primary: #ce6f26;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e9f1f8;
+  --sidebar-accent-foreground: #132c44;
+  --sidebar-border: #dbe6f0;
+  --sidebar-ring: #ce6f26;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0e1b26;
+  --foreground: #f4f9fd;
+  --card: #152634;
+  --card-foreground: #f4f9fd;
+  --popover: #152634;
+  --popover-foreground: #f4f9fd;
+  --primary: #e08a3c;
+  --primary-foreground: #1b1004;
+  --secondary: #1e3242;
+  --secondary-foreground: #f4f9fd;
+  --muted: #1e3242;
+  --muted-foreground: #b8cbdc;
+  --accent: #1e3242;
+  --accent-foreground: #f4f9fd;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: #e08a3c;
+  --chart-1: #cd7c2c;
+  --chart-2: #4e8ec7;
+  --chart-3: #69a648;
+  --chart-4: #9280dd;
+  --chart-5: #cc6d94;
+  --sidebar: #152634;
+  --sidebar-foreground: #f4f9fd;
+  --sidebar-primary: #e08a3c;
+  --sidebar-primary-foreground: #1b1004;
+  --sidebar-accent: #1e3242;
+  --sidebar-accent-foreground: #f4f9fd;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #e08a3c;
+}

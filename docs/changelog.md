@@ -35,6 +35,17 @@ Rules:
   (`key-set`, `run-failed`, `build-ready`) — visible in the dashboard Events view,
   the SDK (`events.watch` can filter by component), and the `lodekit_events` MCP tool.
 
+- **Switchable themes, served live.** Drop self-contained theme files in
+  `<root>/themes/` and pick which one applies globally or per app via
+  `themes/config.json` — the runtime serves the resolved theme at
+  `/_ui/theme.css` and swaps it live when you switch, with no rebuild. **Break:**
+  the old `<root>/theme.css` and `apps/<id>/theme.css` override files are no
+  longer read (a startup warning points you to `themes/`); move their token
+  overrides into a `themes/<name>.css` file. Apps scaffolded before this release
+  need the one-line theme `<link>` (`{ rel: "stylesheet", href:
+  "/_ui/theme.css?app=<id>" }`) added to their `__root.tsx` `head().links` to
+  follow theme switching.
+
 ## Fixed
 
 - **kv-store error statuses** — internal faults in the kv API now return 500

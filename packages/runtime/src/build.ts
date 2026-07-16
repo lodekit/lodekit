@@ -69,10 +69,6 @@ async function runBuild(cfg: Config, appId: string): Promise<BuildState> {
       outDir: appOutDir(cfg, appId),
       urlBase: `/${appId}`,
       appId,
-      themeOverrideFiles: [
-        path.join(cfg.root, "theme.css"),
-        path.join(cfg.appsDir, appId, "theme.css"),
-      ],
     });
     setState(appId, { status: "ready" });
     startAppWorker(cfg, appId);
@@ -162,7 +158,6 @@ async function runDashboardBuild(cfg: Config): Promise<DashboardState> {
         __LODEKIT_VERSION__: JSON.stringify(info.version),
         __LODEKIT_COMMIT__: JSON.stringify(info.commit),
       },
-      themeOverrideFiles: [path.join(cfg.root, "theme.css")],
     });
     dashboardState = { status: "ready" };
     emitEvent({ app: "_dashboard", kind: "engine", component: "build", type: "build-ready" });
@@ -194,9 +189,6 @@ export interface StartBuildTarget {
   urlBase: string;  // no trailing slash
   appId: string;    // __LODEKIT_APP_ID__ define value
   defines?: Record<string, string>; // extra Vite defines — dashboard-only today (spec §5)
-  // Person's theme override files (absolute), cascade order — later wins. Missing
-  // files are skipped; the composed result replaces @lodekit/ui/theme-overrides.css.
-  themeOverrideFiles?: string[];
 }
 
 // Packages the Start ecosystem reaches via deep subpaths (e.g. "@tanstack/react-start/client",
@@ -241,8 +233,7 @@ function deepImportResolver() {
   };
 }
 
-const appAliases = (themeOverridesFile: string) => [
-  { find: "@lodekit/ui/theme-overrides.css", replacement: themeOverridesFile },
+const appAliases = [
   { find: "@lodekit/sdk", replacement: pkgDir("@lodekit/sdk") },
   { find: "@lodekit/ui", replacement: uiDir },
   { find: "lucide-react", replacement: lucideDir },
@@ -251,15 +242,6 @@ const appAliases = (themeOverridesFile: string) => [
 ];
 
 export async function buildStart(t: StartBuildTarget): Promise<void> {
-  const themeOverridesFile = path.join(t.outDir, "theme-overrides.css");
-  fs.mkdirSync(t.outDir, { recursive: true });
-  fs.writeFileSync(
-    themeOverridesFile,
-    (t.themeOverrideFiles ?? [])
-      .filter((f) => fs.existsSync(f))
-      .map((f) => `/* ${f} */\n${fs.readFileSync(f, "utf8")}`)
-      .join("\n")
-  );
   const builder = await createBuilder({
     root: fs.realpathSync(t.rootDir),
     base: `${t.urlBase}/_build/`, // vite-level base — the plugin's client.base does NOT do this (spike)
@@ -274,7 +256,7 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
       react(),
       tailwind(),
     ],
-    resolve: { alias: appAliases(themeOverridesFile) },
+    resolve: { alias: appAliases },
     environments: {
       client: { build: { outDir: path.join(t.outDir, "client"), emptyOutDir: true } },
       ssr: {
@@ -309,7 +291,7 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
       logLevel: "silent",
       define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
       plugins: [deepImportResolver()],
-      resolve: { alias: appAliases(themeOverridesFile) },
+      resolve: { alias: appAliases },
       ssr: { noExternal: true },
       build: {
         ssr: tasksSource,
@@ -332,7 +314,7 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
       logLevel: "silent",
       define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
       plugins: [deepImportResolver()],
-      resolve: { alias: appAliases(themeOverridesFile) },
+      resolve: { alias: appAliases },
       ssr: { noExternal: true },
       build: {
         ssr: settingsSource,
@@ -355,7 +337,7 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
       logLevel: "silent",
       define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
       plugins: [deepImportResolver()],
-      resolve: { alias: appAliases(themeOverridesFile) },
+      resolve: { alias: appAliases },
       ssr: { noExternal: true },
       build: {
         ssr: secretsSource,
@@ -378,7 +360,7 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
       logLevel: "silent",
       define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
       plugins: [deepImportResolver()],
-      resolve: { alias: appAliases(themeOverridesFile) },
+      resolve: { alias: appAliases },
       ssr: { noExternal: true },
       build: {
         ssr: gatewaysSource,
@@ -402,7 +384,7 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
       logLevel: "silent",
       define: { __LODEKIT_APP_ID__: JSON.stringify(t.appId), ...t.defines },
       plugins: [deepImportResolver()],
-      resolve: { alias: appAliases(themeOverridesFile) },
+      resolve: { alias: appAliases },
       ssr: { noExternal: true },
       build: {
         ssr: dbSource,
