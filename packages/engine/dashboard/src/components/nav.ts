@@ -1,4 +1,4 @@
-// packages/runtime/dashboard/src/components/nav.ts
+// packages/engine/dashboard/src/components/nav.ts
 import { Cpu, Database, Folder, KeyRound, ListChecks, Palette, Plug, ScrollText, Zap, type LucideIcon } from "@lodekit/ui/icons";
 
 // The services menu / command-bar page list (UI revamp spec §2). `to` navigates

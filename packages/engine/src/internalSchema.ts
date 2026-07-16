@@ -3,7 +3,7 @@
 // asserts these declarations never diverge from what the chains build.
 import { sqliteTable, text, integer, blob, primaryKey, index } from "drizzle-orm/sqlite-core";
 
-// --- app db (packages/runtime/src/migrations/appDb.ts) ---
+// --- app db (packages/engine/src/migrations/appDb.ts) ---
 
 // Note: single-column primary keys use the table-level `primaryKey({ columns })`
 // helper rather than the column-builder's `.primaryKey()` shorthand. drizzle-kit's
@@ -126,7 +126,7 @@ const schema = sqliteTable(
   (t) => [primaryKey({ columns: [t.id] })]
 );
 
-// --- events db (packages/runtime/src/migrations/platform.ts) ---
+// --- events db (packages/engine/src/migrations/platform.ts) ---
 
 const events = sqliteTable(
   "events",

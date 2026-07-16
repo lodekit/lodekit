@@ -1,6 +1,6 @@
 // The theme service (spec 2026-07-16-theme-editor-design.md): the person's look.
 // A theme is a CSS token file (`<name>.css`). Vendored themes ship with the
-// runtime (packages/runtime/themes/, read-only); user themes live in the Lodekit
+// engine (packages/engine/themes/, read-only); user themes live in the Lodekit
 // root at `<root>/themes/`, alongside `config.json` (the global + per-app
 // selections). Resolution is app → global → the vendored `lodekit` default, with
 // per-step fallback when a selected theme's file is missing. Name grammar equals

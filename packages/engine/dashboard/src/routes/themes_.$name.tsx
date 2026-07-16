@@ -132,7 +132,7 @@ function ThemeEditor() {
   }
 
   // While editing on the App tab, debounce a draft PUT to the preview slot; the
-  // runtime emits theme-change over SSE and the iframe restyles in place — no
+  // engine emits theme-change over SSE and the iframe restyles in place — no
   // reload. Entering the tab (tab dep) also fires this, so the iframe shows the
   // current edits. Only PUT while dirty: a clean model leaves the slot untouched
   // and the iframe's `?preview=1` self-heals to the saved theme. (`raw` models

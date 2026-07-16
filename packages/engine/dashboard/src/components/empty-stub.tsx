@@ -1,4 +1,4 @@
-// packages/runtime/dashboard/src/components/empty-stub.tsx
+// packages/engine/dashboard/src/components/empty-stub.tsx
 import type { LucideIcon } from "@lodekit/ui/icons";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@lodekit/ui";
 

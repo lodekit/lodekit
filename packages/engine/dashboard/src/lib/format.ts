@@ -1,5 +1,5 @@
 // Display formatting helpers (Intl only — no date/number libraries).
-// Dependency-free on purpose: unit-tested from packages/runtime/tests.
+// Dependency-free on purpose: unit-tested from packages/engine/tests.
 
 export function formatBytes(n: number): string {
   if (!Number.isFinite(n) || n < 0) return "–";

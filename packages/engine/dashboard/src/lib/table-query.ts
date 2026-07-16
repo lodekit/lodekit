@@ -2,7 +2,7 @@
 // read-only /db-store/select door. Identifiers are only accepted when present
 // in the server-reported schema and are always quote-escaped; values always
 // travel as bound params. Dependency-free on purpose: this file is unit-tested
-// from packages/runtime/tests under the NodeNext tsc program.
+// from packages/engine/tests under the NodeNext tsc program.
 
 export type FilterOp = "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "contains" | "isnull" | "notnull";
 export interface FilterRule { column: string; op: FilterOp; value: string }

@@ -1,10 +1,10 @@
 import { hc } from "hono/client";
 import type { ClientResponse } from "hono/client";
-import type { KvRoutes } from "@lodekit/runtime/services/kv-store";
-import type { LogRoutes } from "@lodekit/runtime/services/log-store";
-import type { TasksRoutes } from "@lodekit/runtime/services/tasks";
-import type { EventRoutes } from "@lodekit/runtime/services/event-store";
-import type { SettingsRoutes } from "@lodekit/runtime/services/settings";
+import type { KvRoutes } from "@lodekit/engine/services/kv-store";
+import type { LogRoutes } from "@lodekit/engine/services/log-store";
+import type { TasksRoutes } from "@lodekit/engine/services/tasks";
+import type { EventRoutes } from "@lodekit/engine/services/event-store";
+import type { SettingsRoutes } from "@lodekit/engine/services/settings";
 import { SecretUnavailableError } from "./secrets.js";
 import { GatewayError, type GatewayErrorReason } from "./gateways.js";
 

@@ -7,7 +7,7 @@
 // byte-identical. Fidelity beats normalization — inline comments and the exact
 // whitespace before them are stored as per-token "trivia" and re-emitted verbatim.
 //
-// Dependency-free on purpose: this file is unit-tested from packages/runtime/tests
+// Dependency-free on purpose: this file is unit-tested from packages/engine/tests
 // under the NodeNext tsc program.
 
 // --- Model ---------------------------------------------------------------
