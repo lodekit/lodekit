@@ -4,7 +4,7 @@ const path = require("node:path");
 const PORT = 7777;
 
 // The dev/default path-mode switch (spec §7). Everything mode-dependent lives here;
-// main.js just spawns `nodeBin --import tsx runtimeEntry` with cwd runtimeDir.
+// main.js just spawns `nodeBin --import tsx engineEntry` with cwd engineDir.
 function getPaths({ packaged, homedir, resourcesPath, repoRoot }) {
   const appSupportDir = path.join(homedir, "Library", "Application Support", "Lodekit");
   const common = {
@@ -24,8 +24,8 @@ function getPaths({ packaged, homedir, resourcesPath, repoRoot }) {
       cacheDir: path.join(homedir, "Library", "Caches", "Lodekit"),
       stateDir: appSupportDir,
       nodeBin: path.join(resourcesPath, "node", "bin", "node"),
-      runtimeDir: path.join(platformDir, "runtime"),
-      runtimeEntry: path.join(platformDir, "runtime", "src", "index.ts"),
+      engineDir: path.join(platformDir, "engine"),
+      engineEntry: path.join(platformDir, "engine", "src", "index.ts"),
       mcpEntry: path.join(platformDir, "mcp", "index.ts"),
       showcaseAppsDir: path.join(platformDir, "root", "apps"),
       showcaseGatewaysDir: path.join(platformDir, "root", "gateways"),
@@ -38,8 +38,8 @@ function getPaths({ packaged, homedir, resourcesPath, repoRoot }) {
     cacheDir: path.join(repoRoot, ".cache"),
     stateDir: path.join(repoRoot, ".cache", "state"),
     nodeBin: "node",
-    runtimeDir: path.join(repoRoot, "packages", "runtime"),
-    runtimeEntry: path.join(repoRoot, "packages", "runtime", "src", "index.ts"),
+    engineDir: path.join(repoRoot, "packages", "engine"),
+    engineEntry: path.join(repoRoot, "packages", "engine", "src", "index.ts"),
     mcpEntry: path.join(repoRoot, "packages", "mcp", "index.ts"),
     showcaseAppsDir: null,
     showcaseGatewaysDir: null,

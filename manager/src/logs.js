@@ -64,7 +64,7 @@ function openDailyLogStream(logsDir, base, { days = DEFAULT_DAYS, now = () => ne
 }
 
 // Line-buffered Transform prefixing each line with an ISO timestamp — the system
-// stream is forensic evidence, and evidence needs time. Sits between the runtime
+// stream is forensic evidence, and evidence needs time. Sits between the engine
 // child's stdout/stderr and the dated log file; one instance per source stream so
 // chunks can't interleave mid-line. A trailing partial line is stamped on end.
 function stampLines({ now = () => new Date() } = {}) {

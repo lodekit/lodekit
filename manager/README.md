@@ -2,27 +2,27 @@
 
 The manager: the thin menubar app that ships and supervises the platform. Packaged, it is
 THE Lodekit download — `Lodekit.app` carries a pinned Lodekit-local Node and the platform
-payload (runtime, MCP server, skill) in its `Resources/`, and touches nothing on the
+payload (engine, MCP server, skill) in its `Resources/`, and touches nothing on the
 person's system (no system Node, no PATH). Spec:
 `docs/specs/2026-07-02-manager-v0.1-design.md`.
 
 ## Commands
 
 - `pnpm --filter @lodekit/manager start` — dev mode: menubar app supervising the workspace
-  runtime against `root/` (system Node).
+  engine against `root/` (system Node).
 - `pnpm --filter @lodekit/manager test` — vitest suite (supervisor, paths, logs).
 - `pnpm --filter @lodekit/manager make` — build the payload + fetch the pinned Node
   (`scripts/prepare-bundle.mjs`, one-place version pin), then package the ad-hoc-signed
   arm64 `Lodekit.app` (zip under `out/make/`).
 - **Gotcha:** always run `pnpm install` from the repo root, never from `manager/` — this
   package's `.npmrc` (`node-linker=hoisted`, required by Forge's dev-start check) would
-  otherwise rewrite the whole workspace's node_modules layout and break runtime builds.
+  otherwise rewrite the whole workspace's node_modules layout and break engine builds.
 
 ## Installing the alpha (assisted)
 
 1. Unzip and move `Lodekit.app` to `/Applications`.
 2. First launch: right-click → Open (the alpha is ad-hoc signed, not notarized).
-3. The "⬡" menubar item supervises the runtime; the dashboard lives in your browser.
+3. The "⬡" menubar item supervises the engine; the dashboard lives in your browser.
    Your apps and data live in `~/Documents/Lodekit` — that folder is the backup.
 4. Logs: `~/Library/Logs/Lodekit/` (also reachable via the menu).
 

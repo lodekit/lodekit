@@ -20,13 +20,13 @@ fail). Build the artifact first: `pnpm --filter @lodekit/manager make`.
        `echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' | <command + args from the README snippet>`
        prints an `initialize` result.)
 7. [ ] Stop/Start from the menu works; "Open Logs" shows `manager.log` + `runtime.log`.
-8. [ ] Error surfacing: with Lodekit stopped, start a dev runtime on the port (from the repo:
+8. [ ] Error surfacing: with Lodekit stopped, start a dev engine on the port (from the repo:
        `pnpm dev`), then Start → menu shows "Lodekit — error" with the port-in-use message;
-       stop the dev runtime, Restart → running. (A non-runtime process squatting the port
-       surfaces differently — the spawned runtime exits and the menu shows "Runtime exited
+       stop the dev engine, Restart → running. (A non-engine process squatting the port
+       surfaces differently — the spawned engine exits and the menu shows "Engine exited
        unexpectedly"; both are surfaced errors, never a crash.)
 9. [ ] "Launch at Login": toggle on, log out/in, Lodekit is running.
-10. [ ] Quit: `pgrep -f "Resources/platform/runtime"` prints nothing (no orphan).
+10. [ ] Quit: `pgrep -f "Resources/platform/engine"` prints nothing (no orphan).
 11. [ ] Crash cleanup: `kill -9 <manager pid>` while running (find it via Activity
-        Monitor), relaunch Lodekit.app — it terminates the stale runtime (pid file) and
+        Monitor), relaunch Lodekit.app — it terminates the stale engine (pid file) and
         reaches "running".

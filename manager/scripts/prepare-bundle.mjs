@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Builds the packaged manager's bundle inputs (spec §3):
-//   build/platform/{runtime,mcp,skill} — relocatable payload (pnpm deploy)
+//   build/platform/{engine,mcp,skill} — relocatable payload (pnpm deploy)
 //   build/node                         — pinned Lodekit-local Node (per-target)
 import { execSync } from "node:child_process";
 import crypto from "node:crypto";
@@ -35,7 +35,7 @@ const cacheDir = path.join(managerDir, ".node-cache");
 // script runs nested under `pnpm --filter @lodekit/manager make`, the inner `pnpm bundle`
 // has CWD manager/ and picks up manager/.npmrc's node-linker=hoisted — inherited by the
 // deploys below, that made pnpm partially relink the workspace and silently break the
-// runtime's Vite/Tailwind resolution. Strip the whole npm_config_* family so every child
+// engine's Vite/Tailwind resolution. Strip the whole npm_config_* family so every child
 // behaves as if invoked fresh from the repo root.
 const cleanEnv = Object.fromEntries(
   Object.entries(process.env).filter(([k]) => !k.toLowerCase().startsWith("npm_config_"))
@@ -85,11 +85,11 @@ function buildPayload() {
   // --config.hoist=false: without it, pnpm's default hoist pattern ("*") hoists every
   // importer in the shared workspace lockfile — including the deployed package's own
   // self-entry — into node_modules/.pnpm/node_modules/, and that self-entry symlinks back
-  // to the monorepo source (packages/runtime), which trips assertNoEscapingSymlinks below
+  // to the monorepo source (packages/engine), which trips assertNoEscapingSymlinks below
   // (and would break relocatability, spec §3). Scoped to this command only; installs and
   // the root .npmrc's legacy-deploy opt-in are unaffected.
   run(
-    `pnpm --filter @lodekit/runtime --prod --config.hoist=false deploy "${path.join(platformDir, "runtime")}"`
+    `pnpm --filter @lodekit/engine --prod --config.hoist=false deploy "${path.join(platformDir, "engine")}"`
   );
   run(
     `pnpm --filter @lodekit/mcp --prod --config.hoist=false deploy "${path.join(platformDir, "mcp")}"`
@@ -100,13 +100,13 @@ function buildPayload() {
   });
   // Both deployed packages extend the workspace-root tsconfig.base.json, which
   // doesn't exist inside the bundle — vendor it into each package and point the
-  // extends at the local copy so the payload is self-contained (the runtime's
+  // extends at the local copy so the payload is self-contained (the engine's
   // dashboard build reads its tsconfig at runtime).
-  for (const pkg of ["runtime", "mcp"]) {
+  for (const pkg of ["engine", "mcp"]) {
     const pkgDir = path.join(platformDir, pkg);
     fs.copyFileSync(path.join(repoRoot, "tsconfig.base.json"), path.join(pkgDir, "tsconfig.base.json"));
     const tsconfigPath = path.join(pkgDir, "tsconfig.json");
-    // tsconfig.json is JSONC (the runtime's has full-line `//` comments, added by the
+    // tsconfig.json is JSONC (the engine's has full-line `//` comments, added by the
     // tanstack-start-host slice) — strip those before JSON.parse.
     const tsconfigRaw = fs.readFileSync(tsconfigPath, "utf8").replace(/^\s*\/\/.*$/gm, "");
     const tsconfig = JSON.parse(tsconfigRaw);
@@ -116,7 +116,7 @@ function buildPayload() {
   // Stamp the bundled commit into each payload package (versioning spec §3) — the
   // payload has no .git, so this is how buildInfo resolves the commit when packaged.
   const commit = execSync("git rev-parse --short HEAD", { cwd: repoRoot, encoding: "utf8" }).trim();
-  for (const pkg of ["runtime", "mcp", "skill"]) {
+  for (const pkg of ["engine", "mcp", "skill"]) {
     fs.writeFileSync(
       path.join(platformDir, pkg, "build-info.json"),
       JSON.stringify({ commit }, null, 2) + "\n"
@@ -161,7 +161,7 @@ function assertNoEscapingSymlinks() {
 // The bundled Node must load the payload's native module — proves the ABI match.
 function assertNativeModule() {
   run(`"${path.join(nodeDir, "bin", "node")}" -e "require('better-sqlite3')"`, {
-    cwd: path.join(platformDir, "runtime"),
+    cwd: path.join(platformDir, "engine"),
   });
 }
 

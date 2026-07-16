@@ -8,7 +8,7 @@ const { installShowcase, installGateways } = require("./firstRun");
 const { openDailyLogStream, stampLines } = require("./logs");
 const { Supervisor } = require("./supervisor");
 const { getIconStyle, setIconStyle } = require("./settings");
-const { createRuntimeSettings } = require("./runtimeSettings");
+const { createEngineSettings } = require("./engineSettings");
 
 if (!app.requestSingleInstanceLock()) {
   // Second instance: leave before touching the primary's log files —
@@ -25,12 +25,12 @@ const paths = getPaths({
 });
 
 const managerLogStream = openDailyLogStream(paths.logsDir, "manager");
-const runtimeLogStream = openDailyLogStream(paths.logsDir, "runtime");
+const engineLogStream = openDailyLogStream(paths.logsDir, "runtime"); // artifact name stays (ADR-0005)
 const log = (msg) => managerLogStream.write(`${new Date().toISOString()} ${msg}\n`);
 
-function spawnRuntime() {
-  const child = spawn(paths.nodeBin, ["--import", "tsx", paths.runtimeEntry], {
-    cwd: paths.runtimeDir, // bare `tsx` resolves from the runtime's node_modules
+function spawnEngine() {
+  const child = spawn(paths.nodeBin, ["--import", "tsx", paths.engineEntry], {
+    cwd: paths.engineDir, // bare `tsx` resolves from the engine's node_modules
     env: {
       ...process.env,
       LODEKIT_ROOT: paths.lodekitRoot,
@@ -42,8 +42,8 @@ function spawnRuntime() {
   });
   // One stamper per source: line-buffered, so stdout/stderr can't interleave
   // mid-line, and every runtime.log line carries a timestamp like manager.log.
-  child.stdout.pipe(stampLines()).pipe(runtimeLogStream, { end: false });
-  child.stderr.pipe(stampLines()).pipe(runtimeLogStream, { end: false });
+  child.stdout.pipe(stampLines()).pipe(engineLogStream, { end: false });
+  child.stderr.pipe(stampLines()).pipe(engineLogStream, { end: false });
   return child;
 }
 
@@ -64,8 +64,8 @@ function checkHealth() {
   });
 }
 
-const supervisor = new Supervisor({ spawnRuntime, checkHealth, pidFile: paths.pidFile });
-const runtimeSettings = createRuntimeSettings({
+const supervisor = new Supervisor({ spawnEngine, checkHealth, pidFile: paths.pidFile });
+const engineSettings = createEngineSettings({
   port: paths.port,
   log,
   onIconStyle: (style) => applyIconStyle(style),
@@ -138,13 +138,13 @@ function applyIconStyle(style) {
 }
 
 // Same setting as the dashboard's General → Launch at Login: apply to the OS here,
-// and write it through to the runtime so the dashboard toggle follows. When the
-// runtime is down, the start() reconcile (OS wins) catches the setting up later.
+// and write it through to the engine so the dashboard toggle follows. When the
+// engine is down, the start() reconcile (OS wins) catches the setting up later.
 function toggleLoginItem() {
   const desired = !app.getLoginItemSettings().openAtLogin;
   app.setLoginItemSettings({ openAtLogin: desired });
   if (supervisor.state === "running") {
-    runtimeSettings.setStartAtLogin(desired).catch((e) => log(`runtimeSettings: ${e.message}`));
+    engineSettings.setStartAtLogin(desired).catch((e) => log(`engineSettings: ${e.message}`));
   }
   rebuildMenu();
 }
@@ -179,7 +179,7 @@ function rebuildMenu() {
         label: "Launch at Login",
         type: "checkbox",
         checked: app.getLoginItemSettings().openAtLogin,
-        enabled: app.isPackaged, // dev builds never register the dev Electron (runtimeSettings canSetLogin)
+        enabled: app.isPackaged, // dev builds never register the dev Electron (engineSettings canSetLogin)
         click: toggleLoginItem,
       },
       { type: "separator" },
@@ -222,8 +222,8 @@ app.whenReady().then(() => {
   supervisor.on("state", (state, msg) => {
     log(`state: ${state}${msg ? ` — ${msg}` : ""}`);
     rebuildMenu();
-    if (state === "running") runtimeSettings.start().catch((e) => log(`runtimeSettings: ${e.message}`));
-    else runtimeSettings.stop();
+    if (state === "running") engineSettings.start().catch((e) => log(`engineSettings: ${e.message}`));
+    else engineSettings.stop();
   });
 
   let firstRun = false;

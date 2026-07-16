@@ -1,15 +1,15 @@
 "use strict";
 const http = require("node:http");
 
-// Applies runtime-owned platform settings to the OS/tray (settings spec §9).
-// The runtime is the store; this module is the applier. All effects are
+// Applies engine-owned platform settings to the OS/tray (settings spec §9).
+// The engine is the store; this module is the applier. All effects are
 // injected (supervisor.js pattern) so tests run without Electron or HTTP.
 //
 // Reconcile rule: on start, the OS login item is the applied truth — a mismatch
 // writes the OS state back to the setting. After that, settings-change events
 // (person edits in the dashboard) apply to the OS/tray.
 
-function createRuntimeSettings(deps) {
+function createEngineSettings(deps) {
   const {
     port, log, onIconStyle, getLoginItem, setLoginItem, canSetLogin,
     putSetting = defaultPutSetting, fetchSettings = defaultFetchSettings,
@@ -46,7 +46,7 @@ function createRuntimeSettings(deps) {
         try {
           await applyDoc(await fetchSettings(), { reconcileLogin: false });
         } catch (e) {
-          log(`runtimeSettings: ${e.message}`);
+          log(`engineSettings: ${e.message}`);
         }
       });
     },
@@ -55,13 +55,13 @@ function createRuntimeSettings(deps) {
       unsubscribe = null;
     },
     // Write path for the tray's Launch at Login checkbox: the caller applies the
-    // OS change itself; this keeps the runtime's setting (dashboard) in step.
+    // OS change itself; this keeps the engine's setting (dashboard) in step.
     setStartAtLogin(value) {
       return putSetting("general.start_at_login", value);
     },
   };
 
-  // ---- production defaults (node:http against the local runtime) ----
+  // ---- production defaults (node:http against the local engine) ----
 
   function defaultFetchSettings() {
     return new Promise((resolve, reject) => {
@@ -107,9 +107,9 @@ function createRuntimeSettings(deps) {
         }
       });
     });
-    req.on("error", (e) => log(`runtimeSettings SSE: ${e.message}`));
+    req.on("error", (e) => log(`engineSettings SSE: ${e.message}`));
     return () => req.destroy();
   }
 }
 
-module.exports = { createRuntimeSettings };
+module.exports = { createEngineSettings };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRuntimeSettings } from "../src/runtimeSettings.js";
+import { createEngineSettings } from "../src/engineSettings.js";
 
 const doc = (theme, icon, login) => ({
   settings: [
@@ -12,7 +12,7 @@ const doc = (theme, icon, login) => ({
 function harness(over = {}) {
   const calls = { icon: [], login: [], put: [] };
   let onChange;
-  const rs = createRuntimeSettings({
+  const rs = createEngineSettings({
     log: () => {},
     onIconStyle: (s) => calls.icon.push(s),
     getLoginItem: over.getLoginItem ?? (() => false),
@@ -26,7 +26,7 @@ function harness(over = {}) {
   return { rs, calls, change: (key) => onChange(key) };
 }
 
-describe("runtimeSettings", () => {
+describe("engineSettings", () => {
   it("start(): applies icon style, caches it, and leaves matching login alone", async () => {
     const { rs, calls } = harness();
     await rs.start();
@@ -55,7 +55,7 @@ describe("runtimeSettings", () => {
     expect(calls.put).toEqual([]);
   });
 
-  it("setStartAtLogin writes the setting through to the runtime (tray checkbox path)", async () => {
+  it("setStartAtLogin writes the setting through to the engine (tray checkbox path)", async () => {
     const { rs, calls } = harness();
     await rs.setStartAtLogin(true);
     expect(calls.put).toEqual([["general.start_at_login", true]]);

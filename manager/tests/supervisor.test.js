@@ -26,14 +26,14 @@ function tmpPidFile() {
 const fastOpts = { startTimeoutMs: 500, pollIntervalMs: 10, graceMs: 100 };
 
 describe("Supervisor", () => {
-  it("reaches running once the runtime answers health checks", async () => {
+  it("reaches running once the engine answers health checks", async () => {
     const child = fakeChild();
     let spawned = false;
     const pidFile = tmpPidFile();
     const sup = new Supervisor({
       ...fastOpts,
       pidFile,
-      spawnRuntime: () => ((spawned = true), child),
+      spawnEngine: () => ((spawned = true), child),
       checkHealth: async () => spawned,
     });
     await sup.start();
@@ -46,7 +46,7 @@ describe("Supervisor", () => {
     const sup = new Supervisor({
       ...fastOpts,
       pidFile: tmpPidFile(),
-      spawnRuntime: () => ((spawnCalls += 1), fakeChild()),
+      spawnEngine: () => ((spawnCalls += 1), fakeChild()),
       checkHealth: async () => true,
     });
     await sup.start();
@@ -62,13 +62,13 @@ describe("Supervisor", () => {
     const sup = new Supervisor({
       ...fastOpts,
       pidFile,
-      spawnRuntime: () => ((spawned = true), child),
+      spawnEngine: () => ((spawned = true), child),
       checkHealth: async () => spawned,
     });
     await sup.start();
     child.emit("exit", 1, null);
     expect(sup.state).toBe("error");
-    expect(sup.errorMessage).toMatch(/Runtime exited/);
+    expect(sup.errorMessage).toMatch(/Engine exited/);
     expect(fs.existsSync(pidFile)).toBe(false);
   });
 
@@ -79,7 +79,7 @@ describe("Supervisor", () => {
     const sup = new Supervisor({
       ...fastOpts,
       pidFile,
-      spawnRuntime: () => ((spawned = true), child),
+      spawnEngine: () => ((spawned = true), child),
       checkHealth: async () => spawned,
     });
     await sup.start();
@@ -95,7 +95,7 @@ describe("Supervisor", () => {
     const sup = new Supervisor({
       ...fastOpts,
       pidFile: tmpPidFile(),
-      spawnRuntime: () => ((spawned = true), child),
+      spawnEngine: () => ((spawned = true), child),
       checkHealth: async () => spawned,
     });
     await sup.start();
@@ -104,7 +104,7 @@ describe("Supervisor", () => {
     expect(sup.state).toBe("stopped");
   });
 
-  it("terminates a stale runtime recorded in the pid file before starting", async () => {
+  it("terminates a stale engine recorded in the pid file before starting", async () => {
     const pidFile = tmpPidFile();
     fs.writeFileSync(pidFile, "9999");
     const calls = [];
@@ -120,7 +120,7 @@ describe("Supervisor", () => {
       ...fastOpts,
       pidFile,
       killProcess,
-      spawnRuntime: () => ((spawned = true), child),
+      spawnEngine: () => ((spawned = true), child),
       checkHealth: async () => spawned,
     });
     await sup.start();
@@ -128,12 +128,12 @@ describe("Supervisor", () => {
     expect(sup.state).toBe("running");
   });
 
-  it("errors when the runtime never becomes healthy", async () => {
+  it("errors when the engine never becomes healthy", async () => {
     const child = fakeChild();
     const sup = new Supervisor({
       ...fastOpts,
       pidFile: tmpPidFile(),
-      spawnRuntime: () => child,
+      spawnEngine: () => child,
       checkHealth: async () => false,
     });
     await sup.start();
@@ -148,7 +148,7 @@ describe("Supervisor", () => {
     const sup = new Supervisor({
       ...fastOpts,
       pidFile: tmpPidFile(),
-      spawnRuntime: () => ((spawned = true), child),
+      spawnEngine: () => ((spawned = true), child),
       checkHealth: async () => spawned && sup.child !== null,
     });
     await sup.start();
@@ -167,7 +167,7 @@ describe("Supervisor", () => {
     const sup = new Supervisor({
       ...fastOpts,
       pidFile: path.join(dir, "blocker", "runtime.pid"), // mkdir over a file → throws
-      spawnRuntime: () => ((spawned = true), child),
+      spawnEngine: () => ((spawned = true), child),
       checkHealth: async () => spawned,
     });
     await sup.start();
