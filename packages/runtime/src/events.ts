@@ -1,9 +1,6 @@
 import { insertEvent, type EventRecord } from "./eventStore.js";
 import { broadcast } from "./sse.js";
 
-// log-store's query sentinel only (its convergence is a follow-up slice) — no event
-// emitter may import this. Deleted once the last emitter migrates (this PR, Task 9).
-export const PLATFORM_NS = "_platform";
 // App and component ids: an app id, or an underscore-prefixed internal-app id
 // (_dashboard) — the app-id grammar has no underscore, so the two can never collide
 // and no reserved-word check exists anywhere (spec §2/§3).

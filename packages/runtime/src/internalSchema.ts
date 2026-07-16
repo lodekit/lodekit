@@ -133,15 +133,16 @@ const events = sqliteTable(
   {
     id: integer("id"),
     ts: integer("ts").notNull(),
-    ns: text("ns").notNull(),
-    source: text("source").notNull(),
+    app: text("app"),
+    kind: text("kind").notNull(),
+    component: text("component").notNull(),
     type: text("type").notNull(),
     payload: text("payload"),
     expiresAt: integer("expires_at"),
   },
   (t) => [
     primaryKey({ columns: [t.id] }),
-    index("events_ns").on(t.ns, t.id),
+    index("events_app").on(t.app, t.id),
     index("events_ts").on(t.ts),
   ]
 );

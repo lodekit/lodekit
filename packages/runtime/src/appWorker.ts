@@ -15,7 +15,7 @@ export type ServerState =
 
 const ENTRY = path.join(path.dirname(fileURLToPath(import.meta.url)), "appWorkerEntry.mjs");
 // Give-up latch: a permanently-fatal bundle would otherwise respawn forever at the
-// backoff cap, churning states and durable server-state events. After this many
+// backoff cap, churning states and durable server lifecycle events. After this many
 // consecutive crashes, stay in error until the next build restarts the worker
 // (build.ts calls startAppWorker after every successful rebuild, resetting the count).
 const MAX_CONSECUTIVE_CRASHES = 5;

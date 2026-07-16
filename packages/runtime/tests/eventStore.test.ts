@@ -47,7 +47,7 @@ describe("eventStore", () => {
   });
 
   it("filters by app and type; paginates with before and reports next", () => {
-    write({ app: "notes", type: "kv-store-change" });
+    write({ app: "notes", type: "key-set" });
     write({ app: "other" });
     write({ app: null, kind: "engine", component: "registry", type: "apps-changed" });
     expect(queryEvents({ app: "notes" }).records).toHaveLength(1);
