@@ -4,7 +4,7 @@ import { Worker } from "node:worker_threads";
 import { fileURLToPath } from "node:url";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import type { Config } from "./config.js";
-import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "./events.js";
+import { emitEvent, CHANGE_FEED_TTL_S } from "./events.js";
 import { emitLog, createLogger } from "./logger.js";
 import { effectiveMs } from "./services/settings.js";
 
@@ -107,9 +107,15 @@ export function configureWorkers(url: string): void { baseUrl = url; }
 
 export function getServerState(appId: string): ServerState | undefined { return states.get(appId); }
 
+const SERVER_FACT = { starting: "server-started", running: "server-ready", error: "server-failed" } as const;
+
 function setState(appId: string, state: ServerState): void {
   states.set(appId, state);
-  emitEvent({ ns: appId, source: PLATFORM_NS, type: "server-state", payload: { ...state }, ttl: CHANGE_FEED_TTL_S });
+  emitEvent({
+    app: appId, kind: "engine", component: "lifecycle", type: SERVER_FACT[state.status],
+    payload: state.status === "error" ? { message: state.message } : undefined,
+    ttl: CHANGE_FEED_TTL_S,
+  });
 }
 
 export function startAppWorker(cfg: Config, appId: string): void {
@@ -169,7 +175,7 @@ function spawn(cfg: Config, appId: string, attempts: number): void {
           // down — the app keeps serving on whatever schema its database has.
           const message = `schema push failed unexpectedly: ${e instanceof Error ? e.message : String(e)}`;
           emitLog("error", "db-store", message, e instanceof Error && e.stack ? { stack: e.stack } : undefined, appId);
-          emitEvent({ ns: appId, source: PLATFORM_NS, type: "schema-state", payload: { status: "gated", message }, ttl: CHANGE_FEED_TTL_S });
+          emitEvent({ app: appId, kind: "service", component: "db-store", type: "schema-gated", payload: { message }, ttl: CHANGE_FEED_TTL_S });
         } finally {
           // Ack even on a failed push — the app serves on its previous schema.
           try { worker.postMessage({ type: "db-manifest-ack" }); } catch { /* worker died */ }

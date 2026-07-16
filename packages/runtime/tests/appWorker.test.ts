@@ -22,7 +22,7 @@ let cfg: Config;
 beforeAll(async () => {
   cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "lodekit-worker-"));
   cfg = { root: "", appsDir: "", dataDir: "", cacheDir, stateDir: "", port: 0, baseUrl: "", secretsKeyProvider: "file", gatewaysDir: "" };
-  initEventStore(path.join(cacheDir, "data")); // capture server-state events durably
+  initEventStore(path.join(cacheDir, "data")); // capture lifecycle events durably
   await buildStart({
     rootDir: fixture, outDir: path.join(cacheDir, "start-app"),
     urlBase: "/start-app", appId: "start-app",
@@ -146,8 +146,7 @@ describe("appWorker", () => {
     setBackoffForTest(50, 100);
     try {
       const boots = () =>
-        queryEvents({ ns: "crash-app", type: "server-state", limit: 1000 })
-          .records.filter((r) => r.payload?.status === "starting").length;
+        queryEvents({ app: "crash-app", type: "server-started", limit: 1000 }).records.length;
       startAppWorker(cfg, "crash-app");
       await waitFor(() => boots() >= 5, 15_000);
       // Latched: past the backoff cap, no 6th spawn happens.
@@ -163,11 +162,11 @@ describe("appWorker", () => {
     }
   }, 30_000);
 
-  it("server-state events carry the 7-day service ttl", () => {
-    startAppWorker(cfg, "not-built-ttl"); // missing bundle → emits an error server-state event
+  it("lifecycle events carry the 7-day service ttl", () => {
+    startAppWorker(cfg, "not-built-ttl"); // missing bundle → emits a server-failed event
     const db = new Database(path.join(cacheDir, "data", "_platform", "events.sqlite"), { readonly: true });
     const row = db
-      .prepare("SELECT ts, expires_at FROM events WHERE ns = ? AND type = 'server-state' ORDER BY id DESC LIMIT 1")
+      .prepare("SELECT ts, expires_at FROM events WHERE app = ? AND type = 'server-failed' ORDER BY id DESC LIMIT 1")
       .get("not-built-ttl") as { ts: number; expires_at: number | null };
     db.close();
     expect(row.expires_at).toBe(row.ts + CHANGE_FEED_TTL_S * 1000);

@@ -32,7 +32,7 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
   const notify = () => {
     clearTimeout(notifyTimer);
     notifyTimer = setTimeout(() => {
-      emitEvent({ ns: PLATFORM_NS, source: PLATFORM_NS, type: "apps-changed" });
+      emitEvent({ app: null, kind: "engine", component: "registry", type: "apps-changed" });
     }, DEBOUNCE_MS);
   };
 

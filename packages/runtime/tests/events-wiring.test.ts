@@ -32,11 +32,11 @@ afterEach(() => {
 });
 
 describe("platform emitters land on the bus", () => {
-  it("worker lifecycle: a missing server bundle stores a server-state error event in the app's ns", () => {
+  it("worker lifecycle: a missing server bundle lands server-failed in the app's stream", () => {
     startAppWorker(cfg, "ghost");
-    const { records } = queryEvents({ ns: "ghost", type: "server-state" });
+    const { records } = queryEvents({ app: "ghost", type: "server-failed" });
     expect(records).toHaveLength(1);
-    expect(records[0]).toMatchObject({ source: "_platform", payload: { status: "error" } });
+    expect(records[0]).toMatchObject({ kind: "engine", component: "lifecycle", payload: { message: "server bundle missing (not built)" } });
   });
 
   // Real chokidar on macOS: the OS event stream goes live some time AFTER ready under
@@ -47,7 +47,7 @@ describe("platform emitters land on the bus", () => {
   // assert on real churn.
   it("watcher: app-folder churn stores one debounced apps-changed event in _platform", async () => {
     const watcher = await startWatcher(cfg);
-    const count = () => queryEvents({ ns: "_platform", type: "apps-changed" }).records.length;
+    const count = () => queryEvents({ kind: "engine", type: "apps-changed" }).records.length;
     const probe = path.join(cfg.appsDir, "probe.txt"); // invalid app id — fires apps-changed, never a build
     let tick = 0;
     await expect
@@ -56,6 +56,7 @@ describe("platform emitters land on the bus", () => {
         return count();
       }, { interval: 500, timeout: 15_000 })
       .toBeGreaterThanOrEqual(1);
+    expect(queryEvents({ type: "apps-changed" }).records[0]).toMatchObject({ app: null, component: "registry" });
     // App-folder churn lands on the bus: with the stream live, the newapp addDir is
     // delivered even if the writes inside race chokidar's watch of the new folder.
     await new Promise((r) => setTimeout(r, 1000)); // drain the last priming write's debounce
