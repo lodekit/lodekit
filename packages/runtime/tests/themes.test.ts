@@ -27,6 +27,26 @@ describe("theme service", () => {
     expect(names).toContain("lodekit");
     expect(listThemes(cfg).find((t) => t.name === "lodekit")?.vendored).toBe(true);
   });
+  it("ships all five vendored theme ports", () => {
+    const names = listThemes(cfg).map((t) => t.name).sort();
+    expect(names).toEqual(["catppuccin", "dracula", "lodekit", "nord", "rose-pine"]);
+    for (const t of listThemes(cfg)) expect(t.vendored).toBe(true);
+  });
+  it("every vendored port carries the full token structure both modes", () => {
+    for (const name of ["catppuccin", "dracula", "lodekit", "nord", "rose-pine"]) {
+      const css = readThemeCss(cfg, name)!;
+      expect(css, name).toContain(":root");
+      expect(css, name).toContain(".dark");
+      expect(css, name).toContain("--chart-5");
+      expect(css, name).toContain("--icon-library");
+    }
+  });
+  it("ports select their stress-test icon libraries", () => {
+    expect(extractIconLibrary(readThemeCss(cfg, "nord")!)).toBe("tabler");
+    expect(extractIconLibrary(readThemeCss(cfg, "rose-pine")!)).toBe("phosphor");
+    expect(extractIconLibrary(readThemeCss(cfg, "dracula")!)).toBe("lucide");
+    expect(extractIconLibrary(readThemeCss(cfg, "catppuccin")!)).toBe("lucide");
+  });
   it("resolves app → global → default with fallbacks", () => {
     expect(resolveThemeName(cfg)).toBe(DEFAULT_THEME);
     putUserTheme(cfg, "mine", ":root { --primary: red; }");

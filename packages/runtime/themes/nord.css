@@ -1,0 +1,83 @@
+/* Nord — ported from github.com/nordtheme (MIT). Light = Snow Storm,
+   dark = Polar Night. Selects the tabler icon set. Canonical theme format:
+   :root (light) + .dark, full shadcn token set, plus
+   --font-ui/--font-display/--radius/--spacing/--icon-library. */
+
+:root {
+  color-scheme: light;
+  --font-ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 0.375rem;
+  --spacing: 0.25rem;
+  --icon-library: tabler;
+  --background: #eceff4;         /* nord6 */
+  --foreground: #2e3440;         /* nord0 — 10.84:1 */
+  --card: #ffffff;
+  --card-foreground: #2e3440;
+  --popover: #ffffff;
+  --popover-foreground: #2e3440;
+  --primary: #456b9a;            /* nord10 darkened for AA button text */
+  --primary-foreground: #ffffff; /* 5.49:1 */
+  --secondary: #e5e9f0;          /* nord5 */
+  --secondary-foreground: #2e3440;
+  --muted: #e5e9f0;
+  --muted-foreground: #4c566a;   /* nord3 — 6.40:1 vs bg, 6.06:1 vs muted */
+  --accent: #e5e9f0;
+  --accent-foreground: #2e3440;
+  --destructive: #bf616a;        /* nord11 */
+  --border: #d8dee9;             /* nord4 */
+  --input: #d8dee9;
+  --ring: #456b9a;
+  /* Frost/aurora darkened for the light canvas — warm green/red/orange kept
+     apart by cool blue+purple. green←nord14 red←nord11 purple←nord15 orange←nord12. */
+  --chart-1: #4c7d6b;            /* green */
+  --chart-2: #456b9a;            /* blue */
+  --chart-3: #bf616a;            /* red */
+  --chart-4: #9d7495;            /* purple */
+  --chart-5: #bd7355;            /* orange */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2e3440;
+  --sidebar-primary: #456b9a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e5e9f0;
+  --sidebar-accent-foreground: #2e3440;
+  --sidebar-border: #d8dee9;
+  --sidebar-ring: #456b9a;
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #2e3440;         /* nord0 */
+  --foreground: #eceff4;         /* nord6 — 10.84:1 */
+  --card: #3b4252;              /* nord1 */
+  --card-foreground: #eceff4;
+  --popover: #3b4252;
+  --popover-foreground: #eceff4;
+  --primary: #88c0d0;            /* nord8 frost */
+  --primary-foreground: #2e3440; /* 6.24:1 */
+  --secondary: #434c5e;          /* nord2 */
+  --secondary-foreground: #eceff4;
+  --muted: #434c5e;
+  --muted-foreground: #d8dee9;   /* nord4 — 9.25:1 vs bg, 6.39:1 vs muted */
+  --accent: #434c5e;
+  --accent-foreground: #eceff4;
+  --destructive: #bf616a;        /* nord11 */
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: #88c0d0;
+  /* Frost + aurora — cyan (L 0.47) and green (L 0.47) split to non-adjacent
+     slots; blue nord10, cyan nord8, yellow nord13, green nord14, purple nord15. */
+  --chart-1: #5e81ac;            /* blue */
+  --chart-2: #88c0d0;            /* cyan */
+  --chart-3: #ebcb8b;            /* yellow */
+  --chart-4: #a3be8c;            /* green */
+  --chart-5: #b48ead;            /* purple */
+  --sidebar: #3b4252;
+  --sidebar-foreground: #eceff4;
+  --sidebar-primary: #88c0d0;
+  --sidebar-primary-foreground: #2e3440;
+  --sidebar-accent: #434c5e;
+  --sidebar-accent-foreground: #eceff4;
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: #88c0d0;
+}
