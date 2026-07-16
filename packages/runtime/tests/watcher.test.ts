@@ -151,36 +151,26 @@ describe("watcher", () => {
     expect(buf).toContain('"type":"build-started"');
   }, 60000);
 
-  it("rebuilds apps and dashboard when the global theme.css changes", async () => {
+  it("emits theme-change when a themes/ file changes, without rebuilding", async () => {
     // Give the freshly-booted watcher a tick to settle before writing (as the other
     // tests do); otherwise, under a loaded machine, fsevents can drop the initial add
     // and no build fires.
     await new Promise((r) => setTimeout(r, 100));
-    writeApp(
-      "gt",
-      `import { createFileRoute } from "@tanstack/react-router";\nimport { Button } from "@lodekit/ui";\nexport const Route = createFileRoute("/")({\n  component: () => <Button>gt</Button>,\n});\n`
-    );
-    // retrofit a theme.css import (writeApp's __root has no stylesheet link)
-    fs.writeFileSync(
-      path.join(root, "apps", "gt", "src", "index.css"),
-      `@import "@lodekit/ui/theme.css";\n`
-    );
-    fs.writeFileSync(
-      path.join(root, "apps", "gt", "src", "routes", "__root.tsx"),
-      `import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";\nimport appCss from "../index.css?url";\n\nexport const Route = createRootRoute({\n  head: () => ({ meta: [{ title: "gt" }], links: [{ rel: "stylesheet", href: appCss }] }),\n  component: () => (\n    <html>\n      <head><HeadContent /></head>\n      <body><Outlet /><Scripts /></body>\n    </html>\n  ),\n});\n`
-    );
-    // Anchor to this app's own app id — runDashboardBuild also emits a build-ready
-    // event (app "_dashboard") on the same theme change, and JSON key order
-    // (app,kind,component,type) is stable, so an un-anchored ready substring could
-    // match the dashboard's event instead of this app's.
-    await collectEvents(base, `"app":"gt","kind":"engine","component":"build","type":"build-ready"`, 90000); // initial build settles
-    fs.writeFileSync(path.join(root, "theme.css"), ":root { --primary: #ff3456; }\n");
-    await collectEvents(base, `"app":"gt","kind":"engine","component":"build","type":"build-ready"`, 90000); // theme-triggered rebuild
-    const assets = fs.readdirSync(path.join(cache, "gt", "client", "assets"));
-    const cssFile = assets.find((f) => f.endsWith(".css"));
-    const css = fs.readFileSync(path.join(cache, "gt", "client", "assets", cssFile!), "utf8");
-    expect(css).toContain("ff3456");
-  }, 180000);
+    const done = collectEvents(base, `"kind":"service","component":"themes","type":"theme-change"`, 15000);
+    fs.writeFileSync(path.join(root, "themes", "custom.css"), ":root { --primary: #ff3456; }\n");
+    const buf = await done;
+    expect(buf).toContain(`"type":"theme-change"`);
+    // The themes/ watch never triggers a build — serve-time resolution replaced it.
+    expect(buf).not.toContain('"type":"build-state"');
+  }, 20000);
+
+  it("emits theme-change when themes/config.json changes", async () => {
+    await new Promise((r) => setTimeout(r, 100));
+    const done = collectEvents(base, `"kind":"service","component":"themes","type":"theme-change"`, 15000);
+    fs.writeFileSync(path.join(root, "themes", "config.json"), JSON.stringify({ global: "lodekit" }));
+    const buf = await done;
+    expect(buf).toContain(`"type":"theme-change"`);
+  }, 20000);
 
   it("rebuilds only that app when apps/<id>/theme.css changes", async () => {
     await new Promise((r) => setTimeout(r, 100));

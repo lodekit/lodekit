@@ -52,6 +52,12 @@ describe("/_ui theme delivery", () => {
     const t = await (await fetch(base + "/_ui/theme.json")).json();
     expect(t).toEqual({ theme: "system", iconLibrary: "lucide" });
   });
+
+  it("theme.js applies theme-change and stamps data-icon-library", async () => {
+    const js = await (await fetch(base + "/_ui/theme.js")).text();
+    expect(js).toContain("theme-change");
+    expect(js).toContain("data-icon-library");
+  });
 });
 
 describe("/api/themes", () => {

@@ -52,17 +52,37 @@ const themeResolverJs = (mode: string) => `(() => {
   const apply = () => document.documentElement.classList.toggle("dark", mode === "dark" || (mode === "system" && mq.matches));
   apply();
   mq.addEventListener("change", apply);
+
+  const link = document.querySelector('link[href^="/_ui/theme.css"]');
+  const KEY = "lodekit-theme-preview";
+  try { if (new URLSearchParams(location.search).has(KEY)) sessionStorage.setItem(KEY, "1"); } catch {}
+  let preview = false;
+  try { preview = sessionStorage.getItem(KEY) === "1"; } catch {}
+  const baseQuery = preview ? "?preview=1" : (link ? new URL(link.href, location.origin).search : "");
+  const themeHref = (bust) => "/_ui/theme.css" + baseQuery + (bust ? (baseQuery ? "&" : "?") + "v=" + bust : "");
+  if (link && preview) link.href = themeHref();
+
+  const sync = () => {
+    fetch("/_ui/theme.json" + baseQuery).then((r) => r.json()).then((t) => {
+      mode = t.theme; apply();
+      if (t.iconLibrary) document.documentElement.setAttribute("data-icon-library", t.iconLibrary);
+    }).catch(() => {});
+  };
+  sync();
+
   if (typeof EventSource !== "undefined") {
     const es = new EventSource("/api/events");
     es.addEventListener("event", (e) => {
       const d = JSON.parse(e.data);
       if (
-        d.component !== "settings" ||
-        (d.type !== "value-set" && d.type !== "value-cleared") ||
-        d.app !== null ||
-        d.payload?.key !== "appearance.theme"
-      ) return;
-      fetch("/_ui/theme.json").then((r) => r.json()).then((t) => { mode = t.theme; apply(); }).catch(() => {});
+        d.component === "settings" &&
+        (d.type === "value-set" || d.type === "value-cleared") &&
+        d.app === null &&
+        d.payload?.key === "appearance.theme"
+      ) { sync(); return; }
+      if (d.component !== "themes" || d.type !== "theme-change") return;
+      if (link) link.href = themeHref(Date.now());
+      sync();
     });
   }
 })();
@@ -82,9 +102,9 @@ export function createApp(cfg: Config): Hono {
     })
     .route("/api", apiRoutes(cfg))
     .get("/_ui", (c) => c.redirect("/_ui/", 301))
-    // Live theme overrides for the /_ui preview: global file, optionally composed
-    // with one app's file (?app=<id>) — read per request, never cached, so theme
-    // edits show on reload.
+    // Serve-time theme delivery: the resolved whole theme for the target
+    // (?app=<id>, absent → global; ?preview=1 → the in-memory draft), read per
+    // request, never cached. Always 200 with usable CSS — blocking resource.
     .get("/_ui/theme.css", (c) => {
       c.header("Cache-Control", "no-store");
       c.header("Content-Type", "text/css; charset=utf-8");

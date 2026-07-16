@@ -10,7 +10,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
 import { isValidAppId } from "../registry.js";
-import { emitEvent, PLATFORM_NS } from "../events.js";
+import { emitEvent } from "../events.js";
 import type { Config } from "../config.js";
 
 export const THEME_MAX_BYTES = 512 * 1024;
@@ -247,7 +247,7 @@ export const themesRoutes = (cfg: Config) =>
       const css = await c.req.text();
       if (Buffer.byteLength(css) > THEME_MAX_BYTES) throw new ThemeError("theme too large");
       setPreviewCss(css);
-      emitEvent({ ns: PLATFORM_NS, source: PLATFORM_NS, type: "theme-change" });
+      emitEvent({ app: null, kind: "service", component: "themes", type: "theme-change" });
       return c.body(null, 204);
     })
     .get("/:name", (c) => {

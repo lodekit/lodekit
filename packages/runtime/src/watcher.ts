@@ -4,7 +4,7 @@ import chokidar from "chokidar";
 import type { Config } from "./config.js";
 import { emitEvent } from "./events.js";
 import { isValidAppId } from "./registry.js";
-import { buildAll, buildApp, buildDashboard, dropBuild } from "./build.js";
+import { buildApp, dropBuild } from "./build.js";
 import { evictApp } from "./taskEngine.js";
 import { createLogger } from "./logger.js";
 import { reloadGatewayManifests } from "./gatewayManifests.js";
@@ -90,24 +90,18 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
       }
     });
 
-  // The person's global theme file sits at the Lodekit root, outside appsDir — a
-  // separate depth-0 watch (apps/ and data/ churn stays ignored) that rebuilds
-  // everything, since every app and the dashboard composes it in.
-  const globalTheme = path.join(cfg.root, "theme.css");
-  let globalTimer: NodeJS.Timeout | undefined;
-  const onGlobalTheme = () => {
-    clearTimeout(globalTimer);
-    globalTimer = setTimeout(() => {
-      void buildAll(cfg);
-      void buildDashboard(cfg);
-    }, DEBOUNCE_MS);
-  };
-  const rootWatcher = chokidar.watch(cfg.root, {
-    ignoreInitial: true,
-    depth: 0,
-    ignored: (p) => p !== cfg.root && p !== globalTheme,
+  // Themes: <root>/themes/ (theme CSS + config.json). Any change emits a
+  // theme-change event on the bus — serve-time delivery means no rebuilds.
+  const themesDir = path.join(cfg.root, "themes");
+  fs.mkdirSync(themesDir, { recursive: true });
+  let themesTimer: NodeJS.Timeout | undefined;
+  const themesWatcher = chokidar.watch(themesDir, { ignoreInitial: true, depth: 1 });
+  themesWatcher.on("all", () => {
+    clearTimeout(themesTimer);
+    themesTimer = setTimeout(() => {
+      emitEvent({ app: null, kind: "service", component: "themes", type: "theme-change" });
+    }, 150);
   });
-  rootWatcher.on("add", onGlobalTheme).on("change", onGlobalTheme).on("unlink", onGlobalTheme);
 
   // The gateways tree (spec §4): manifest edits re-validate live and announce
   // themselves — the dashboard refetches, the engine reads the new registry
@@ -131,13 +125,13 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
   // eagerly leaves a window where an app created right after boot is never built.
   await Promise.all([
     new Promise<void>((r) => watcher.once("ready", () => r())),
-    new Promise<void>((r) => rootWatcher.once("ready", () => r())),
+    new Promise<void>((r) => themesWatcher.once("ready", () => r())),
     new Promise<void>((r) => gatewaysWatcher.once("ready", () => r())),
   ]);
 
   return {
     close: async () => {
-      clearTimeout(globalTimer);
+      clearTimeout(themesTimer);
       clearTimeout(notifyTimer);
       clearTimeout(gatewaysTimer);
       // Cancel any in-flight per-app debounce so it can't fire buildApp after close —
@@ -145,7 +139,7 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
       // app's fresh state. The unlinkDir handler clears these per app; close clears the rest.
       for (const t of timers.values()) clearTimeout(t);
       timers.clear();
-      await Promise.all([watcher.close(), rootWatcher.close(), gatewaysWatcher.close()]);
+      await Promise.all([watcher.close(), themesWatcher.close(), gatewaysWatcher.close()]);
     },
   };
 }
