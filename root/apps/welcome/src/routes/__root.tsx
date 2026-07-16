@@ -7,6 +7,7 @@ export const Route = createRootRoute({
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "stylesheet", href: "/_ui/theme.css?app=welcome" },
+      { rel: "icon", href: "/_ui/favicon.svg?app=welcome" },
     ],
   }),
   notFoundComponent: () => (

@@ -55,6 +55,8 @@ const themeResolverJs = (mode: string) => `(() => {
   mq.addEventListener("change", apply);
 
   const link = document.querySelector('link[href^="/_ui/theme.css"]');
+  const icon = document.querySelector('link[rel="icon"]');
+  const iconBase = icon ? icon.getAttribute("href") : null;
   const KEY = "lodekit-theme-preview";
   try { if (new URLSearchParams(location.search).has(KEY)) sessionStorage.setItem(KEY, "1"); } catch {}
   let preview = false;
@@ -75,6 +77,15 @@ const themeResolverJs = (mode: string) => `(() => {
     const es = new EventSource("/api/events");
     es.addEventListener("event", (e) => {
       const d = JSON.parse(e.data);
+      if (
+        d.component === "settings" &&
+        (d.type === "value-set" || d.type === "value-cleared") &&
+        d.app === null &&
+        d.payload?.key === "appearance.icon_style"
+      ) {
+        if (icon && iconBase) icon.href = iconBase + (iconBase.includes("?") ? "&" : "?") + "v=" + Date.now();
+        return;
+      }
       if (
         d.component === "settings" &&
         (d.type === "value-set" || d.type === "value-cleared") &&
