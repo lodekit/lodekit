@@ -10,11 +10,21 @@ const ROOTS = ["src", "../runtime/dashboard/src", "../runtime/src/scaffold.ts", 
 );
 
 const CODE_FILE = /\.(ts|tsx)$/;
+// "icons" is skipped by name rather than full path: the only directory named
+// `icons` under any scanned root is `packages/ui/src/icons` (the indirection
+// itself). If a same-named dir ever appears elsewhere in the scanned trees,
+// this would wrongly skip it too — revisit if that happens.
 const SKIP_DIRS = new Set(["node_modules", "icons"]);
 
+function assertRootExists(root: string): void {
+  if (!fs.statSync(root, { throwIfNoEntry: false })) {
+    throw new Error(`icon-coverage scan root does not exist: ${root}`);
+  }
+}
+
+// Callers must assertRootExists(root) first — this walks an already-verified root.
 function collectFiles(root: string): string[] {
-  const stat = fs.statSync(root, { throwIfNoEntry: false });
-  if (!stat) return [];
+  const stat = fs.statSync(root);
   if (stat.isFile()) return CODE_FILE.test(root) ? [root] : [];
 
   const files: string[] = [];
@@ -36,6 +46,7 @@ function collectFiles(root: string): string[] {
 it("no direct lucide-react imports remain outside the icons module", () => {
   const offenders: string[] = [];
   for (const root of ROOTS) {
+    assertRootExists(root);
     for (const file of collectFiles(root)) {
       const content = fs.readFileSync(file, "utf-8");
       if (/from ["']lucide-react["']/.test(content)) {
