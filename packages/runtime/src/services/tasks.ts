@@ -1,6 +1,6 @@
 import type Database from "better-sqlite3";
 import { getAppDb, openDbs } from "../db.js";
-import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
+import { emitEvent, CHANGE_FEED_TTL_S } from "../events.js";
 import { parseDuration } from "../duration.js";
 import { validateSchedule, type ScheduleKind } from "../taskSchedule.js";
 import { effectiveMs, effectiveNumber } from "./settings.js";
@@ -374,16 +374,23 @@ export function sweepAllTaskRuns(): void {
   }
 }
 
-const EVENT = `${CATALOG_NAME}-change`;
+// Run transitions are past-tense facts (spec §4): the state is the type, the payload
+// carries identity only. A module load error emits defs-changed — the stack lives in
+// the adjacent tasks-source log record, and a full stack could blow the payload cap.
+const RUN_FACT: Record<RunState, string> = {
+  queued: "run-queued",
+  running: "run-started",
+  succeeded: "run-succeeded",
+  failed: "run-failed",
+  canceled: "run-canceled",
+};
 
-// Change-feed events: identity + state, never values (events spec §4); a module
-// load error sends {task: "*"} — the stack lives in the adjacent tasks-source
-// log record, and a full stack could blow the payload cap and drop the event.
-export function emitTasksChange(
-  appId: string,
-  data: { task: string; runId?: number; state?: string }
-): void {
-  emitEvent({ ns: appId, source: PLATFORM_NS, type: EVENT, payload: data, ttl: CHANGE_FEED_TTL_S });
+export function emitRunEvent(appId: string, task: string, runId: number, state: RunState): void {
+  emitEvent({ app: appId, kind: "service", component: CATALOG_NAME, type: RUN_FACT[state], payload: { task, runId }, ttl: CHANGE_FEED_TTL_S });
+}
+
+export function emitTaskDefsChanged(appId: string): void {
+  emitEvent({ app: appId, kind: "service", component: CATALOG_NAME, type: "defs-changed", ttl: CHANGE_FEED_TTL_S });
 }
 
 export type TasksEnv = { Variables: { tasksDb: Database.Database; appId: string } };
@@ -464,7 +471,7 @@ export const tasksRoutes = new Hono<TasksEnv>()
     const res = cancelRun(c.var.tasksDb, id, Date.now());
     if (res === "not-found") return c.json({ error: "run not found" }, 404);
     if (res === "not-queued") return c.json({ error: "only a queued run can be canceled" }, 409);
-    emitTasksChange(c.var.appId, { task: res.task, runId: id, state: "canceled" });
+    emitRunEvent(c.var.appId, res.task, id, "canceled");
     return c.json({ canceled: true as const });
   })
   .post(
@@ -484,7 +491,7 @@ export const tasksRoutes = new Hono<TasksEnv>()
         task: name, payload, notBefore, source: source ?? "enqueue", dedupeKey: dedupeKey ?? null, now,
       });
       if (!deduped) {
-        emitTasksChange(c.var.appId, { task: name, runId, state: "queued" });
+        emitRunEvent(c.var.appId, name, runId, "queued");
         tick("tasks-dispatch"); // no-op until the engine registers it (server.ts)
       }
       return c.json({ runId, deduped });

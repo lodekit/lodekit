@@ -89,7 +89,7 @@ describe("platform emitters land on the bus", () => {
     expect(records[0]).toMatchObject({ source: "_platform", payload: { key: "greeting", op: "set" } });
   });
 
-  it("task enqueue stores a tasks-change event with identity-only payload and the service ttl", async () => {
+  it("task enqueue lands run-queued with identity-only payload and the service ttl", async () => {
     const { Hono } = await import("hono");
     const { apiRoutes } = await import("../src/routes.js");
     const { getTasksDb, applyManifest } = await import("../src/services/tasks.js");
@@ -101,14 +101,15 @@ describe("platform emitters land on the bus", () => {
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(200);
-    const { records } = queryEvents({ ns: "notes", type: "tasks-change" });
+    const { records } = queryEvents({ app: "notes", type: "run-queued" });
     expect(records).toHaveLength(1);
-    expect(records[0]).toMatchObject({ source: "_platform", payload: { task: "resize", state: "queued" } });
-    expect(records[0].payload).not.toHaveProperty("appId");
+    expect(records[0]).toMatchObject({ kind: "service", component: "tasks", payload: { task: "resize" } });
+    expect(records[0].payload).toHaveProperty("runId");
+    expect(records[0].payload).not.toHaveProperty("state");
     // Service ttl (7 days): past the window the record no longer queries.
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.now() + 8 * 86_400_000);
-    expect(queryEvents({ ns: "notes", type: "tasks-change" }).records).toHaveLength(0);
+    expect(queryEvents({ app: "notes", type: "run-queued" }).records).toHaveLength(0);
     vi.useRealTimers();
   });
 });

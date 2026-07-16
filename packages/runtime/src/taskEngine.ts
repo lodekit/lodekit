@@ -9,7 +9,7 @@ import { scanApps, isValidAppId } from "./registry.js";
 import { getServerState, runTaskInWorker, type TaskRunResult } from "./appWorker.js";
 import {
   getTasksDb, applyManifest, listDefs, getDef, setHighWater, hasTasks, hasQueuedScheduleRun,
-  insertRun, claimNextDue, finishRun, markInterrupted, emitTasksChange,
+  insertRun, claimNextDue, finishRun, markInterrupted, emitRunEvent, emitTaskDefsChanged,
   type ManifestTask, type TaskDefRow, type TaskRunRow,
 } from "./services/tasks.js";
 import { dueOccurrence } from "./taskSchedule.js";
@@ -61,7 +61,7 @@ export function registerManifest(appId: string, rawTasks: unknown[], loadError?:
   if (!cfg || !isValidAppId(appId)) return; // _dashboard sits outside the app-id grammar
   if (loadError) {
     emitLog("error", "tasks", "tasks module failed to load", { stack: loadError }, appId);
-    emitTasksChange(appId, { task: "*" });
+    emitTaskDefsChanged(appId);
     return;
   }
   // Never materialize a data dir for an app that has never used tasks.
@@ -69,8 +69,8 @@ export function registerManifest(appId: string, rawTasks: unknown[], loadError?:
   const db = getTasksDb(cfg.dataDir, appId);
   const { canceled } = applyManifest(db, rawTasks as ManifestTask[], deps.now(), { minEveryMs: effectiveMs("tasks.min_every", appId) });
   if (hasTasks(db)) apps.add(appId);
-  emitTasksChange(appId, { task: "*" }); // defs changed — dashboard refetches
-  for (const c of canceled) emitTasksChange(appId, { task: c.task, runId: c.runId, state: "canceled" });
+  emitTaskDefsChanged(appId); // defs changed — dashboard refetches
+  for (const c of canceled) emitRunEvent(appId, c.task, c.runId, "canceled");
   dispatchTasks();
 }
 
@@ -93,7 +93,7 @@ export function recoverInterruptedRuns(): void {
     if (!hasTasks(db)) continue;
     apps.add(app.appId);
     for (const t of markInterrupted(db, deps.now(), (def) => policyFor(app.appId, def))) {
-      emitTasksChange(app.appId, { task: t.task, runId: t.runId, state: t.state });
+      emitRunEvent(app.appId, t.task, t.runId, t.state);
     }
   }
 }
@@ -132,7 +132,7 @@ function dispatchApp(appId: string): void {
     // A still-queued previous occurrence absorbs the new one (spec §7 step 1).
     if (occurrence !== null && !hasQueuedScheduleRun(db, def.name)) {
       const { runId } = insertRun(db, { task: def.name, notBefore: occurrence, source: "schedule", now });
-      emitTasksChange(appId, { task: def.name, runId, state: "queued" });
+      emitRunEvent(appId, def.name, runId, "queued");
     }
   }
   // Runs wait while the worker is down — visible, never dropped, no attempt consumed.
@@ -147,7 +147,7 @@ async function executeRun(appId: string, run: TaskRunRow): Promise<void> {
   // retry warn, terminal failure error — durable state stays in the runs table.
   const fields = { task: run.task, runId: run.id, attempt: run.attempt };
   try {
-    emitTasksChange(appId, { task: run.task, runId: run.id, state: "running" });
+    emitRunEvent(appId, run.task, run.id, "running");
     emitLog("debug", "tasks", `run started: ${run.task}`, fields, appId);
     const db = getTasksDb(cfg!.dataDir, appId);
     const def = getDef(db, run.task)!; // claimNextDue joins on a live def
@@ -163,7 +163,7 @@ async function executeRun(appId: string, run: TaskRunRow): Promise<void> {
       result = { ok: false, message: e instanceof Error ? (e.stack ?? e.message) : String(e) };
     }
     const outcome = finishRun(db, run, result, policyFor(appId, def), deps.now());
-    emitTasksChange(appId, { task: run.task, runId: run.id, state: outcome.state });
+    emitRunEvent(appId, run.task, run.id, outcome.state);
     const duration_ms = run.startedAt != null ? deps.now() - run.startedAt : undefined;
     if (outcome.state === "succeeded") {
       emitLog("debug", "tasks", `run succeeded: ${run.task}`, { ...fields, duration_ms }, appId);
