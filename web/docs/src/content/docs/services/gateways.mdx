@@ -1,6 +1,6 @@
 ---
 title: Gateways
-description: "Managed doors to external providers — credentials injected by the runtime, guardrails the app can't opt out of."
+description: "Managed doors to external providers — credentials injected by the engine, guardrails the app can't opt out of."
 ---
 
 import GatewayFlow from '../../../components/GatewayFlow.astro';
@@ -19,7 +19,7 @@ systems fundamental worth knowing:
 **The credential problem.** Any code that holds an API key can leak it — into
 a log line, an error message, a chat transcript with your agent. The strongest
 fix isn't handling keys carefully; it's code that **never holds the key**. A
-gateway keeps credentials on the runtime side and injects them into the
+gateway keeps credentials on the engine side and injects them into the
 request at the last moment. App code says "call the weather API" — it never
 says "here's my key".
 
@@ -98,7 +98,7 @@ because connections key on the alias, two aliases on the same gateway are two
 separate accounts.
 
 **The call** is server-side app code — a server function or a task — going
-through the SDK's `gateways` handle. The runtime resolves the connection,
+through the SDK's `gateways` handle. The engine resolves the connection,
 applies the guardrails, injects the credential, and forwards the request:
 
 <GatewayFlow />

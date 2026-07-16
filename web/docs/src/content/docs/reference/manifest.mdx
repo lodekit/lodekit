@@ -4,7 +4,7 @@ description: "The app manifest file: what it declares and how Lodekit reads it."
 ---
 
 `manifest.json` sits at an app's root and is the record that makes a folder
-an app: the runtime discovers apps by finding valid manifests in the apps
+an app: the engine discovers apps by finding valid manifests in the apps
 tree. Scaffolding writes it for you; this page is the full schema.
 
 ## Fields
@@ -24,7 +24,7 @@ never collide with Lodekit's internal `_`-prefixed namespaces.
 ## Invalid manifests
 
 A folder whose manifest is missing, malformed, or whose `appId` doesn't
-match the folder name is **skipped** — the runtime doesn't serve it, and it
+match the folder name is **skipped** — the engine doesn't serve it, and it
 doesn't appear on the dashboard. Nothing is deleted or modified; fix the
 manifest (or ask your agent to) and the app appears on the next scan.
 

@@ -29,7 +29,7 @@ Greenhouse showcase app:
 
 ## The manifest
 
-`manifest.json` is the record that makes a folder an app — the runtime skips any
+`manifest.json` is the record that makes a folder an app — the engine skips any
 folder without a valid one:
 
 ```json title="manifest.json"
@@ -74,7 +74,7 @@ run.
 ## The declaration files
 
 Five optional files under `src/` declare what the app needs from Lodekit's services.
-Each is plain TypeScript the runtime reads when the app builds.
+Each is plain TypeScript the engine reads when the app builds.
 
 **`db.ts`** declares the app's database schema as Drizzle tables and exports a typed
 `db` handle via `createDb()`. Schema changes apply on save — additive ones
@@ -83,7 +83,7 @@ automatically, destructive ones gated. See the
 
 **`tasks.ts`** declares background work: queued tasks the app enqueues on demand, and
 scheduled tasks with a `cron` or `every` schedule. Each export becomes a named task
-the runtime executes on the app's behalf. See [Tasks](/services/tasks/).
+the engine executes on the app's behalf. See [Tasks](/services/tasks/).
 
 **`settings.ts`** declares the app's person-facing knobs with `defineSettings()` —
 each field gets a label, description, and default, and shows up as a form in the
@@ -108,7 +108,7 @@ pulls in the shared theme. More on that in
 ## From save to serving
 
 There's no deploy step hiding after all this. When any of these files changes, the
-runtime rebuilds the app — build state *building…* → *ready* on its dashboard card —
+engine rebuilds the app — build state *building…* → *ready* on its dashboard card —
 and serves the new version at `/<app-id>/`. Schema changes from `db.ts`, task
 definitions from `tasks.ts`, and settings fields all take effect on that same save.
 The lifecycle in full: [How Lodekit works](/start/how-lodekit-works/).

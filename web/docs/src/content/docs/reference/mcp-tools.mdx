@@ -13,7 +13,7 @@ secrets exist and which slots are linked, nothing more.
 
 How to register the server with your agent is covered in
 [Connect your agent](/start/connect-your-agent/). The server reaches the
-runtime over HTTP at `http://lodekit.localhost:7777` by default; set the
+engine over HTTP at `http://lodekit.localhost:7777` by default; set the
 `LODEKIT_BASE_URL` environment variable to point it elsewhere.
 
 ## Apps
@@ -45,10 +45,16 @@ Open an app in your browser at `/<appId>`.
 
 Read event bus history — the same stream as the dashboard's Events view.
 
-- `appId` (string, optional) — filter to one namespace: an app id, or
-  `_platform` for the runtime; omit for everything.
-- `type` (string, optional) — event type, e.g. `kv-store-change` or an
+- `app` (string, optional) — filter to one app's stream by app id; omit for
+  everything (platform-wide events have no app).
+- `kind` (`engine` | `service` | `app`, optional) — the class of platform
+  member that emitted the event.
+- `component` (string, optional) — the emitting instance: an engine
+  subsystem (`build`, `lifecycle`, `registry`), a service name
+  (`kv-store`, `tasks`, …), or an app id.
+- `type` (string, optional) — a past-tense fact type, e.g. `key-set` or an
   app-defined type.
+- `since` (number, optional) — epoch ms lower bound (inclusive).
 - `after` (number, optional) — replay ascending from this event id (offset);
   omit for newest-first.
 - `limit` (number, optional).
@@ -58,7 +64,7 @@ Read event bus history — the same stream as the dashboard's Events view.
 Read structured log records — the same records as the dashboard's Logs view.
 
 - `appId` (string, optional) — filter to one app, or `_platform` for the
-  runtime's own records; omit for everything.
+  engine's own records; omit for everything.
 - `level` (`debug` | `info` | `warn` | `error`, optional) — minimum level.
 - `limit` (number, optional).
 - `q` (string, optional) — substring match on the message.

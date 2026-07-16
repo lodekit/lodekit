@@ -39,7 +39,7 @@ interface TaskConfig<P = unknown> {
 - `every` — interval sugar (`"30m"`, `"1h"`), minimum `"1m"`. Mutually
   exclusive with `cron`. Omit both for an on-demand task you run with
   `enqueue()`.
-- `catchUp` — catch-up window for occurrences missed while the runtime was
+- `catchUp` — catch-up window for occurrences missed while the engine was
   off (`"6h"`); `true` = always catch up (still coalesced to one run);
   `false` = on-time only. Default `"1h"`.
 - `retries` — retries after the first attempt, 0–20. Default `3`.
@@ -175,7 +175,7 @@ const rounds = infos.find((t) => t.name === "morning-rounds");
   make `run` idempotent where it matters.
 - **Retries with backoff.** A failed attempt retries after
   `30s × 2^(attempt−1)`, capped at 10 minutes. Default 3 retries per run.
-- **Interrupted runs count.** A run cut off by a runtime restart consumes a
+- **Interrupted runs count.** A run cut off by an engine restart consumes a
   failed attempt.
 - **Coalescing.** Scheduled occurrences missed inside the catch-up window
   collapse into a single run, never a burst.

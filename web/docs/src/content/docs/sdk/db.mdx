@@ -43,7 +43,7 @@ export const db = createDb({ plants, careRules });
 export type Plant = typeof plants.$inferSelect;
 ```
 
-The runtime imports this module at worker boot and applies your schema to the
+The engine imports this module at worker boot and applies your schema to the
 app's database before the app serves requests.
 
 ## createDb()
@@ -56,7 +56,7 @@ createDb<TSchema extends Record<string, unknown>>(schema: TSchema): SqliteRemote
 
 Returns a standard Drizzle database instance (Drizzle's `sqlite-proxy` driver).
 Query building happens locally and is fully typed against your schema; execution
-travels over HTTP to the runtime, which owns the SQLite file — app code never
+travels over HTTP to the engine, which owns the SQLite file — app code never
 opens the database directly. Because the transport is plain HTTP, the same `db`
 works in the browser and in server functions.
 
@@ -101,7 +101,7 @@ export type Plant = typeof plants.$inferSelect;
 
 ## Schema push
 
-When you save `src/db.ts`, the runtime diffs the declared schema against the
+When you save `src/db.ts`, the engine diffs the declared schema against the
 database:
 
 - **Additive changes apply automatically** — `CREATE TABLE`, `CREATE INDEX`,

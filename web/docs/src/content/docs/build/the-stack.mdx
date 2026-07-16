@@ -27,7 +27,7 @@ built, and why Lodekit prescribes exactly one.
   like one product. See [Using the UI library](/build/using-the-ui-library/).
 
 An app's server code runs in an **app worker** — a per-app worker thread inside the
-runtime that executes the app's built server bundle. Its browser code runs in your
+engine that executes the app's built server bundle. Its browser code runs in your
 browser, like any web app. Both reach services through the same SDK.
 
 ## One toolchain, shared by every app
@@ -48,7 +48,7 @@ That single decision buys three things:
 
 ## Bundled for apps — no builds for you
 
-Apps are **bundled**: when a source file is saved, the runtime notices, compiles the
+Apps are **bundled**: when a source file is saved, the engine notices, compiles the
 app into static client assets plus a server bundle, and serves the result. You never
 run a build, and neither does your agent — saving *is* deploying. While that happens,
 the app's card on the dashboard shows its build state: *building…*, then *ready* — or
