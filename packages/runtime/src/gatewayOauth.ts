@@ -7,7 +7,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { Config } from "./config.js";
 import type { GatewayManifest } from "./gatewayManifests.js";
-import { GatewayRequestError, _setOauthTokenProvider } from "./gatewayEngine.js";
+import { GatewayRequestError, _setOauthTokenProvider } from "./gatewayExecutor.js";
 import { getGatewayEntry } from "./gatewayManifests.js";
 import {
   GatewaysError, getGatewayConfig, getGatewayLink, loadOauthTokens, saveOauthTokens, setNeedsReauth, oauthState,

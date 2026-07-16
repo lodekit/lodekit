@@ -1,4 +1,4 @@
-// The gateways engine (spec 2026-07-10-gateways §6/§9/§10): the one execution
+// The gateways executor (spec 2026-07-10-gateways §6/§9/§10): the one execution
 // path for connection traffic. Order: resolve → breaker → concurrency → rate
 // token → assemble URL (egress by construction) → inject credentials → fetch
 // with timeout → buffer under the size cap → record the log → return.
@@ -80,7 +80,7 @@ export function _setOauthTokenProvider(fn: OauthTokenProvider | null): void {
   oauthTokenProvider = fn;
 }
 
-export function initGatewayEngine(cfg: Config): void {
+export function initGatewayExecutor(cfg: Config): void {
   cfgRef = cfg;
   buckets.clear();
   breakers.clear();
@@ -88,7 +88,7 @@ export function initGatewayEngine(cfg: Config): void {
   unhealthy.clear();
 }
 
-export function resetGatewayEngineForTest(): void {
+export function resetGatewayExecutorForTest(): void {
   cfgRef = null;
   tuningOverride = null;
   buckets.clear();

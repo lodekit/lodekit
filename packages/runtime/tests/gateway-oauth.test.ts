@@ -15,8 +15,8 @@ import {
 import { initSecretStore, closeSecretStoreForTest } from "../src/secretsStore.js";
 import { applyGatewaysManifest, platformGatewaysRoutes } from "../src/services/gateways.js";
 import {
-  initGatewayEngine, resetGatewayEngineForTest, executeGatewayRequest, GatewayRequestError,
-} from "../src/gatewayEngine.js";
+  initGatewayExecutor, resetGatewayExecutorForTest, executeGatewayRequest, GatewayRequestError,
+} from "../src/gatewayExecutor.js";
 import { initSettingsStore } from "../src/services/settings.js";
 import { initLogStore } from "../src/logStore.js";
 
@@ -80,13 +80,13 @@ beforeEach(async () => {
   initSecretStore(cfg());
   initGatewaysStore(cfg());
   initGatewayManifests(cfg());
-  initGatewayEngine(cfg());
+  initGatewayExecutor(cfg());
   initGatewayOauth(cfg());
   applyGatewaysManifest(cfg(), APP, { [ALIAS]: { provider: "demo" } }, Date.now());
 });
 afterEach(async () => {
   resetGatewayOauthForTest();
-  resetGatewayEngineForTest();
+  resetGatewayExecutorForTest();
   resetGatewayManifestsForTest();
   closeGatewaysStoreForTest();
   closeSecretStoreForTest();

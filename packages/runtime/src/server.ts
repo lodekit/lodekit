@@ -24,13 +24,13 @@ import { initSecretStore } from "./secretsStore.js";
 import { registerSecretsManifest } from "./services/secret-store.js";
 import { initGatewaysStore } from "./gatewaysStore.js";
 import { initGatewayManifests } from "./gatewayManifests.js";
-import { initGatewayEngine } from "./gatewayEngine.js";
+import { initGatewayExecutor } from "./gatewayExecutor.js";
 import { initGatewayOauth } from "./gatewayOauth.js";
 import { registerGatewaysManifest } from "./services/gateways.js";
 import { applySchemaPush } from "./services/db-store.js";
 import { parseDuration } from "./duration.js";
 import { createLogger } from "./logger.js";
-import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskEngine.js";
+import { initTaskExecutor, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskExecutor.js";
 import { sweepAllTaskRuns } from "./services/tasks.js";
 import { resolveThemeCss, extractIconLibrary, getPreviewCss, warnLegacyThemeFiles } from "./services/themes.js";
 
@@ -180,7 +180,7 @@ export async function start(cfg: Config): Promise<Server> {
   initSecretStore(cfg);
   initGatewaysStore(cfg);
   initGatewayManifests(cfg);
-  initGatewayEngine(cfg);
+  initGatewayExecutor(cfg);
   initGatewayOauth(cfg);
   if (!initEventStore(cfg.dataDir)) {
     createLogger("event-store").error("events.sqlite unavailable — event bus degrades to live-only");
@@ -193,7 +193,7 @@ export async function start(cfg: Config): Promise<Server> {
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
   const addr = server.address();
   configureWorkers(`http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : cfg.port}`);
-  initTaskEngine(cfg);
+  initTaskExecutor(cfg);
   onTasksManifest(registerManifest);
   onSettingsManifest((appId, fields, error) => registerSettingsManifest(cfg, appId, fields, error));
   onSecretsManifest((appId, slots, error) => registerSecretsManifest(cfg, appId, slots, error));

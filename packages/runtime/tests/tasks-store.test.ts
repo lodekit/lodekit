@@ -20,7 +20,7 @@ const KEEP = 100;
 const MAX_AGE = 30 * 86_400_000;
 const LIMITS = { minEveryMs: 60_000 };
 
-// Mirrors taskEngine's policyFor: the def's declared retries/retired, else the
+// Mirrors taskExecutor's policyFor: the def's declared retries/retired, else the
 // effective default — here the catalog's tasks.default_retries (3) stands in.
 const polFor = (def: TaskDefRow | undefined) => ({
   retries: def?.retries ?? 3,

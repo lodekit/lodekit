@@ -10,7 +10,7 @@ import { platformGatewaysRoutes, appGatewaysRoutes, withGateways, applyGatewaysM
 import { initGatewayManifests, resetGatewayManifestsForTest } from "../src/gatewayManifests.js";
 import { initGatewaysStore, closeGatewaysStoreForTest } from "../src/gatewaysStore.js";
 import { initSecretStore, closeSecretStoreForTest, createSecret } from "../src/secretsStore.js";
-import { initGatewayEngine, resetGatewayEngineForTest } from "../src/gatewayEngine.js";
+import { initGatewayExecutor, resetGatewayExecutorForTest } from "../src/gatewayExecutor.js";
 import { initSettingsStore } from "../src/services/settings.js";
 import { initLogStore } from "../src/logStore.js";
 import { setWorkerTokenForTest } from "../src/appWorker.js";
@@ -64,7 +64,7 @@ beforeEach(async () => {
   initSecretStore(cfg());
   initGatewaysStore(cfg());
   initGatewayManifests(cfg());
-  initGatewayEngine(cfg());
+  initGatewayExecutor(cfg());
   applyGatewaysManifest(cfg(), APP, { weather: { provider: "stub", description: "d" } }, Date.now());
   setWorkerTokenForTest(APP, TOKEN);
   // Built as a separate sub-app and mounted at "/" (rather than `.use`d directly
@@ -80,7 +80,7 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   setWorkerTokenForTest(APP, null);
-  resetGatewayEngineForTest();
+  resetGatewayExecutorForTest();
   resetGatewayManifestsForTest();
   closeGatewaysStoreForTest();
   closeSecretStoreForTest();

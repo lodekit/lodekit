@@ -24,7 +24,7 @@ import {
   oauthState, CONFIG_VALUE_MAX_BYTES,
 } from "../gatewaysStore.js";
 import { getGatewayEntry, listGatewayEntries, PROVIDER_ID_RE, type GatewayEntry } from "../gatewayManifests.js";
-import { executeGatewayRequest, getConnectionHealth, clearConnectionHealth, GatewayRequestError, REASON_STATUS } from "../gatewayEngine.js";
+import { executeGatewayRequest, getConnectionHealth, clearConnectionHealth, GatewayRequestError, REASON_STATUS } from "../gatewayExecutor.js";
 import { SecretsUnavailableError } from "../secretsStore.js";
 import { startOauth, handleOauthCallback } from "../gatewayOauth.js";
 
