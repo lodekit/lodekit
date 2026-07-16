@@ -5,7 +5,7 @@
 // secret-store key-provider rail — same master key, same degraded-mode rule).
 // Gateway manifests live on disk (gatewayManifests.ts); declarations live in
 // each app's own db (services/gateways.ts). Breaker/bucket state is in-memory
-// only (gatewayEngine.ts) — a restart forgives.
+// only (gatewayExecutor.ts) — a restart forgives.
 import fs from "node:fs";
 import path from "node:path";
 import type Database from "better-sqlite3";

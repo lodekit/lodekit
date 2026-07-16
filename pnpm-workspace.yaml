@@ -13,7 +13,12 @@ minimumReleaseAgeExclude:
 # drizzle-kit's api.mjs imports drizzle-orm without declaring it — masked by
 # hidden hoisting in a per-repo virtual store, but a hard ERR_MODULE_NOT_FOUND
 # under strict resolution (e.g. enable-global-virtual-store). Declare the peer.
+# @astrojs/mdx has the same defect: dist/satteri/index.js imports satteri,
+# which it declares only in its own devDependencies. Declare it for real.
 packageExtensions:
   drizzle-kit:
     peerDependencies:
       drizzle-orm: '*'
+  '@astrojs/mdx':
+    dependencies:
+      satteri: '^0.9.1'

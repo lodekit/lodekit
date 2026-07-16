@@ -6,9 +6,9 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import type { Config } from "../src/config.js";
 import {
-  initGatewayEngine, resetGatewayEngineForTest, setGatewayTuningForTest,
+  initGatewayExecutor, resetGatewayExecutorForTest, setGatewayTuningForTest,
   executeGatewayRequest, getConnectionHealth, GatewayRequestError,
-} from "../src/gatewayEngine.js";
+} from "../src/gatewayExecutor.js";
 import { initGatewayManifests, resetGatewayManifestsForTest } from "../src/gatewayManifests.js";
 import { initGatewaysStore, closeGatewaysStoreForTest, setGatewayLink, setGatewayConfig } from "../src/gatewaysStore.js";
 import { initSecretStore, closeSecretStoreForTest, createSecret } from "../src/secretsStore.js";
@@ -71,11 +71,11 @@ beforeEach(async () => {
   initSettingsStore(path.join(root, "data"));
   initSecretStore(cfg());
   initGatewaysStore(cfg());
-  initGatewayEngine(cfg());
+  initGatewayExecutor(cfg());
 });
 afterEach(async () => {
   setGatewayTuningForTest(null);
-  resetGatewayEngineForTest();
+  resetGatewayExecutorForTest();
   resetGatewayManifestsForTest();
   closeGatewaysStoreForTest();
   closeSecretStoreForTest();

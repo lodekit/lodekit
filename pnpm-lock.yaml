@@ -4,7 +4,7 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-packageExtensionsChecksum: sha256-CGrIxUxwVsS4NUc5kVffV7wPJyz72rcofMmCW8mlNgo=
+packageExtensionsChecksum: sha256-i+DGvkugO2hFUzXkHG5i8OJFXGR2ZcptJRVFiflf9oU=
 
 importers:
 
@@ -6391,6 +6391,7 @@ snapshots:
       rehype-raw: 7.0.0
       remark-gfm: 4.0.1
       remark-smartypants: 3.0.2
+      satteri: 0.9.4
       source-map: 0.7.6
       unist-util-visit: 5.1.0
       vfile: 6.0.3

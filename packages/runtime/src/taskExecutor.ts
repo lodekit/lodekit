@@ -1,4 +1,4 @@
-// The tasks dispatch engine (spec §7) — runtime-internal, NOT part of the HTTP
+// The tasks dispatch executor (spec §7) — runtime-internal, NOT part of the HTTP
 // surface. Rides the internal scheduler (server.ts registers dispatchTasks under
 // "tasks-dispatch"); durable state lives in per-app SQLite via services/tasks.
 // Serial per app, parallel across apps; at-least-once delivery.
@@ -28,18 +28,18 @@ function policyFor(appId: string, def: TaskDefRow | undefined) {
   };
 }
 
-export interface EngineDeps {
+export interface ExecutorDeps {
   now(): number;
   invoke(appId: string, name: string, payload: unknown, timeoutMs: number): Promise<TaskRunResult>;
   workerRunning(appId: string): boolean;
 }
 
 let cfg: Config | undefined;
-let deps: EngineDeps = defaultDeps();
+let deps: ExecutorDeps = defaultDeps();
 const apps = new Set<string>();     // app ids known to have task defs or runs
 const inflight = new Set<string>(); // serial-per-app guard
 
-function defaultDeps(): EngineDeps {
+function defaultDeps(): ExecutorDeps {
   return {
     now: () => Date.now(),
     invoke: runTaskInWorker,
@@ -47,7 +47,7 @@ function defaultDeps(): EngineDeps {
   };
 }
 
-export function initTaskEngine(config: Config, overrides: Partial<EngineDeps> = {}): void {
+export function initTaskExecutor(config: Config, overrides: Partial<ExecutorDeps> = {}): void {
   cfg = config;
   deps = { ...defaultDeps(), ...overrides };
   apps.clear();
@@ -83,7 +83,7 @@ export function evictApp(appId: string): void {
 }
 
 // Boot pass (spec §7): rows still 'running' were interrupted by runtime death —
-// a consumed, failed attempt. Also seeds the engine's app set from disk so
+// a consumed, failed attempt. Also seeds the executor's app set from disk so
 // schedules materialize (and catch-up applies) before any worker is up.
 export function recoverInterruptedRuns(): void {
   if (!cfg) return;

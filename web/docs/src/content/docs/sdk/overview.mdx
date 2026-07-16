@@ -16,9 +16,9 @@ and imports it from there — see [db](/sdk/db/).
 ## How it works
 
 Each handle is a typed HTTP client against your app's scoped API on the local
-runtime — `/api/apps/<app-id>/<service>`. There are no URLs to configure: in the
+engine — `/api/apps/<app-id>/<service>`. There are no URLs to configure: in the
 browser, requests are relative to the page origin; in a server function, the
-runtime hands the app worker its loopback base. Your app id is injected at build
+engine hands the app worker its loopback base. Your app id is injected at build
 time by the shared toolchain, and the SDK exports it back:
 
 ```ts
@@ -74,10 +74,10 @@ call works on both sides.
 createClient({ baseUrl, appId }: { baseUrl: string; appId: string }): LodekitClient
 ```
 
-- `baseUrl` — the runtime origin to talk to (`""` for page-relative).
+- `baseUrl` — the engine origin to talk to (`""` for page-relative).
 - `appId` — the app scope to talk to.
 
-Builds a fresh set of all handles bound to an explicit runtime and app id — the
+Builds a fresh set of all handles bound to an explicit engine and app id — the
 singleton handles above are exactly `createClient(...)`'s handles bound to your
 own app. You only need this in rare cases, such as a script running outside an
 app build. `LodekitClient` is

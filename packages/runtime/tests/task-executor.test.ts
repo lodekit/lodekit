@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { Config } from "../src/config.js";
-import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks, evictApp } from "../src/taskEngine.js";
+import { initTaskExecutor, registerManifest, recoverInterruptedRuns, dispatchTasks, evictApp } from "../src/taskExecutor.js";
 import { initLogStore, queryLogs, closeLogStoreForTest } from "../src/logStore.js";
 import {
   getTasksDb, applyManifest, insertRun, claimNextDue, getRun, getDef, listRuns,
@@ -48,7 +48,7 @@ beforeEach(() => {
   workerUp = true;
   invocations = [];
   script = [];
-  initTaskEngine(cfg, {
+  initTaskExecutor(cfg, {
     now: () => clock,
     workerRunning: () => workerUp,
     invoke: async (appId, name, payload, timeoutMs) => {
@@ -63,7 +63,7 @@ afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-describe("taskEngine", () => {
+describe("taskExecutor", () => {
   it("runs an enqueued task with the def's timeout and records success", async () => {
     registerManifest("alpha", [{ name: "job", timeout: "1m" }]);
     const db = getTasksDb(cfg.dataDir, "alpha");
@@ -181,7 +181,7 @@ describe("taskEngine", () => {
     applyManifest(db, [{ name: "job", retries: 3 }], clock, { minEveryMs: 60_000 });
     insertRun(db, { task: "job", notBefore: clock, source: "enqueue", now: clock });
     const claimed = claimNextDue(db, clock)!; // simulate death mid-run
-    initTaskEngine(cfg, { now: () => clock, workerRunning: () => workerUp, invoke: async (a, n, p, t) => { invocations.push({ appId: a, name: n, payload: p, timeoutMs: t }); return { ok: true }; } });
+    initTaskExecutor(cfg, { now: () => clock, workerRunning: () => workerUp, invoke: async (a, n, p, t) => { invocations.push({ appId: a, name: n, payload: p, timeoutMs: t }); return { ok: true }; } });
     recoverInterruptedRuns();
     expect(getRun(db, claimed.id)!).toMatchObject({ state: "queued", attempt: 1 });
     clock += BACKOFF_BASE_MS + 1;

@@ -89,7 +89,7 @@ const stat = await files.put(
 
 Uploads and downloads are **streamed** in both directions — a large file
 flows through in pieces rather than being held in memory whole, so file size
-never strains the runtime. And like the other stores, every put and delete
+never strains the engine. And like the other stores, every put and delete
 lands on the [event bus](/services/event-store/) as a `file-store-change` event
 carrying the slug, so your UI can react live.
 

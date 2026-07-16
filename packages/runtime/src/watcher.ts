@@ -5,7 +5,7 @@ import type { Config } from "./config.js";
 import { emitEvent } from "./events.js";
 import { isValidAppId } from "./registry.js";
 import { buildApp, dropBuild } from "./build.js";
-import { evictApp } from "./taskEngine.js";
+import { evictApp } from "./taskExecutor.js";
 import { createLogger } from "./logger.js";
 import { reloadGatewayManifests } from "./gatewayManifests.js";
 import { emitGatewayEvent } from "./gatewayEvents.js";

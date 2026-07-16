@@ -53,7 +53,7 @@ export const recipes = sqliteTable("recipes", {
 export const db = createDb({ recipes });
 ```
 
-- **Schema applies on save.** The runtime diffs your declaration against the live
+- **Schema applies on save.** The engine diffs your declaration against the live
   database at boot: additive changes (new table/column/index) apply automatically —
   never write migrations, never run a CLI.
 - **No breaking changes.** Destructive changes (drop/rename/type change) are *gated*:
@@ -120,7 +120,7 @@ doing at runtime. Import: `import { logs } from "@lodekit/sdk"`.
   server functions and in the browser.
 - `console.log`/`warn`/`error`/`debug` in server code is captured automatically — no
   explicit call needed for ordinary debugging output.
-- **Debugging step:** after building or changing an app, check its runtime behavior with
+- **Debugging step:** after building or changing an app, check its behavior with
   the `lodekit_logs` MCP tool (`appId`, optional `level`/`q`). Build failures, server
   crashes with stacks, and request access logs all land there — read them before assuming
   a change worked.
@@ -215,8 +215,8 @@ Hard rules:
 
 **You build an integration by using a gateway to the provider — reuse one if
 it exists, author one if not.** When the person asks to "integrate with X" or
-"get data from X", the gateway is how: a declarative manifest the runtime
-enforces. Your app's server code calls through it; the runtime injects the
+"get data from X", the gateway is how: a declarative manifest the engine
+enforces. Your app's server code calls through it; the engine injects the
 credentials — app code never holds a key.
 
 The decision flow:
@@ -272,7 +272,7 @@ if (res.ok) {
 }
 ```
 
-Paths are relative — the runtime pins requests under the gateway's base URL.
+Paths are relative — the engine pins requests under the gateway's base URL.
 Failures throw `GatewayError` with a `reason`: `unconfigured`/`needs_reauth`
 mean the person finishes the connection in the dashboard (render a
 "configure me" state); `rate_limited`/`breaker_open`/`timeout`/`network`/
