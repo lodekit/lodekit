@@ -236,10 +236,10 @@ Code that ships as raw source and runs with no build step — true of the engine
 _Avoid_: no-build, raw
 
 **Build state**:
-An app's build lifecycle: `building` → `ready` | `error`. Emitted on the event bus as one
-`build-state` event type with the state in `payload.status` (type names the kind of event;
-payload carries the facts — the same shape as `server-state`).
-_Avoid_: status, phase, per-state event types (`building`/`ready` are payload values, not types)
+An app's build lifecycle, spoken on the bus as past-tense facts from the engine's build
+component: `build-started` → `build-ready` | `build-failed` (`{message}` on failure).
+The server lifecycle mirrors the triple (`server-started` / `server-ready` / `server-failed`).
+_Avoid_: status, phase, status-in-payload (the state is the type)
 
 **Shared toolchain**:
 The one build stack (Vite + React + TypeScript + Tailwind) Lodekit installs once and shares across every app, so apps carry no dependencies of their own.

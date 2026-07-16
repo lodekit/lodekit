@@ -57,7 +57,7 @@ export const db = createDb({ recipes });
   database at boot: additive changes (new table/column/index) apply automatically —
   never write migrations, never run a CLI.
 - **No breaking changes.** Destructive changes (drop/rename/type change) are *gated*:
-  they don't apply, and the app reports a `schema-state` error explaining what would
+  they don't apply, and the app reports a `schema-gated` event explaining what would
   be lost. Iterate additively (expand-copy): add the new column or table, copy data in
   app code, switch reads, stop writing the old one.
 - Table and column names are snake_case, written explicitly (as above). Table names

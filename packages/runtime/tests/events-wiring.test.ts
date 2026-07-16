@@ -125,4 +125,39 @@ describe("platform emitters land on the bus", () => {
     const breaker = queryEvents({ kind: "service", type: "breaker-opened" });
     expect(breaker.records[0]).toMatchObject({ app: null, component: "gateways", payload: { provider: "google" } });
   });
+
+  it("secret-store: a catalog create lands secret-created (name-only payload), and linking a declared slot lands slot-linked in the app's stream", async () => {
+    const { initSecretStore, closeSecretStoreForTest } = await import("../src/secretsStore.js");
+    const { applySecretsManifest } = await import("../src/services/secret-store.js");
+    const { Hono } = await import("hono");
+    const { apiRoutes } = await import("../src/routes.js");
+    initSecretStore(cfg);
+    try {
+      applySecretsManifest(cfg, "notes", { api_key: { label: "API key", description: "d" } }, Date.now());
+      const app = new Hono().route("/api", apiRoutes(cfg));
+      const created = await app.request("/api/secrets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: "OpenWeather key", description: "wx", value: "s3cr3t" }),
+      });
+      expect(created.status).toBe(201);
+      const { slug } = await created.json();
+      const { records: createdRecords } = queryEvents({ kind: "service", type: "secret-created" });
+      expect(createdRecords).toHaveLength(1);
+      expect(createdRecords[0]).toMatchObject({ app: null, component: "secret-store", payload: { slug } });
+      expect(createdRecords[0].payload).not.toHaveProperty("value");
+
+      const linkRes = await app.request(`/api/apps/notes/secrets/api_key/link`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug }),
+      });
+      expect(linkRes.status).toBe(200);
+      const { records: linkedRecords } = queryEvents({ app: "notes", type: "slot-linked" });
+      expect(linkedRecords).toHaveLength(1);
+      expect(linkedRecords[0]).toMatchObject({ kind: "service", component: "secret-store", payload: { slot: "api_key" } });
+    } finally {
+      closeSecretStoreForTest();
+    }
+  });
 });
