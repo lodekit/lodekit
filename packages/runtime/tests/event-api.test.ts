@@ -94,3 +94,33 @@ describe("GET /api/events/history (global)", () => {
     expect(nsIgnored.records.length).toBeGreaterThan(0); // ns is not a filter anymore — unknown params are ignored, not aliased
   });
 });
+
+describe("GET /api/events/stats", () => {
+  it("aggregates under filters with complete facet maps", async () => {
+    emitEvent({ app: "notes", kind: "service", component: "kv-store", type: "key-set", payload: { key: "k" } });
+    emitEvent({ app: "notes", kind: "app", component: "notes", type: "note-added" });
+    emitEvent({ app: "other", kind: "service", component: "kv-store", type: "key-deleted" });
+    emitEvent({ app: null, kind: "engine", component: "registry", type: "apps-changed" });
+
+    const all = await (await app.request("/api/events/stats?bucket=60000")).json();
+    expect(all.total).toBe(4);
+    expect(all.byKind).toEqual({ service: 2, app: 1, engine: 1 });
+    expect(all.byApp).toEqual({ notes: 2, other: 1, "": 1 });
+    expect(all.buckets.reduce((s: number, b: { n: number }) => s + b.n, 0)).toBe(4);
+
+    const filtered = await (await app.request("/api/events/stats?bucket=60000&kind=service&component=kv-store")).json();
+    expect(filtered.total).toBe(2);
+    expect(filtered.byType).toEqual({ "key-set": 1, "key-deleted": 1 });
+  });
+
+  it("rejects a missing or non-positive bucket", async () => {
+    expect((await app.request("/api/events/stats")).status).toBe(400);
+    expect((await app.request("/api/events/stats?bucket=0")).status).toBe(400);
+    expect((await app.request("/api/events/stats?bucket=-5")).status).toBe(400);
+  });
+
+  it("rejects invalid app and kind like the history route", async () => {
+    expect((await app.request("/api/events/stats?bucket=60000&app=Bad_Id!")).status).toBe(400);
+    expect((await app.request("/api/events/stats?bucket=60000&kind=platform")).status).toBe(400);
+  });
+});

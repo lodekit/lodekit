@@ -53,6 +53,8 @@ Rules:
   UI's icon set: Nord uses Tabler and Rosé Pine uses Phosphor, while the rest
   stay on Lucide.
 
+- **Events explorer** — the dashboard Events view can now filter by app, kind (engine / services / apps), component, event type, and date range, with a live filtered count and time histogram.
+
 ## Fixed
 
 - **kv-store error statuses** — internal faults in the kv API now return 500

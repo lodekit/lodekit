@@ -6,6 +6,7 @@ import {
   initEventStore,
   insertEvent,
   queryEvents,
+  queryEventStats,
   sweepEventStore,
   closeEventStoreForTest,
 } from "../src/eventStore.js";
@@ -128,5 +129,61 @@ describe("eventStore", () => {
     expect(write()).toBeNull();
     expect(queryEvents({})).toEqual({ records: [], next: null });
     expect(sweepEventStore()).toBe(0);
+  });
+});
+
+describe("queryEventStats", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(6_000_000); // bucket-aligned for 60s buckets
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const seed = () => {
+    insertEvent({ app: "notes", kind: "app", component: "notes", type: "note-added" });
+    insertEvent({ app: "notes", kind: "service", component: "kv-store", type: "key-set", payload: { key: "k" } });
+    insertEvent({ app: "other", kind: "service", component: "kv-store", type: "key-deleted" });
+    insertEvent({ app: null, kind: "engine", component: "registry", type: "apps-changed" });
+  };
+
+  it("returns total and complete facet maps; null app keyed ''", () => {
+    seed();
+    const s = queryEventStats({ bucket: 60_000 });
+    expect(s.total).toBe(4);
+    expect(s.byKind).toEqual({ app: 1, service: 2, engine: 1 });
+    expect(s.byComponent).toEqual({ notes: 1, "kv-store": 2, registry: 1 });
+    expect(s.byType).toEqual({ "note-added": 1, "key-set": 1, "key-deleted": 1, "apps-changed": 1 });
+    expect(s.byApp).toEqual({ notes: 2, other: 1, "": 1 });
+  });
+
+  it("buckets by floor(ts/bucket)*bucket with exact edges, ascending", () => {
+    insertEvent({ app: null, kind: "engine", component: "registry", type: "apps-changed" }); // ts 6_000_000
+    vi.setSystemTime(6_059_999);
+    insertEvent({ app: null, kind: "engine", component: "registry", type: "apps-changed" }); // same bucket
+    vi.setSystemTime(6_060_000);
+    insertEvent({ app: null, kind: "engine", component: "registry", type: "apps-changed" }); // next bucket
+    const s = queryEventStats({ bucket: 60_000 });
+    expect(s.buckets).toEqual([{ t: 6_000_000, n: 2 }, { t: 6_060_000, n: 1 }]);
+  });
+
+  it("applies the same filters as queryEvents, closed-open on [since, until)", () => {
+    seed();
+    expect(queryEventStats({ bucket: 60_000, kind: "service" }).total).toBe(2);
+    expect(queryEventStats({ bucket: 60_000, app: "notes", component: "kv-store" }).byType).toEqual({ "key-set": 1 });
+    // all four rows share ts 6_000_000: since is inclusive, until exclusive
+    expect(queryEventStats({ bucket: 60_000, since: 6_000_000, until: 6_000_001 }).total).toBe(4);
+    expect(queryEventStats({ bucket: 60_000, until: 6_000_000 }).total).toBe(0);
+    expect(queryEventStats({ bucket: 60_000, since: 6_000_001 }).total).toBe(0);
+  });
+
+  it("excludes expired-but-unswept rows at read time", () => {
+    insertEvent({ app: "notes", kind: "app", component: "notes", type: "note-added", ttl: 1 });
+    vi.setSystemTime(6_002_000);
+    expect(queryEventStats({ bucket: 60_000 }).total).toBe(0);
+  });
+
+  it("returns the empty shape when the store is closed", () => {
+    closeEventStoreForTest();
+    expect(queryEventStats({ bucket: 60_000 })).toEqual({ total: 0, buckets: [], byKind: {}, byComponent: {}, byType: {}, byApp: {} });
   });
 });
