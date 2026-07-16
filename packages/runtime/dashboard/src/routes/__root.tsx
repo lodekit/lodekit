@@ -1,6 +1,7 @@
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import appCss from "../index.css?url";
+import { Toaster } from "@lodekit/ui";
 import { SSEProvider } from "../components/sse";
 import { Header } from "../components/header";
 
@@ -39,6 +40,7 @@ export const Route = createRootRoute({
           </SSEProvider>
         </QueryClientProvider>
         <footer className="text-muted-foreground py-4 text-center text-xs">{versionLine}</footer>
+        <Toaster />
         <Scripts />
       </body>
     </html>
