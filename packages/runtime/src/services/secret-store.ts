@@ -13,7 +13,7 @@ import { z } from "zod";
 import { getAppDb } from "../db.js";
 import { isValidAppId } from "../registry.js";
 import type { Config } from "../config.js";
-import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
+import { emitEvent, CHANGE_FEED_TTL_S } from "../events.js";
 import { emitLog } from "../logger.js";
 import { validationHook } from "../validation.js";
 import { verifyWorkerToken } from "../appWorker.js";
@@ -24,8 +24,6 @@ import {
 } from "../secretsStore.js";
 
 export const CATALOG_NAME = "secret-store";
-// The change feed is named for the SDK handle (spec §8), not the catalog name.
-const EVENT = "secrets-change";
 
 export const SLOT_RE = /^[a-z0-9_]+$/;
 
@@ -34,16 +32,11 @@ export interface SlotDef {
   description: string;
 }
 
-// Identity-only change feed on the bus (settings' emit pattern): platform ns
-// carries { slug }, app ns carries { slot } — names only, never values.
-export function emitSecretsChange(ns: string, name: string): void {
-  emitEvent({
-    ns,
-    source: PLATFORM_NS,
-    type: EVENT,
-    payload: ns === PLATFORM_NS ? { slug: name } : { slot: name },
-    ttl: CHANGE_FEED_TTL_S,
-  });
+// Identity-only facts (spec §4): catalog changes (app null) carry { slug }; an app's
+// slot changes carry { slot } — names only, never values.
+type SecretFact = "secret-created" | "secret-updated" | "secret-deleted" | "slot-linked" | "slot-unlinked" | "defs-changed";
+function emitSecretEvent(app: string | null, type: SecretFact, payload?: Record<string, unknown>): void {
+  emitEvent({ app, kind: "service", component: CATALOG_NAME, type, payload, ttl: CHANGE_FEED_TTL_S });
 }
 
 // ---------- slot declarations (per-app db) ----------
@@ -102,13 +95,13 @@ export function registerSecretsManifest(cfg: Config, appId: string, slots: Recor
   if (!isValidAppId(appId)) return; // _dashboard sits outside the app-id grammar
   if (loadError) {
     emitLog("error", "secrets", "secrets module failed to load", { stack: loadError }, appId);
-    emitSecretsChange(appId, "*");
+    emitSecretEvent(appId, "defs-changed");
     return;
   }
   // Never materialize a data dir for an app that has never used secrets.
   if (Object.keys(slots).length === 0 && !fs.existsSync(path.join(cfg.dataDir, appId, "db.sqlite"))) return;
   applySecretsManifest(cfg, appId, slots, Date.now());
-  emitSecretsChange(appId, "*"); // slots changed — dashboard refetches
+  emitSecretEvent(appId, "defs-changed"); // slots changed — dashboard refetches
 }
 
 export function listSlots(db: Database.Database): { slot: string; def: SlotDef | null; error: string | null }[] {
@@ -151,20 +144,20 @@ export const platformSecretsRoutes = new Hono()
   .get("/", (c) => c.json({ secrets: listSecrets() }))
   .post("/", zValidator("json", createBody, validationHook), (c) => {
     const meta = createSecret(c.req.valid("json"));
-    emitSecretsChange(PLATFORM_NS, meta.slug);
+    emitSecretEvent(null, "secret-created", { slug: meta.slug });
     return c.json(meta, 201);
   })
   .put("/:slug", zValidator("param", slugParam, validationHook), zValidator("json", updateBody, validationHook), (c) => {
     const { slug } = c.req.valid("param");
     const meta = updateSecret(slug, c.req.valid("json"));
-    emitSecretsChange(PLATFORM_NS, slug);
+    emitSecretEvent(null, "secret-updated", { slug });
     return c.json(meta);
   })
   .delete("/:slug", zValidator("param", slugParam, validationHook), (c) => {
     const { slug } = c.req.valid("param");
     const { removedLinks } = deleteSecret(slug);
-    emitSecretsChange(PLATFORM_NS, slug);
-    for (const l of removedLinks) emitSecretsChange(l.appId, l.slot); // cascaded → pending
+    emitSecretEvent(null, "secret-deleted", { slug });
+    for (const l of removedLinks) emitSecretEvent(l.appId, "slot-unlinked", { slot: l.slot }); // cascaded → pending
     return c.json({ ok: true as const });
   });
 
@@ -209,14 +202,14 @@ export const appSecretsRoutes = new Hono<SecretsEnv>()
     const { slot } = c.req.valid("param");
     requireSlot(c.var.slotsDb, slot);
     setLink(c.var.appId, slot, c.req.valid("json").slug);
-    emitSecretsChange(c.var.appId, slot);
+    emitSecretEvent(c.var.appId, "slot-linked", { slot });
     return c.json({ ok: true as const });
   })
   .delete("/:slot/link", zValidator("param", slotParam, validationHook), (c) => {
     const { slot } = c.req.valid("param");
     requireSlot(c.var.slotsDb, slot);
     deleteLink(c.var.appId, slot);
-    emitSecretsChange(c.var.appId, slot);
+    emitSecretEvent(c.var.appId, "slot-unlinked", { slot });
     return c.json({ ok: true as const });
   })
   // The ONLY value-bearing route in the whole service (spec §8). Token first —

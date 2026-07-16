@@ -17,7 +17,7 @@ import { parseDuration } from "../duration.js";
 import { validateFieldDef, validateValue, APP_KEY_RE, type SettingField } from "../settingsSchema.js";
 import { PLATFORM_SETTINGS, PLATFORM_KEY_RE } from "../platformSettings.js";
 import { validationHook } from "../validation.js";
-import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
+import { emitEvent, CHANGE_FEED_TTL_S } from "../events.js";
 import { emitLog } from "../logger.js";
 import { applyMigrations } from "../migrations.js";
 import { SETTINGS_CHAIN } from "../migrations/platform.js";
@@ -84,13 +84,13 @@ export function registerSettingsManifest(cfg: Config, appId: string, fields: Rec
   if (!isValidAppId(appId)) return; // _dashboard sits outside the app-id grammar
   if (loadError) {
     emitLog("error", "settings", "settings module failed to load", { stack: loadError }, appId);
-    emitSettingsChange(appId, "*");
+    emitSettingsEvent(appId, "defs-changed");
     return;
   }
   // Never materialize a data dir for an app that has never used settings.
   if (Object.keys(fields).length === 0 && !fs.existsSync(path.join(cfg.dataDir, appId, "db.sqlite"))) return;
   applySettingsManifest(getSettingsDb(cfg.dataDir, appId), fields, Date.now());
-  emitSettingsChange(appId, "*"); // defs changed — dashboard refetches
+  emitSettingsEvent(appId, "defs-changed"); // defs changed — dashboard refetches
 }
 
 export function listAppDefs(db: Database.Database): { key: string; field: SettingField | null; error: string | null }[] {
@@ -246,11 +246,10 @@ export function collectAppOverrides(cfg: Config, key: string): Map<string, unkno
 
 // ---------- HTTP surface (spec §7) ----------
 
-const EVENT = `${CATALOG_NAME}-change`;
-
-// Identity-only change feed on the bus, kv-store's emit pattern: durable ≠ forever.
-export function emitSettingsChange(ns: string, key: string): void {
-  emitEvent({ ns, source: PLATFORM_NS, type: EVENT, payload: { key }, ttl: CHANGE_FEED_TTL_S });
+// Identity-only facts on the bus (spec §4): the write verb is the type, the key is
+// the payload; a defs reload is its own fact ("refetch"), not a magic key.
+export function emitSettingsEvent(app: string | null, type: "value-set" | "value-cleared" | "defs-changed", key?: string): void {
+  emitEvent({ app, kind: "service", component: CATALOG_NAME, type, payload: key ? { key } : undefined, ttl: CHANGE_FEED_TTL_S });
 }
 
 const keyParam = z.object({ key: z.string().regex(/^[a-z0-9_.]+$/).max(128) });
@@ -294,7 +293,7 @@ export const platformSettingsRoutes = new Hono()
     }
     setPlatformValue(key, value);
     notifySettingsWrite(key);
-    emitSettingsChange(PLATFORM_NS, key);
+    emitSettingsEvent(null, "value-set", key);
     return c.json({ ok: true as const });
   })
   .delete("/:key", zValidator("param", keyParam, validationHook), (c) => {
@@ -302,7 +301,7 @@ export const platformSettingsRoutes = new Hono()
     if (!PLATFORM_SETTINGS[key]) return c.json({ error: `unknown setting "${key}"` }, 404);
     deletePlatformValue(key);
     notifySettingsWrite(key);
-    emitSettingsChange(PLATFORM_NS, key);
+    emitSettingsEvent(null, "value-cleared", key);
     return c.json({ ok: true as const });
   });
 
@@ -376,7 +375,7 @@ export const settingsRoutes = new Hono<SettingsEnv>()
     }
     setValue(c.var.settingsDb, key, value);
     notifySettingsWrite(key, c.var.appId);
-    emitSettingsChange(c.var.appId, key);
+    emitSettingsEvent(c.var.appId, "value-set", key);
     return c.json({ ok: true as const });
   })
   .delete("/:key", zValidator("param", keyParam, validationHook), (c) => {
@@ -384,7 +383,7 @@ export const settingsRoutes = new Hono<SettingsEnv>()
     fieldForAppWrite(c.var.settingsDb, key); // 404 on unknown, 400 on global — deletes are gated like writes
     deleteValue(c.var.settingsDb, key);
     notifySettingsWrite(key, c.var.appId);
-    emitSettingsChange(c.var.appId, key);
+    emitSettingsEvent(c.var.appId, "value-cleared", key);
     return c.json({ ok: true as const });
   });
 
