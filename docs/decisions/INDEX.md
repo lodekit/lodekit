@@ -5,3 +5,5 @@ context, genuine trade-off) must hold. Format: `ADR-NNNN-<kebab-title>.md`.
 
 | ADR | Title | Date |
 |---|---|---|
+| [ADR-0001](./ADR-0001-event-envelope-kind-component.md) | Event envelope addresses emitters as `kind` + `component`, retiring `source` | 2026-07-16 |
+| [ADR-0002](./ADR-0002-fine-grained-event-fact-types.md) | Event types are fine-grained past-tense facts, not coarse change feeds | 2026-07-16 |
