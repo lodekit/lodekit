@@ -62,10 +62,10 @@ function PlantPage() {
   const refresh = () => void router.invalidate();
 
   // The file change feed rides the event bus; slug filtering happens in the callback
-  // (payloads carry identity, not values — {slug, op}).
+  // (payloads carry identity, not values — {slug}).
   useEffect(
     () =>
-      events.watch({ type: "file-store-change" }, (ev) => {
+      events.watch({ component: "file-store" }, (ev) => {
         const slug = (ev.payload as { slug?: string } | undefined)?.slug;
         if (slug?.startsWith(`photo-${id}-`)) refresh();
       }),

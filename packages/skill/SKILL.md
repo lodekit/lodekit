@@ -77,8 +77,8 @@ export const db = createDb({ recipes });
 - Blobs don't transport over the query door — binary belongs in Files.
 - Validate user input with derived schemas where useful: `drizzle-zod`'s
   `createInsertSchema(recipes)` — derived from the table, never a second source of truth.
-- Live refresh: `events.watch({ type: "db-store-change" }, () => …invalidate…)` —
-  same pattern as the kv feed; payloads carry identity (`{ op, table }`), never values.
+- Live refresh: `events.watch({ component: "db-store" }, () => …invalidate…)` —
+  same pattern as the kv feed; payloads carry identity (`{ table }`), never values.
 - **Via MCP**: `lodekit_db_schema` (the declared tables) and `lodekit_db_query`
   (SELECT-only) — inspect real data before assuming a change worked.
 - **Reading errors:** drizzle 0.45 wraps driver errors in `DrizzleQueryError` — the
@@ -127,21 +127,28 @@ doing at runtime. Import: `import { logs } from "@lodekit/sdk"`.
 
 ## Events (event-store)
 
-The platform event bus — durable, replayable messages that drive app behavior.
+The platform event bus — durable, replayable messages that drive app behavior. Every
+event is addressed (`app` — whose stream) and attributed (`kind` + `component` — what
+class of platform member emitted it, and which instance): a kv write in your app is
+`{app, kind: "service", component: "kv-store", type: "key-set", payload: {key}}`.
 Import: `import { events } from "@lodekit/sdk"`.
 
-- `await events.emit(type, payload?, { ttl? })` — announce something happened
-  (`type` matches `^[a-z0-9-]+$`; payload is a small JSON object — identity, not blobs).
-  Works in server functions and the browser; returns the stored event with its `id` offset.
-- `events.watch({ type? }, cb)` — client-only live subscription (keep it in `useEffect`).
+- `await events.emit(type, payload?, { ttl? })` — announce something happened. Name
+  types as past-tense facts, `<subject>-<verb-ed>` (`export-finished`, `note-added`) —
+  matching `^[a-z0-9-]+$`; payload is a small JSON object carrying identity and
+  references, never statuses (the status IS the type). Works in server functions and
+  the browser; returns the stored event with its `id` offset. Your events land with
+  `kind: "app"`, `component` = your app id.
+- `events.watch({ kind?, component?, type? }, cb)` — client-only live subscription
+  (keep it in `useEffect`); each filter is a string or array, dimensions AND together.
   The canonical live-data pattern:
-  `events.watch({ type: "kv-store-change" }, () => queryClient.invalidateQueries({ queryKey: ["kv"] }))`
-  — this replaces the removed `kv.watch`/`files.watch`.
-- `await events.list({ type?, after?, before?, limit? })` — replay the app's stream (includes
-  platform events about the app: `build-state` and `server-state`, each carrying the
-  state in `payload.status`).
-- **Via MCP**: `lodekit_events` (`appId`, `type`, `after`, `limit`) reads the history —
-  use it to check whether an expected event actually fired.
+  `events.watch({ component: "kv-store" }, () => queryClient.invalidateQueries({ queryKey: ["kv"] }))`
+  — one component filter covers all its facts (`key-set`, `key-deleted`, `key-expired`).
+- `await events.list({ component?, type?, since?, until?, after?, before?, limit? })` —
+  replay the app's stream (includes platform facts about the app: `build-*` and
+  `server-*` from the engine).
+- **Via MCP**: `lodekit_events` (`app`, `kind`, `component`, `type`, `since`, `after`,
+  `limit`) reads the history — use it to check whether an expected event actually fired.
 
 ## Settings
 

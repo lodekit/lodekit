@@ -36,7 +36,7 @@ is the living checklist — extend it with every new surface.
 | `db.batch` (transaction) | seeding a plant's dependents |
 | `` sql`…` `` escape hatch | snapshot stats (`db.values`) |
 | client-side `db` queries | journal add + load-more (browser) |
-| `events.watch {type: array}` | conservatory refresh on `["db-store-change", "kv-store-change"]` |
+| `events.watch {component: array}` | conservatory refresh on `["db-store", "kv-store"]` |
 | `files.put {title, metadata, contentType}` | photo upload with caption |
 | `files.put {ttl}` | self-expiring snapshot export |
 | `files.put` (server-side) | seeded SVG portraits |
@@ -45,13 +45,13 @@ is the living checklist — extend it with every new surface.
 | `files.list {prefix, cursor}` | timeline "load more", compost sweep, reset |
 | `files.copy` | set cover photo |
 | `files.move` | archive photo |
-| `events.watch {type: "file-store-change"}` | photo timeline live refresh (slug filter in the callback) |
+| `events.watch {component: "file-store"}` | photo timeline live refresh (slug filter in the callback) |
 | `tasks.enqueue {at, dedupeKey}` | care reminders |
 | `tasks.enqueue {delay}` | remind me in an hour |
 | `tasks.cancel` | skip next / re-care / reset |
 | `tasks.runs {task, state, limit}` | almanac care history |
 | `tasks.list` | almanac rota |
-| `events.watch {type: "tasks-change"}` | almanac live indicator |
+| `events.watch {component: "tasks"}` | almanac live indicator |
 | `task() cron` + `catchUp: true` | morning_rounds |
 | `task() every` | compost_sweep |
 | `logs.debug` / `info` / `warn` / `error` | compost sweep / care & seed / wilting & reset / upload failures + Shed demo row |
