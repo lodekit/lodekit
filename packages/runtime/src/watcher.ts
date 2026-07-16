@@ -5,6 +5,7 @@ import type { Config } from "./config.js";
 import { emitEvent, PLATFORM_NS } from "./events.js";
 import { isValidAppId } from "./registry.js";
 import { buildAll, buildApp, buildDashboard, dropBuild } from "./build.js";
+import { evictApp } from "./taskEngine.js";
 import { createLogger } from "./logger.js";
 import { reloadGatewayManifests } from "./gatewayManifests.js";
 import { emitGatewayChange } from "./gatewayEvents.js";
@@ -84,6 +85,7 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
         clearTimeout(timers.get(rel));
         timers.delete(rel);
         dropBuild(cfg, rel);
+        evictApp(rel); // the tasks engine must stop polling the gone app's db
         log.info(`app folder removed: ${rel}`);
       }
     });
