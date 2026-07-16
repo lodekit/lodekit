@@ -35,7 +35,7 @@ const ev = await events.emit("export-finished", {
   slug: stat.slug,
   plantCount: allPlants.length,
 });
-// ev.id, ev.ts; ev.ns === ev.source === your app id
+// ev.id, ev.ts; ev.app === ev.component === your app id
 ```
 
 ## events.watch()
