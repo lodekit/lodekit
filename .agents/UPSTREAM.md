@@ -11,8 +11,8 @@ re-verifies (writing-skills discipline), and updates this ledger.
 |---|---|---|---|
 | github.com/DollarDill/beads-superpowers | v0.13.0 (`53371f69b02164640745e8c4cfa16897b93517b7`) | 2026-07-16 | 21 skills + session-start hook |
 | github.com/obra/superpowers | v6.1.1 | 2026-07-16 | writing-skills |
-| github.com/DietrichGebert/ponytail | `<sha>` | (pending — Phase 4) | ponytail, ponytail-review, ponytail-audit, ponytail-debt |
-| github.com/mattpocock/skills | `<sha>` | (pending — Phase 4) | codebase-design, domain-modeling |
+| github.com/DietrichGebert/ponytail | `16f29800fd2681bdf24f3eb4ccffe38be3baec6b` | 2026-07-16 | ponytail, ponytail-review, ponytail-audit, ponytail-debt |
+| github.com/mattpocock/skills | `9603c1cc8118d08bc1b3bf34cf714f62178dea3b` | 2026-07-16 | codebase-design, domain-modeling |
 
 Tooling versions last verified against: `bd` 1.1.0, `codebase-memory-mcp` 0.8.1.
 `bd`/`codebase-memory-mcp` upgrades are deliberate events — re-verify and update this
@@ -32,6 +32,8 @@ line.
   (its lean-router triage table is folded into our `session` skill, credited),
   `auditing-upstream-drift` (maintainer-only upstream).
 - using-superpowers: added a one-line session-mode nudge (spec §4) — undeclared sessions route through the `session` skill.
+- setup.mjs does not run `bd setup codex` (repo-mutating in project mode; person-approved
+  spec §8 deviation) — Codex bd-priming is a defer bead.
 
 ### obra/superpowers
 - writing-skills: plan-location references → `docs/plans/`; namespace refs → bare.
