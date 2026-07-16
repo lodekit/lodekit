@@ -9,3 +9,11 @@ packages:
 minimumReleaseAge: 10080 # 7 days
 minimumReleaseAgeExclude:
   - '@lodekit/*'
+
+# drizzle-kit's api.mjs imports drizzle-orm without declaring it — masked by
+# hidden hoisting in a per-repo virtual store, but a hard ERR_MODULE_NOT_FOUND
+# under strict resolution (e.g. enable-global-virtual-store). Declare the peer.
+packageExtensions:
+  drizzle-kit:
+    peerDependencies:
+      drizzle-orm: '*'
