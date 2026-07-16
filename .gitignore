@@ -22,3 +22,4 @@ root/apps/welcome/src/routeTree.gen.ts
 packages/runtime/dashboard/src/routeTree.gen.ts
 .codebase-memory/
 .beads/
+.agents/internal/
