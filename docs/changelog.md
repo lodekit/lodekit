@@ -32,6 +32,18 @@ Rules:
 
 ## Fixed
 
+- **kv-store error statuses** — internal faults in the kv API now return 500
+  instead of masquerading as 400; bad requests (invalid keys, `incr` on a
+  non-number, malformed JSON) still return 400.
+
+- **Deleting an app stops its scheduled tasks immediately** — the task engine
+  used to keep materializing a deleted app's schedule runs (and emitting their
+  events) until the next restart.
+
+- **Oversized requests to apps are refused** — a request body over 5 MB sent to
+  an app page or server function now gets a 413 instead of being buffered
+  without limit.
+
 - **Apps get a real not-found page** — newly scaffolded apps (and Welcome and
   Greenhouse) now render a styled 404 with a link back home instead of a bare
   "Not Found" fallback.

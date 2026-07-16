@@ -7,7 +7,7 @@ import Database from "better-sqlite3";
 import { buildStart } from "../src/build.js";
 import {
   configureWorkers, startAppWorker, stopAppWorker, stopAllWorkers, forwardToWorker,
-  getServerState, workerForTest, setBackoffForTest,
+  getServerState, workerForTest, setBackoffForTest, FORWARD_BODY_MAX_BYTES,
 } from "../src/appWorker.js";
 import { CHANGE_FEED_TTL_S } from "../src/events.js";
 import { initEventStore, queryEvents, closeEventStoreForTest } from "../src/eventStore.js";
@@ -58,6 +58,38 @@ describe("appWorker", () => {
     const res = await forwardToWorker("start-app", new Request("http://x/start-app/no-such-page"));
     expect(res.status).toBe(404);
     expect(await res.text()).toContain("fixture not found");
+  }, 30_000);
+
+  it("caps forwarded request bodies at FORWARD_BODY_MAX_BYTES (413, never reaches the worker)", async () => {
+    // Declared oversize (Content-Length) — rejected before the body is read.
+    const oversize = new Request("http://x/start-app/", {
+      method: "POST",
+      body: new Uint8Array(FORWARD_BODY_MAX_BYTES + 1),
+    });
+    expect((await forwardToWorker("start-app", oversize)).status).toBe(413);
+
+    // Undeclared size (streamed body, no Content-Length) — counted while reading.
+    const chunk = new Uint8Array(1024 * 1024);
+    let sent = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (sent > FORWARD_BODY_MAX_BYTES) return controller.close();
+        sent += chunk.byteLength;
+        controller.enqueue(chunk);
+      },
+    });
+    const chunked = new Request("http://x/start-app/", {
+      method: "POST",
+      body: stream,
+      // @ts-expect-error undici requires half-duplex for stream bodies; not in DOM types
+      duplex: "half",
+    });
+    expect(chunked.headers.get("content-length")).toBeNull();
+    expect((await forwardToWorker("start-app", chunked)).status).toBe(413);
+
+    // An in-budget body still reaches the worker (any non-413 response proves the forward).
+    const ok = new Request("http://x/start-app/", { method: "POST", body: "small" });
+    expect((await forwardToWorker("start-app", ok)).status).not.toBe(413);
   }, 30_000);
 
   it("a dead worker surfaces as error and respawns; runtime survives", async () => {

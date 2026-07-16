@@ -2,11 +2,15 @@
 
 lodekit is a local, self-hosted runtime on which a person — working with an AI coding
 agent — builds and runs their own personal web tools. See `docs/specs/` for detail.
-`context.md` fixes the domain language — use its canonical terms in code, docs, and specs.
+`CONTEXT.md` fixes the domain language — use its canonical terms in code, docs, and specs.
+Visual identity — palette, typography, token rules — lives in `DESIGN.md`; consult it
+before any UI, landing, or docs styling work.
 
 Behavioral guardrails for development workflow.
-Standard workflow uses the Superpowers skills.
-For trivial tasks, use judgment.
+Sessions start with the `session` skill (`/session [pair|auto] [spec|task]`; default
+`pair`, ceremony inferred and confirmed). The dev process is vendored in
+`.agents/skills/` — see `.agents/UPSTREAM.md` for provenance. For trivial requests the
+session skill's triage table applies: use judgment.
 
 ## Architecture
 
@@ -35,7 +39,7 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
   `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
   app supervising the workspace runtime against `root/` on the system Node.
 - **`root/`** — the checked-in Lodekit root: the Greenhouse showcase app (the SDK's
-  smoke-testing ground — see `root/readme.md` for the definition-of-done convention) and
+  smoke-testing ground — see `root/README.md` for the definition-of-done convention) and
   the Welcome app. Used in dev via `LODEKIT_ROOT=./root`; the packaged manager installs
   its apps into a fresh `~/Documents/Lodekit` on first run.
 
@@ -70,11 +74,11 @@ Runtime and MCP are **buildless** — `tsx`, no build step.
 
 ## Lazy, Not Negligent
 
-Simplicity never means cutting safety.
-
-- Always keep trust-boundary validation, data-loss handling, security, and accessibility.
-- A single smoke test or assert is the minimum, not bloat.
-- Only unnecessary complexity gets removed.
+Simplicity never means cutting safety. The `ponytail` skill (vendored, default
+intensity `full`) owns this discipline during implementation — the ladder, the
+never-simplify floor (trust-boundary validation, data-loss handling, security,
+accessibility; one runnable check per non-trivial logic), and the shortcut-marker
+rule (`ponytail`-labeled bead + `// ponytail: <bead-id>` anchor).
 
 ## Surgical Changes
 
@@ -93,13 +97,17 @@ Simplicity never means cutting safety.
 
 ## Conventions
 
-- **Backlog:** deferred work and known gaps live as GitHub issues (`gh issue list`).
-- **Deferrals:** `docs/defer.md` is a transient buffer for work descoped/deferred during
-  a session. Append entries under a dated session header linking the spec/plan/PR that
-  caused them; **append-only** — never reword, resolve, or remove existing entries (the
-  person drains the file into GitHub issues and clears it). `roadmap.md` is retired;
-  never recreate it — where an older spec/plan says "add to roadmap.md", that now means
-  `docs/defer.md`.
+- **Backlog:** deferred work and known gaps live as GitHub issues (`gh issue list`) —
+  the only durable human backlog.
+- **Deferrals:** work descoped or deferred during a session is filed as a bead labeled
+  `defer` (severity/confidence stamp, provenance — spec/plan/PR — in the body); list
+  deferrals filed in the PR body. The person periodically drains them with the
+  `drain-deferrals` skill. `docs/defer.md` and `roadmap.md` are retired — never
+  recreate either; where an older spec/plan says "append to defer.md" or "add to
+  roadmap.md", that now means: file a `defer`-labeled bead.
+- **Task tracking:** beads (`bd`) for ALL work tracking — TodoWrite/TaskCreate/markdown
+  TODOs are forbidden. Bead IDs go in commit messages and PR bodies. Session close =
+  land the plane: `bd close` → `bd dolt push` → `git push`.
 - **Changelog buffer:** `docs/changelog.md` collects unreleased user-facing
   changes. A slice that ships something a Lodekit user can see or do appends an entry
   under `## New` or `## Fixed`, in the same PR as the code; internal work appends
@@ -124,7 +132,16 @@ Simplicity never means cutting safety.
   semver release PR: lockstep version bump + drain of `docs/changelog.md` into the
   docs changelog page. Merging it triggers the GitHub release build; the workflow is
   the only creator of `v*` tags. Portable agent skills live in `.agents/skills/`
-  (Claude Code discovers them via the `.claude/skills` symlinks).
-- **Commits:** Do not add `Co-Authored-By` trailers to commit messages.
+  (Claude Code discovers them via committed `.claude/skills` symlinks; Codex reads
+  `.agents/skills/` natively).
+- **Commits & PRs:** no `Co-Authored-By` trailers in commit messages; no "Generated with Claude Code" attribution in PR bodies.
 - **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
-  showcase app exercises it (`root/readme.md` holds the living coverage checklist).
+  showcase app exercises it (`root/README.md` holds the living coverage checklist).
+- **Steering docs:** root steering docs are uppercase (`AGENTS.md`, `CLAUDE.md`
+  symlink, `CONTEXT.md`, `DESIGN.md`). `CLAUDE.md` is a committed symlink to
+  `AGENTS.md` — never diverge them. Do not set `askUserQuestionTimeout` in user
+  settings; interactive questions must block until answered.
+- **Codebase graph:** for structure questions (call paths, impact of a change, where
+  a symbol is used), query the `codebase-memory-mcp` tools (`search_graph`,
+  `trace_path`, `detect_changes`) first; fall back to grep when results are thin.
+  Index the current worktree on demand (`index_repository`) if missing or stale.

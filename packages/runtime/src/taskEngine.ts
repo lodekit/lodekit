@@ -74,6 +74,14 @@ export function registerManifest(appId: string, rawTasks: unknown[], loadError?:
   dispatchTasks();
 }
 
+// unlinkDir eviction (watcher): a deleted app must stop being polled — otherwise
+// each dispatch tick keeps materializing its schedule runs (absorbed to one queued
+// row) and emitting change events for a gone app. Its data dir survives deletion,
+// so if the app returns, registerManifest (worker boot) re-adds it.
+export function evictApp(appId: string): void {
+  apps.delete(appId);
+}
+
 // Boot pass (spec §7): rows still 'running' were interrupted by runtime death —
 // a consumed, failed attempt. Also seeds the engine's app set from disk so
 // schedules materialize (and catch-up applies) before any worker is up.
