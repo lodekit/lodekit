@@ -11,7 +11,7 @@ const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const results = [];
 const ok = (name, detail = '') => results.push({ name, pass: true, detail });
 const fail = (name, detail) => results.push({ name, pass: false, detail });
-const run = (cmd, args) => execFileSync(cmd, args, { encoding: 'utf8' }).trim();
+const run = (cmd, args) => execFileSync(cmd, args, { encoding: 'utf8', cwd: repo }).trim();
 
 // 1. binaries
 let bdPresent = false;
@@ -38,8 +38,8 @@ try {
   fail('CLAUDE.md symlink', 'missing or not a symlink');
 }
 try {
-  const canonical = readdirSync(join(repo, '.agents', 'skills'));
-  const links = readdirSync(join(repo, '.claude', 'skills'));
+  const canonical = readdirSync(join(repo, '.agents', 'skills')).filter((n) => !n.startsWith('.'));
+  const links = readdirSync(join(repo, '.claude', 'skills')).filter((n) => !n.startsWith('.'));
   const missing = canonical.filter((s) => !links.includes(s));
   const broken = links.filter((l) => !existsSync(join(repo, '.claude', 'skills', l)));
   if (!missing.length && !broken.length) ok(`skill symlinks (${links.length})`);
@@ -56,7 +56,7 @@ if (bdPresent) {
     if (hasOrigin) ok('bd dolt remote', 'origin configured');
     else fail('bd dolt remote', 'bd dolt remote add origin <git origin URL> — required once per machine for bd dolt push/pull');
   } catch (e) {
-    fail('bd dolt remote', `bd dolt remote list failed — ${String(e)}`);
+    fail('bd dolt remote', `bd dolt remote list failed — ${String(e)} — if no beads DB exists yet, run the project-init skill flow first`);
   }
 }
 

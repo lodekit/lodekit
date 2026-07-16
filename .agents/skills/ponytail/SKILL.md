@@ -29,6 +29,8 @@ ACTIVE EVERY RESPONSE. No drift back to over-building. Still active if
 unsure. Off only: "stop ponytail" / "normal mode". Default: **full**.
 Switch: `/ponytail lite|full|ultra`.
 
+Session mode note: per the `session` contract, ponytail applies to implementation, not brainstorming or spec/plan writing.
+
 ## The ladder
 
 Stop at the first rung that holds:

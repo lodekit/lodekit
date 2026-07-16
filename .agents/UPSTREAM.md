@@ -27,13 +27,14 @@ line.
 - defer.md/roadmap/markdown-TODO references → `defer`-labeled beads (AGENTS.md).
 - Partner-approval gate sites carry a "Session mode note" pointing at the `session`
   skill's gate table.
-- session-start hook: paths as above; missing `bd` fails loud (stderr + context note).
+- session-start hook: paths as above; missing `bd` fails loud (stderr + context note);
+  the remedy message points at `.agents/scripts/setup.mjs`.
 - Not vendored: `writing-skills` (kept from obra instead), the yegge example workflow
   (its lean-router triage table is folded into our `session` skill, credited),
   `auditing-upstream-drift` (maintainer-only upstream).
 - using-superpowers: added a one-line session-mode nudge (spec §4) — undeclared sessions route through the `session` skill.
-- setup.mjs does not run `bd setup codex` (repo-mutating in project mode; person-approved
-  spec §8 deviation) — Codex bd-priming is a defer bead.
+- brainstorming: added pull-based pointers to codebase-design vocabulary and domain-modeling (spec §3).
+- requesting-code-review (+ code-reviewer.md): added the optional ponytail-review over-engineering lens (spec §3).
 
 ### obra/superpowers
 - writing-skills: plan-location references → `docs/plans/`; namespace refs → bare.
@@ -44,6 +45,7 @@ line.
   comment at the site.
 - ponytail-debt: grep harvest → bd query + two-way orphan check.
 - Not vendored: ponytail-gain, ponytail-help.
+- Persistence: session-mode note scoping ponytail to implementation (spec §6).
 
 ### mattpocock/skills
 - CONTEXT.md path: repo root (matches our existing file).
@@ -52,3 +54,5 @@ line.
 
 ### ours (no upstream)
 - session, drain-deferrals, release.
+- setup.mjs deliberately does not run bd setup codex (repo-mutating in project mode;
+  person-approved spec §8 deviation) — Codex bd-priming is defer bead lk-u3y.
