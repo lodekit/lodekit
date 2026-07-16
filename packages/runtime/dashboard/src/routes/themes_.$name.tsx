@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Copy } from "@lodekit/ui/icons";
 import {
@@ -16,6 +16,12 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Skeleton,
   Tabs,
   TabsContent,
@@ -26,8 +32,9 @@ import {
 import { useSSEEvent } from "../components/sse";
 import { ThemeCanvas } from "../components/theme-editor/canvas";
 import { Controls } from "../components/theme-editor/controls";
-import { COLOR_TOKENS, parseTheme, type ThemeModel } from "../lib/theme-css";
-import { duplicateTheme, fetchThemeCss, fetchThemes } from "../lib/themes-api";
+import { COLOR_TOKENS, parseTheme, serializeTheme, type ThemeModel } from "../lib/theme-css";
+import { duplicateTheme, fetchThemeCss, fetchThemes, putPreview, putThemeCss } from "../lib/themes-api";
+import { fetchApps } from "../lib/data-api";
 
 export const Route = createFileRoute("/themes_/$name")({ component: ThemeEditor });
 
@@ -90,6 +97,59 @@ function ThemeEditor() {
 
   const vendored = themesQ.data?.themes.find((t) => t.name === name)?.vendored ?? false;
 
+  // App tab: pick an app, iframe it with the preview flag. Base UI unmounts the
+  // inactive tab panel, so the iframe only loads while the App tab is active.
+  const appsQ = useQuery({ queryKey: ["apps"], queryFn: fetchApps });
+  const [tab, setTab] = useState("components");
+  const [appId, setAppId] = useState("");
+
+  // Save serializes the *current* model, so keep a ref the click handler reads
+  // (avoids a stale render closure). A pending preview PUT is cancelled on save
+  // and on unmount so a late draft can't flash over the just-saved theme.
+  const modelRef = useRef<ThemeModel | null>(null);
+  modelRef.current = model;
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    const m = modelRef.current;
+    if (!m) return;
+    clearTimeout(previewTimer.current);
+    setSaving(true);
+    try {
+      await putThemeCss(name, serializeTheme(m));
+      setDirty(false);
+      await queryClient.invalidateQueries({ queryKey: ["themes"] });
+      await queryClient.invalidateQueries({ queryKey: ["theme-css", name] });
+      toast.success("Theme saved");
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // While editing on the App tab, debounce a draft PUT to the preview slot; the
+  // runtime emits theme-change over SSE and the iframe restyles in place — no
+  // reload. Entering the tab (tab dep) also fires this, so the iframe shows the
+  // current edits. Only PUT while dirty: a clean model leaves the slot untouched
+  // and the iframe's `?preview=1` self-heals to the saved theme. (`raw` models
+  // never render the Tabs — the degraded card shows instead — so no guard needed
+  // beyond the dirty gate, which raw never trips.)
+  useEffect(() => {
+    if (!(tab === "app" && dirty && model && !model.raw)) return;
+    const css = serializeTheme(model);
+    previewTimer.current = setTimeout(() => void putPreview(css), 300);
+    return () => clearTimeout(previewTimer.current);
+  }, [tab, dirty, model]);
+
+  // Guard against losing unsaved edits: block in-app navigation with a confirm,
+  // and arm the native beforeunload prompt (both gated on `dirty`).
+  useBlocker({
+    shouldBlockFn: () => (dirty ? !window.confirm("Discard unsaved theme changes?") : false),
+    enableBeforeUnload: () => dirty,
+  });
+
   // Duplicate-to-edit dialog (vendored themes are read-only).
   const [dupOpen, setDupOpen] = useState(false);
   const [slug, setSlug] = useState("");
@@ -123,9 +183,13 @@ function ThemeEditor() {
           {vendored && <Badge variant="outline">vendored</Badge>}
           {dirty && <Badge variant="secondary">unsaved</Badge>}
         </div>
-        {vendored && (
+        {vendored ? (
           <Button onClick={() => { setSlug(""); setDupOpen(true); }}>
             <Copy aria-hidden="true" className="size-4" /> Duplicate to edit
+          </Button>
+        ) : (
+          <Button onClick={() => void save()} disabled={!dirty || saving}>
+            {saving ? "Saving…" : "Save"}
           </Button>
         )}
       </div>
@@ -163,7 +227,7 @@ function ThemeEditor() {
           </aside>
 
           <div className="max-h-[calc(100vh-12rem)] flex-1 overflow-y-auto">
-            <Tabs defaultValue="components">
+            <Tabs value={tab} onValueChange={setTab}>
               <TabsList>
                 <TabsTrigger value="components">Components</TabsTrigger>
                 <TabsTrigger value="app">App</TabsTrigger>
@@ -179,10 +243,34 @@ function ThemeEditor() {
                   <ThemeCanvas />
                 </div>
               </TabsContent>
-              <TabsContent value="app">
-                <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
-                  App preview — coming in the next slice
-                </p>
+              <TabsContent value="app" className="flex h-[calc(100vh-16rem)] flex-col gap-3">
+                <Select
+                  value={appId}
+                  onValueChange={(v) => setAppId(v ?? "")}
+                  items={(appsQ.data ?? []).map((a) => ({ value: a.appId, label: `${a.icon ? `${a.icon} ` : ""}${a.name}` }))}
+                >
+                  <SelectTrigger className="w-64">
+                    <SelectValue placeholder="Select an app" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {(appsQ.data ?? []).map((a) => (
+                        <SelectItem key={a.appId} value={a.appId}>{a.icon ? `${a.icon} ` : ""}{a.name}</SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {appId ? (
+                  <iframe
+                    src={`/${appId}/?lodekit-theme-preview=1`}
+                    className="h-full w-full rounded-md border"
+                    title="App preview"
+                  />
+                ) : (
+                  <p className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+                    Pick an app to preview it with this theme.
+                  </p>
+                )}
               </TabsContent>
             </Tabs>
           </div>
