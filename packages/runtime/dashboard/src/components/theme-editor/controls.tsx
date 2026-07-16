@@ -42,18 +42,72 @@ const FONT_CATALOG: readonly FontEntry[] = [
   { label: "Georgia serif", family: 'Georgia, "Times New Roman", serif', googleSpec: null },
 ];
 
-// Rebuild the model's imports from the two selected fonts: one @import line
-// covering the union of the selected Google families (deduped), or none when both
-// are system stacks / unrecognized.
-function importsFor(fontUi: string, fontDisplay: string): string[] {
+// The family token of a css2 spec/param is the segment before the first ":".
+// Families use "+" for spaces (e.g. "Hanken+Grotesk"), matching the catalog form.
+function specFamily(spec: string): string {
+  return spec.split(":")[0];
+}
+
+// Family tokens the editor can model — used to tell "our" @import line apart from
+// a hand-authored one.
+const CATALOG_FAMILIES = new Set(
+  FONT_CATALOG.flatMap((f) => (f.googleSpec ? [specFamily(f.googleSpec)] : [])),
+);
+
+const CSS2_URL_RE = /fonts\.googleapis\.com\/css2\?/;
+
+// Family tokens named by a css2 @import line's `family=` params.
+function importFamilies(line: string): string[] {
+  const families: string[] = [];
+  const re = /family=([^&"]+)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(line)) !== null) families.push(specFamily(m[1]));
+  return families;
+}
+
+// A "managed" import is the one the editor owns: a css2 Google Fonts line whose
+// families are ALL in FONT_CATALOG. Anything else — a non-css2 URL, a different
+// font host, or a css2 line naming a family beyond the catalog (extra families or
+// hand-tuned axes we can't model) — is not managed.
+function isManaged(line: string): boolean {
+  if (!CSS2_URL_RE.test(line)) return false;
+  const fams = importFamilies(line);
+  return fams.length > 0 && fams.every((f) => CATALOG_FAMILIES.has(f));
+}
+
+// Rewrite ONLY the managed @import line from the two selected fonts, preserving
+// every other import verbatim in its original order (spec §4: never destroy CSS
+// the editor can't model). The managed line — one css2 URL covering the deduped
+// union of the selected Google families, or nothing when both are system stacks
+// — replaces the first existing managed line in place, else is appended. A
+// hand-tuned Google line naming a family beyond the catalog is NOT managed, so it
+// survives and the new managed line is added alongside (worst case: a duplicated
+// family; never a lost one).
+function importsFor(existing: string[], fontUi: string, fontDisplay: string): string[] {
   const specs = new Set<string>();
   for (const family of [fontUi, fontDisplay]) {
     const entry = FONT_CATALOG.find((f) => f.family === family);
     if (entry?.googleSpec) specs.add(entry.googleSpec);
   }
-  if (specs.size === 0) return [];
-  const families = [...specs].map((s) => `family=${s}`).join("&");
-  return [`@import url("https://fonts.googleapis.com/css2?${families}&display=swap");`];
+  const managedLine =
+    specs.size === 0
+      ? null
+      : `@import url("https://fonts.googleapis.com/css2?${[...specs].map((s) => `family=${s}`).join("&")}&display=swap");`;
+
+  const result: string[] = [];
+  let replaced = false;
+  for (const line of existing) {
+    if (isManaged(line)) {
+      // First managed line becomes the new one (dropped when nothing to manage);
+      // any further managed lines are collapsed away.
+      if (!replaced && managedLine) result.push(managedLine);
+      replaced = true;
+    } else {
+      result.push(line);
+    }
+  }
+  if (managedLine && !replaced) result.push(managedLine);
+  return result;
 }
 
 // Density presets → --spacing (spec §4). An unrecognized spacing value surfaces as
@@ -91,7 +145,7 @@ export function Controls({
   const setFont = (which: "ui" | "display", entry: FontEntry) => {
     const fontUi = which === "ui" ? entry.family : model.fontUi;
     const fontDisplay = which === "display" ? entry.family : model.fontDisplay;
-    update({ ...model, fontUi, fontDisplay, imports: importsFor(fontUi, fontDisplay) });
+    update({ ...model, fontUi, fontDisplay, imports: importsFor(model.imports, fontUi, fontDisplay) });
   };
 
   const tokensOf = (tokens: readonly string[]) => tokens.map((token) => ({ token, value: map[token] ?? "" }));
