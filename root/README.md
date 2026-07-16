@@ -1,6 +1,6 @@
 # The Lodekit root
 
-This directory is the checked-in Lodekit root: the runtime serves it in dev
+This directory is the checked-in Lodekit root: the engine serves it in dev
 (`LODEKIT_ROOT=./root`), and the packaged manager installs `apps/` into
 `~/Documents/Lodekit/apps` on first run. Deleting any of these apps from your own root is
 fine — an empty root is a fully supported state.
@@ -15,7 +15,7 @@ fine — an empty root is a fully supported state.
 
 ## Definition of done
 
-A new SDK or runtime capability is **not done** until Greenhouse exercises it. This table
+A new SDK or engine capability is **not done** until Greenhouse exercises it. This table
 is the living checklist — extend it with every new surface.
 
 | Surface | Home in Greenhouse |

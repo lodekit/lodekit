@@ -23,9 +23,10 @@ emit(type: string, payload?: Record<string, unknown>, opts?: { ttl?: number }): 
 - `payload` — an optional JSON object, max 8 KB.
 - `opts.ttl` — time to live in seconds, up to 30 days.
 
-Publishes an event and resolves to the stored `LodekitEvent`. The event's `ns`
-and `source` are stamped by the runtime with your app's own id — an app cannot
-forge events as another sender or emit into another app's namespace.
+Publishes an event and resolves to the stored `LodekitEvent`. The event's `app`,
+`kind`, and `component` are stamped by the engine (`kind: "app"`, `app =
+component = your app id`) — an app cannot forge events as another sender or
+emit into another app's stream.
 
 ### Example
 

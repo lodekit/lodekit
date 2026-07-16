@@ -77,7 +77,7 @@ delete(path: string, opts?: GatewayRequestOpts): Promise<GatewayResponse>
 request(desc: { method: string; path: string } & GatewayRequestOpts): Promise<GatewayResponse>
 ```
 
-- `path` — **relative**. The runtime assembles the final URL under the
+- `path` — **relative**. The engine assembles the final URL under the
   manifest's `base_url`; absolute URLs are rejected.
 - `opts.query` — query parameters; `number` values are stringified.
 - `opts.headers` — extra request headers, merged in lowercased.

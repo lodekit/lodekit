@@ -1,6 +1,6 @@
 # agents
 
-lodekit is a local, self-hosted runtime on which a person — working with an AI coding
+lodekit is a local, self-hosted platform on which a person — working with an AI coding
 agent — builds and runs their own personal web tools. See `docs/specs/` for detail.
 `CONTEXT.md` fixes the domain language — use its canonical terms in code, docs, and specs.
 Visual identity — palette, typography, token rules — lives in `DESIGN.md`; consult it
@@ -54,17 +54,17 @@ Package manager is **pnpm** (workspaces). From the repo root:
   native module via the root `pnpm.onlyBuiltDependencies` allowlist (pnpm v10 gates install
   scripts). **Gotcha:** switching Node versions causes a `better-sqlite3` ABI mismatch
   (`NODE_MODULE_VERSION`) — fix with `pnpm rebuild better-sqlite3`.
-- `pnpm dev` — run the runtime against the showcase apps
+- `pnpm dev` — run the engine against the showcase apps
   (`LODEKIT_ROOT=$(pwd)/root pnpm --filter @lodekit/runtime start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
 - `pnpm test` — runs `pnpm -r test`: `@lodekit/runtime`, `@lodekit/sdk`, `@lodekit/ui`,
   `@lodekit/manager` (supervisor/paths/logs), and `@lodekit/integration-tests`
-  (`packages/integration-tests` — cross-package tests like runtime↔MCP, importing
+  (`packages/integration-tests` — cross-package tests like engine↔MCP, importing
   siblings by package specifier). Per-package: `pnpm --filter @lodekit/runtime test`.
 - `pnpm --filter @lodekit/web-main dev` | `build` — the landing site.
 - `pnpm --filter @lodekit/web-docs dev` | `build` — the docs site.
 - `pnpm --filter @lodekit/manager start` — the menubar manager in dev mode (system Node;
-  supervises the runtime against `root/`).
+  supervises the engine against `root/`).
 - `pnpm --filter @lodekit/manager make` — package `Lodekit.app` (runs
   `scripts/prepare-bundle.mjs` first: pnpm-deploys the platform payload and downloads the
   pinned Node — the version is pinned there, and the bundle must be built on that same
@@ -135,7 +135,7 @@ rule (`ponytail`-labeled bead + `// ponytail: <bead-id>` anchor).
   (Claude Code discovers them via committed `.claude/skills` symlinks; Codex reads
   `.agents/skills/` natively).
 - **Commits & PRs:** no `Co-Authored-By` trailers in commit messages; no "Generated with Claude Code" attribution in PR bodies.
-- **Definition of done:** a new SDK/runtime capability is not done until the Greenhouse
+- **Definition of done:** a new SDK/engine capability is not done until the Greenhouse
   showcase app exercises it (`root/README.md` holds the living coverage checklist).
 - **Steering docs:** root steering docs are uppercase (`AGENTS.md`, `CLAUDE.md`
   symlink, `CONTEXT.md`, `DESIGN.md`). `CLAUDE.md` is a committed symlink to

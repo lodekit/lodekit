@@ -5,7 +5,7 @@ description: "How app UI talks to services through server functions."
 
 An app's code runs in two places. Browser code — components, event handlers — runs in
 your browser. Server code — loaders and server functions — runs in the app's **app
-worker**, a per-app worker thread inside the runtime. This page is how data moves
+worker**, a per-app worker thread inside the engine. This page is how data moves
 between the two, and why a trust boundary sits in the middle.
 
 ## Server functions
@@ -51,7 +51,7 @@ sequence on the server.
 ## Validate at the boundary — always
 
 Note the `.inputValidator(careInput)` before the handler. A server function is, in
-effect, an HTTP endpoint: anything that can reach the runtime can call it with any
+effect, an HTTP endpoint: anything that can reach the engine can call it with any
 payload — not just your UI. The handler's `data` is only trustworthy because a zod
 schema checked it at the trust boundary; without validation, `plantId` could be a
 string, an object, or missing entirely, and the failure would surface deep inside

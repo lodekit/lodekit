@@ -35,7 +35,7 @@ data namespace. See [The manifest](/reference/manifest/).
 
 ### app worker
 
-The isolated worker inside the runtime that runs one app's
+The isolated worker inside the engine that runs one app's
 server code — server rendering and server functions. See
 [How Lodekit works](/start/how-lodekit-works/).
 
@@ -85,9 +85,9 @@ saved records, one folder per app id. See
 
 ### Engine
 
-The dashboard's name for the runtime, used in the Settings
-page's Engine section. Same thing; "Engine" is the label you read, "runtime"
-is the word the docs use.
+The single Node process at the heart of the platform: it hosts, builds,
+watches, and serves your apps, the dashboard, and the API. See
+[How Lodekit works](/start/how-lodekit-works/).
 
 ### event
 
@@ -112,7 +112,7 @@ the SDK as the `files` handle. See [the File Store](/services/file-store/).
 ### gateway
 
 The managed door to one provider: a declarative manifest plus
-the runtime machinery that injects credentials and guards traffic. Apps reach
+the engine machinery that injects credentials and guards traffic. Apps reach
 outside providers only through gateways. See
 [Gateways](/services/gateways/).
 
@@ -145,7 +145,7 @@ Structured log records from your apps and the platform
 ### manager
 
 The menubar app that ships and supervises the platform: it
-runs the runtime, shows its status, and opens the dashboard. See
+runs the engine, shows its status, and opens the dashboard. See
 [The menubar manager](/guide/manager/).
 
 ### manifest
@@ -162,7 +162,7 @@ See [MCP tools](/reference/mcp-tools/).
 
 ### platform
 
-The installed subset of Lodekit on your machine: runtime,
+The installed subset of Lodekit on your machine: engine,
 SDK, UI library, dashboard, and manager. What downloading Lodekit puts on
 disk.
 
@@ -180,9 +180,7 @@ queries — reached through the SDK as the `db` handle. See
 
 ### runtime
 
-The single Node process at the heart of the platform: it
-builds, watches, and serves your apps, the dashboard, and the API. See
-[How Lodekit works](/start/how-lodekit-works/).
+Retired name for the [engine](#engine) — older material may still use it.
 
 ### scaffold
 
@@ -218,7 +216,7 @@ at the boundary. See
 
 ### service
 
-A capability the runtime provides to every app — the
+A capability the engine provides to every app — the
 **db-store**, **kv-store**, **file-store**, **event-store**, **tasks**,
 **gateways**, **secret-store**, **settings**, **log-store** — reached only
 through the SDK. See the [services overview](/services/overview/).

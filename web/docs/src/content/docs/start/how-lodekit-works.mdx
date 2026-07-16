@@ -1,6 +1,6 @@
 ---
 title: How Lodekit works
-description: "The big picture: manager, runtime, dashboard, and your Lodekit folder, and how they fit together."
+description: "The big picture: manager, engine, dashboard, and your Lodekit folder, and how they fit together."
 ---
 
 import BigPicture from '../../../components/BigPicture.astro';
@@ -16,10 +16,10 @@ actually doing. Here's the whole picture.
 
 Two facts carry most of the mental model.
 
-**One process.** The runtime is a single program on your Mac. It hosts every
+**One process.** The engine is a single program on your Mac. It hosts every
 app you build, plus the dashboard, all served in your browser at
 `http://lodekit.localhost:7777`. The manager — the menubar icon — starts the
-runtime, watches over it, and restarts it if you ask.
+engine, watches over it, and restarts it if you ask.
 
 **One folder.** Everything you'd ever want to keep lives in the Lodekit root,
 `~/Documents/Lodekit`. Inside it sit three trees, side by side: `apps/` holds
@@ -29,7 +29,7 @@ thing you back up.
 
 ## Two doors
 
-The runtime has two doors, one for each of you.
+The engine has two doors, one for each of you.
 
 **The dashboard is yours.** It shows every app with its live status, and it's
 where you tune settings, browse logs, and manage secrets — all in your browser.
