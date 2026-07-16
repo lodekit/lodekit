@@ -33,6 +33,7 @@ import { createLogger } from "./logger.js";
 import { initTaskExecutor, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskExecutor.js";
 import { sweepAllTaskRuns } from "./services/tasks.js";
 import { resolveThemeCss, extractIconLibrary, getPreviewCss, warnLegacyThemeFiles } from "./services/themes.js";
+import { markFaviconSvg, emojiFaviconSvg } from "./marks.js";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
@@ -132,6 +133,36 @@ export function createApp(cfg: Config): Hono {
       const appId = app !== undefined && isValidAppId(app) ? app : undefined;
       const css = preview ?? resolveThemeCss(cfg, appId);
       return c.json({ theme: effectiveString("appearance.theme"), iconLibrary: extractIconLibrary(css) });
+    })
+    // Favicons (spec: docs/specs/2026-07-17-per-app-favicon-design.md). All
+    // serve-time and never cached, like theme delivery. /favicon.ico serves
+    // SVG — browsers select by content-type, and it makes the mark the
+    // origin-wide default for pages without an explicit icon link.
+    .get("/favicon.svg", (c) => {
+      c.header("Cache-Control", "no-store");
+      c.header("Content-Type", "image/svg+xml");
+      return c.body(markFaviconSvg(effectiveString("appearance.icon_style")));
+    })
+    .get("/favicon.ico", (c) => {
+      c.header("Cache-Control", "no-store");
+      c.header("Content-Type", "image/svg+xml");
+      return c.body(markFaviconSvg(effectiveString("appearance.icon_style")));
+    })
+    // Per-app favicon: the manifest emoji (user-authored — emojiFaviconSvg
+    // escapes it). Unknown app → the mark, same as everywhere else.
+    .get("/_ui/favicon.svg", (c) => {
+      c.header("Cache-Control", "no-store");
+      c.header("Content-Type", "image/svg+xml");
+      const app = c.req.query("app");
+      const manifest =
+        app !== undefined && isValidAppId(app)
+          ? scanApps(cfg.appsDir).find((a) => a.appId === app)
+          : undefined;
+      return c.body(
+        manifest
+          ? emojiFaviconSvg(manifest.icon ?? "📦")
+          : markFaviconSvg(effectiveString("appearance.icon_style"))
+      );
     })
     // The Themes stub inside the dashboard (the future theme editor's slot)
     // replaced the standalone /_ui/ page; keep old links landing somewhere.
