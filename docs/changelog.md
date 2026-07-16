@@ -39,3 +39,7 @@ Rules:
 - **Deleting an app stops its scheduled tasks immediately** — the task engine
   used to keep materializing a deleted app's schedule runs (and emitting their
   events) until the next restart.
+
+- **Oversized requests to apps are refused** — a request body over 5 MB sent to
+  an app page or server function now gets a 413 instead of being buffered
+  without limit.
