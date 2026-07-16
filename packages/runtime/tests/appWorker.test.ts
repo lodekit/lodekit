@@ -54,6 +54,12 @@ describe("appWorker", () => {
     expect(getServerState("start-app")?.status).toBe("running");
   }, 30_000);
 
+  it("an unknown path renders the root route's notFoundComponent", async () => {
+    const res = await forwardToWorker("start-app", new Request("http://x/start-app/no-such-page"));
+    expect(res.status).toBe(404);
+    expect(await res.text()).toContain("fixture not found");
+  }, 30_000);
+
   it("caps forwarded request bodies at FORWARD_BODY_MAX_BYTES (413, never reaches the worker)", async () => {
     // Declared oversize (Content-Length) — rejected before the body is read.
     const oversize = new Request("http://x/start-app/", {

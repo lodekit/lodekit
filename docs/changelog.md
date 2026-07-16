@@ -43,3 +43,7 @@ Rules:
 - **Oversized requests to apps are refused** — a request body over 5 MB sent to
   an app page or server function now gets a 413 instead of being buffered
   without limit.
+
+- **Apps get a real not-found page** — newly scaffolded apps (and Welcome and
+  Greenhouse) now render a styled 404 with a link back home instead of a bare
+  "Not Found" fallback.

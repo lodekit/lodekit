@@ -1,4 +1,4 @@
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import appCss from "../index.css?url";
 
 export const Route = createRootRoute({
@@ -6,6 +6,12 @@ export const Route = createRootRoute({
     meta: [{ title: "Welcome to Lodekit" }],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
+  notFoundComponent: () => (
+    <main className="mx-auto max-w-2xl space-y-2 p-8">
+      <h1 className="text-lg font-medium">Page not found</h1>
+      <Link to="/" className="text-muted-foreground underline">Back to Welcome</Link>
+    </main>
+  ),
   component: () => (
     <html lang="en">
       <head>
