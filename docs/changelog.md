@@ -29,3 +29,9 @@ Rules:
   app and browse its tables (filter, multi-column sort, search, paging),
   key-value entries, files, and events — read-only, with storage insights and
   recent activity on the overview.
+
+## Fixed
+
+- **kv-store error statuses** — internal faults in the kv API now return 500
+  instead of masquerading as 400; bad requests (invalid keys, `incr` on a
+  non-number, malformed JSON) still return 400.
