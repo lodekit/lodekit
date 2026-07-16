@@ -32,9 +32,12 @@ const emitBody = z
     path: ["payload"],
   });
 
-// Shared by the app-scoped GET and (extended with `ns`) the global /api/events/history.
+// Shared by the app-scoped GET and (extended with app/kind) the global /api/events/history.
 export const eventsQuery = z.object({
+  component: z.string().optional(),
   type: z.string().optional(),
+  since: z.coerce.number().int().nonnegative().optional(),
+  until: z.coerce.number().int().positive().optional(),
   after: z.coerce.number().int().nonnegative().optional(),
   before: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().optional(),
@@ -45,14 +48,14 @@ export const eventRoutes = new Hono<EventsEnv>()
   .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
   .post("/", zValidator("json", emitBody, validationHook), (c) => {
     const { type, payload, ttl } = c.req.valid("json");
-    // ns = source = the app's own id — attribution can't be forged by construction.
-    const record = emitEvent({ ns: c.var.appId, source: c.var.appId, type, payload, ttl });
+    // app = component = the app's own id — attribution can't be forged by construction.
+    const record = emitEvent({ app: c.var.appId, kind: "app", component: c.var.appId, type, payload, ttl });
     if (!record) return c.json({ error: "invalid event" }, 400);
     return c.json(record, 201);
   })
   .get("/", zValidator("query", eventsQuery, validationHook), (c) => {
-    const { type, after, before, limit } = c.req.valid("query");
-    return c.json(queryEvents({ ns: c.var.appId, type, after, before, limit }));
+    const { component, type, since, until, after, before, limit } = c.req.valid("query");
+    return c.json(queryEvents({ app: c.var.appId, component, type, since, until, after, before, limit }));
   });
 
 export type EventRoutes = typeof eventRoutes;

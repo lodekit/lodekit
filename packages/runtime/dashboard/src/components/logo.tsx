@@ -48,7 +48,7 @@ function MarkC({ className }: SvgProps) { // "Outline": outline jar + outline cl
 // with its actual mark.
 export const MARKS = { a: MarkA, b: MarkB, c: MarkC } as const;
 
-// Tracks the effective appearance.icon_style setting (live via settings-change SSE).
+// Tracks the effective appearance.icon_style setting (live via the settings SSE component).
 // Always the "running" mark — the logo does not reflect runtime state.
 export function Logo({ className }: SvgProps) {
   const q = useQuery<{ settings: { key: string; effective: unknown }[] }>({

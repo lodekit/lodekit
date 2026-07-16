@@ -33,11 +33,14 @@ export async function fetchLogs(
 
 export async function fetchEvents(
   base: string,
-  params: { appId?: string; type?: string; after?: number; limit?: number } = {}
+  params: { app?: string; kind?: string; component?: string; type?: string; since?: number; after?: number; limit?: number } = {}
 ) {
   const query = new URLSearchParams();
-  if (params.appId) query.set("ns", params.appId);
+  if (params.app) query.set("app", params.app);
+  if (params.kind) query.set("kind", params.kind);
+  if (params.component) query.set("component", params.component);
   if (params.type) query.set("type", params.type);
+  if (params.since != null) query.set("since", String(params.since));
   if (params.after != null) query.set("after", String(params.after));
   if (params.limit != null) query.set("limit", String(params.limit));
   const qs = query.toString();

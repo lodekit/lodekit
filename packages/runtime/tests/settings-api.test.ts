@@ -51,7 +51,7 @@ describe("platform settings API", () => {
     expect(theme.field.options).toHaveLength(3);
   });
 
-  it("PUT validates and persists; DELETE resets; both emit stored settings-change events", async () => {
+  it("PUT validates and persists; DELETE resets; both emit value-set/value-cleared facts", async () => {
     expect((await put(`${base}/api/settings/appearance.theme`, "dark")).status).toBe(200);
     let { settings } = await (await fetch(`${base}/api/settings`)).json();
     expect(settings.find((s: { key: string }) => s.key === "appearance.theme")).toMatchObject({ value: "dark", effective: "dark" });
@@ -60,9 +60,10 @@ describe("platform settings API", () => {
     expect((await fetch(`${base}/api/settings/appearance.theme`, { method: "DELETE" })).status).toBe(200);
     ({ settings } = await (await fetch(`${base}/api/settings`)).json());
     expect(settings.find((s: { key: string }) => s.key === "appearance.theme").value).toBeNull();
-    const events = queryEvents({ ns: "_platform", type: "settings-change" }).records;
+    const events = queryEvents({ kind: "service", component: "settings" }).records;
     expect(events.length).toBeGreaterThanOrEqual(2);
-    expect(events[0].payload).toEqual({ key: "appearance.theme" });
+    expect(events[0]).toMatchObject({ app: null, type: "value-cleared", payload: { key: "appearance.theme" } });
+    expect(events[1]).toMatchObject({ app: null, type: "value-set", payload: { key: "appearance.theme" } });
   });
 });
 
@@ -100,9 +101,9 @@ describe("app settings API", () => {
     expect((await fetch(api("/tasks.default_retries"), { method: "DELETE" })).status).toBe(200);
   });
 
-  it("app-scoped settings-change events land on the bus under the app ns", async () => {
+  it("app-scoped value-set facts land on the bus under the app's stream", async () => {
     await put(api("/show_archived"), true);
-    const events = queryEvents({ ns: "app", type: "settings-change" }).records;
+    const events = queryEvents({ app: "app", kind: "service", component: "settings", type: "value-set" }).records;
     expect(events[0].payload).toEqual({ key: "show_archived" });
   });
 

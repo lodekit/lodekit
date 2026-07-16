@@ -11,21 +11,19 @@ The product — the complete experience, from the landing site and docs to the p
 _Avoid_: the server, the platform (that's the installed subset), the site
 
 **Platform**:
-The shippable collection installed on the person's machine: runtime, SDK, UI library, dashboard, and manager. What downloading Lodekit puts on disk.
-_Avoid_: the product (that's Lodekit, which is more), the install, the stack (the stack is how app code is written)
-
-**Runtime**:
-The single Node process at the heart of the platform — it hosts, builds, watches, and serves apps, the dashboard, and the API. Referred to in code as `@lodekit/runtime`.
-_Avoid_: server, backend, daemon
+The collection of all Lodekit components: the engine, the services, the SDK and UI
+library, internal apps (dashboard; manager), and the person's apps. A collection, not
+an actor — the platform owns nothing and emits nothing; its members do.
+_Avoid_: the platform as an emitter/owner (`_platform`), the product (that's Lodekit)
 
 **Engine**:
-The person-facing name for the runtime wherever the dashboard shows it (the
-Settings "Engine" section — `hosting.*` keys). Same thing as the runtime; "Engine"
-is what the person reads, "runtime" is what the code and docs say.
-_Avoid_: "engine" in code, specs, and internal docs — that's "runtime"; the dashboard is the only surface that says Engine.
+The single Node process at the heart of the platform — it hosts, builds, watches, and
+serves apps, the dashboard, and the API. The canonical name everywhere: canon, docs,
+dashboard, code. (Package name `@lodekit/engine` after the rename lands, §8.)
+_Avoid_: runtime (retired), server, backend, daemon
 
 **Manager**:
-The thin menubar app (`@lodekit/manager`) that ships and supervises the platform: it provisions a Lodekit-local Node (pinned version, never the system's), runs the runtime as a child process, and offers status indication, "open dashboard", and quit from the menu bar. It has no product UI of its own — everything it shows is the dashboard, opened in the browser.
+The thin menubar app (`@lodekit/manager`) that ships and supervises the platform: it provisions a Lodekit-local Node (pinned version, never the system's), runs the engine as a child process, and offers status indication, "open dashboard", and quit from the menu bar. It has no product UI of its own — everything it shows is the dashboard, opened in the browser.
 _Avoid_: desktop app, shell, controller, tray app, the Electron app (implementation detail)
 
 **Dashboard**:
@@ -47,7 +45,7 @@ The AI assistant the person builds through, in whatever form they use it — a d
 _Avoid_: Claude (as the generic word), LLM, assistant, AI
 
 **MCP server**:
-The agent-facing surface (`@lodekit/mcp`) through which an agent drives Lodekit — scaffold, list, open, inspect — and reads an app's services on the person's behalf ("show me all my recipes"). Read-only for now; writes come later, behind designed guardrails. Reaches the runtime over HTTP only.
+The agent-facing surface (`@lodekit/mcp`) through which an agent drives Lodekit — scaffold, list, open, inspect — and reads an app's services on the person's behalf ("show me all my recipes"). Read-only for now; writes come later, behind designed guardrails. Reaches the engine over HTTP only.
 _Avoid_: the integration, the bridge
 
 **Skill**:
@@ -81,7 +79,7 @@ boundary.
 _Avoid_: server code, RPC, action, endpoint
 
 **App worker**:
-The per-app worker thread inside the runtime that executes an app's built server bundle
+The per-app worker thread inside the engine that executes an app's built server bundle
 (SSR + server functions).
 _Avoid_: sandbox, per-app server, process
 
@@ -92,7 +90,7 @@ _Avoid_: create, init, bootstrap, generate
 **Showcase app**:
 The Greenhouse app in the checked-in root (`root/apps/greenhouse`) — the SDK showcase and
 permanent smoke-testing ground, shipped by the manager on first run. Definition-of-done:
-new SDK/runtime capability isn't done until Greenhouse exercises it.
+new SDK/engine capability isn't done until Greenhouse exercises it.
 _Avoid_: example app, demo app, sample app
 
 **Welcome app**:
@@ -103,8 +101,8 @@ _Avoid_: FTUX app (until it is one)
 ### Services
 
 **Service**:
-One cloud battery — a capability the runtime provides to apps: storage, secrets, tasks, settings. Every service is provided by the runtime and reached by apps only through the SDK. Service names are normative end to end: the same word appears in marketing copy, docs, the dashboard, and the SDK's API surface.
-_Avoid_: capability, feature, component (components are UI), battery (marketing metaphor, not the domain word)
+One cloud battery — a capability the engine provides to apps: storage, secrets, tasks, settings. Every service is provided by the engine and reached by apps only through the SDK. Service names are normative end to end: the same word appears in marketing copy, docs, the dashboard, and the SDK's API surface.
+_Avoid_: capability, feature, component (UI widgets and the event-attribution field own that word — see Component), battery (marketing metaphor, not the domain word)
 
 **Service catalog**:
 The full set of services Lodekit offers, named AWS-style: kv-store (the Key-Value Data Store), db-store (the Relational Data Store), file-store (the File Store), log-store (the Log Store), event-store (the Event Store), secret-store (the Secret Store), tasks (Tasks — one service; task-queue and task-schedule are its two capabilities), settings, gateways (Gateways). The catalog grows over time; each service closes its terminology and surface in its own slice-spec.
@@ -132,31 +130,56 @@ and over MCP (`lodekit_logs`) (`docs/specs/2026-07-06-logging-design.md`).
 _Avoid_: Logs (the retired title), console, output, telemetry
 
 **Event**:
-A durable message on the platform's event bus that drives business logic: the platform announcing an app became ready, an app announcing an export finished, a task announcing a detected change. Every event is addressed (`ns` — whose stream it belongs to) and attributed (`source` — who emitted it), persisted to the event-store, and delivered live over SSE. Events are never the system of record: precious facts belong in the emitting app's own stores — the event announces and triggers (`docs/specs/2026-07-07-events-design.md`).
+A durable message on the platform's event bus that drives business logic: the engine announcing an app became ready, an app announcing an export finished, a task announcing a detected change. Every event is addressed (`app` — whose stream it belongs to) and attributed (`kind` + `component` — what class of platform member emitted it, and which instance), persisted to the event-store, and delivered live over SSE. Events are never the system of record: precious facts belong in the emitting app's own stores — the event announces and triggers (`docs/specs/2026-07-07-events-design.md`).
 _Avoid_: message, signal, notification
 
 **Event Store**:
 The platform-wide append-only event log (the event-store service), reached through the SDK as the `events` handle (`emit`/`watch`/`list`). One sqlite log at `data/_platform/events.sqlite` (precious — in the Backup tree), monotonic row id as the offset, retained 30 days / 50k records (change-feed events 7 days), viewable in the dashboard Events view and over MCP (`lodekit_events`).
 _Avoid_: Events (the retired title), message queue, broker, SSE (that's the transport)
 
-**Internal namespace**:
-An underscore-prefixed id (`_platform`, `_manager`, `_dashboard`) naming a platform citizen rather than an app. The app-id grammar has no underscore, so internal namespaces can never collide with an app id — no reserved-word list, no enforcement code. Internal namespaces are first-class in the id space, on the event bus (they emit and own streams), in the data tree (`data/_platform/` holds the bus), and as the log query sentinel (`app=_platform`). They are **not** Apps — no source folder, no contract.
-_Avoid_: reserved app, system app, internal app
+**Kind**:
+The class of platform member an event names as its emitter: `engine`, `service`, or
+`app`. Stored on every event; the classifier that makes bare component names
+unambiguous (an app named `tasks` can never be confused with the tasks service).
+Extensible if new member classes ever emit (manager, MCP).
+_Avoid_: module (means app source files), type (that's the event name), class
+
+**Component**:
+The platform member instance that emitted an event, within its kind: an engine
+subsystem (`build`, `lifecycle`, `registry`), a catalog service name (`kv-store`,
+`tasks`, …), or an app id. The same vocabulary log-store converges on (follow-up
+slice).
+_Avoid_: source (retired from events; log-store's `source` converges later), emitter
+
+**Internal app**:
+An app-shaped platform component shipped by the platform rather than created by the
+person: the dashboard (`_dashboard`); the manager when it gets a stream. The `_`
+prefix is purely the collision mechanism — the app-id grammar has no underscore, so
+internal ids can never collide with a person's app named `dashboard`. UI surfaces
+render the human name ("Dashboard"), never the raw id.
+_Avoid_: internal namespace (retired term), reserved app, system app
+
+**Event type**: the past-tense fact an event reports, `<subject>-<verb-ed>` (`key-set`,
+`run-failed`) — the subject is never dropped. The two `-ready` exceptions
+(`build-ready`, `server-ready`) are deliberate: "became ready" is the fact, and the
+symmetric `started` / `ready` / `failed` triple beats forcing `server-succeeded`.
+Payloads carry identifiers and references only; ops and statuses belong in the type,
+never the payload.
 
 **Relational Data Store**:
 An app's per-app relational database (the db-store service), reached through the SDK as the `db` handle: schema declared in `src/db.ts` (drizzle tables), additive changes applied on save, destructive changes gated (`docs/specs/2026-07-09-db-store-design.md`). **The default home for domain records** — anything that is an entity: has fields, has relationships, gets listed/filtered/aggregated, would hurt to lose. The kv-store is app memory; the db-store is the domain model. Returned to the catalog by the db-store slice.
 _Avoid_: the Database (the retired title), relational-store (the retired catalog name), the store, sql
 
 **Settings**:
-Configuration the person views and edits in the dashboard Settings page: **platform settings** declared by the runtime (General/Appearance plus every service default, dot-namespaced keys like `tasks.default_retries`) and **app settings** declared in an app's `src/settings.ts` via `defineSettings()` (snake_case keys); the app reads its own through the SDK (`settings` handle — read + watch, never write). Per-app–scoped service settings can be **overridden** per app; resolution is app override → platform value → declared default (the **effective value**). Shipped: `docs/specs/2026-07-07-settings-design.md`. Distinct from the kv-store — see Flagged ambiguities.
+Configuration the person views and edits in the dashboard Settings page: **platform settings** declared by the engine (General/Appearance plus every service default, dot-namespaced keys like `tasks.default_retries`) and **app settings** declared in an app's `src/settings.ts` via `defineSettings()` (snake_case keys); the app reads its own through the SDK (`settings` handle — read + watch, never write). Per-app–scoped service settings can be **overridden** per app; resolution is app override → platform value → declared default (the **effective value**). Shipped: `docs/specs/2026-07-07-settings-design.md`. Distinct from the kv-store — see Flagged ambiguities.
 _Avoid_: preferences, config, options
 
 **Task**:
-Background work an app hands to the runtime to run on the app's behalf — queued (task-queue) or triggered on a time schedule (task-schedule; a **scheduled task**). Declared in the app's `src/tasks.ts`; the task name is the kebab-case of its export. Each execution is a **run** (queued → running → succeeded/failed/canceled). Tasks are listed with their schedule and last-run state in the dashboard. Shipped: `docs/specs/2026-07-06-tasks-service-design.md` (v1 = queue + schedule + retries + history; hooks/signals deferred).
+Background work an app hands to the engine to run on the app's behalf — queued (task-queue) or triggered on a time schedule (task-schedule; a **scheduled task**). Declared in the app's `src/tasks.ts`; the task name is the kebab-case of its export. Each execution is a **run** (queued → running → succeeded/failed/canceled). Tasks are listed with their schedule and last-run state in the dashboard. Shipped: `docs/specs/2026-07-06-tasks-service-design.md` (v1 = queue + schedule + retries + history; hooks/signals deferred).
 _Avoid_: job, cron, worker, workflow
 
 **Gateway**:
-The managed door to one provider (the gateways service): an agent-authored declarative manifest — name, favicon, website, base URL, auth recipe, slots, guardrail defaults — at `gateways/<provider-id>/` under the Lodekit root, plus the runtime machinery that executes its traffic (credential injection, rate limiting, circuit breaking, per-request logging). Countable and person-facing ("the OpenWeatherMap gateway", "3 apps use this gateway"); one gateway per provider. Server-side app code calls through it via the SDK's `gateways` handle — credentials never enter the app worker. Shipped: `docs/specs/2026-07-10-gateways-design.md`.
+The managed door to one provider (the gateways service): an agent-authored declarative manifest — name, favicon, website, base URL, auth recipe, slots, guardrail defaults — at `gateways/<provider-id>/` under the Lodekit root, plus the engine machinery that executes its traffic (credential injection, rate limiting, circuit breaking, per-request logging). Countable and person-facing ("the OpenWeatherMap gateway", "3 apps use this gateway"); one gateway per provider. Server-side app code calls through it via the SDK's `gateways` handle — credentials never enter the app worker. Shipped: `docs/specs/2026-07-10-gateways-design.md`.
 _Avoid_: proxy, connector, integration (see Flagged ambiguities), template.
 
 **Provider**:
@@ -178,7 +201,7 @@ The `apps/` directory under the Lodekit root — app _source_ only, carrying no 
 _Avoid_: source dir, workspace
 
 **Data tree**:
-The `data/` directory under the Lodekit root — each app's persistent storage, one namespace per app id. Internal namespaces own data homes here too — data/_platform/ holds the event bus.
+The `data/` directory under the Lodekit root — each app's persistent storage, one namespace per app id. Platform-wide storage lives here too — `data/_platform/` holds the event bus.
 _Avoid_: db dir, storage
 
 **Gateways tree**:
@@ -209,14 +232,14 @@ The app contract's build model: app source is compiled into built output (static
 _Avoid_: compiled, production build
 
 **Buildless**:
-Code that ships as raw source and runs with no build step — true of the runtime and the SDK, never of apps.
+Code that ships as raw source and runs with no build step — true of the engine and the SDK, never of apps.
 _Avoid_: no-build, raw
 
 **Build state**:
-An app's build lifecycle: `building` → `ready` | `error`. Emitted on the event bus as one
-`build-state` event type with the state in `payload.status` (type names the kind of event;
-payload carries the facts — the same shape as `server-state`).
-_Avoid_: status, phase, per-state event types (`building`/`ready` are payload values, not types)
+An app's build lifecycle, spoken on the bus as past-tense facts from the engine's build
+component: `build-started` → `build-ready` | `build-failed` (`{message}` on failure).
+The server lifecycle mirrors the triple (`server-started` / `server-ready` / `server-failed`).
+_Avoid_: status, phase, status-in-payload (the state is the type)
 
 **Shared toolchain**:
 The one build stack (Vite + React + TypeScript + Tailwind) Lodekit installs once and shares across every app, so apps carry no dependencies of their own.
@@ -242,7 +265,7 @@ contract; arbitrary CSS is possible but unpromised.
 _Avoid_: skins, custom CSS (the mechanism is token redefinition)
 
 **UI catalog**:
-The person-facing window onto the UI library: a statically built Storybook the runtime
+The person-facing window onto the UI library: a statically built Storybook the engine
 serves at `/_ui/`, rendering every component under the live global theme or any app's
 composed theme. Parallel to the service catalog ("what can my apps use?"). The term is
 docs-only — code says `/_ui`.
@@ -254,12 +277,12 @@ _Avoid_: the endpoints, the REST API
 
 ## Relationships
 
-- The **Manager** installs and supervises the **Runtime**. The runtime has two doors: the **MCP server** (the agent's) and the **Dashboard** (the person's).
+- The **Manager** installs and supervises the **Engine**. The engine has two doors: the **MCP server** (the agent's) and the **Dashboard** (the person's).
 - The person builds **Apps** using an **Agent**: the agent loads the **Skill**, drives Lodekit through the **MCP server**, and writes code on the **Stack** — the **SDK** and **UI library** on the **shared toolchain**, conforming to the **App contract**.
 - An **App** is identified by its **App id**; that same app id is its URL path and its data namespace.
-- Every **Service** in the **Service catalog** is provided by the **Runtime**; an app reaches its services (**db-store**, **kv-store**, **file-store**, **settings**, **tasks**) only through the **SDK**, which calls the **Scoped API**.
-- An app's **server functions** run in its **app worker** inside the **runtime**; they reach services through the **SDK** over loopback HTTP.
-- An **App** reaches external **Providers** only through **Gateways**; the runtime injects secrets linked from the **secret-store** host-side, so credentials never enter the **app worker**.
+- Every **Service** in the **Service catalog** is provided by the **Engine**; an app reaches its services (**db-store**, **kv-store**, **file-store**, **settings**, **tasks**) only through the **SDK**, which calls the **Scoped API**.
+- An app's **server functions** run in its **app worker** inside the **engine**; they reach services through the **SDK** over loopback HTTP.
+- An **App** reaches external **Providers** only through **Gateways**; the engine injects secrets linked from the **secret-store** host-side, so credentials never enter the **app worker**.
 - An app's source lives in the **Apps tree**, its built output in the **Cache**, and its persistent state (**db-store** + **kv-store** + **file-store**) in the **Data tree**.
 - The **Backup tree** = apps tree + data tree + gateways tree. The **Cache** is deliberately outside it.
 - **Settings** and **Tasks** are declared by an app and surfaced to the person in the **Dashboard**.
@@ -268,7 +291,7 @@ _Avoid_: the endpoints, the REST API
 ## Principles
 
 - **No dev servers, no terminal builds.** The person never relies on dev servers or
-  terminal build commands. Lodekit ships a runtime / web server; apps are built on
+  terminal build commands. Lodekit ships an engine / web server; apps are built on
   Lodekit as the SDK and run inside that one shared instance (per-app instances only if
   ever proven necessary). Lodekit controls the build chain **programmatically (via
   code, not shell commands)** — down to provisioning its own Lodekit-local Node, never
@@ -276,7 +299,7 @@ _Avoid_: the endpoints, the REST API
 
 ## Flagged ambiguities
 
-- **Lodekit vs Platform** — Lodekit is the whole product experience; the platform is its installed subset (runtime, SDK, UI library, dashboard, manager). "Download Lodekit" installs the platform.
+- **Lodekit vs Platform** — Lodekit is the whole product experience; the platform is its installed subset (engine, SDK, UI library, dashboard, manager). "Download Lodekit" installs the platform.
 - **kv-store vs Cache** — both sound like "somewhere things are kept," but they are opposites in durability. The **kv-store** is per-app durable state (backed up, in the data tree); the **Cache** is disposable build output (never backed up). Never call the kv-store a cache.
 - **Event vs Log** — logs are telemetry (what happened, for observation); events drive business logic (what happened, for reaction). The `log` SSE tail is log-store's live surface, not an event, and never touches the bus.
 - **kv-store vs Settings** — both hold small per-app values. **Settings** are declared by the app and edited by the person in the dashboard (the person's knobs); the **kv-store** is written by app code at runtime (the app's own memory). An app reads both, but only settings are meant for human hands. Credentials are neither: the **secret-store** holds sensitive values the person provides, encrypted at rest, read only by server-side app code — never Settings, never the kv-store. Apps declare **slots** (`src/secrets.ts`); the person **links** a catalog secret to each slot in the dashboard — the link is the grant.

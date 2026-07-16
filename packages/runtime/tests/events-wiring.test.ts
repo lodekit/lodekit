@@ -32,11 +32,11 @@ afterEach(() => {
 });
 
 describe("platform emitters land on the bus", () => {
-  it("worker lifecycle: a missing server bundle stores a server-state error event in the app's ns", () => {
+  it("worker lifecycle: a missing server bundle lands server-failed in the app's stream", () => {
     startAppWorker(cfg, "ghost");
-    const { records } = queryEvents({ ns: "ghost", type: "server-state" });
+    const { records } = queryEvents({ app: "ghost", type: "server-failed" });
     expect(records).toHaveLength(1);
-    expect(records[0]).toMatchObject({ source: "_platform", payload: { status: "error" } });
+    expect(records[0]).toMatchObject({ kind: "engine", component: "lifecycle", payload: { message: "server bundle missing (not built)" } });
   });
 
   // Real chokidar on macOS: the OS event stream goes live some time AFTER ready under
@@ -47,7 +47,7 @@ describe("platform emitters land on the bus", () => {
   // assert on real churn.
   it("watcher: app-folder churn stores one debounced apps-changed event in _platform", async () => {
     const watcher = await startWatcher(cfg);
-    const count = () => queryEvents({ ns: "_platform", type: "apps-changed" }).records.length;
+    const count = () => queryEvents({ kind: "engine", type: "apps-changed" }).records.length;
     const probe = path.join(cfg.appsDir, "probe.txt"); // invalid app id — fires apps-changed, never a build
     let tick = 0;
     await expect
@@ -56,6 +56,7 @@ describe("platform emitters land on the bus", () => {
         return count();
       }, { interval: 500, timeout: 15_000 })
       .toBeGreaterThanOrEqual(1);
+    expect(queryEvents({ type: "apps-changed" }).records[0]).toMatchObject({ app: null, component: "registry" });
     // App-folder churn lands on the bus: with the stream live, the newapp addDir is
     // delivered even if the writes inside race chokidar's watch of the new folder.
     await new Promise((r) => setTimeout(r, 1000)); // drain the last priming write's debounce
@@ -75,7 +76,7 @@ describe("platform emitters land on the bus", () => {
     await watcher.close();
   }, 60_000);
 
-  it("kv writes store change events with identity-only payloads and a service ttl", async () => {
+  it("kv writes land key-set facts with identity-only payloads and the service ttl", async () => {
     const { Hono } = await import("hono");
     const { apiRoutes } = await import("../src/routes.js");
     const app = new Hono().route("/api", apiRoutes(cfg));
@@ -84,12 +85,13 @@ describe("platform emitters land on the bus", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ value: "hi" }),
     });
-    const { records } = queryEvents({ ns: "notes", type: "kv-store-change" });
+    const { records } = queryEvents({ app: "notes", type: "key-set" });
     expect(records).toHaveLength(1);
-    expect(records[0]).toMatchObject({ source: "_platform", payload: { key: "greeting", op: "set" } });
+    expect(records[0]).toMatchObject({ kind: "service", component: "kv-store", payload: { key: "greeting" } });
+    expect(records[0].payload).not.toHaveProperty("op");
   });
 
-  it("task enqueue stores a tasks-change event with identity-only payload and the service ttl", async () => {
+  it("task enqueue lands run-queued with identity-only payload and the service ttl", async () => {
     const { Hono } = await import("hono");
     const { apiRoutes } = await import("../src/routes.js");
     const { getTasksDb, applyManifest } = await import("../src/services/tasks.js");
@@ -101,14 +103,61 @@ describe("platform emitters land on the bus", () => {
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(200);
-    const { records } = queryEvents({ ns: "notes", type: "tasks-change" });
+    const { records } = queryEvents({ app: "notes", type: "run-queued" });
     expect(records).toHaveLength(1);
-    expect(records[0]).toMatchObject({ source: "_platform", payload: { task: "resize", state: "queued" } });
-    expect(records[0].payload).not.toHaveProperty("appId");
+    expect(records[0]).toMatchObject({ kind: "service", component: "tasks", payload: { task: "resize" } });
+    expect(records[0].payload).toHaveProperty("runId");
+    expect(records[0].payload).not.toHaveProperty("state");
     // Service ttl (7 days): past the window the record no longer queries.
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.now() + 8 * 86_400_000);
-    expect(queryEvents({ ns: "notes", type: "tasks-change" }).records).toHaveLength(0);
+    expect(queryEvents({ app: "notes", type: "run-queued" }).records).toHaveLength(0);
     vi.useRealTimers();
+  });
+
+  it("gateway slot link lands connection-linked with names-only payload and the service ttl", async () => {
+    const { emitGatewayEvent } = await import("../src/gatewayEvents.js");
+    emitGatewayEvent("notes", "connection-linked", { alias: "mail", slot: "api-key" });
+    emitGatewayEvent(null, "breaker-opened", { provider: "google" });
+    const linked = queryEvents({ app: "notes", type: "connection-linked" });
+    expect(linked.records).toHaveLength(1);
+    expect(linked.records[0]).toMatchObject({ kind: "service", component: "gateways", payload: { alias: "mail", slot: "api-key" } });
+    const breaker = queryEvents({ kind: "service", type: "breaker-opened" });
+    expect(breaker.records[0]).toMatchObject({ app: null, component: "gateways", payload: { provider: "google" } });
+  });
+
+  it("secret-store: a catalog create lands secret-created (name-only payload), and linking a declared slot lands slot-linked in the app's stream", async () => {
+    const { initSecretStore, closeSecretStoreForTest } = await import("../src/secretsStore.js");
+    const { applySecretsManifest } = await import("../src/services/secret-store.js");
+    const { Hono } = await import("hono");
+    const { apiRoutes } = await import("../src/routes.js");
+    initSecretStore(cfg);
+    try {
+      applySecretsManifest(cfg, "notes", { api_key: { label: "API key", description: "d" } }, Date.now());
+      const app = new Hono().route("/api", apiRoutes(cfg));
+      const created = await app.request("/api/secrets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: "OpenWeather key", description: "wx", value: "s3cr3t" }),
+      });
+      expect(created.status).toBe(201);
+      const { slug } = await created.json();
+      const { records: createdRecords } = queryEvents({ kind: "service", type: "secret-created" });
+      expect(createdRecords).toHaveLength(1);
+      expect(createdRecords[0]).toMatchObject({ app: null, component: "secret-store", payload: { slug } });
+      expect(createdRecords[0].payload).not.toHaveProperty("value");
+
+      const linkRes = await app.request(`/api/apps/notes/secrets/api_key/link`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug }),
+      });
+      expect(linkRes.status).toBe(200);
+      const { records: linkedRecords } = queryEvents({ app: "notes", type: "slot-linked" });
+      expect(linkedRecords).toHaveLength(1);
+      expect(linkedRecords[0]).toMatchObject({ kind: "service", component: "secret-store", payload: { slot: "api_key" } });
+    } finally {
+      closeSecretStoreForTest();
+    }
   });
 });

@@ -171,18 +171,18 @@ describe("db-store /select + /schema", () => {
 });
 
 describe("db-store change feed", () => {
-  it("writes emit db-store-change with op + table", async () => {
+  it("writes emit row-inserted with table", async () => {
     makeTable("app");
     await post(dbApi("app", "/query"), { sql: 'INSERT INTO "plants" (name) VALUES (?)', params: ["F"], method: "run" });
-    const events = await (await fetch(`${base}/api/events/history?ns=app&type=db-store-change`)).json();
+    const events = await (await fetch(`${base}/api/events/history?app=app&type=row-inserted`)).json();
     expect(events.records.length).toBeGreaterThan(0);
-    expect(events.records[0].payload).toEqual({ op: "insert", table: "plants" });
+    expect(events.records[0].payload).toEqual({ table: "plants" });
   });
 
   it("reads emit nothing", async () => {
     makeTable("quiet");
     await post(dbApi("quiet", "/query"), { sql: "SELECT 1", params: [], method: "get" });
-    const events = await (await fetch(`${base}/api/events/history?ns=quiet&type=db-store-change`)).json();
+    const events = await (await fetch(`${base}/api/events/history?app=quiet&type=row-inserted`)).json();
     expect(events.records).toEqual([]);
   });
 });

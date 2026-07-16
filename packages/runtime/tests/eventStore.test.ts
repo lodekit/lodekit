@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 const write = (over: Partial<Parameters<typeof insertEvent>[0]> = {}) =>
-  insertEvent({ ns: "notes", source: "notes", type: "note-added", ...over });
+  insertEvent({ app: "notes", kind: "app", component: "notes", type: "note-added", ...over });
 
 describe("eventStore", () => {
   it("creates data/_platform/events.sqlite", () => {
@@ -34,24 +34,24 @@ describe("eventStore", () => {
     const b = write()!;
     expect(a.id).toBeGreaterThan(0);
     expect(b.id).toBe(a.id + 1);
-    expect(a).toMatchObject({ ns: "notes", source: "notes", type: "note-added", payload: { title: "one" } });
+    expect(a).toMatchObject({ app: "notes", kind: "app", component: "notes", type: "note-added", payload: { title: "one" } });
     expect(b.payload).toBeNull();
   });
 
   it("queries newest-first by default, ascending replay with after", () => {
     const a = write()!, b = write()!, c = write()!;
-    const desc = queryEvents({ ns: "notes" });
+    const desc = queryEvents({ app: "notes" });
     expect(desc.records.map((r) => r.id)).toEqual([c.id, b.id, a.id]);
-    const asc = queryEvents({ ns: "notes", after: a.id });
+    const asc = queryEvents({ app: "notes", after: a.id });
     expect(asc.records.map((r) => r.id)).toEqual([b.id, c.id]);
   });
 
-  it("filters by ns and type; paginates with before and reports next", () => {
-    write({ ns: "notes", type: "kv-store-change" });
-    write({ ns: "other" });
-    write({ ns: "_platform", source: "_platform", type: "apps-changed" });
-    expect(queryEvents({ ns: "notes" }).records).toHaveLength(1);
-    expect(queryEvents({ type: "apps-changed" }).records[0].ns).toBe("_platform");
+  it("filters by app and type; paginates with before and reports next", () => {
+    write({ app: "notes", type: "key-set" });
+    write({ app: "other" });
+    write({ app: null, kind: "engine", component: "registry", type: "apps-changed" });
+    expect(queryEvents({ app: "notes" }).records).toHaveLength(1);
+    expect(queryEvents({ type: "apps-changed" }).records[0].app).toBeNull();
     const all = queryEvents({});
     expect(all.records).toHaveLength(3);
     const page = queryEvents({ limit: 2 });
@@ -62,13 +62,28 @@ describe("eventStore", () => {
     expect(rest.next).toBeNull();
   });
 
+  it("filters by kind, component, and a [since, until) ts range", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(1_000);
+    insertEvent({ app: "notes", kind: "service", component: "kv-store", type: "key-set", payload: { key: "a" } });
+    vi.setSystemTime(2_000);
+    insertEvent({ app: null, kind: "engine", component: "registry", type: "apps-changed" });
+    vi.setSystemTime(3_000);
+    insertEvent({ app: "notes", kind: "app", component: "notes", type: "export-finished" });
+    expect(queryEvents({ kind: "engine" }).records.map((r) => r.type)).toEqual(["apps-changed"]);
+    expect(queryEvents({ component: "kv-store" }).records.map((r) => r.type)).toEqual(["key-set"]);
+    expect(queryEvents({ since: 2_000, until: 3_000 }).records.map((r) => r.type)).toEqual(["apps-changed"]);
+    expect(queryEvents({ since: 2_000 }).records.map((r) => r.type)).toEqual(["export-finished", "apps-changed"]);
+    vi.useRealTimers();
+  });
+
   it("ttl: expired events vanish from queries and are deleted by the sweep", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(Date.now());
     write({ ttl: 1 });
     write();
     vi.setSystemTime(Date.now() + 2_000);
-    expect(queryEvents({ ns: "notes" }).records).toHaveLength(1);
+    expect(queryEvents({ app: "notes" }).records).toHaveLength(1);
     expect(sweepEventStore()).toBe(1);
   });
 
@@ -83,16 +98,26 @@ describe("eventStore", () => {
     expect(queryEvents({}).records).toHaveLength(2);
   });
 
-  it("nsAges: a namespace's own retention age wins over the global age", () => {
+  it("appAges: an app's own retention age wins over the global age", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(1_000_000);
-    write({ ns: "p" });
-    write({ ns: "a" });
-    write({ ns: "b" });
+    write({ app: "p" });
+    write({ app: "a" });
+    write({ app: "b" });
     vi.setSystemTime(1_000_000 + 3 * 24 * 60 * 60 * 1000); // all three now 3 days old
-    sweepEventStore({ maxAgeMs: 2 * 24 * 60 * 60 * 1000, nsAges: new Map([["a", 7 * 24 * 60 * 60 * 1000]]) });
-    const left = queryEvents({}).records.map((r) => r.ns);
+    sweepEventStore({ maxAgeMs: 2 * 24 * 60 * 60 * 1000, appAges: new Map([["a", 7 * 24 * 60 * 60 * 1000]]) });
+    const left = queryEvents({}).records.map((r) => r.app);
     expect(left).toEqual(["a"]); // "p" and "b" swept by the 2d global age; "a" kept by its 7d override
+  });
+
+  it("sweeps platform-wide (app null) rows past the global age", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(1_000);
+    insertEvent({ app: null, kind: "engine", component: "registry", type: "apps-changed" });
+    vi.setSystemTime(1_000 + 31 * 24 * 60 * 60 * 1000);
+    expect(sweepEventStore({ appAges: new Map([["notes", 1]]) })).toBeGreaterThanOrEqual(1);
+    expect(queryEvents({ type: "apps-changed" }).records).toHaveLength(0);
+    vi.useRealTimers();
   });
 
   it("degrades to null/empty when the store cannot open", () => {

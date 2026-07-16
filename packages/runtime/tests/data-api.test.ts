@@ -64,18 +64,18 @@ describe("GET /api/apps/:appId/data/summary", () => {
   });
 });
 
-describe("GET /api/events/history?source=", () => {
-  it("filters by source", async () => {
-    insertEvent({ ns: "plants", source: "plants", type: "watered" });
-    insertEvent({ ns: "plants", source: "_platform", type: "kv-store-change" });
-    const r = await fetch(`${base}/api/events/history?ns=plants&source=plants`);
+describe("GET /api/events/history?kind=", () => {
+  it("filters by kind", async () => {
+    insertEvent({ app: "plants", kind: "app", component: "plants", type: "watered" });
+    insertEvent({ app: "plants", kind: "service", component: "kv-store", type: "key-set", payload: { key: "k" } });
+    const r = await fetch(`${base}/api/events/history?app=plants&kind=app`);
     const d = await r.json();
     expect(d.records).toHaveLength(1);
     expect(d.records[0].type).toBe("watered");
   });
 
-  it("rejects a malformed source", async () => {
-    const r = await fetch(`${base}/api/events/history?source=Not%20Valid`);
+  it("rejects an unknown kind", async () => {
+    const r = await fetch(`${base}/api/events/history?kind=Not%20Valid`);
     expect(r.status).toBe(400);
   });
 });

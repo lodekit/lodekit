@@ -7,7 +7,7 @@ import react from "@vitejs/plugin-react";
 import tailwind from "@tailwindcss/vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import type { Config } from "./config.js";
-import { emitEvent, PLATFORM_NS } from "./events.js";
+import { emitEvent } from "./events.js";
 import { isValidAppId, scanApps } from "./registry.js";
 import { startAppWorker, stopAppWorker } from "./appWorker.js";
 import { getBuildInfo } from "./buildInfo.js";
@@ -43,9 +43,14 @@ export function getBuildState(appId: string): BuildState | undefined {
   return states.get(appId);
 }
 
+const BUILD_FACT = { building: "build-started", ready: "build-ready", error: "build-failed" } as const;
+
 function setState(appId: string, state: BuildState): void {
   states.set(appId, state);
-  emitEvent({ ns: appId, source: PLATFORM_NS, type: "build-state", payload: { ...state } });
+  emitEvent({
+    app: appId, kind: "engine", component: "build", type: BUILD_FACT[state.status],
+    payload: state.status === "error" ? { message: state.message } : undefined,
+  });
   if (state.status === "error") emitLog("error", "build", "build failed", { stack: state.message }, appId);
   else if (state.status === "ready") emitLog("info", "build", "build ready", undefined, appId);
   else emitLog("debug", "build", "build started", undefined, appId);
@@ -160,11 +165,11 @@ async function runDashboardBuild(cfg: Config): Promise<DashboardState> {
       themeOverrideFiles: [path.join(cfg.root, "theme.css")],
     });
     dashboardState = { status: "ready" };
-    emitEvent({ ns: "_dashboard", source: PLATFORM_NS, type: "build-state", payload: { ...dashboardState } });
+    emitEvent({ app: "_dashboard", kind: "engine", component: "build", type: "build-ready" });
     startAppWorker(cfg, "_dashboard");
   } catch (e) {
     dashboardState = { status: "error", message: e instanceof Error ? e.message : String(e) };
-    emitEvent({ ns: "_dashboard", source: PLATFORM_NS, type: "build-state", payload: { ...dashboardState } });
+    emitEvent({ app: "_dashboard", kind: "engine", component: "build", type: "build-failed", payload: { message: dashboardState.message } });
   }
   return dashboardState;
 }

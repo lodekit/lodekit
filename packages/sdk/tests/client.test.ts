@@ -109,40 +109,41 @@ describe("events", () => {
     }
   }
   const envelope = (over: Record<string, unknown>) => ({
-    id: 1, ts: 1, ns: "notes", source: "notes", type: "note-added", payload: null, ...over,
+    id: 1, ts: 1, app: "notes", kind: "service", component: "kv-store", type: "note-added", payload: null, ...over,
   });
 
-  it("watch filters by type, shares one EventSource, closes on last unsubscribe", () => {
+  it("watch filters by kind/component/type, shares one EventSource, closes on last unsubscribe", () => {
     (globalThis as unknown as { EventSource: unknown }).EventSource = FakeEventSource;
     FakeEventSource.instances = [];
     const c = createClient({ baseUrl: "http://x", appId: "notes" });
     const seen: string[] = [];
-    const un1 = c.events.watch({ type: "kv-store-change" }, (ev) => seen.push(`kv:${(ev.payload as { key: string }).key}`));
+    const un1 = c.events.watch({ component: "kv-store" }, (ev) => seen.push(`kv:${(ev.payload as { key: string }).key}`));
     const un2 = c.events.watch({}, (ev) => seen.push(`any:${ev.type}`));
+    const un3 = c.events.watch({ kind: "service", type: ["key-set"] }, (ev) => seen.push(`and:${ev.type}`));
     expect(FakeEventSource.instances).toHaveLength(1);
     const es = FakeEventSource.instances[0];
     expect(es.url).toBe("http://x/api/apps/notes/events");
-    es.dispatch("event", envelope({ id: 2, source: "_platform", type: "kv-store-change", payload: { key: "k1", op: "set" } }));
-    es.dispatch("event", envelope({ id: 3, type: "export-ready" }));
-    expect(seen).toEqual(["kv:k1", "any:kv-store-change", "any:export-ready"]);
-    un1();
+    es.dispatch("event", envelope({ id: 2, kind: "service", component: "kv-store", type: "key-set", payload: { key: "k1" } }));
+    es.dispatch("event", envelope({ id: 3, kind: "app", component: "notes", type: "export-ready" }));
+    expect(seen).toEqual(["kv:k1", "any:key-set", "and:key-set", "any:export-ready"]);
+    un1(); un3();
     expect(es.closed).toBe(false);
     un2();
     expect(es.closed).toBe(true);
     delete (globalThis as { EventSource?: unknown }).EventSource;
   });
 
-  it("watch accepts an array of types", () => {
+  it("watch accepts an array of components", () => {
     (globalThis as unknown as { EventSource: unknown }).EventSource = FakeEventSource;
     FakeEventSource.instances = [];
     const c = createClient({ baseUrl: "http://x", appId: "notes" });
     const seen: string[] = [];
-    const un = c.events.watch({ type: ["build-state", "server-state"] }, (ev) => seen.push(ev.type));
+    const un = c.events.watch({ component: ["kv-store", "db-store"] }, (ev) => seen.push(ev.type));
     const es = FakeEventSource.instances[0];
-    es.dispatch("event", envelope({ id: 2, source: "_platform", type: "build-state", payload: { status: "ready" } }));
-    es.dispatch("event", envelope({ id: 3, type: "note-added" }));
-    es.dispatch("event", envelope({ id: 4, source: "_platform", type: "server-state", payload: { status: "error", message: "boom" } }));
-    expect(seen).toEqual(["build-state", "server-state"]);
+    es.dispatch("event", envelope({ id: 2, component: "kv-store", type: "key-set", payload: { key: "k1" } }));
+    es.dispatch("event", envelope({ id: 3, component: "notes", type: "note-added" }));
+    es.dispatch("event", envelope({ id: 4, component: "db-store", type: "row-inserted", payload: { row: 1 } }));
+    expect(seen).toEqual(["key-set", "row-inserted"]);
     un();
     delete (globalThis as { EventSource?: unknown }).EventSource;
   });
@@ -161,10 +162,26 @@ describe("events", () => {
   it("list builds query params and returns records + next", async () => {
     const c = createClient({ baseUrl: "http://x", appId: "notes" });
     fetchMock.mockResolvedValueOnce(okJson({ records: [], next: null }));
-    await c.events.list({ type: "kv-store-change", after: 5, limit: 10 });
+    await c.events.list({ component: "kv-store", type: "key-set", since: 1, after: 5, limit: 10 });
     expect(fetchMock.mock.calls[0][0]).toBe(
-      "http://x/api/apps/notes/event-store?type=kv-store-change&after=5&limit=10"
+      "http://x/api/apps/notes/event-store?component=kv-store&type=key-set&since=1&after=5&limit=10"
     );
+  });
+
+  it("settings.watch fires only on settings value-set/value-cleared, not on defs reloads", () => {
+    (globalThis as unknown as { EventSource: unknown }).EventSource = FakeEventSource;
+    FakeEventSource.instances = [];
+    const c = createClient({ baseUrl: "http://x", appId: "notes" });
+    const seen: string[] = [];
+    const un = c.settings.watch((change) => seen.push(change.key));
+    const es = FakeEventSource.instances[0];
+    es.dispatch("event", envelope({ id: 2, component: "settings", type: "value-set", payload: { key: "theme" } }));
+    es.dispatch("event", envelope({ id: 3, component: "settings", type: "defs-changed" }));
+    es.dispatch("event", envelope({ id: 4, component: "secret-store", type: "value-set", payload: { key: "token" } }));
+    es.dispatch("event", envelope({ id: 5, component: "settings", type: "value-cleared", payload: { key: "layout" } }));
+    expect(seen).toEqual(["theme", "layout"]);
+    un();
+    delete (globalThis as { EventSource?: unknown }).EventSource;
   });
 });
 

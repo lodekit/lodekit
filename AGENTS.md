@@ -18,26 +18,26 @@ pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `root/` is *
 member (so the sample apps never get a `node_modules`). Structure and rationale:
 `docs/specs/2026-06-30-monorepo-migration-design.md`.
 
-- **`packages/runtime`** (`@lodekit/runtime`) — the product. A single Node/Hono process
-  (buildless, run via `tsx`) that is host + scoped API + dashboard + folder-watcher + SSE,
-  and hosts TanStack Start apps in per-app worker threads. It serves apps from a Lodekit
-  root (`LODEKIT_ROOT`, default `~/Documents/Lodekit`) holding sibling `apps/` + `data/`
-  trees. Storage is per-app `better-sqlite3`.
-- **`packages/mcp`** (`@lodekit/mcp`) — the Claude-facing MCP server. Reaches the runtime
-  **over HTTP only** — no import-time dependency on the runtime. The dependency-free HTTP
+- **`packages/runtime`** (`@lodekit/runtime`) — the product. The **engine** — a single
+  Node/Hono process (buildless, run via `tsx`) that is host + scoped API + dashboard +
+  folder-watcher + SSE, and hosts TanStack Start apps in per-app worker threads. It
+  serves apps from a Lodekit root (`LODEKIT_ROOT`, default `~/Documents/Lodekit`)
+  holding sibling `apps/` + `data/` trees. Storage is per-app `better-sqlite3`.
+- **`packages/mcp`** (`@lodekit/mcp`) — the Claude-facing MCP server. Reaches the engine
+  **over HTTP only** — no import-time dependency on the engine. The dependency-free HTTP
   helpers live in `client.ts`; the MCP-SDK wiring in `index.ts`.
 - **`packages/skill`** (`@lodekit/skill`) — the Claude skill (content only).
 - **`packages/integration-tests`** (`@lodekit/integration-tests`) — cross-package
-  integration tests (runtime↔MCP); imports the siblings by package specifier
+  integration tests (engine↔MCP); imports the siblings by package specifier
   (`@lodekit/runtime/*`, `@lodekit/mcp/client`), never by relative reach-in.
 - **`web/main`** (`@lodekit/web-main`) — Astro landing site.
 - **`web/docs`** (`@lodekit/web-docs`) — Starlight docs site (placeholder scaffold).
 - **`manager`** (`@lodekit/manager`) — the menubar app that ships and supervises the
   platform. Packaged (`make`, electron-builder): an ad-hoc-signed `Lodekit.app` bundling a pinned
   Lodekit-local Node + the platform payload (runtime/mcp/skill via `pnpm deploy`) in
-  `Resources/`, spawning the runtime as a single direct child Node process (so
+  `Resources/`, spawning the engine as a single direct child Node process (so
   `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
-  app supervising the workspace runtime against `root/` on the system Node.
+  app supervising the workspace engine against `root/` on the system Node.
 - **`root/`** — the checked-in Lodekit root: the Greenhouse showcase app (the SDK's
   smoke-testing ground — see `root/README.md` for the definition-of-done convention) and
   the Welcome app. Used in dev via `LODEKIT_ROOT=./root`; the packaged manager installs

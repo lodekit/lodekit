@@ -40,9 +40,9 @@ function Conservatory() {
   const router = useRouter();
 
   // useEffect (not module scope) keeps the watch off the SSR path — it's client-only.
-  // Entity writes ride db-store-change; streak/snooze (app memory) ride kv-store-change.
+  // Entity writes ride db-store facts; streak/snooze (app memory) ride kv-store facts.
   useEffect(
-    () => events.watch({ type: ["db-store-change", "kv-store-change"] }, () => void router.invalidate()),
+    () => events.watch({ component: ["db-store", "kv-store"] }, () => void router.invalidate()),
     [router]
   );
 

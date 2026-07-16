@@ -118,8 +118,8 @@ function Almanac() {
   useEffect(() => void refetch(), [refetch]);
   useEffect(
     () =>
-      events.watch({ type: "tasks-change" }, (ev) => {
-        setLive(ev.payload?.state === "running");
+      events.watch({ component: "tasks" }, (ev) => {
+        setLive(ev.type === "run-started");
         void refetch();
       }),
     [refetch]

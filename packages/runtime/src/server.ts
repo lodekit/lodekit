@@ -56,7 +56,12 @@ const themeResolverJs = (mode: string) => `(() => {
     const es = new EventSource("/api/events");
     es.addEventListener("event", (e) => {
       const d = JSON.parse(e.data);
-      if (d.type !== "settings-change" || d.payload?.key !== "appearance.theme") return;
+      if (
+        d.component !== "settings" ||
+        (d.type !== "value-set" && d.type !== "value-cleared") ||
+        d.app !== null ||
+        d.payload?.key !== "appearance.theme"
+      ) return;
       fetch("/_ui/theme.json").then((r) => r.json()).then((t) => { mode = t.theme; apply(); }).catch(() => {});
     });
   }
@@ -196,7 +201,7 @@ export async function start(cfg: Config): Promise<Server> {
       sweepEventStore({
         maxAgeMs: effectiveMs("events.retention_age"),
         maxRows: effectiveNumber("events.retention_max_rows"),
-        nsAges: new Map([...collectAppOverrides(cfg, "events.retention_age")].map(([a, v]) => [a, parseDuration(v as string)])),
+        appAges: new Map([...collectAppOverrides(cfg, "events.retention_age")].map(([a, v]) => [a, parseDuration(v as string)])),
       })
     );
     every("tasks-dispatch", effectiveMs("tasks.dispatch_poll"), dispatchTasks);

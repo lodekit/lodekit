@@ -67,7 +67,7 @@ export class TokenBucket {
 
 /** Consecutive-failure circuit breaker: closed → open (threshold hit) →
  *  half-open (cooldown elapsed, one probe) → closed | open. The transition
- *  return values let the engine emit gateway-health exactly once per change. */
+ *  return values let the engine emit the breaker-opened/breaker-closed fact exactly once per change. */
 export class Breaker {
   private failures = 0;
   private openedAt = 0;

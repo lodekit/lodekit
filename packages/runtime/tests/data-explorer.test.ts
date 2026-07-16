@@ -17,13 +17,13 @@ afterEach(() => {
   fs.rmSync(dataDir, { recursive: true, force: true });
 });
 
-describe("event source filter", () => {
-  it("queryEvents filters by exact source", () => {
-    insertEvent({ ns: "plants", source: "plants", type: "watered" });
-    insertEvent({ ns: "plants", source: "_platform", type: "kv-store-change" });
-    const all = queryEvents({ ns: "plants" });
+describe("event kind filter", () => {
+  it("queryEvents filters by exact kind", () => {
+    insertEvent({ app: "plants", kind: "app", component: "plants", type: "watered" });
+    insertEvent({ app: "plants", kind: "service", component: "kv-store", type: "key-set", payload: { key: "k" } });
+    const all = queryEvents({ app: "plants" });
     expect(all.records).toHaveLength(2);
-    const appOnly = queryEvents({ ns: "plants", source: "plants" });
+    const appOnly = queryEvents({ app: "plants", kind: "app" });
     expect(appOnly.records).toHaveLength(1);
     expect(appOnly.records[0].type).toBe("watered");
   });

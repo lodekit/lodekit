@@ -215,7 +215,7 @@ describe("sdk files handle (core) against the booted runtime", () => {
     expect(stat.size).toBe(8);
   });
 
-  it("scoped SSE carries file-store-change and never leaks across apps", async () => {
+  it("scoped SSE carries file-put facts and never leaks across apps", async () => {
     const events: string[] = [];
     const res = await fetch(`${base}/api/apps/appa/events`);
     const reader = res.body!.getReader();
@@ -235,7 +235,7 @@ describe("sdk files handle (core) against the booted runtime", () => {
     await reader.cancel();
     await drain.catch(() => {});
     const stream = events.join("");
-    expect(stream).toContain("file-store-change");
+    expect(stream).toContain('"type":"file-put"');
     expect(stream).toContain('"slug":"mine"');
     expect(stream).not.toContain("theirs");
   });

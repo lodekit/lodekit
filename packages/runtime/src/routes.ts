@@ -18,7 +18,7 @@ import { effectiveNumber } from "./services/settings.js";
 import { tasksRoutes, withTasks, CATALOG_NAME as TASKS } from "./services/tasks.js";
 import { eventRoutes, withEvents, eventsQuery, CATALOG_NAME as EVENTS } from "./services/event-store.js";
 import { queryEvents } from "./eventStore.js";
-import { NS_RE } from "./events.js";
+import { ID_RE, KINDS } from "./events.js";
 import { platformSettingsRoutes, settingsRoutes, withSettings, CATALOG_NAME as SETTINGS } from "./services/settings.js";
 import { platformSecretsRoutes, appSecretsRoutes, withSecrets } from "./services/secret-store.js";
 import { platformGatewaysRoutes, appGatewaysRoutes, withGateways, bindGatewaysConfig, CATALOG_NAME as GATEWAYS } from "./services/gateways.js";
@@ -88,12 +88,15 @@ export function apiRoutes(cfg: Config) {
       "/events/history",
       zValidator(
         "query",
-        eventsQuery.extend({ ns: z.string().regex(NS_RE).optional(), source: z.string().regex(NS_RE).optional() }),
+        eventsQuery.extend({
+          app: z.string().regex(ID_RE).optional(),
+          kind: z.enum(KINDS).optional(),
+        }),
         validationHook
       ),
       (c) => {
-        const { ns, source, type, after, before, limit } = c.req.valid("query");
-        return c.json(queryEvents({ ns, source, type, after, before, limit }));
+        const { app, kind, component, type, since, until, after, before, limit } = c.req.valid("query");
+        return c.json(queryEvents({ app, kind, component, type, since, until, after, before, limit }));
       }
     )
     .get("/events", (c) => sseHandler()(c))

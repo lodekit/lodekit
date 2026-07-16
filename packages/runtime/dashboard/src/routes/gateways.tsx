@@ -36,8 +36,8 @@ function GatewaysView() {
     queryFn: async () => (await fetch("/api/gateways")).json(),
   });
   useSSEEvent("event", (e) => {
-    const d = JSON.parse(e.data) as { type: string };
-    if (d.type === "gateway-change" || d.type === "gateway-health") {
+    const d = JSON.parse(e.data) as { component: string };
+    if (d.component === "gateways") {
       void queryClient.invalidateQueries({ queryKey: ["gateways"] });
     }
   });

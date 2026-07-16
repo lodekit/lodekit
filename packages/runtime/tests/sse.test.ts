@@ -57,16 +57,16 @@ describe("SSE scoping", () => {
     const scopedA = await openStream(base + "/api/apps/app-a/events");
     const global = await openStream(base + "/api/events");
 
-    broadcast("kv-store-change", { appId: "app-a", key: "k", op: "set" }, "app-a");
+    broadcast("key-set", { appId: "app-a", key: "k", op: "set" }, "app-a");
     expect(await nextEvent(scopedA)).toContain('"appId":"app-a"');
     expect(await nextEvent(global)).toContain('"appId":"app-a"');
 
     // An event for app-b must reach the global client but NOT scopedA.
-    broadcast("kv-store-change", { appId: "app-b", key: "k", op: "set" }, "app-b");
+    broadcast("key-set", { appId: "app-b", key: "k", op: "set" }, "app-b");
     expect(await nextEvent(global)).toContain('"appId":"app-b"');
 
     // Prove scopedA skipped app-b's event: the next thing it sees is app-a's.
-    broadcast("kv-store-change", { appId: "app-a", key: "k2", op: "del" }, "app-a");
+    broadcast("key-set", { appId: "app-a", key: "k2", op: "del" }, "app-a");
     expect(await nextEvent(scopedA)).toContain('"key":"k2"');
   });
 

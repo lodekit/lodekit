@@ -19,16 +19,17 @@ export interface KvEntry<T = unknown> {
 export interface LodekitEvent<T extends Record<string, unknown> = Record<string, unknown>> {
   id: number;
   ts: number;
-  ns: string;
-  source: string;
+  app: string | null;
+  kind: string;
+  component: string;
   type: string;
   payload: T | null;
 }
 
 export interface Events {
   emit(type: string, payload?: Record<string, unknown>, opts?: { ttl?: number }): Promise<LodekitEvent>;
-  watch(filter: { type?: string | string[] }, cb: (event: LodekitEvent) => void): () => void;
-  list(opts?: { type?: string; after?: number; before?: number; limit?: number }): Promise<{ records: LodekitEvent[]; next: number | null }>;
+  watch(filter: { kind?: string | string[]; component?: string | string[]; type?: string | string[] }, cb: (event: LodekitEvent) => void): () => void;
+  list(opts?: { component?: string; type?: string; since?: number; until?: number; after?: number; before?: number; limit?: number }): Promise<{ records: LodekitEvent[]; next: number | null }>;
 }
 
 export interface Settings {
@@ -457,13 +458,25 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
       )) as LodekitEvent;
     },
     watch(filter, cb) {
-      const types =
-        filter.type === undefined ? undefined : Array.isArray(filter.type) ? filter.type : [filter.type];
-      return channel.on<LodekitEvent>("event", (ev) => !types || types.includes(ev.type), cb);
+      const norm = (v?: string | string[]) => (v === undefined ? undefined : Array.isArray(v) ? v : [v]);
+      const kinds = norm(filter.kind);
+      const components = norm(filter.component);
+      const types = norm(filter.type);
+      return channel.on<LodekitEvent>(
+        "event",
+        (ev) =>
+          (!kinds || kinds.includes(ev.kind)) &&
+          (!components || components.includes(ev.component)) &&
+          (!types || types.includes(ev.type)),
+        cb
+      );
     },
     async list(opts = {}) {
       const query: Record<string, string> = {};
+      if (opts.component !== undefined) query.component = opts.component;
       if (opts.type !== undefined) query.type = opts.type;
+      if (opts.since !== undefined) query.since = String(opts.since);
+      if (opts.until !== undefined) query.until = String(opts.until);
       if (opts.after !== undefined) query.after = String(opts.after);
       if (opts.before !== undefined) query.before = String(opts.before);
       if (opts.limit !== undefined) query.limit = String(opts.limit);
@@ -487,9 +500,9 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
       );
     },
     watch(cb) {
-      return channel.on<{ type: string; payload: { key: string } | null }>(
+      return channel.on<{ component: string; type: string; payload: { key: string } | null }>(
         "event",
-        (ev) => ev.type === "settings-change",
+        (ev) => ev.component === "settings" && (ev.type === "value-set" || ev.type === "value-cleared"),
         (ev) => cb({ key: ev.payload?.key ?? "" })
       );
     },
