@@ -30,6 +30,11 @@ Rules:
   key-value entries, files, and events — read-only, with storage insights and
   recent activity on the overview.
 
+- Events now say who did what: every event names its app, the platform member that
+  emitted it (engine / service / app + component), and a past-tense fact type
+  (`key-set`, `run-failed`, `build-ready`) — visible in the dashboard Events view,
+  the SDK (`events.watch` can filter by component), and the `lodekit_events` MCP tool.
+
 ## Fixed
 
 - **kv-store error statuses** — internal faults in the kv API now return 500
