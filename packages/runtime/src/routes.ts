@@ -17,7 +17,7 @@ import { queryLogs } from "./logStore.js";
 import { effectiveNumber } from "./services/settings.js";
 import { tasksRoutes, withTasks, CATALOG_NAME as TASKS } from "./services/tasks.js";
 import { eventRoutes, withEvents, eventsQuery, CATALOG_NAME as EVENTS } from "./services/event-store.js";
-import { queryEvents } from "./eventStore.js";
+import { queryEvents, queryEventStats } from "./eventStore.js";
 import { ID_RE, KINDS } from "./events.js";
 import { platformSettingsRoutes, settingsRoutes, withSettings, CATALOG_NAME as SETTINGS } from "./services/settings.js";
 import { themesRoutes } from "./services/themes.js";
@@ -100,6 +100,21 @@ export function apiRoutes(cfg: Config) {
         const { app, kind, component, type, since, until, after, before, limit } = c.req.valid("query");
         return c.json(queryEvents({ app, kind, component, type, since, until, after, before, limit }));
       }
+    )
+    // Explorer-header aggregates (spec §6): history's filters minus cursors/limit, plus
+    // the caller-chosen histogram bucket. /api/events itself stays the SSE feed.
+    .get(
+      "/events/stats",
+      zValidator(
+        "query",
+        eventsQuery.omit({ after: true, before: true, limit: true }).extend({
+          app: z.string().regex(ID_RE).optional(),
+          kind: z.enum(KINDS).optional(),
+          bucket: z.coerce.number().int().positive(),
+        }),
+        validationHook
+      ),
+      (c) => c.json(queryEventStats(c.req.valid("query")))
     )
     .get("/events", (c) => sseHandler()(c))
     .get("/apps/:appId/events", (c) => {
