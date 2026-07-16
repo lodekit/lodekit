@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, ExternalLink, ScrollText } from "lucide-react";
+import { ArrowUpRight, ExternalLink, ScrollText } from "@lodekit/ui/icons";
 import {
   Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
   Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton,

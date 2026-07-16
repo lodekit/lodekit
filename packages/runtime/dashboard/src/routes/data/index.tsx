@@ -1,6 +1,6 @@
 import { Navigate, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Database } from "lucide-react";
+import { Database } from "@lodekit/ui/icons";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle, Skeleton } from "@lodekit/ui";
 import { fetchApps } from "../../lib/data-api";
 

@@ -5,7 +5,7 @@ import {
   ChartContainer, ChartTooltip, ChartTooltipContent, Skeleton,
   type ChartConfig,
 } from "@lodekit/ui";
-import { ArrowUpRight, Database, Folder, KeyRound, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Database, Folder, KeyRound, type LucideIcon } from "@lodekit/ui/icons";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
 import { fetchSummary, type DataSummary } from "../../../lib/data-api";
 import { formatBytes, formatCount, relativeTime } from "../../../lib/format";

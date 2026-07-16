@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button, Sheet, SheetContent, SheetHeader, SheetTitle } from "@lodekit/ui";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy } from "@lodekit/ui/icons";
 
 export interface DetailField { label: string; value: unknown }
 

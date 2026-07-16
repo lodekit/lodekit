@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Badge, Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton, cn } from "@lodekit/ui";
-import { Database, Folder, KeyRound, LayoutDashboard, Table2, HardDrive, type LucideIcon } from "lucide-react";
+import { Database, Folder, KeyRound, LayoutDashboard, Table2, HardDrive, type LucideIcon } from "@lodekit/ui/icons";
 import { fetchApps, fetchSchema } from "../../lib/data-api";
 
 const itemClass =

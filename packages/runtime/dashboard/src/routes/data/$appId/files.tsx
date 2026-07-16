@@ -8,7 +8,7 @@ import {
 import {
   ChevronLeft, ChevronRight, ExternalLink, File, FileArchive, FileAudio, FileImage, FileText, FileVideo, RefreshCw,
   type LucideIcon,
-} from "lucide-react";
+} from "@lodekit/ui/icons";
 import { fetchFiles, type FileStat } from "../../../lib/data-api";
 import { formatBytes, formatTs, relativeTime } from "../../../lib/format";
 import { DetailSheet } from "../../../components/data/detail-sheet";

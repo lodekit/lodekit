@@ -26,7 +26,7 @@ import {
   EyeOff,
   PlusCircle,
   Settings2,
-} from "lucide-react"
+} from "../icons"
 
 import { cn } from "../lib/utils"
 import { Badge } from "./badge"

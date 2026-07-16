@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid } from "@lodekit/ui/icons";
 import { Button, Popover, PopoverContent, PopoverTrigger } from "@lodekit/ui";
 import { SERVICES } from "./nav";
 

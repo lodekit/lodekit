@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton, Switch,
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@lodekit/ui";
-import { ChevronDown, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
+import { ChevronDown, Monitor, Moon, RotateCcw, Sun } from "@lodekit/ui/icons";
 import { SERVICE_ICONS } from "../components/nav";
 import { MARKS } from "../components/logo";
 
