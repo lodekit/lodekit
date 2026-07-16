@@ -5,7 +5,7 @@ import path from "node:path";
 import { Hono } from "hono";
 import { apiRoutes } from "../src/routes.js";
 import { initEventStore, closeEventStoreForTest } from "../src/eventStore.js";
-import { emitEvent, PLATFORM_NS } from "../src/events.js";
+import { emitEvent } from "../src/events.js";
 import type { Config } from "../src/config.js";
 
 let root: string, app: Hono;
@@ -37,20 +37,19 @@ const post = (appId: string, body: unknown) =>
   });
 
 describe("event-store service", () => {
-  it("emits with ns = source = appId and returns the stored envelope", async () => {
-    const res = await post("notes", { type: "export-ready", payload: { slug: "expenses-2026-07" } });
+  it("emits with app = component = appId, kind app, and returns the stored envelope", async () => {
+    const res = await post("notes", { type: "note-added", payload: { id: 7 } });
     expect(res.status).toBe(201);
     const rec = await res.json();
-    expect(rec).toMatchObject({ ns: "notes", source: "notes", type: "export-ready", payload: { slug: "expenses-2026-07" } });
-    expect(rec.id).toBeGreaterThan(0);
+    expect(rec).toMatchObject({ app: "notes", kind: "app", component: "notes", type: "note-added", payload: { id: 7 } });
   });
 
-  it("scoped GET lists the app's stream (incl. _platform-sourced), never a sibling's", async () => {
+  it("scoped GET lists the app's stream (incl. platform-emitted), never a sibling's", async () => {
     await post("notes", { type: "note-added" });
-    emitEvent({ ns: "notes", source: PLATFORM_NS, type: "build-state", payload: { status: "ready" } });
-    await post("other", { type: "unrelated" });
-    const body = await (await app.request("/api/apps/notes/event-store")).json();
-    expect(body.records.map((r: { type: string }) => r.type)).toEqual(["build-state", "note-added"]);
+    emitEvent({ app: "notes", kind: "engine", component: "build", type: "build-ready" });
+    emitEvent({ app: "other", kind: "service", component: "kv-store", type: "key-set", payload: { key: "k" } });
+    const mine = await (await app.request("/api/apps/notes/event-store")).json();
+    expect(mine.records.map((r: { type: string }) => r.type)).toEqual(["build-ready", "note-added"]);
   });
 
   it("validates type grammar, payload size, ttl, and app id", async () => {
@@ -58,32 +57,40 @@ describe("event-store service", () => {
     expect((await post("notes", {})).status).toBe(400);
     expect((await post("notes", { type: "big", payload: { blob: "x".repeat(9000) } })).status).toBe(400);
     expect((await post("notes", { type: "t", ttl: -5 })).status).toBe(400);
-    expect((await post("_platform", { type: "t" })).status).toBe(400); // internal ns: not an app id
+    expect((await post("_dashboard", { type: "t" })).status).toBe(400); // internal app id: not scaffoldable, still not an app POST target
     expect((await post("Bad!", { type: "t" })).status).toBe(400);
   });
 
-  it("supports after (ascending replay) and type filter on the scoped GET", async () => {
-    const first = await (await post("notes", { type: "a" })).json();
-    await post("notes", { type: "b" });
-    const replay = await (await app.request(`/api/apps/notes/event-store?after=${first.id}`)).json();
-    expect(replay.records.map((r: { type: string }) => r.type)).toEqual(["b"]);
-    const filtered = await (await app.request("/api/apps/notes/event-store?type=a")).json();
-    expect(filtered.records).toHaveLength(1);
+  it("supports component, since/until, and after (ascending replay) on the scoped GET", async () => {
+    await post("notes", { type: "a" });
+    emitEvent({ app: "notes", kind: "service", component: "kv-store", type: "key-set", payload: { key: "k" } });
+    const byComponent = await (await app.request("/api/apps/notes/event-store?component=kv-store")).json();
+    expect(byComponent.records.map((r: { type: string }) => r.type)).toEqual(["key-set"]);
+    const all = await (await app.request("/api/apps/notes/event-store?after=0")).json();
+    expect(all.records.map((r: { type: string }) => r.type)).toEqual(["a", "key-set"]);
+    const none = await (await app.request("/api/apps/notes/event-store?until=1")).json();
+    expect(none.records).toHaveLength(0);
   });
 });
 
 describe("GET /api/events/history (global)", () => {
-  it("returns everything, filters by ns including internal namespaces", async () => {
+  it("returns everything; filters by app, kind, and component", async () => {
     await post("notes", { type: "note-added" });
-    emitEvent({ ns: PLATFORM_NS, source: PLATFORM_NS, type: "apps-changed" });
+    emitEvent({ app: null, kind: "engine", component: "registry", type: "apps-changed" });
     const all = await (await app.request("/api/events/history")).json();
     expect(all.records).toHaveLength(2);
-    const plat = await (await app.request("/api/events/history?ns=_platform")).json();
-    expect(plat.records.map((r: { type: string }) => r.type)).toEqual(["apps-changed"]);
+    const engine = await (await app.request("/api/events/history?kind=engine")).json();
+    expect(engine.records.map((r: { type: string }) => r.type)).toEqual(["apps-changed"]);
+    const mine = await (await app.request("/api/events/history?app=notes")).json();
+    expect(mine.records.map((r: { type: string }) => r.type)).toEqual(["note-added"]);
   });
 
-  it("rejects a malformed ns and a malformed cursor", async () => {
-    expect((await app.request("/api/events/history?ns=Bad!")).status).toBe(400);
+  it("rejects a malformed app, an unknown kind, a malformed cursor, and the removed ns param shape", async () => {
+    expect((await app.request("/api/events/history?app=Bad!")).status).toBe(400);
+    expect((await app.request("/api/events/history?kind=robot")).status).toBe(400);
     expect((await app.request("/api/events/history?after=abc")).status).toBe(400);
+    emitEvent({ app: "other", kind: "service", component: "kv-store", type: "key-set", payload: { key: "k" } });
+    const nsIgnored = await (await app.request("/api/events/history?ns=notes")).json();
+    expect(nsIgnored.records.length).toBeGreaterThan(0); // ns is not a filter anymore — unknown params are ignored, not aliased
   });
 });
