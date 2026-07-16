@@ -108,6 +108,16 @@ describe("favicon routes", () => {
     expect(await (await fetch(base + "/_ui/favicon.svg?app=noicon")).text()).toContain("📦");
   });
 
+  it("falls back to 📦 for a malformed icon (non-string or empty) instead of erroring", async () => {
+    writeManifest("badicon", { name: "BadIcon", appId: "badicon", icon: 123 });
+    writeManifest("emptyicon", { name: "EmptyIcon", appId: "emptyicon", icon: "" });
+    for (const app of ["badicon", "emptyicon"]) {
+      const res = await fetch(base + `/_ui/favicon.svg?app=${app}`);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toContain("📦");
+    }
+  });
+
   it("falls back to the mark for an unknown app and a missing param", async () => {
     expect(await (await fetch(base + "/_ui/favicon.svg?app=ghost")).text()).toContain(MARK_BODIES.b);
     expect(await (await fetch(base + "/_ui/favicon.svg")).text()).toContain(MARK_BODIES.b);

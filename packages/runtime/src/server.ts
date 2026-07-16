@@ -171,7 +171,9 @@ export function createApp(cfg: Config): Hono {
           : undefined;
       return c.body(
         manifest
-          ? emojiFaviconSvg(manifest.icon ?? "📦")
+          // scanApps doesn't validate icon's type — guard so a malformed
+          // manifest (non-string, empty) gets 📦 instead of a 500.
+          ? emojiFaviconSvg(typeof manifest.icon === "string" && manifest.icon ? manifest.icon : "📦")
           : markFaviconSvg(effectiveString("appearance.icon_style"))
       );
     })
