@@ -283,7 +283,7 @@ unit tests; the runtime never parses theme CSS beyond the `--icon-library` extra
 
 **Definition of done (Greenhouse):** Greenhouse imports icons from `@lodekit/ui/icons`
 and the dev root ships a per-app assignment in `themes/config.json`, exercising per-app
-selection; `root/readme.md` checklist gains a theming entry.
+selection; `root/README.md` checklist gains a theming entry.
 
 ## 7. Phasing
 
@@ -296,7 +296,7 @@ One spec, sequenced implementation; each phase lands green:
 4. Library view (switching, assignment, duplicate/rename/delete).
 5. Editor (controls, preview canvas, app iframe, save).
 
-## 8. Deferrals (→ `docs/defer.md` / issues)
+## 8. Deferrals (→ `defer`-labeled beads / issues)
 
 - ui.lodekit.com public deploy of the component canvas.
 - Self-hosted fonts (themes currently `@import` Google Fonts).
