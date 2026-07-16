@@ -1,4 +1,5 @@
 import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { LayoutGrid, ScrollText, Settings } from "@lodekit/ui/icons";
 import appCss from "../index.css?url";
 
 export const Route = createRootRoute({
@@ -27,9 +28,18 @@ export const Route = createRootRoute({
       <body>
         <nav className="mx-auto flex max-w-4xl items-center gap-4 p-4">
           <span className="text-lg">🪴</span>
-          <Link to="/" className="font-medium">Conservatory</Link>
-          <Link to="/almanac">Almanac</Link>
-          <Link to="/shed">Potting Shed</Link>
+          <Link to="/" className="font-medium inline-flex items-center gap-1">
+            <LayoutGrid size={16} aria-hidden="true" />
+            Conservatory
+          </Link>
+          <Link to="/almanac" className="inline-flex items-center gap-1">
+            <ScrollText size={16} aria-hidden="true" />
+            Almanac
+          </Link>
+          <Link to="/shed" className="inline-flex items-center gap-1">
+            <Settings size={16} aria-hidden="true" />
+            Potting Shed
+          </Link>
         </nav>
         <Outlet />
         <Scripts />
