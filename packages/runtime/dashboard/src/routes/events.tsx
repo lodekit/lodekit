@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Badge, Button, Card, CardHeader, CardTitle, Skeleton } from "@lodekit/ui";
+import {
+  Badge, Button, Card, CardHeader, CardTitle, Skeleton,
+  ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig,
+} from "@lodekit/ui";
+import { Bar, BarChart, XAxis } from "recharts";
 import { useSSEEvent } from "../components/sse";
 import {
   RANGE_PRESETS,
@@ -10,6 +14,7 @@ import {
   toLocalInput,
   fromLocalInput,
 } from "../lib/event-filters";
+import { snapBucket, fillBuckets } from "../lib/event-stats";
 
 interface EventRecord {
   id: number;
@@ -41,6 +46,17 @@ interface EventsSearch {
   since?: number;
   until?: number;
 }
+
+interface EventStats {
+  total: number;
+  buckets: { t: number; n: number }[];
+  byKind: Record<string, number>;
+  byComponent: Record<string, number>;
+  byType: Record<string, number>;
+  byApp: Record<string, number>;
+}
+
+const histConfig = { n: { label: "Events", color: "var(--chart-1)" } } satisfies ChartConfig;
 
 export const Route = createFileRoute("/events")({
   validateSearch: (s: Record<string, unknown>): EventsSearch => {
@@ -96,9 +112,36 @@ function EventsView() {
   const [debouncedQ, setDebouncedQ] = useState("");
   const [records, setRecords] = useState<EventRecord[] | null>(null);
   const [next, setNext] = useState<number | null>(null);
+  const [stats, setStats] = useState<EventStats | null>(null);
+  const [statsTick, setStatsTick] = useState(0);
+  const [histogram, setHistogram] = useState<{ bars: { t: number; n: number }[]; bucket: number }>({ bars: [], bucket: 60_000 });
 
   const patchSearch = (patch: Partial<EventsSearch>) =>
     void navigate({ search: (prev: EventsSearch) => ({ ...prev, ...patch }) });
+
+  useEffect(() => {
+    let cancelled = false;
+    const now = Date.now();
+    const b = rangeBounds(range, now, { since, until });
+    // The histogram needs finite edges: default the window to the 30d retention span.
+    const s = b.since ?? now - RANGE_PRESETS["30d"];
+    const u = b.until ?? now;
+    const bucket = snapBucket(u - s);
+    const query = new URLSearchParams({ bucket: String(bucket), since: String(s), until: String(u) });
+    if (app) query.set("app", app);
+    if (kind) query.set("kind", kind);
+    if (component) query.set("component", component);
+    if (search.type) query.set("type", search.type);
+    void fetch(`/api/events/stats?${query}`)
+      .then((r) => r.json())
+      .then((d: EventStats) => {
+        if (cancelled) return;
+        setStats(d);
+        setHistogram({ bars: fillBuckets(d.buckets, s, u, bucket), bucket });
+      })
+      .catch(() => { if (cancelled) setStats(null); });
+    return () => { cancelled = true; };
+  }, [app, kind, component, search.type, range, since, until, statsTick]);
 
   // Type is a URL filter (spec §7) — the input debounces into the search params.
   useEffect(() => {
@@ -140,6 +183,7 @@ function EventsView() {
 
   const pendingRef = useRef<EventRecord[]>([]);
   const hasRecordsRef = useRef(false);
+  const statsNudgeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -182,6 +226,9 @@ function EventsView() {
         ? [r, ...rs].slice(0, Math.max(MAX_LIVE_ROWS, rs.length))
         : rs
     );
+    // Live events nudge a debounced stats refresh — never per-event recompute (spec §7).
+    if (statsNudgeRef.current) clearTimeout(statsNudgeRef.current);
+    statsNudgeRef.current = setTimeout(() => setStatsTick((t) => t + 1), 2000);
   });
 
   useEffect(() => {
@@ -213,6 +260,36 @@ function EventsView() {
   return (
     <div>
       <h1 className="mb-6 text-2xl font-semibold">Events</h1>
+      <div className="mb-4">
+        <div className="mb-1 text-sm text-muted-foreground">
+          {stats ? `${stats.total.toLocaleString()} events` : " "}
+        </div>
+        <ChartContainer config={histConfig} className="h-24 w-full">
+          <BarChart data={histogram.bars} margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
+            <XAxis
+              dataKey="t"
+              tickLine={false}
+              axisLine={false}
+              minTickGap={48}
+              tickFormatter={(t: number) =>
+                histogram.bucket >= 86_400_000
+                  ? new Date(t).toLocaleDateString()
+                  : new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+              }
+            />
+            <ChartTooltip
+              content={
+                <ChartTooltipContent
+                  labelFormatter={(_: unknown, p: { payload?: { t?: number } }[]) =>
+                    p[0]?.payload?.t != null ? new Date(p[0].payload.t).toLocaleString() : ""
+                  }
+                />
+              }
+            />
+            <Bar dataKey="n" fill="var(--color-n)" radius={2} />
+          </BarChart>
+        </ChartContainer>
+      </div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <select
           className="h-8 rounded-md border bg-background px-2 text-sm"
@@ -237,6 +314,16 @@ function EventsView() {
             {label}
           </Button>
         ))}
+        <select
+          className="h-8 rounded-md border bg-background px-2 text-sm"
+          value={component ?? ""}
+          onChange={(e) => patchSearch({ component: e.target.value || undefined })}
+        >
+          <option value="">All components</option>
+          {Object.keys(stats?.byComponent ?? {}).sort().map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
         <select
           className="h-8 rounded-md border bg-background px-2 text-sm"
           value={range}
@@ -268,9 +355,15 @@ function EventsView() {
         <input
           className="h-8 w-40 rounded-md border bg-background px-2 text-sm"
           placeholder="Type…"
+          list="event-type-options"
           value={type}
           onChange={(e) => setType(e.target.value)}
         />
+        <datalist id="event-type-options">
+          {Object.keys(stats?.byType ?? {}).sort().map((t) => (
+            <option key={t} value={t} />
+          ))}
+        </datalist>
         <input
           className="h-8 flex-1 rounded-md border bg-background px-2 text-sm"
           placeholder="Search payloads…"

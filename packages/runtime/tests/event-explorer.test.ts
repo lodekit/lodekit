@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { RANGE_PRESETS, rangeBounds, matchesFilters, toLocalInput, fromLocalInput } from "../dashboard/src/lib/event-filters.js";
+import { BUCKET_STEPS, snapBucket, fillBuckets } from "../dashboard/src/lib/event-stats.js";
 
 const NOW = 1_752_600_000_000;
 
@@ -36,5 +37,28 @@ describe("datetime-local conversion", () => {
     expect(fromLocalInput(toLocalInput(ms))).toBe(ms);
     expect(toLocalInput(undefined)).toBe("");
     expect(fromLocalInput("")).toBeUndefined();
+  });
+});
+
+describe("snapBucket", () => {
+  it("snaps range/60 up to the allowed steps (spec §7)", () => {
+    expect(snapBucket(RANGE_PRESETS["15m"])).toBe(60_000);        // 15s -> 1m
+    expect(snapBucket(RANGE_PRESETS["1h"])).toBe(60_000);         // 1m -> 1m
+    expect(snapBucket(RANGE_PRESETS["24h"])).toBe(1_800_000);     // 24m -> 30m
+    expect(snapBucket(RANGE_PRESETS["7d"])).toBe(21_600_000);     // 2.8h -> 6h
+    expect(snapBucket(RANGE_PRESETS["30d"])).toBe(86_400_000);    // 12h -> 1d
+  });
+  it("clamps degenerate ranges to the largest step", () => {
+    expect(snapBucket(10 * 365 * 86_400_000)).toBe(BUCKET_STEPS[BUCKET_STEPS.length - 1]);
+  });
+});
+
+describe("fillBuckets", () => {
+  it("zero-fills [since, until) on bucket-aligned edges", () => {
+    const out = fillBuckets([{ t: 120, n: 3 }], 100, 300, 60);
+    expect(out).toEqual([{ t: 60, n: 0 }, { t: 120, n: 3 }, { t: 180, n: 0 }, { t: 240, n: 0 }]);
+  });
+  it("caps output at 1000 bars for degenerate ranges", () => {
+    expect(fillBuckets([], 0, 10_000_000, 1).length).toBe(1000);
   });
 });
