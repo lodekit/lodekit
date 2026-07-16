@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { Config } from "../src/config.js";
-import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "../src/taskEngine.js";
+import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks, evictApp } from "../src/taskEngine.js";
 import { initLogStore, queryLogs, closeLogStoreForTest } from "../src/logStore.js";
 import {
   getTasksDb, applyManifest, insertRun, claimNextDue, getRun, getDef, listRuns,
@@ -157,6 +157,22 @@ describe("taskEngine", () => {
     dispatchTasks();
     await tick();
     expect(listRuns(db, { task: "tock" }).length).toBe(1);
+  });
+
+  it("an evicted app stops materializing schedule runs until it re-registers", async () => {
+    registerManifest("alpha", [{ name: "tock", every: "1h", catchUp: "6h" }]);
+    const db = getTasksDb(cfg.dataDir, "alpha");
+    clock += 3_600_000 + 1_000;
+    dispatchTasks();
+    await vi.waitFor(() => expect(listRuns(db, { task: "tock" }).length).toBe(1));
+    evictApp("alpha"); // app folder deleted (watcher unlinkDir)
+    clock += 3_600_000;
+    dispatchTasks();
+    await tick();
+    expect(listRuns(db, { task: "tock" }).length).toBe(1); // no polling of a gone app
+    // The app comes back (worker boots, manifest re-registers): dispatch resumes.
+    registerManifest("alpha", [{ name: "tock", every: "1h", catchUp: "6h" }]);
+    await vi.waitFor(() => expect(listRuns(db, { task: "tock" }).length).toBe(2));
   });
 
   it("recoverInterruptedRuns requeues running rows and re-registers the app", async () => {

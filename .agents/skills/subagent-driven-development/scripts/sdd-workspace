@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Resolve and ensure the working-tree directory SDD uses for its short-lived
+# artifacts: task briefs, implementer reports, review packages, and the
+# progress ledger. Print the directory's absolute path.
+#
+# The workspace lives in the working tree (not under .git/) because Claude Code
+# treats .git/ as a protected path and denies agent writes there. It self-ignores
+# via a '*' .gitignore: these skills ship to users' repos, where .agents/internal/ is NOT
+# guaranteed to be gitignored — the self-ignore keeps scratch out of git regardless.
+#
+# Single source of truth for the workspace location, so task-brief and
+# review-package cannot drift to different directories.
+#
+# Usage: sdd-workspace
+set -euo pipefail
+
+root=$(git rev-parse --show-toplevel)
+dir="$root/.agents/internal/sdd"
+mkdir -p "$dir"
+printf '*\n' > "$dir/.gitignore"
+cd "$dir" && pwd
