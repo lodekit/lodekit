@@ -118,12 +118,14 @@ function ThemeEditor() {
     setSaving(true);
     try {
       await putThemeCss(name, serializeTheme(m));
-      setDirty(false);
+      // Only clear dirty if no edit landed during the await; an edit that raced
+      // the save is genuinely unsaved, so keep dirty (Save stays enabled, guard armed).
+      if (modelRef.current === m) setDirty(false);
       await queryClient.invalidateQueries({ queryKey: ["themes"] });
       await queryClient.invalidateQueries({ queryKey: ["theme-css", name] });
       toast.success("Theme saved");
     } catch (err) {
-      toast.error((err as Error).message);
+      toast.error((err as Error).message || "Failed to save theme");
     } finally {
       setSaving(false);
     }
