@@ -92,26 +92,28 @@ const tableRows = [
 ];
 
 const lineData = [
-  { month: "Jan", visits: 186, signups: 80 },
-  { month: "Feb", visits: 305, signups: 200 },
-  { month: "Mar", visits: 237, signups: 120 },
-  { month: "Apr", visits: 273, signups: 190 },
-  { month: "May", visits: 209, signups: 130 },
-  { month: "Jun", visits: 314, signups: 240 },
+  { month: "Jan", visits: 186, signups: 80, errors: 12 },
+  { month: "Feb", visits: 305, signups: 200, errors: 18 },
+  { month: "Mar", visits: 237, signups: 120, errors: 9 },
+  { month: "Apr", visits: 273, signups: 190, errors: 14 },
+  { month: "May", visits: 209, signups: 130, errors: 7 },
+  { month: "Jun", visits: 314, signups: 240, errors: 11 },
 ];
 const lineConfig = {
   visits: { label: "Visits", color: "var(--chart-1)" },
   signups: { label: "Signups", color: "var(--chart-2)" },
+  errors: { label: "Errors", color: "var(--chart-4)" },
 } satisfies ChartConfig;
 
 const barData = [
-  { category: "Runtime", used: 42 },
-  { category: "MCP", used: 28 },
-  { category: "Dashboard", used: 63 },
-  { category: "Skill", used: 15 },
+  { category: "Runtime", used: 42, free: 18 },
+  { category: "MCP", used: 28, free: 12 },
+  { category: "Dashboard", used: 63, free: 7 },
+  { category: "Skill", used: 15, free: 25 },
 ];
 const barConfig = {
   used: { label: "Used (MB)", color: "var(--chart-3)" },
+  free: { label: "Free (MB)", color: "var(--chart-5)" },
 } satisfies ChartConfig;
 
 const badgeVariants = ["default", "secondary", "destructive", "outline", "ghost", "link"] as const;
@@ -293,6 +295,7 @@ export function ThemeCanvas() {
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Line type="monotone" dataKey="visits" stroke="var(--color-visits)" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="signups" stroke="var(--color-signups)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="errors" stroke="var(--color-errors)" strokeWidth={2} dot={false} />
                 </LineChart>
               </ChartContainer>
             </CardContent>
@@ -305,7 +308,8 @@ export function ThemeCanvas() {
                   <CartesianGrid vertical={false} />
                   <XAxis dataKey="category" tickLine={false} axisLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="used" fill="var(--color-used)" radius={4} />
+                  <Bar dataKey="used" stackId="storage" fill="var(--color-used)" radius={4} />
+                  <Bar dataKey="free" stackId="storage" fill="var(--color-free)" radius={4} />
                 </BarChart>
               </ChartContainer>
             </CardContent>
