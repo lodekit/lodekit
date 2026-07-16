@@ -74,14 +74,10 @@ try {
 } catch (e) {
   fail('codex mcp config', String(e));
 }
-if (bdPresent) {
-  try {
-    run('bd', ['setup', 'codex']);
-    ok('bd codex hooks');
-  } catch {
-    fail('bd codex hooks', 'bd setup codex failed — run it manually');
-  }
-}
+// bd setup codex is deliberately NOT run (person-approved spec §8 deviation, 2026-07-16):
+// its project mode mutates the repo tree (tracked AGENTS.md append, .codex/, beads skill
+// dir) and --stealth doesn't support codex. Codex sessions read bd conventions from
+// AGENTS.md; automatic bd-prime injection for Codex is tracked as a defer bead.
 
 // report
 let failed = 0;
