@@ -41,6 +41,11 @@ describe("theme service", () => {
     const css = resolveThemeCss(cfg);
     expect(css).toContain("--icon-library");
   });
+  it("resolveThemeCss never throws even for a nonexistent root", () => {
+    const bogus = { ...cfg, root: path.join(root, "does", "not", "exist") };
+    expect(() => resolveThemeCss(bogus)).not.toThrow();
+    expect(resolveThemeCss(bogus)).toContain("--icon-library");
+  });
   it("survives malformed config.json", () => {
     fs.mkdirSync(themesDir(), { recursive: true });
     fs.writeFileSync(path.join(themesDir(), "config.json"), "{nope");
@@ -64,6 +69,14 @@ describe("theme service", () => {
   });
   it("enforces the size cap", () => {
     expect(() => putUserTheme(cfg, "big", "x".repeat(THEME_MAX_BYTES + 1))).toThrow(ThemeError);
+  });
+  it("refuses to overwrite an existing user theme on duplicate or rename", () => {
+    putUserTheme(cfg, "mine", ":root{}");
+    putUserTheme(cfg, "yours", ":root{ --primary: blue; }");
+    expect(() => duplicateTheme(cfg, "mine", "yours")).toThrow(ThemeError);
+    expect(() => renameUserTheme(cfg, "mine", "yours")).toThrow(ThemeError);
+    expect(readThemeCss(cfg, "yours")).toBe(":root{ --primary: blue; }"); // untouched
+    expect(readThemeCss(cfg, "mine")).toBe(":root{}");                     // still present
   });
   it("rename rewrites config references", () => {
     putUserTheme(cfg, "mine", ":root{}");

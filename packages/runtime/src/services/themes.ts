@@ -143,7 +143,8 @@ export function resolveThemeName(cfg: Config, appId?: string): string {
   return DEFAULT_THEME;
 }
 
-// Never throws: the vendored lodekit.css content is the last-resort floor.
+// Never throws: the vendored lodekit.css content is the last-resort floor, and
+// an empty string is the absolute floor if even that read fails.
 export function resolveThemeCss(cfg: Config, appId?: string): string {
   try {
     const css = readThemeCss(cfg, resolveThemeName(cfg, appId));
@@ -151,7 +152,11 @@ export function resolveThemeCss(cfg: Config, appId?: string): string {
   } catch {
     /* fall through to the vendored floor */
   }
-  return fs.readFileSync(path.join(vendoredThemesDir(), DEFAULT_THEME + ".css"), "utf8");
+  try {
+    return fs.readFileSync(path.join(vendoredThemesDir(), DEFAULT_THEME + ".css"), "utf8");
+  } catch {
+    return "";
+  }
 }
 
 export function extractIconLibrary(css: string): string {
@@ -172,6 +177,9 @@ export function duplicateTheme(cfg: Config, from: string, to: string): void {
   assertValidName(from);
   assertValidName(to);
   if (isVendoredTheme(to)) throw new ThemeError(`"${to}" is a vendored theme name`, 409);
+  if (fs.existsSync(path.join(userThemesDir(cfg), to + ".css"))) {
+    throw new ThemeError(`theme "${to}" already exists`, 409);
+  }
   const css = readThemeCss(cfg, from);
   if (css === null) throw new ThemeError(`theme "${from}" not found`, 404);
   atomicWrite(path.join(userThemesDir(cfg), to + ".css"), css);
@@ -182,6 +190,9 @@ export function renameUserTheme(cfg: Config, from: string, to: string): void {
   assertValidName(to);
   if (isVendoredTheme(from)) throw new ThemeError(`"${from}" is a vendored theme and cannot be renamed`, 409);
   if (isVendoredTheme(to)) throw new ThemeError(`"${to}" is a vendored theme name`, 409);
+  if (fs.existsSync(path.join(userThemesDir(cfg), to + ".css"))) {
+    throw new ThemeError(`theme "${to}" already exists`, 409);
+  }
   const css = readThemeCss(cfg, from);
   if (css === null) throw new ThemeError(`theme "${from}" not found`, 404);
   atomicWrite(path.join(userThemesDir(cfg), to + ".css"), css);
