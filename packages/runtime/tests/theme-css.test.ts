@@ -77,6 +77,50 @@ describe("custom CSS preservation", () => {
   });
 });
 
+describe("non-canonical content preservation", () => {
+  const base = fs.readFileSync(path.join(THEMES_DIR, "lodekit.css"), "utf8");
+
+  it("preserves content between :root and .dark verbatim", () => {
+    const css = base.replace("}\n\n.dark {", "}\n\n.between-marker { color: red }\n\n.dark {");
+    const model = parseTheme(css);
+    expect(model.custom).toBe("");
+    expect(serializeTheme(model)).toBe(css);
+  });
+
+  it("preserves a trailing standalone comment just before a block's }", () => {
+    const css = base.replace(
+      "  --sidebar-ring: #ce6f26;\n}",
+      "  --sidebar-ring: #ce6f26;\n  /* trailing note */\n}",
+    );
+    expect(serializeTheme(parseTheme(css))).toBe(css);
+  });
+
+  it("preserves a comment before a typed field", () => {
+    const css = base.replace("  --radius: 0.625rem;", "  /* pick a radius */\n  --radius: 0.625rem;");
+    expect(serializeTheme(parseTheme(css))).toBe(css);
+  });
+
+  it("preserves an inline comment after a typed field", () => {
+    const css = base.replace("  --icon-library: lucide;", "  --icon-library: lucide;  /* icons */");
+    expect(serializeTheme(parseTheme(css))).toBe(css);
+  });
+
+  it("degrades to verbatim custom when .dark is missing", () => {
+    const css = "/* header */\n:root {\n  color-scheme: light;\n  --radius: 1rem;\n}\n";
+    const model = parseTheme(css);
+    expect(model.custom).toBe(css);
+    expect(serializeTheme(model)).toBe(css);
+    expect(parseTheme(serializeTheme(model))).toEqual(model);
+  });
+
+  it("degrades to verbatim custom when a block is unterminated", () => {
+    const css = ":root {\n  color-scheme: light;\n.dark {\n  color-scheme: dark;\n}\n";
+    const model = parseTheme(css);
+    expect(model.custom).toBe(css);
+    expect(serializeTheme(model)).toBe(css);
+  });
+});
+
 describe("roles", () => {
   const model = parseTheme(fs.readFileSync(path.join(THEMES_DIR, "lodekit.css"), "utf8"));
   const brand = ROLES.find((r) => r.key === "brand")!;

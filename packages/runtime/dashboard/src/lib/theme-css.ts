@@ -33,9 +33,20 @@ export interface ThemeModel {
   iconLibrary: string;
   light: Record<string, string>; // token → value (no leading --), insertion-ordered
   dark: Record<string, string>;
-  lightTrivia: Record<string, Trivia>; // round-trip metadata, keyed by token
+  // Round-trip metadata, keyed by property name — color tokens, the five typed
+  // fields (font-ui/font-display/radius/spacing/icon-library), and color-scheme.
+  lightTrivia: Record<string, Trivia>;
   darkTrivia: Record<string, Trivia>;
+  // Dangling comment/blank lines just before a block's closing "}", verbatim.
+  lightTrailing: string;
+  darkTrailing: string;
+  betweenBlocks: string; // verbatim span between :root's "}" and ".dark {"
   custom: string; // unrecognized trailing CSS, preserved verbatim ("" if none)
+  // Degraded mode: the input is not the canonical two-block format (missing
+  // :root/.dark, or an unterminated block). The whole input is held in `custom`
+  // and serializeTheme emits it verbatim; the editor surfaces it as read-only
+  // custom CSS. false for well-formed themes.
+  raw: boolean;
 }
 
 // --- Tokens & roles ------------------------------------------------------
@@ -173,12 +184,20 @@ interface Block {
   colors: Record<string, string>;
   trivia: Record<string, Trivia>;
   typed: Record<string, string>; // typed-field name → value (only meaningful for :root)
+  trailing: string; // dangling comment/blank lines before the block's "}"
 }
 
 export function parseTheme(css: string): ThemeModel {
-  const rootIdx = css.indexOf(":root {");
-  const prefix = css.slice(0, rootIdx);
+  // Line handling is LF-only: the vendored themes are LF, and CRLF structural
+  // lines are out of scope. A stray CR would ride along inside a trivia/value
+  // span and still round-trip verbatim.
+  const root = readBlock(css, ":root", 0);
+  const dark = root ? readBlock(css, ".dark", root.end) : null;
+  // Degraded: not the canonical :root … .dark format (missing or unterminated
+  // block). Preserve the whole input verbatim so serialize(parse(x)) === x.
+  if (!root || !dark) return degraded(css);
 
+  const prefix = css.slice(0, root.start);
   let header = "";
   if (prefix.startsWith("/*")) {
     header = prefix.slice(0, prefix.indexOf("*/") + 2);
@@ -187,10 +206,6 @@ export function parseTheme(css: string): ThemeModel {
     .slice(header.length)
     .split("\n")
     .filter((l) => l.startsWith("@import"));
-
-  const root = readBlock(css, ":root");
-  const dark = readBlock(css, ".dark");
-  const custom = css.slice(dark.end);
 
   return {
     header,
@@ -204,20 +219,50 @@ export function parseTheme(css: string): ThemeModel {
     dark: dark.block.colors,
     lightTrivia: root.block.trivia,
     darkTrivia: dark.block.trivia,
-    custom,
+    lightTrailing: root.block.trailing,
+    darkTrailing: dark.block.trailing,
+    betweenBlocks: css.slice(root.end, dark.start),
+    custom: css.slice(dark.end),
+    raw: false,
   };
 }
 
-// Locate `selector { … }`, returning its parsed body and the index just past the
-// closing "}\n" (so the region after the last block is whatever remains).
-function readBlock(css: string, selector: string): { block: Block; end: number } {
-  const start = css.indexOf(selector + " {");
-  const bodyStart = css.indexOf("\n", start) + 1;
+function degraded(css: string): ThemeModel {
+  return {
+    header: "",
+    imports: [],
+    fontUi: "",
+    fontDisplay: "",
+    radius: "",
+    spacing: "",
+    iconLibrary: "",
+    light: {},
+    dark: {},
+    lightTrivia: {},
+    darkTrivia: {},
+    lightTrailing: "",
+    darkTrailing: "",
+    betweenBlocks: "",
+    custom: css,
+    raw: true,
+  };
+}
+
+// Locate `selector { … }` at or after `from`, returning its parsed body, its
+// start index, and the index just past the closing "}\n". Returns null when the
+// selector is absent or the block is unterminated (no closing brace at column 0).
+function readBlock(css: string, selector: string, from: number): { block: Block; start: number; end: number } | null {
+  const start = css.indexOf(selector + " {", from);
+  if (start === -1) return null;
+  const nl = css.indexOf("\n", start);
+  if (nl === -1) return null;
+  const bodyStart = nl + 1;
   const braceNL = css.indexOf("\n}", bodyStart); // the newline that ends the last body line
+  if (braceNL === -1) return null;
   const body = css.slice(bodyStart, braceNL + 1);
   let end = braceNL + 2; // past the "}"
   if (css[end] === "\n") end += 1;
-  return { block: parseBlock(body), end };
+  return { block: parseBlock(body), start, end };
 }
 
 function parseBlock(body: string): Block {
@@ -230,58 +275,75 @@ function parseBlock(body: string): Block {
   const lines = body.split("\n");
   for (let i = 0; i < lines.length - 1; i++) {
     const line = lines[i];
-    if (line.startsWith("  color-scheme:")) continue; // re-emitted canonically
+    const scheme = /^ {2}color-scheme: (.*?);(.*)$/.exec(line);
+    if (scheme) {
+      // color-scheme's value is re-emitted canonically; keep its trivia only.
+      trivia["color-scheme"] = { before: pendingBefore, after: scheme[2] };
+      pendingBefore = "";
+      continue;
+    }
     const m = DECL_RE.exec(line);
     if (m) {
       const [, name, value, after] = m;
+      trivia[name] = { before: pendingBefore, after };
+      pendingBefore = "";
       if (name in TYPED_FIELDS) {
         typed[name] = value;
       } else {
         colors[name] = value;
-        trivia[name] = { before: pendingBefore, after };
-        pendingBefore = "";
       }
     } else {
       // standalone comment (or blank) line — attach to the next declaration.
       pendingBefore += line + "\n";
     }
   }
-  return { colors, trivia, typed };
+  // Any comment/blank left over dangles just before the block's "}".
+  return { colors, trivia, typed, trailing: pendingBefore };
 }
 
 // --- Serialize -----------------------------------------------------------
 
 export function serializeTheme(model: ThemeModel): string {
+  // Degraded models hold their entire source in `custom` — emit it verbatim.
+  if (model.raw) return model.custom;
+
   let out = "";
   if (model.header) out += model.header + "\n";
   for (const imp of model.imports) out += imp + "\n";
   out += "\n";
 
   out += ":root {\n";
-  out += "  color-scheme: light;\n";
-  out += `  --font-ui: ${model.fontUi};\n`;
-  out += `  --font-display: ${model.fontDisplay};\n`;
-  out += `  --radius: ${model.radius};\n`;
-  out += `  --spacing: ${model.spacing};\n`;
-  out += `  --icon-library: ${model.iconLibrary};\n`;
+  out += line(model.lightTrivia, "color-scheme", "  color-scheme: light;");
+  out += line(model.lightTrivia, "font-ui", `  --font-ui: ${model.fontUi};`);
+  out += line(model.lightTrivia, "font-display", `  --font-display: ${model.fontDisplay};`);
+  out += line(model.lightTrivia, "radius", `  --radius: ${model.radius};`);
+  out += line(model.lightTrivia, "spacing", `  --spacing: ${model.spacing};`);
+  out += line(model.lightTrivia, "icon-library", `  --icon-library: ${model.iconLibrary};`);
   out += renderTokens(model.light, model.lightTrivia);
+  out += model.lightTrailing;
   out += "}\n";
 
-  out += "\n";
+  out += model.betweenBlocks;
   out += ".dark {\n";
-  out += "  color-scheme: dark;\n";
+  out += line(model.darkTrivia, "color-scheme", "  color-scheme: dark;");
   out += renderTokens(model.dark, model.darkTrivia);
+  out += model.darkTrailing;
   out += "}\n";
 
   out += model.custom;
   return out;
 }
 
+// Emit one declaration line with its captured before/after trivia.
+function line(trivia: Record<string, Trivia>, name: string, decl: string): string {
+  const tv = trivia[name] ?? { before: "", after: "" };
+  return `${tv.before}${decl}${tv.after}\n`;
+}
+
 function renderTokens(map: Record<string, string>, trivia: Record<string, Trivia>): string {
   let out = "";
   for (const name of Object.keys(map)) {
-    const tv = trivia[name] ?? { before: "", after: "" };
-    out += `${tv.before}  --${name}: ${map[name]};${tv.after}\n`;
+    out += line(trivia, name, `  --${name}: ${map[name]};`);
   }
   return out;
 }
