@@ -57,6 +57,7 @@ is the living checklist — extend it with every new surface.
 | `logs.debug` / `info` / `warn` / `error` | compost sweep / care & seed / wilting & reset / upload failures + Shed demo row |
 | `appId` export | Potting Shed's SDK exercises card |
 | `@lodekit/ui`, `theme.css` | throughout |
+| themes: per-app selection + `@lodekit/ui/icons` | `greenhouse-green` assignment in `themes/config.json`; nav icons |
 | `@lodekit/ui` chart (`ChartContainer` + `--chart-*` tokens) | Sky Journal temperature lines |
 | `@lodekit/ui` `useDataTable` + `DataTable` (client mode, header sort, pagination) | Almanac care history |
 | `src/gateways.ts` + `defineGateways` | the `weather` + `oauth_demo` connections |
