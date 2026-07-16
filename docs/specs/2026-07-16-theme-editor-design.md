@@ -1,7 +1,7 @@
 # Themes: library, per-app selection, and the theme editor — design
 
 **Date:** 2026-07-16
-**Status:** draft — pending review
+**Status:** approved — stress-tested 2026-07-16 (see Stress Test Results)
 **Scope:** GitHub issue #61 (theme editor / component visualizer), plus the theming-model
 rework it forced: themes become named, self-contained, switchable entities delivered at
 serve time, replacing the global+per-app override-file composition from the
@@ -75,7 +75,9 @@ the way they edit everything else, and shadcn-ecosystem themes port near-verbati
   `lodekit` (cork amber; the Fraunces/Hanken Grotesk `@import` moves here from
   `@lodekit/ui`), plus ports of Dracula, Catppuccin (Latte/Mocha as its light/dark), and
   one or two more (Nord, Rosé Pine). Read-only, always present, updated by upgrades.
-  Each port defines its own CVD-checked `--chart-1..5` series from its palette.
+  Each port defines its own CVD-checked `--chart-1..5` series from its palette. At
+  least one port ships a non-lucide `--icon-library`, so the alternate-icon-set path
+  is exercised by a shipped theme, not only by tests.
 - **User themes** live in `<Lodekit root>/themes/<slug>.css` — visible, agent-editable,
   created by duplicating any theme. The filename slug is the identity (same grammar as
   app ids); rename = rename the file. User slugs may not collide with vendored names.
@@ -89,7 +91,9 @@ agent-editable like everything in the root:
 
 Resolution per target: app assignment → global → `lodekit`. Missing file, missing key,
 or an unresolvable name falls back one step (with a logged warning). The dashboard
-follows the global selection.
+follows the global selection. Service writes to `config.json` and theme files go
+write-temp-then-atomic-rename, so the watcher and concurrent readers never observe torn
+files; concurrency is last-write-wins (single-person local tool).
 
 **Retired contract:** `<root>/theme.css` and `apps/<id>/theme.css` override composition.
 The runtime logs a one-time startup warning when legacy files exist, naming the new
@@ -110,7 +114,10 @@ dashboard):
 
 `GET /_ui/theme.css` resolves the effective theme for the target (`?app` validated
 against the app-id grammar and registry; absent → global, which is what the dashboard's
-link uses) and serves that theme file, `Cache-Control: no-store`. To make the served theme always win, the token defaults in
+link uses) and serves that theme file, `Cache-Control: no-store`. The endpoint **always
+answers 200 with usable CSS** — it is a blocking resource in every page load, so any
+internal failure (missing file, resolver error) degrades to the `lodekit` theme, never
+an error response. To make the served theme always win, the token defaults in
 `@lodekit/ui/theme-tokens.css` move into a named `@layer` — layered declarations lose to
 the unlayered served theme regardless of document order, so correctness never depends on
 link position.
@@ -146,7 +153,7 @@ script tag itself stays identical everywhere.
 | `POST /api/themes/:name/rename` `{to}` | User themes only; rewrites config references atomically |
 | `DELETE /api/themes/:name` | User themes only; selections referencing it fall back |
 | `PUT /api/themes/config` | Set global and/or per-app selection; validates theme names and app ids |
-| `PUT /api/themes/preview` `{css}` | Single in-memory draft slot; `GET /_ui/theme.css?preview=1` serves it. Never touches disk; cleared on restart |
+| `PUT /api/themes/preview` `{css}` | Single in-memory draft slot (same size cap as theme `PUT`); `GET /_ui/theme.css?preview=1` serves it. Never touches disk; cleared on restart. Empty slot → falls back to normal resolution (stale preview flags self-heal) |
 
 The runtime treats theme CSS as opaque content (store, validate name/size, serve).
 Trust boundary: theme CSS is person/agent-authored local content served same-origin —
@@ -172,7 +179,8 @@ import { Settings, Trash2 } from "@lodekit/ui/icons"; // was: from "lucide-react
   per-set chunks via dynamic import — apps pay for alternates only when a theme selects
   them. Until a chunk resolves, the lucide glyph renders (same box, no layout shift).
 - **Name mapping:** a generated per-set map translates canonical names (e.g. `Settings`
-  → Phosphor `Gear`). Coverage: every icon name actually used across `@lodekit/ui`, the
+  → Phosphor `Gear`), produced by a committed dev-time script with its output checked
+  in — never an install-time or runtime step. Coverage: every icon name actually used across `@lodekit/ui`, the
   dashboard, the scaffold, Greenhouse, and Welcome — a bounded list enforced by a scan
   test — plus best-effort identical-name auto-matches. **Unmapped name → lucide
   fallback**: exotic icons never break, they just don't switch.
@@ -252,7 +260,8 @@ Save serializes the model to canonical CSS and `PUT`s it; the watcher/SSE path a
 it live. Unrecognized CSS found at parse time is preserved verbatim in a trailing block
 (with a "contains custom CSS" notice in the editor). Dirty-state guard on navigation.
 The **parser/serializer is a pure TS module** in the dashboard source with round-trip
-unit tests; the runtime never parses theme CSS beyond the `--icon-library` extraction.
+unit tests — saving a cleanly-parsed theme with no edits produces a **byte-identical
+file**; the runtime never parses theme CSS beyond the `--icon-library` extraction.
 
 ## 5. Edge cases and failure handling
 
@@ -265,13 +274,20 @@ unit tests; the runtime never parses theme CSS beyond the `--icon-library` extra
   app code). Editor parses best-effort and preserves what it can't model.
 - API guards: slug grammar + length, vendored-name collisions rejected, vendored
   write/rename/delete refused, size cap on `PUT`, app-id validation on assignment.
-- Legacy `theme.css` files → one-time startup warning naming the new location.
+- Legacy `theme.css` files → one-time startup warning naming the new location; the
+  phase-1 changelog entry calls out the break explicitly.
+- Apps scaffolded before this release lack the theme link in `__root.tsx` — they keep
+  the default look and ignore theme switching until the link line is added (a one-line
+  agent-assisted edit; the runtime cannot inject it into worker-SSR'd HTML). Named in
+  the changelog entry alongside the legacy-file break.
 
 ## 6. Testing
 
 - **Runtime (vitest):** theme service — resolution chain + fallbacks, CRUD validation,
   rename rewrites config, delete-while-selected; endpoint tests for
-  `/_ui/theme.css?app=…`/`?preview=1` and `/api/themes*`; watcher → `theme-change` SSE.
+  `/_ui/theme.css?app=…`/`?preview=1` and `/api/themes*`; watcher → `theme-change` SSE;
+  **path containment** — slug/app-id validation rejects traversal on every themes
+  endpoint (`PUT`, `duplicate`, `rename`, `DELETE`, `?app`) before any path join.
 - **Dashboard:** parser/serializer round-trip (canonical → model → identical file;
   custom CSS preserved; role "mixed" detection).
 - **`@lodekit/ui`:** icon indirection — mapping lookup, unmapped-name lucide fallback,
@@ -302,3 +318,60 @@ One spec, sequenced implementation; each phase lands green:
 - Self-hosted fonts (themes currently `@import` Google Fonts).
 - Icon mapping coverage beyond the platform-used set.
 - Theme import/export or sharing.
+
+## Stress Test Results: theme library + editor (2026-07-16, lk-hmg)
+
+### Resolved Decisions
+
+- **CSS file as source of truth** — agreed. Agent-editability and near-verbatim shadcn
+  ports outweigh parser cost; parser risk bounded by canonical format + verbatim
+  preservation + round-trip tests.
+- **Serve-time delivery (`no-store` + `@layer`)** — agreed. Cascade-layer behavior is
+  bedrock CSS; localhost latency negligible; deleting build-time composition shrinks
+  complexity and the write surface.
+- **`config.json` last-write-wins** — agreed. Locks/CRDTs would be over-engineering for
+  a single-person tool; watcher + SSE reconciles losers within a beat.
+- **Icon indirection with both alternates (Phosphor + Tabler)** — kept as specified
+  after explicit discussion of the recurring per-icon mapping tax (scan-test-enforced,
+  two lookups per new platform icon) and the one-alternate option; the engineer chose
+  to keep both.
+- **Single in-memory preview slot** — agreed; multi-window clobber accepted (wrong
+  preview, no data loss).
+- **Security** — trust model holds: theme CSS is same-origin person/agent-authored
+  local content with strictly less power than app JS; sanitization beyond the size cap
+  would be theater. No control weakened; no new network exposure.
+- **Legacy retirement, warning-only** — agreed. Auto-migrating partial overrides would
+  bake defaults into a frozen fork — worse than the warning.
+- **Density via Tailwind v4 `--spacing`** — assumption verified in-repo (v4.3;
+  utilities emit `calc(var(--spacing) * n)`; Tailwind's default lives in
+  `@layer theme` so the unlayered served value wins). Type scale intentionally
+  unaffected.
+- **5-phase sequencing** — agreed; no phase depends on a later one; maps to one plan,
+  one epic, ~5 task beads.
+
+### Changes Made
+
+- `/_ui/theme.css` always answers 200 with usable CSS (blocking-resource guarantee).
+- Config/theme writes are write-temp-then-atomic-rename.
+- Preview `PUT` gets the theme-`PUT` size cap; empty preview slot falls back to normal
+  resolution (stale flags self-heal).
+- Icon name maps: committed dev-time script, output checked in; at least one vendored
+  port ships a non-lucide `--icon-library`.
+- Parser/serializer: unchanged parse→save is byte-identical.
+- Path-containment validation is a tested invariant on every themes endpoint.
+- Legacy break + pre-existing-app link migration named in the phase-1 changelog entry.
+- Pre-2026-07 apps lack the theme link (§5 edge case; one-line agent-assisted fix).
+
+### Deferred / Parking Lot
+
+- Role-derivation contrast safety for auto-derived foregrounds — the "mixed" state
+  already keeps divergent themes honest; revisit only if derived pairs prove illegible.
+- Port licensing: keep the attribution header comment (as in the §1 example) in every
+  vendored port.
+
+### Confidence Assessment
+
+- Overall: **High**.
+- Areas of concern: parser/serializer round-trip fidelity under adversarial
+  hand-authored CSS (mitigated by verbatim preservation); recurring icon-mapping tax
+  accepted knowingly with both alternate sets.
