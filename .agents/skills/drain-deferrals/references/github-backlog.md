@@ -59,10 +59,19 @@ mutation($issueId: ID!, $fields: [IssueFieldCreateOrUpdateInput!]!) {
   setIssueFieldValue(input: {issueId: $issueId, issueFields: $fields}) { issue { number } }
 }' \
   -f issueId='<ISSUE_NODE_ID>' \
-  -F 'fields[0][fieldId]=IFSS_kgDOApqUzA' \
-  -F 'fields[0][singleSelectOptionId]=IFSSO_kgDOBI6PRA' \
-  -F 'fields[1][fieldId]=IFSS_kgDOAqC5_g' \
-  -F 'fields[1][singleSelectOptionId]=IFSSO_kgDOBJlXrA' \
-  -F 'fields[2][fieldId]=IFSS_kgDOAqC7bw' \
-  -F 'fields[2][singleSelectOptionId]=IFSSO_kgDOBJlaOQ'
+  -F 'fields[][fieldId]=IFSS_kgDOApqUzA' \
+  -F 'fields[][singleSelectOptionId]=IFSSO_kgDOBI6PRA' \
+  -F 'fields[][fieldId]=IFSS_kgDOAqC5_g' \
+  -F 'fields[][singleSelectOptionId]=IFSSO_kgDOBJlXrA' \
+  -F 'fields[][fieldId]=IFSS_kgDOAqC7bw' \
+  -F 'fields[][singleSelectOptionId]=IFSSO_kgDOBJlaOQ'
 ```
+
+Syntax note: use the no-index `fields[][subkey]` form. gh groups consecutive
+`fields[][…]` subkeys into one array element and starts a new element when a subkey
+repeats, producing `{"fields":[{fieldId, singleSelectOptionId}, …]}` — a proper list,
+as `[IssueFieldCreateOrUpdateInput!]!` requires. Numeric indices
+(`fields[0][fieldId]=…`) build a JSON *object* keyed `"0"`/`"1"` instead, which
+GraphQL variable coercion rejects. Confirm the built shape with
+`gh api graphql --verbose` (it prints `GraphQL variables:`) before the first real
+mutation.
