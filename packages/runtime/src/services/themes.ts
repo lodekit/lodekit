@@ -8,7 +8,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { Hono } from "hono";
 import { isValidAppId } from "../registry.js";
+import { emitEvent, PLATFORM_NS } from "../events.js";
 import type { Config } from "../config.js";
 
 export const THEME_MAX_BYTES = 512 * 1024;
@@ -225,6 +227,51 @@ export function setPreviewCss(css: string | null): void {
 export function getPreviewCss(): string | null {
   return previewCss;
 }
+
+// The /api/themes surface (spec §2). Own .onError maps ThemeError.status to the
+// HTTP code; static paths (/config, /preview) register before the /:name routes.
+// Name params pass through untouched — validation lives in the service, before any
+// path join, so the router never pre-normalizes a would-be traversal into safety.
+export const themesRoutes = (cfg: Config) =>
+  new Hono()
+    .onError((err, c) => {
+      if (err instanceof ThemeError) return c.json({ error: err.message }, err.status);
+      throw err;
+    })
+    .get("/", (c) => c.json({ themes: listThemes(cfg), config: readThemesConfig(cfg) }))
+    .put("/config", async (c) => {
+      writeThemesConfig(cfg, await c.req.json());
+      return c.body(null, 204);
+    })
+    .put("/preview", async (c) => {
+      const css = await c.req.text();
+      if (Buffer.byteLength(css) > THEME_MAX_BYTES) throw new ThemeError("theme too large");
+      setPreviewCss(css);
+      emitEvent({ ns: PLATFORM_NS, source: PLATFORM_NS, type: "theme-change" });
+      return c.body(null, 204);
+    })
+    .get("/:name", (c) => {
+      const css = readThemeCss(cfg, c.req.param("name"));
+      if (css === null) throw new ThemeError(`theme "${c.req.param("name")}" not found`, 404);
+      c.header("Content-Type", "text/css; charset=utf-8");
+      return c.body(css);
+    })
+    .put("/:name", async (c) => {
+      putUserTheme(cfg, c.req.param("name"), await c.req.text());
+      return c.body(null, 204);
+    })
+    .post("/:name/duplicate", async (c) => {
+      duplicateTheme(cfg, c.req.param("name"), (await c.req.json()).to);
+      return c.body(null, 204);
+    })
+    .post("/:name/rename", async (c) => {
+      renameUserTheme(cfg, c.req.param("name"), (await c.req.json()).to);
+      return c.body(null, 204);
+    })
+    .delete("/:name", (c) => {
+      deleteUserTheme(cfg, c.req.param("name"));
+      return c.body(null, 204);
+    });
 
 // One-time startup warning for the retired legacy theme locations (spec §1).
 export function warnLegacyThemeFiles(cfg: Config): void {

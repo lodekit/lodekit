@@ -61,38 +61,35 @@ describe("/_ui placeholder", () => {
 });
 
 describe("/_ui/theme.css", () => {
-  it("returns the global override file, text/css, no-store", async () => {
-    fs.writeFileSync(path.join(root, "theme.css"), ":root { --primary: #ff3456; }\n");
+  it("serves the resolved default theme, text/css, no-store", async () => {
     await listen(cfgFor(root, cache));
     const res = await fetch(base + "/_ui/theme.css");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/css");
     expect(res.headers.get("cache-control")).toBe("no-store");
-    expect(await res.text()).toContain("#ff3456");
+    expect(await res.text()).toContain("--icon-library"); // the vendored lodekit default
   });
 
-  it("returns empty css when no global file exists", async () => {
-    await listen(cfgFor(root, cache));
-    const res = await fetch(base + "/_ui/theme.css");
-    expect(res.status).toBe(200);
-    expect((await res.text()).trim()).toBe("");
-  });
-
-  it("composes global + per-app overrides in cascade order", async () => {
-    fs.writeFileSync(path.join(root, "theme.css"), ":root { --primary: #ff3456; }\n");
+  it("resolves a configured per-app theme", async () => {
+    const themesDir = path.join(root, "themes");
+    fs.mkdirSync(themesDir, { recursive: true });
+    fs.writeFileSync(path.join(themesDir, "demo-theme.css"), ":root { --primary: #22cc78; }\n");
+    fs.writeFileSync(path.join(themesDir, "config.json"), JSON.stringify({ apps: { demo: "demo-theme" } }));
     const appDir = path.join(root, "apps", "demo");
     fs.mkdirSync(appDir, { recursive: true });
     fs.writeFileSync(path.join(appDir, "manifest.json"), JSON.stringify({ name: "Demo", appId: "demo" }));
-    fs.writeFileSync(path.join(appDir, "theme.css"), ":root { --primary: #22cc78; }\n");
     await listen(cfgFor(root, cache));
-    const css = await (await fetch(base + "/_ui/theme.css?app=demo")).text();
-    expect(css.indexOf("#22cc78")).toBeGreaterThan(css.indexOf("#ff3456"));
+    expect(await (await fetch(base + "/_ui/theme.css?app=demo")).text()).toContain("#22cc78");
   });
 
-  it("rejects invalid and unknown app ids", async () => {
+  it("degrades unknown and invalid app ids to global resolution (always 200)", async () => {
     await listen(cfgFor(root, cache));
-    expect((await fetch(base + "/_ui/theme.css?app=..%2Fevil")).status).toBe(404);
-    expect((await fetch(base + "/_ui/theme.css?app=nope")).status).toBe(404);
+    const invalid = await fetch(base + "/_ui/theme.css?app=..%2Fevil");
+    expect(invalid.status).toBe(200);
+    expect(await invalid.text()).toContain("--icon-library");
+    const unknown = await fetch(base + "/_ui/theme.css?app=nope");
+    expect(unknown.status).toBe(200);
+    expect(await unknown.text()).toContain("--icon-library");
   });
 
   it("serves the theme resolver with the effective mode, no-store", async () => {
@@ -102,6 +99,6 @@ describe("/_ui/theme.css", () => {
     expect(await r.text()).toContain('"system"');
     setPlatformValue("appearance.theme", "dark");
     expect(await (await fetch(`${base}/_ui/theme.js`)).text()).toContain('"dark"');
-    expect(await (await fetch(`${base}/_ui/theme.json`)).json()).toEqual({ theme: "dark" });
+    expect(await (await fetch(`${base}/_ui/theme.json`)).json()).toEqual({ theme: "dark", iconLibrary: "lucide" });
   });
 });

@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import type { Server } from "node:http";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
@@ -33,6 +32,7 @@ import { parseDuration } from "./duration.js";
 import { createLogger } from "./logger.js";
 import { initTaskEngine, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskEngine.js";
 import { sweepAllTaskRuns } from "./services/tasks.js";
+import { resolveThemeCss, extractIconLibrary, getPreviewCss, warnLegacyThemeFiles } from "./services/themes.js";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
@@ -86,18 +86,15 @@ export function createApp(cfg: Config): Hono {
     // with one app's file (?app=<id>) — read per request, never cached, so theme
     // edits show on reload.
     .get("/_ui/theme.css", (c) => {
-      const read = (f: string) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "");
-      let css = read(path.join(cfg.root, "theme.css"));
-      const app = c.req.query("app");
-      if (app !== undefined) {
-        if (!isValidAppId(app) || !scanApps(cfg.appsDir).some((a) => a.appId === app)) {
-          return c.text("unknown app", 404);
-        }
-        css += "\n" + read(path.join(cfg.appsDir, app, "theme.css"));
-      }
       c.header("Cache-Control", "no-store");
       c.header("Content-Type", "text/css; charset=utf-8");
-      return c.body(css);
+      if (c.req.query("preview") === "1") {
+        const draft = getPreviewCss();
+        if (draft !== null) return c.body(draft);
+      }
+      const app = c.req.query("app");
+      const appId = app !== undefined && isValidAppId(app) && scanApps(cfg.appsDir).some((a) => a.appId === app) ? app : undefined;
+      return c.body(resolveThemeCss(cfg, appId));
     })
     // Theme mode resolver (settings spec §8): a classic blocking script so the
     // class lands before paint. Generated per request from the effective
@@ -110,7 +107,11 @@ export function createApp(cfg: Config): Hono {
     })
     .get("/_ui/theme.json", (c) => {
       c.header("Cache-Control", "no-store");
-      return c.json({ theme: effectiveString("appearance.theme") });
+      const preview = c.req.query("preview") === "1" ? getPreviewCss() : null;
+      const app = c.req.query("app");
+      const appId = app !== undefined && isValidAppId(app) ? app : undefined;
+      const css = preview ?? resolveThemeCss(cfg, appId);
+      return c.json({ theme: effectiveString("appearance.theme"), iconLibrary: extractIconLibrary(css) });
     })
     // The Themes stub inside the dashboard (the future theme editor's slot)
     // replaced the standalone /_ui/ page; keep old links landing somewhere.
@@ -183,6 +184,7 @@ export async function start(cfg: Config): Promise<Server> {
   // down never got their dropBuild, so their cache output would accumulate forever.
   pruneBuildCache(cfg);
   await buildDashboard(cfg); // never throws; failures surface as the fallback page
+  warnLegacyThemeFiles(cfg);
   const watcher = await startWatcher(cfg);
   // Loop intervals and retention are settings (spec §6): every() is last-wins by
   // name, so re-arming on a relevant write is a plain re-registration. Retention
