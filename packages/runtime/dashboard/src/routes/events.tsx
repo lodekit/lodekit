@@ -6,19 +6,20 @@ import { useSSEEvent } from "../components/sse";
 interface EventRecord {
   id: number;
   ts: number;
-  ns: string;
-  source: string;
+  app: string | null;
+  kind: string;
+  component: string;
   type: string;
   payload: Record<string, unknown> | null;
 }
 
-const INTERNAL_NS = ["_platform", "_dashboard"] as const;
+const INTERNAL_APPS = ["_dashboard"] as const;
 const MAX_LIVE_ROWS = 500;
 const MAX_ROWS = 1000;
 
 export const Route = createFileRoute("/events")({
-  validateSearch: (s: Record<string, unknown>): { ns?: string } =>
-    typeof s.ns === "string" && s.ns ? { ns: s.ns } : {},
+  validateSearch: (s: Record<string, unknown>): { app?: string } =>
+    typeof s.app === "string" && s.app ? { app: s.app } : {},
   component: EventsView,
 });
 
@@ -36,7 +37,7 @@ function Row({ r }: { r: EventRecord }) {
         </span>
         <Badge variant="secondary">{r.type}</Badge>
         <span className="shrink-0 text-muted-foreground">
-          {r.ns}{r.source !== r.ns ? `·${r.source}` : ""}
+          {r.app ?? "platform"}{r.component !== r.app ? `·${r.component}` : ""}
         </span>
         <span className="truncate text-muted-foreground">
           {hasPayload ? JSON.stringify(r.payload) : ""}
@@ -52,7 +53,7 @@ function Row({ r }: { r: EventRecord }) {
 }
 
 function EventsView() {
-  const { ns } = Route.useSearch();
+  const { app } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [apps, setApps] = useState<{ appId: string; name: string }[]>([]);
   const [type, setType] = useState("");
@@ -68,14 +69,14 @@ function EventsView() {
 
   const filterQuery = useMemo(() => {
     const query = new URLSearchParams({ limit: "200" });
-    if (ns) query.set("ns", ns);
+    if (app) query.set("app", app);
     if (debounced.type) query.set("type", debounced.type);
     return query;
-  }, [ns, debounced.type]);
+  }, [app, debounced.type]);
 
   // q is client-side (type + payload text) — the history endpoint has no q param.
-  const filtersRef = useRef({ ns, type: debounced.type, q: debounced.q });
-  filtersRef.current = { ns, type: debounced.type, q: debounced.q };
+  const filtersRef = useRef({ app, type: debounced.type, q: debounced.q });
+  filtersRef.current = { app, type: debounced.type, q: debounced.q };
   const matchesQ = (r: EventRecord, needle: string) =>
     !needle ||
     r.type.toLowerCase().includes(needle.toLowerCase()) ||
@@ -114,8 +115,8 @@ function EventsView() {
 
   useSSEEvent("event", (e) => {
     const r = JSON.parse(e.data) as EventRecord;
-    const { ns, type, q } = filtersRef.current;
-    if ((ns && r.ns !== ns) || (type && r.type !== type) || !matchesQ(r, q)) return;
+    const { app, type, q } = filtersRef.current;
+    if ((app && r.app !== app) || (type && r.type !== type) || !matchesQ(r, q)) return;
     if (!hasRecordsRef.current) {
       pendingRef.current.push(r);
       return;
@@ -146,7 +147,7 @@ function EventsView() {
   }
 
   const shown = (records ?? []).filter((r) => matchesQ(r, debounced.q));
-  const setNs = (value?: string) => void navigate({ search: value ? { ns: value } : {} });
+  const setApp = (value?: string) => void navigate({ search: value ? { app: value } : {} });
 
   return (
     <div>
@@ -154,11 +155,11 @@ function EventsView() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <select
           className="h-8 rounded-md border bg-background px-2 text-sm"
-          value={ns ?? ""}
-          onChange={(e) => setNs(e.target.value || undefined)}
+          value={app ?? ""}
+          onChange={(e) => setApp(e.target.value || undefined)}
         >
-          <option value="">All namespaces</option>
-          {INTERNAL_NS.map((n) => (
+          <option value="">All apps</option>
+          {INTERNAL_APPS.map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
           {apps.map((a) => (

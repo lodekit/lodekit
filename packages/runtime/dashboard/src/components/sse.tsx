@@ -32,19 +32,21 @@ export function SSEProvider({ children }: { children: ReactNode }) {
     es.addEventListener("log", onLog);
     es.addEventListener("event", (e) => {
       try {
-        const d = JSON.parse((e as MessageEvent).data) as { ns: string; type: string };
+        const d = JSON.parse((e as MessageEvent).data) as { app: string | null; kind: string; component: string; type: string };
+        // Platform pages key their queries on "_platform"; on the bus that stream is app null.
+        const appKey = d.app ?? "_platform";
         if (d.type === "apps-changed") void queryClient.invalidateQueries({ queryKey: ["apps"] });
-        if (d.type === "settings-change") void queryClient.invalidateQueries({ queryKey: ["settings", d.ns] });
-        if (d.type === "secrets-change") void queryClient.invalidateQueries({ queryKey: ["secrets", d.ns] });
-        if (d.type === "kv-store-change") void queryClient.invalidateQueries({ queryKey: ["kv", d.ns] });
-        if (d.type === "db-store-change" || d.type === "file-store-change") {
-          void queryClient.invalidateQueries({ queryKey: ["data", d.ns, "summary"] });
+        if (d.component === "settings") void queryClient.invalidateQueries({ queryKey: ["settings", appKey] });
+        if (d.component === "secret-store") void queryClient.invalidateQueries({ queryKey: ["secrets", appKey] });
+        if (d.component === "kv-store") void queryClient.invalidateQueries({ queryKey: ["kv", appKey] });
+        if (d.component === "db-store" || d.component === "file-store") {
+          void queryClient.invalidateQueries({ queryKey: ["data", appKey, "summary"] });
         }
-        if (d.type === "db-store-change") void queryClient.invalidateQueries({ queryKey: ["data", d.ns, "schema"] });
-        if (d.type === "file-store-change") void queryClient.invalidateQueries({ queryKey: ["data", d.ns, "files"] });
-        if (d.type === "tasks-change") {
-          void queryClient.invalidateQueries({ queryKey: ["tasks", d.ns] });
-          void queryClient.invalidateQueries({ queryKey: ["task-runs", d.ns] });
+        if (d.component === "db-store") void queryClient.invalidateQueries({ queryKey: ["data", appKey, "schema"] });
+        if (d.component === "file-store") void queryClient.invalidateQueries({ queryKey: ["data", appKey, "files"] });
+        if (d.component === "tasks") {
+          void queryClient.invalidateQueries({ queryKey: ["tasks", appKey] });
+          void queryClient.invalidateQueries({ queryKey: ["task-runs", appKey] });
         }
       } catch {
         // malformed frame: skip invalidation, still fan out below

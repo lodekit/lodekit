@@ -197,8 +197,8 @@ function GatewayDetail() {
     void queryClient.invalidateQueries({ queryKey: ["secrets", "_platform"] });
   };
   useSSEEvent("event", (e) => {
-    const d = JSON.parse(e.data) as { type: string };
-    if (d.type === "gateway-change" || d.type === "gateway-health" || d.type === "secrets-change") invalidate();
+    const d = JSON.parse(e.data) as { component: string };
+    if (d.component === "gateways" || d.component === "secret-store") invalidate();
   });
 
   if (q.isLoading) return <Skeleton className="h-40" />;

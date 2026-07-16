@@ -25,6 +25,14 @@ type ServerStatus =
   | { status: "running" }
   | { status: "error"; message?: string };
 
+// build/server state is stream-only (no fetchable snapshot) — accumulate from SSE.
+const BUILD_STATUS: Record<string, BuildStatus["status"]> = {
+  "build-started": "building", "build-ready": "ready", "build-failed": "error",
+};
+const SERVER_STATUS: Record<string, ServerStatus["status"]> = {
+  "server-started": "starting", "server-ready": "running", "server-failed": "error",
+};
+
 function StateBadge({ state }: { state: BuildStatus | undefined }) {
   if (!state) return null;
   if (state.status === "building") return <Badge variant="outline">building…</Badge>;
@@ -83,21 +91,19 @@ function DashboardHome() {
   const [states, setStates] = useState<Record<string, BuildStatus>>({});
   const [serverStates, setServerStates] = useState<Record<string, ServerStatus>>({});
 
-  // build/server state is stream-only (no fetchable snapshot) — accumulate from SSE.
   useSSEEvent("event", (e) => {
     const d = JSON.parse(e.data) as {
-      ns: string;
+      app: string | null;
+      kind: string;
       type: string;
-      payload: Record<string, unknown> | null;
+      payload: { message?: string } | null;
     };
-    if (d.type === "build-state") {
-      const p = d.payload as { status: BuildStatus["status"]; message?: string } | null;
-      if (p) setStates((s) => ({ ...s, [d.ns]: { status: p.status, message: p.message } }));
-    }
-    if (d.type === "server-state") {
-      const p = d.payload as { status: ServerStatus["status"]; message?: string } | null;
-      if (p) setServerStates((s) => ({ ...s, [d.ns]: { status: p.status, message: p.message } }));
-    }
+    if (d.kind !== "engine" || !d.app) return;
+    const app = d.app;
+    const b = BUILD_STATUS[d.type];
+    if (b) setStates((s) => ({ ...s, [app]: { status: b, message: d.payload?.message } }));
+    const sv = SERVER_STATUS[d.type];
+    if (sv) setServerStates((s) => ({ ...s, [app]: { status: sv, message: d.payload?.message } }));
   });
 
   if (apps.isLoading) {
