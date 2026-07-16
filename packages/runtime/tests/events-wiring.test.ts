@@ -75,7 +75,7 @@ describe("platform emitters land on the bus", () => {
     await watcher.close();
   }, 60_000);
 
-  it("kv writes store change events with identity-only payloads and a service ttl", async () => {
+  it("kv writes land key-set facts with identity-only payloads and the service ttl", async () => {
     const { Hono } = await import("hono");
     const { apiRoutes } = await import("../src/routes.js");
     const app = new Hono().route("/api", apiRoutes(cfg));
@@ -84,9 +84,10 @@ describe("platform emitters land on the bus", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ value: "hi" }),
     });
-    const { records } = queryEvents({ ns: "notes", type: "kv-store-change" });
+    const { records } = queryEvents({ app: "notes", type: "key-set" });
     expect(records).toHaveLength(1);
-    expect(records[0]).toMatchObject({ source: "_platform", payload: { key: "greeting", op: "set" } });
+    expect(records[0]).toMatchObject({ kind: "service", component: "kv-store", payload: { key: "greeting" } });
+    expect(records[0].payload).not.toHaveProperty("op");
   });
 
   it("task enqueue lands run-queued with identity-only payload and the service ttl", async () => {

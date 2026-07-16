@@ -6,7 +6,7 @@ import { z } from "zod";
 import { getAppDb, openDbs } from "../db.js";
 import type { Config } from "../config.js";
 import { isValidAppId } from "../registry.js";
-import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
+import { emitEvent, CHANGE_FEED_TTL_S } from "../events.js";
 import { validationHook } from "../validation.js";
 import { effectiveNumber } from "./settings.js";
 
@@ -154,17 +154,16 @@ export function sweepAll(): { appId: string; keys: string[] }[] {
   return results;
 }
 
-const EVENT = `${CATALOG_NAME}-change`;
-
-// Change-feed events: identity + op, never values (spec §4); service-set ttl keeps
+// Change-feed facts: identity only, never values (spec §4); service-set ttl keeps
 // the bus's noisiest tenant from bloating the backed-up file.
-function emit(appId: string, key: string, op: "set" | "del" | "expire"): void {
-  emitEvent({ ns: appId, source: PLATFORM_NS, type: EVENT, payload: { key, op }, ttl: CHANGE_FEED_TTL_S });
+type KvFact = "key-set" | "key-deleted" | "key-expired";
+function emit(appId: string, key: string, type: KvFact): void {
+  emitEvent({ app: appId, kind: "service", component: CATALOG_NAME, type, payload: { key }, ttl: CHANGE_FEED_TTL_S });
 }
 
 export function sweepAllAndBroadcast(): void {
   for (const { appId, keys } of sweepAll()) {
-    for (const key of keys) emit(appId, key, "expire");
+    for (const key of keys) emit(appId, key, "key-expired");
   }
 }
 
@@ -216,7 +215,7 @@ export const kvRoutes = new Hono<KvEnv>()
   .post("/incr", zValidator("json", incrBody, validationHook), (c) => {
     const { key, by } = c.req.valid("json");
     const value = incr(c.var.db, key, by);
-    emit(c.var.appId, key, "set");
+    emit(c.var.appId, key, "key-set");
     return c.json({ value });
   })
   .post("/get-many", zValidator("json", getManyBody, validationHook), (c) => {
@@ -225,7 +224,7 @@ export const kvRoutes = new Hono<KvEnv>()
   .post("/set-many", zValidator("json", setManyBody, validationHook), (c) => {
     const { entries, ttl } = c.req.valid("json");
     setMany(c.var.db, entries as { key: string; value: unknown }[], { ttl });
-    for (const e of entries) emit(c.var.appId, e.key, "set");
+    for (const e of entries) emit(c.var.appId, e.key, "key-set");
     return c.json({ ok: true });
   })
   .get("/:key", zValidator("param", keyParam, validationHook), (c) => {
@@ -238,13 +237,13 @@ export const kvRoutes = new Hono<KvEnv>()
     const { key } = c.req.valid("param");
     const body = c.req.valid("json");
     set(c.var.db, key, body.value, { ttl: body.ttl });
-    emit(c.var.appId, key, "set");
+    emit(c.var.appId, key, "key-set");
     return c.json({ ok: true });
   })
   .delete("/:key", zValidator("param", keyParam, validationHook), (c) => {
     const { key } = c.req.valid("param");
     const deleted = del(c.var.db, key);
-    if (deleted) emit(c.var.appId, key, "del");
+    if (deleted) emit(c.var.appId, key, "key-deleted");
     return c.json({ deleted });
   });
 

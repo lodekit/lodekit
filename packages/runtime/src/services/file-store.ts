@@ -8,7 +8,7 @@ import { Hono, type Context, type MiddlewareHandler } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { getAppDb, openDbs } from "../db.js";
-import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
+import { emitEvent, CHANGE_FEED_TTL_S } from "../events.js";
 import type { Config } from "../config.js";
 import { isValidAppId } from "../registry.js";
 import { validationHook } from "../validation.js";
@@ -121,11 +121,10 @@ export function dateFolder(d = new Date()): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 }
 
-const EVENT = `${CATALOG_NAME}-change`;
-
-// Change-feed events: identity + op, never bytes (spec §4); service-set ttl as kv-store.
-function emit(appId: string, slug: string, op: "put" | "del" | "expire"): void {
-  emitEvent({ ns: appId, source: PLATFORM_NS, type: EVENT, payload: { slug, op }, ttl: CHANGE_FEED_TTL_S });
+// Change-feed facts: identity only, never bytes (spec §4); service-set ttl as kv-store.
+type FileFact = "file-put" | "file-deleted" | "file-expired";
+function emit(appId: string, slug: string, type: FileFact): void {
+  emitEvent({ app: appId, kind: "service", component: CATALOG_NAME, type, payload: { slug }, ttl: CHANGE_FEED_TTL_S });
 }
 
 function toStat(ctx: FilesCtx, r: Row): FileStat {
@@ -174,7 +173,7 @@ function verifiedRow(ctx: FilesCtx, slug: string): Row | undefined {
   if (!row) return undefined;
   if (!fs.existsSync(path.join(ctx.dir, row.path))) {
     ctx.db.prepare("DELETE FROM _files WHERE slug = ?").run(slug);
-    emit(ctx.appId, slug, "del");
+    emit(ctx.appId, slug, "file-deleted");
     return undefined;
   }
   return row;
@@ -250,7 +249,7 @@ export async function putFile(
          updated_at = excluded.updated_at, expires_at = excluded.expires_at`
     )
     .run(row);
-  emit(ctx.appId, slug, "put");
+  emit(ctx.appId, slug, "file-put");
   return toStat(ctx, row);
 }
 
@@ -269,7 +268,7 @@ export function deleteFile(ctx: FilesCtx, slug: string): boolean {
   if (!row) return false;
   removeBytes(ctx, row.path);
   ctx.db.prepare("DELETE FROM _files WHERE slug = ?").run(slug);
-  emit(ctx.appId, slug, "del");
+  emit(ctx.appId, slug, "file-deleted");
   return true;
 }
 
@@ -316,7 +315,7 @@ export function copyFile(ctx: FilesCtx, from: string, to: string): FileStat | un
          created_at = excluded.created_at, updated_at = excluded.updated_at, expires_at = excluded.expires_at`
     )
     .run(row);
-  emit(ctx.appId, to, "put");
+  emit(ctx.appId, to, "file-put");
   return toStat(ctx, row);
 }
 
@@ -336,8 +335,8 @@ export function moveFile(ctx: FilesCtx, from: string, to: string): FileStat | un
   ctx.db
     .prepare("UPDATE _files SET slug = ?, path = ?, updated_at = ? WHERE slug = ?")
     .run(to, relPath, now, from);
-  emit(ctx.appId, from, "del");
-  emit(ctx.appId, to, "put");
+  emit(ctx.appId, from, "file-deleted");
+  emit(ctx.appId, to, "file-put");
   const row = liveRow(ctx, to)!;
   return toStat(ctx, row);
 }
@@ -358,7 +357,7 @@ export function sweepFiles(cfg: Config): void {
       .all(now) as { slug: string; path: string }[];
     for (const r of expired) {
       removeBytes(ctx, r.path);
-      emit(appId, r.slug, "expire");
+      emit(appId, r.slug, "file-expired");
     }
     if (!fs.existsSync(ctx.dir)) continue;
     for (const day of fs.readdirSync(ctx.dir)) {

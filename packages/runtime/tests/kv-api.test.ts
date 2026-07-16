@@ -105,7 +105,7 @@ describe("kv-store HTTP surface", () => {
     expect(await res.json()).toHaveProperty("error");
   });
 
-  it("emits kv-store-change events on the scoped channel and expire events from the sweep", async () => {
+  it("emits key-set facts on the scoped channel and key-expired facts from the sweep", async () => {
     const ac = new AbortController();
     aborters.push(ac);
     const res = await fetch(base + "/api/apps/app/events", { signal: ac.signal });
@@ -114,8 +114,7 @@ describe("kv-store HTTP surface", () => {
 
     await put("app", "watched", { value: 1 });
     let chunk = (await reader.read()).value!;
-    expect(chunk).toContain("kv-store-change");
-    expect(chunk).toContain('"op":"set"');
+    expect(chunk).toContain('"type":"key-set"');
 
     // Fake ONLY Date — faking setTimeout etc. hangs undici's fetch internals.
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -126,7 +125,7 @@ describe("kv-store HTTP surface", () => {
     sweepAllAndBroadcast(); // what the scheduler task runs
     vi.useRealTimers();
     chunk = (await reader.read()).value!;
-    expect(chunk).toContain('"op":"expire"');
+    expect(chunk).toContain('"type":"key-expired"');
     expect(chunk).toContain('"key":"temp"');
   });
 });
