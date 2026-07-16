@@ -52,8 +52,11 @@ server.registerTool(
   "lodekit_events",
   {
     inputSchema: {
-      appId: z.string().optional().describe('filter to one namespace — an app id, or "_platform" for the runtime; omit for everything'),
-      type: z.string().optional().describe('event type, e.g. "kv-store-change" or an app-defined type'),
+      app: z.string().optional().describe("filter to one app's stream (an app id); omit for everything"),
+      kind: z.enum(["engine", "service", "app"]).optional().describe("class of emitter: the engine, a catalog service, or an app"),
+      component: z.string().optional().describe('emitting component, e.g. "kv-store", "build", or an app id'),
+      type: z.string().optional().describe('event type — a past-tense fact, e.g. "key-set", or an app-defined type'),
+      since: z.number().optional().describe("epoch ms lower bound on the event timestamp"),
       after: z.number().optional().describe("replay ascending from this event id (offset); omit for newest-first"),
       limit: z.number().optional(),
     },

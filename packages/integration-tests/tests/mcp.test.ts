@@ -98,12 +98,12 @@ describe("mcp tool helpers", () => {
     await kv.set("item:1", { n: "rice" });
     const { fetchEvents } = await import("@lodekit/mcp/client");
     await expect
-      .poll(async () => (await fetchEvents(base, { appId: "pantry", type: "kv-store-change" })).records, { timeout: 10_000 })
+      .poll(async () => (await fetchEvents(base, { app: "pantry", component: "kv-store", type: "key-set" })).records, { timeout: 10_000 })
       .toHaveLength(1);
     // apps-changed only fires once the watcher's fs-change debounce elapses, unlike
-    // kv-store-change above (emitted synchronously by the kv route) — poll for it too.
+    // key-set above (emitted synchronously by the kv route) — poll for it too.
     await expect
-      .poll(async () => (await fetchEvents(base, { appId: "_platform", type: "apps-changed" })).records.length, { timeout: 10_000 })
+      .poll(async () => (await fetchEvents(base, { kind: "engine", type: "apps-changed" })).records.length, { timeout: 10_000 })
       .toBeGreaterThan(0); // the scaffold's registry churn
   }, 30_000);
 
