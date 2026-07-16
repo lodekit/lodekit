@@ -68,6 +68,7 @@ is the living checklist — extend it with every new surface.
 | `GatewayError` handling (`unconfigured` → calm state) | weather_log no-op, Shed hint states |
 | OAuth connect / transparent refresh / needs-reauth | Duende demo (Shed card) |
 | `defineSettings` + `settings.get` | `weather_location` |
+| per-app favicon (`/_ui/favicon.svg?app=…`) | Greenhouse tab shows 🪴 (manifest `icon` → favicon) |
 
 **Pending (showcase Part 2, spec §5):** `events.emit` (client+server, `{ttl}`),
 `events.list` (`before`/`after`/server-side), the Ledger, While You Were Away, and

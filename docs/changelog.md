@@ -68,6 +68,10 @@ Rules:
   read-only; duplicate one to get an editable copy. Saving applies the theme
   everywhere live, and unsaved edits are guarded when you navigate away.
 
+- **Favicons** — browser tabs now show your chosen menubar icon on the
+  dashboard (and anywhere without its own icon), and each app's emoji on that
+  app's pages. Changing the menubar icon in Settings updates open tabs live.
+
 ## Fixed
 
 - **kv-store error statuses** — internal faults in the kv API now return 500
