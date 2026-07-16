@@ -1,4 +1,4 @@
-/* Brand palette from design.md (cork amber + blue neutrals). The brand doc's
+/* Brand palette from DESIGN.md (cork amber + blue neutrals). The brand doc's
    --accent maps to shadcn's --primary (buttons, fills, active states); shadcn's
    own --accent stays a neutral hover wash and must not carry the amber. */
 :root {

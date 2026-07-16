@@ -32,6 +32,10 @@ Rules:
 
 ## Fixed
 
+- **kv-store error statuses** — internal faults in the kv API now return 500
+  instead of masquerading as 400; bad requests (invalid keys, `incr` on a
+  non-number, malformed JSON) still return 400.
+
 - **Deleting an app stops its scheduled tasks immediately** — the task engine
   used to keep materializing a deleted app's schedule runs (and emitting their
   events) until the next restart.

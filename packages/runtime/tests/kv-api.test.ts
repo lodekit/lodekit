@@ -5,7 +5,7 @@ import path from "node:path";
 import type { Server } from "node:http";
 import { createServer } from "../src/server.js";
 import type { Config } from "../src/config.js";
-import { sweepAllAndBroadcast } from "../src/services/kv-store.js";
+import { getKv, sweepAllAndBroadcast } from "../src/services/kv-store.js";
 
 let root: string, server: Server, base: string;
 const aborters: AbortController[] = [];
@@ -93,6 +93,16 @@ describe("kv-store HTTP surface", () => {
     const badLimit = await fetch(kv("app", "?limit=abc"));
     expect(badLimit.status).toBe(400);
     expect(await badLimit.json()).toHaveProperty("error");
+  });
+
+  it("maps unexpected errors to 500, not the client-error 400", async () => {
+    await put("app", "corrupt", { value: 1 });
+    // Bypass the API to plant a value JSON.parse chokes on — an internal fault,
+    // not a bad request.
+    getKv(path.join(root, "data"), "app").prepare("UPDATE _kv SET value = 'not-json' WHERE key = ?").run("corrupt");
+    const res = await fetch(kv("app", "/corrupt"));
+    expect(res.status).toBe(500);
+    expect(await res.json()).toHaveProperty("error");
   });
 
   it("emits kv-store-change events on the scoped channel and expire events from the sweep", async () => {

@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { Hono, type MiddlewareHandler } from "hono";
+import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { getAppDb, openDbs } from "../db.js";
@@ -200,11 +201,14 @@ const setManyBody = z.object({
 });
 
 // Chained style is normative: it is what makes hc route-type inference work.
-// onError preserves the shipped semantics: every thrown error in a kv route
-// (KvError from incr included) maps to a 400 { error } — the 400-vs-500 split
-// stays parked in the backlog (issue #3).
+// onError: HTTPException keeps its own status (the json validator's malformed-body
+// 400); KvError is a client error (400); anything else is an internal fault and
+// surfaces as 500 — never a crash (settings.ts pattern).
 export const kvRoutes = new Hono<KvEnv>()
-  .onError((err, c) => c.json({ error: err instanceof Error ? err.message : String(err) }, 400))
+  .onError((err, c) => {
+    if (err instanceof HTTPException) return err.getResponse();
+    return c.json({ error: err instanceof Error ? err.message : String(err) }, err instanceof KvError ? 400 : 500);
+  })
   .get("/", zValidator("query", listQuery, validationHook), (c) => {
     const { prefix, limit, cursor } = c.req.valid("query");
     return c.json(list(c.var.db, { prefix, cursor, limit: limit ?? effectiveNumber("kv.list_limit", c.var.appId) }));
