@@ -13,7 +13,7 @@ import { z } from "zod";
 import { getAppDb } from "../db.js";
 import type { Config } from "../config.js";
 import { isValidAppId } from "../registry.js";
-import { emitEvent, PLATFORM_NS, CHANGE_FEED_TTL_S } from "../events.js";
+import { emitEvent, CHANGE_FEED_TTL_S } from "../events.js";
 import { validationHook } from "../validation.js";
 import { emitLog } from "../logger.js";
 
@@ -63,19 +63,27 @@ export function runQuery(db: Database.Database, q: ProxyQuery): { rows: unknown[
 
 // ---------- change feed ----------
 
-const EVENT = `${CATALOG_NAME}-change`;
 const WRITE_OP = /^\s*(insert|update|delete|replace)\b/i;
 // drizzle emits regular SQL — the target table is extractable for the common
 // shapes; misses (e.g. WITH-prefixed writes) just omit `table`.
 const TABLE_OF = /\b(?:into|update|from)\s+["'`[]?([a-z0-9_$]+)/i;
 
+// Write ops become past-tense facts (spec §4); REPLACE rides WRITE_OP's existing match.
+const ROW_FACT: Record<string, string> = {
+  insert: "row-inserted",
+  update: "row-updated",
+  delete: "row-deleted",
+  replace: "row-replaced",
+};
+
 function emitChange(appId: string, sql: string): void {
   const op = WRITE_OP.exec(sql)?.[1]?.toLowerCase();
-  if (!op) return;
+  const type = op ? ROW_FACT[op] : undefined;
+  if (!type) return;
   const table = TABLE_OF.exec(sql)?.[1];
   emitEvent({
-    ns: appId, source: PLATFORM_NS, type: EVENT,
-    payload: table ? { op, table } : { op },
+    app: appId, kind: "service", component: CATALOG_NAME, type,
+    payload: table ? { table } : undefined,
     ttl: CHANGE_FEED_TTL_S,
   });
 }
@@ -181,8 +189,8 @@ const EXPAND_COPY =
   "Destructive schema changes don't auto-apply. Iterate additively (expand-copy): add the new column/table, " +
   "copy data across in app code, switch reads, stop writing the old one. (Accepting destructive migrations is on the roadmap.)";
 
-function emitSchemaState(appId: string, payload: Record<string, unknown>): void {
-  emitEvent({ ns: appId, source: PLATFORM_NS, type: "schema-state", payload, ttl: CHANGE_FEED_TTL_S });
+function emitSchemaFact(appId: string, type: "schema-applied" | "schema-gated", message?: string): void {
+  emitEvent({ app: appId, kind: "service", component: CATALOG_NAME, type, payload: message ? { message } : undefined, ttl: CHANGE_FEED_TTL_S });
 }
 
 // The db-manifest hook's handler (wired in server.ts). Contract mirrors the
@@ -199,7 +207,7 @@ export async function applySchemaPush(
   if (loadError) {
     const message = `src/db.ts failed to load — keeping the previous schema`;
     emitLog("error", "db-store", message, { stack: loadError }, appId);
-    emitSchemaState(appId, { status: "gated", message });
+    emitSchemaFact(appId, "schema-gated", message);
     return { status: "gated", message };
   }
   const tables =
@@ -209,7 +217,7 @@ export async function applySchemaPush(
   if (tables === null) {
     const message = "src/db.ts produced no schema snapshot — keeping the previous schema";
     emitLog("error", "db-store", message, undefined, appId);
-    emitSchemaState(appId, { status: "gated", message });
+    emitSchemaFact(appId, "schema-gated", message);
     return { status: "gated", message };
   }
   // Never materialize a data dir for an app that declares no tables and has none.
@@ -219,7 +227,7 @@ export async function applySchemaPush(
   if (bad.length > 0) {
     const message = `table names may not start with "_" or "sqlite_": ${bad.join(", ")}`;
     emitLog("error", "db-store", message, undefined, appId);
-    emitSchemaState(appId, { status: "gated", message });
+    emitSchemaFact(appId, "schema-gated", message);
     return { status: "gated", message };
   }
 
@@ -233,7 +241,7 @@ export async function applySchemaPush(
     } catch (e) {
       const message = `stored schema snapshot is corrupt — keeping the previous schema: ${e instanceof Error ? e.message : String(e)}`;
       emitLog("error", "db-store", message, undefined, appId);
-      emitSchemaState(appId, { status: "gated", message });
+      emitSchemaFact(appId, "schema-gated", message);
       return { status: "gated", message };
     }
   } else {
@@ -245,7 +253,7 @@ export async function applySchemaPush(
   } catch (e) {
     const message = `schema diff failed: ${e instanceof Error ? e.message : String(e)}`;
     emitLog("error", "db-store", message, undefined, appId);
-    emitSchemaState(appId, { status: "gated", message });
+    emitSchemaFact(appId, "schema-gated", message);
     return { status: "gated", message };
   }
   if (statements.length === 0) return { status: "noop" };
@@ -254,7 +262,7 @@ export async function applySchemaPush(
   if (destructive.length > 0) {
     const message = `schema change gated — would require:\n${destructive.join(";\n")}\n${EXPAND_COPY}`;
     emitLog("error", "db-store", message, undefined, appId);
-    emitSchemaState(appId, { status: "gated", message });
+    emitSchemaFact(appId, "schema-gated", message);
     return { status: "gated", message };
   }
 
@@ -272,10 +280,10 @@ export async function applySchemaPush(
     // pre-exists outside snapshot lineage) — same surface as the gate (spec §7).
     const message = `schema apply failed: ${e instanceof Error ? e.message : String(e)}`;
     emitLog("error", "db-store", message, undefined, appId);
-    emitSchemaState(appId, { status: "gated", message });
+    emitSchemaFact(appId, "schema-gated", message);
     return { status: "gated", message };
   }
   emitLog("info", "db-store", `schema applied (${statements.length} statement${statements.length === 1 ? "" : "s"})`, undefined, appId);
-  emitSchemaState(appId, { status: "applied", statements: statements.length });
+  emitSchemaFact(appId, "schema-applied");
   return { status: "applied", statements: statements.length };
 }

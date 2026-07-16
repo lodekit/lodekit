@@ -115,9 +115,9 @@ describe("db-store e2e (real worker, real build)", () => {
     let gated = false;
     while (Date.now() < deadline && !gated) {
       const hist = await (
-        await fetch(`${base}/api/events/history?ns=${APP}&type=schema-state`)
+        await fetch(`${base}/api/events/history?app=${APP}&type=schema-gated`)
       ).json();
-      gated = hist.records.some((r: { payload: { status?: string } }) => r.payload?.status === "gated");
+      gated = hist.records.length > 0;
       if (!gated) await new Promise((r) => setTimeout(r, 300));
     }
     expect(gated).toBe(true);
