@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { HardDrive } from "lucide-react";
+import { HardDrive } from "@lodekit/ui/icons";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@lodekit/ui";
 
 export const Route = createFileRoute("/data/$appId/storage")({

@@ -3,7 +3,7 @@ import {
   Badge, Button, Input, Popover, PopoverContent, PopoverTrigger,
   Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue,
 } from "@lodekit/ui";
-import { ArrowDown, ArrowUp, ArrowUpDown, ListFilter, RefreshCw, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ListFilter, RefreshCw, X } from "@lodekit/ui/icons";
 import { OP_LABELS, type FilterOp, type FilterRule, type SortRule } from "../../lib/table-query";
 
 const OPS = Object.keys(OP_LABELS) as FilterOp[];

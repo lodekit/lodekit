@@ -1,5 +1,5 @@
 // packages/runtime/dashboard/src/components/empty-stub.tsx
-import type { LucideIcon } from "lucide-react";
+import type { LucideIcon } from "@lodekit/ui/icons";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from "@lodekit/ui";
 
 export function EmptyStub({ icon: Icon, title }: { icon: LucideIcon; title: string }) {

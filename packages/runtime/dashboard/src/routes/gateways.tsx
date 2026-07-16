@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AppWindow, ExternalLink } from "lucide-react";
+import { AppWindow, ExternalLink } from "@lodekit/ui/icons";
 import { Badge, Card, CardDescription, CardHeader, CardTitle, Skeleton } from "@lodekit/ui";
 import { useSSEEvent } from "../components/sse";
 

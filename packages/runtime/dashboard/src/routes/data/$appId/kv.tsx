@@ -5,7 +5,7 @@ import {
   Button, Input, Skeleton,
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@lodekit/ui";
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw } from "@lodekit/ui/icons";
 import { fetchKv, type KvEntry } from "../../../lib/data-api";
 import { formatTs, relativeTime } from "../../../lib/format";
 import { DetailSheet } from "../../../components/data/detail-sheet";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutGrid, Settings } from "lucide-react";
+import { LayoutGrid, Settings } from "@lodekit/ui/icons";
 import { Button } from "@lodekit/ui";
 import { Logo } from "./logo";
 import { CommandBar } from "./command-bar";

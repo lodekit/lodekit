@@ -1,5 +1,5 @@
 // packages/runtime/dashboard/src/components/nav.ts
-import { Cpu, Database, Folder, KeyRound, ListChecks, Palette, Plug, ScrollText, Zap, type LucideIcon } from "lucide-react";
+import { Cpu, Database, Folder, KeyRound, ListChecks, Palette, Plug, ScrollText, Zap, type LucideIcon } from "@lodekit/ui/icons";
 
 // The services menu / command-bar page list (UI revamp spec §2). `to` navigates
 // inside the SPA; `href` (currently unused) is a full-page navigation escape

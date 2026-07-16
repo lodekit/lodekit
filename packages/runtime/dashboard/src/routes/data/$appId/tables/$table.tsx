@@ -7,7 +7,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
   useDataTable, type ColumnDef, type PaginationState, type SortingState,
 } from "@lodekit/ui";
-import { KeyRound } from "lucide-react";
+import { KeyRound } from "@lodekit/ui/icons";
 import { fetchSchema, selectRows } from "../../../../lib/data-api";
 import { formatTs, isTimestampColumn, parseTimestampValue } from "../../../../lib/format";
 import { buildCountQuery, buildRowsQuery, type FilterRule, type SortRule } from "../../../../lib/table-query";
