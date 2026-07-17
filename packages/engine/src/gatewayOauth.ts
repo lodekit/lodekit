@@ -8,6 +8,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { Config } from "./config.js";
 import type { GatewayManifest } from "./gatewayManifests.js";
 import { GatewayRequestError, _setOauthTokenProvider } from "./gatewayExecutor.js";
+import { checkEgress, EgressDeniedError } from "./gatewayEgress.js";
 import { getGatewayEntry } from "./gatewayManifests.js";
 import {
   GatewaysError, getGatewayConfig, getGatewayLink, loadOauthTokens, saveOauthTokens, setNeedsReauth, oauthState,
@@ -101,7 +102,13 @@ export function startOauth(appId: string, alias: string): { authorizeUrl: string
   return { authorizeUrl: u.toString() };
 }
 
-async function tokenPost(auth: Oauth2, params: Record<string, string>): Promise<{ access_token: string; refresh_token?: string; expires_in?: number }> {
+async function tokenPost(manifest: GatewayManifest, auth: Oauth2, params: Record<string, string>): Promise<{ access_token: string; refresh_token?: string; expires_in?: number }> {
+  try {
+    await checkEgress(manifest, new URL(auth.token_url));
+  } catch (e) {
+    if (e instanceof EgressDeniedError) throw new GatewayRequestError("egress_denied", e.message);
+    throw new GatewayRequestError("unavailable", "token endpoint could not be resolved");
+  }
   const res = await fetch(auth.token_url, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -121,7 +128,7 @@ export async function handleOauthCallback(query: { code?: string; state?: string
   if (query.state) pending.delete(query.state); // single-use, success or not
   if (!p) throw new GatewaysError("this connection request is unknown or expired — go back and click Connect again");
   if (query.error || !query.code) throw new GatewaysError(`the provider declined: ${query.error ?? "no code returned"}`);
-  const { auth } = oauthManifest(p.appId, p.alias);
+  const { manifest, auth } = oauthManifest(p.appId, p.alias);
   const params: Record<string, string> = {
     grant_type: "authorization_code",
     code: query.code,
@@ -131,7 +138,7 @@ export async function handleOauthCallback(query: { code?: string; state?: string
   const secret = clientSecret(auth, p.appId, p.alias);
   if (secret) params.client_secret = secret;
   if (p.verifier) params.code_verifier = p.verifier;
-  const t = await tokenPost(auth, params);
+  const t = await tokenPost(manifest, auth, params);
   saveOauthTokens(p.appId, p.alias, {
     accessToken: t.access_token,
     ...(t.refresh_token ? { refreshToken: t.refresh_token } : {}),
@@ -173,7 +180,7 @@ async function tokenProvider(
   if (secret) params.client_secret = secret;
   let t: { access_token: string; refresh_token?: string; expires_in?: number };
   try {
-    t = await tokenPost(auth, params);
+    t = await tokenPost(manifest, auth, params);
   } catch (e) {
     if (e instanceof GatewaysError) {
       setNeedsReauth(appId, alias, true);

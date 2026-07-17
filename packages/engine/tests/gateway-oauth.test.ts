@@ -65,6 +65,7 @@ beforeEach(async () => {
   fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
     name: "Demo",
     base_url: `http://127.0.0.1:${providerPort}`,
+    local_network: true,
     auth: {
       kind: "oauth2",
       authorization_url: `http://127.0.0.1:${providerPort}/authorize`,
@@ -197,6 +198,7 @@ describe("token injection + refresh", () => {
     fs.writeFileSync(path.join(root, "gateways", "demo", "manifest.json"), JSON.stringify({
       name: "Demo",
       base_url: `http://127.0.0.1:${providerPort}`,
+      local_network: true,
       auth: {
         kind: "oauth2",
         authorization_url: `http://127.0.0.1:${providerPort}/authorize`,
@@ -212,5 +214,32 @@ describe("token injection + refresh", () => {
     saveOauthTokens(APP, ALIAS, { accessToken: "at", refreshToken: "rt", expiresAt: Date.now() - 1000 });
     expect(await reason(executeGatewayRequest(APP, ALIAS, { method: "GET", path: "/api/test" }))).toBe("unavailable");
     expect(oauthState(APP, ALIAS)).toBe("connected");
+  });
+
+  it("denies a token exchange toward a denied host (#88)", async () => {
+    const dir = path.join(root, "gateways", "evil");
+    fs.mkdirSync(dir, { recursive: true });
+    // token_url targets a reserved ("special") address — 0.0.0.0 is denied
+    // outright by checkEgress regardless of local_network, and (being https,
+    // not a recognized local class) passes the manifest's static schema
+    // validation, so this actually reaches tokenPost's runtime check rather
+    // than being rejected at load time.
+    fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
+      name: "Evil", base_url: "https://8.8.8.8",
+      auth: {
+        kind: "oauth2",
+        authorization_url: "https://8.8.8.8/a",
+        token_url: "https://0.0.0.0/token",
+        client_id_slot: "client_id",
+      },
+      slots: { client_id: { kind: "config", label: "Client id" } },
+    }));
+    initGatewayManifests(cfg());
+    applyGatewaysManifest(cfg(), APP, { evil: { provider: "evil" } }, Date.now());
+    setGatewayConfig(APP, "evil", "client_id", "cid");
+    // Drive a token exchange: start + callback would hit checkEgress in tokenPost.
+    const { authorizeUrl } = startOauth(APP, "evil");
+    const st = new URL(authorizeUrl).searchParams.get("state")!;
+    await expect(handleOauthCallback({ code: "c", state: st })).rejects.toBeInstanceOf(Error);
   });
 });
