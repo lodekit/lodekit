@@ -36,6 +36,14 @@ describe("classifyAddress", () => {
     expect(classifyAddress("0:0:0:0:0:0:0:1")).toBe("loopback"); // ::1
     expect(classifyAddress("0:0:0:0:0:0:0:0")).toBe("special"); // ::
   });
+  it("classifies the deprecated IPv4-compatible IPv6 form (no ffff marker)", () => {
+    expect(classifyAddress("::127.0.0.1")).toBe("loopback");
+    expect(classifyAddress("::169.254.169.254")).toBe("link-local");
+    expect(classifyAddress("::192.168.1.1")).toBe("private");
+    // special-cases must still win over the new v4-compatible branch.
+    expect(classifyAddress("::1")).toBe("loopback");
+    expect(classifyAddress("::")).toBe("special");
+  });
 });
 
 describe("hostAllowedByPins", () => {

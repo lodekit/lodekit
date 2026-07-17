@@ -76,6 +76,11 @@ function expandIPv6(ip: string): number[] | null {
   return nums;
 }
 
+// Extract the embedded v4 address from the last two hextets, dotted-decimal.
+function embeddedV4(g: number[]): string {
+  return [g[6] >> 8, g[6] & 0xff, g[7] >> 8, g[7] & 0xff].join(".");
+}
+
 export function classifyAddress(ip: string): AddressClass {
   const kind = isIP(ip);
   if (kind === 4) return classifyV4(ip);
@@ -84,12 +89,17 @@ export function classifyAddress(ip: string): AddressClass {
   if (!g) return "special"; // deny-by-default if expansion ever fails
   // IPv4-mapped (::ffff:0:0/96) — classify by the embedded v4 address.
   if (g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0xffff) {
-    const v4 = [g[6] >> 8, g[6] & 0xff, g[7] >> 8, g[7] & 0xff].join(".");
-    return classifyV4(v4);
+    return classifyV4(embeddedV4(g));
   }
   if (g.every((n) => n === 0)) return "special"; // ::
   if (g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0 && g[6] === 0 && g[7] === 1) {
     return "loopback"; // ::1
+  }
+  // Deprecated RFC-4291 IPv4-compatible form (::a.b.c.d, no ffff marker).
+  // Reached only after the all-zero (::) and ::1 special-cases above, so
+  // those are not swallowed by this broader zero-prefix match.
+  if (g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0) {
+    return classifyV4(embeddedV4(g));
   }
   if ((g[0] & 0xfe00) === 0xfc00) return "private"; // fc00::/7 ULA
   if ((g[0] & 0xffc0) === 0xfe80) return "link-local"; // fe80::/10
