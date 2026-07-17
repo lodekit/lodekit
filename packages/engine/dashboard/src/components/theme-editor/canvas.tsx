@@ -106,7 +106,7 @@ const lineConfig = {
 } satisfies ChartConfig;
 
 const barData = [
-  { category: "Runtime", used: 42, free: 18 },
+  { category: "Engine", used: 42, free: 18 },
   { category: "MCP", used: 28, free: 12 },
   { category: "Dashboard", used: 63, free: 7 },
   { category: "Skill", used: 15, free: 25 },
