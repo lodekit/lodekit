@@ -14,11 +14,11 @@ import { getBuildInfo } from "./buildInfo.js";
 import { emitLog } from "./logger.js";
 
 const require = createRequire(import.meta.url);
-// Point Vite at the runtime's copy of each package so apps (which have no
+// Point Vite at the engine's copy of each package so apps (which have no
 // node_modules) resolve bare imports into Lodekit's shared install.
 const pkgDir = (id: string) => path.dirname(require.resolve(`${id}/package.json`));
 // lucide-react, recharts, and @tanstack/react-table are @lodekit/ui's dependencies, not
-// the runtime's — resolve the exact copies the UI library uses, so apps and components
+// the engine's — resolve the exact copies the UI library uses, so apps and components
 // share one copy.
 export const uiDir = pkgDir("@lodekit/ui");
 const uiRequire = createRequire(path.join(uiDir, "package.json"));
@@ -96,7 +96,7 @@ export function buildApp(cfg: Config, appId: string): Promise<BuildState> {
 }
 
 // Resolves once no app build is in flight. Builds are fire-and-forget (the watcher calls
-// buildApp without awaiting), so a caller tearing down the runtime must drain them before
+// buildApp without awaiting), so a caller tearing down the engine must drain them before
 // removing files on disk — a build whose createBuilder runs after its rootDir is gone
 // throws ENOENT. Chains self-delete on settle and, with the watcher already closed, no new
 // ones are queued, so this terminates.
@@ -110,7 +110,7 @@ export async function buildAll(cfg: Config): Promise<void> {
   }
 }
 
-// Apps removed while the runtime is down never hit the watcher's unlinkDir → dropBuild
+// Apps removed while the engine is down never hit the watcher's unlinkDir → dropBuild
 // path, so their built output lingers under cacheDir forever. Prune at startup: a cache
 // directory whose name fits the app id grammar but has no folder in appsDir is such a
 // leftover. Directory existence is the keep criterion (mirrors unlinkDir); everything
@@ -282,7 +282,7 @@ export async function buildStart(t: StartBuildTarget): Promise<void> {
   // The tasks entry (spec §4): src/tasks.ts becomes a separate self-contained ssr
   // bundle beside server.js. A separate small build rather than an extra rollup
   // input — the tanstackStart plugin owns the main ssr input, and the SDK talks
-  // to the runtime over loopback HTTP anyway, so the bundles share no state.
+  // to the engine over loopback HTTP anyway, so the bundles share no state.
   const tasksSource = path.join(fs.realpathSync(t.rootDir), "src", "tasks.ts");
   if (fs.existsSync(tasksSource)) {
     await build({

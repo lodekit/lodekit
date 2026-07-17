@@ -158,7 +158,7 @@ describe("file-store HTTP surface", () => {
   });
 });
 
-describe("sdk files handle (core) against the booted runtime", () => {
+describe("sdk files handle (core) against the booted engine", () => {
   it("put/stat/get/list/copy/move/delete round-trip", async () => {
     const files = createClient({ baseUrl: base, appId: "sdkapp" }).files;
     const stat = await files.put("col1,col2\n1,2", {

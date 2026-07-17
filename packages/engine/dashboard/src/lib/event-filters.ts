@@ -1,4 +1,4 @@
-// Pure filter helpers for the Events explorer — kept JSX-free so the runtime test
+// Pure filter helpers for the Events explorer — kept JSX-free so the engine test
 // suite can exercise them directly (dashboard/ has no tsc program of its own).
 
 export const RANGE_PRESETS = {

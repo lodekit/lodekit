@@ -6,7 +6,7 @@ import type { SettingField } from "./settingsSchema.js";
 
 export interface PlatformSetting {
   field: SettingField;
-  scope: "global" | "per-app"; // global = one runtime-wide value; never on app pages
+  scope: "global" | "per-app"; // global = one engine-wide value; never on app pages
   section: string;             // display grouping (SECTIONS order)
 }
 

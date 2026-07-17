@@ -1,4 +1,4 @@
-// Compiles explorer grid state into parameterized SQL for the runtime's
+// Compiles explorer grid state into parameterized SQL for the engine's
 // read-only /db-store/select door. Identifiers are only accepted when present
 // in the server-reported schema and are always quote-escaped; values always
 // travel as bound params. Dependency-free on purpose: this file is unit-tested

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 // What am I running? Version from this package's own package.json; commit from the
 // bundle-time build-info.json stamp (packaged), falling back to git (dev), else null.
-// Diagnostics only — resolution failure must never crash the runtime (spec §3).
+// Diagnostics only — resolution failure must never crash the engine (spec §3).
 export interface BuildInfo {
   version: string;
   commit: string | null;

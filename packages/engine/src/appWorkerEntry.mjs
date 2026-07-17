@@ -16,7 +16,7 @@ import { parentPort, workerData } from "node:worker_threads";
 import { inspect } from "node:util";
 
 // Console capture (logging spec §5): app console output becomes structured log
-// records instead of untagged runtime stdout — keeping the text tier minimal.
+// records instead of untagged engine stdout — keeping the text tier minimal.
 // Replaces (not tees) the console methods; the platform log is the destination.
 const CONSOLE_LEVELS = { debug: "debug", log: "info", info: "info", warn: "warn", error: "error" };
 for (const [method, level] of Object.entries(CONSOLE_LEVELS)) {
@@ -34,9 +34,9 @@ for (const [method, level] of Object.entries(CONSOLE_LEVELS)) {
 // db manifest (db-store spec §7): the declared schema's snapshot, extracted
 // BEFORE the server bundle loads. The host applies the push and acks; waiting
 // for the ack (bounded) guarantees no request is forwarded before the new
-// schema is live. drizzle-kit resolves from the runtime's own install — this
-// entry is runtime code, not app code. An import failure is reported, never
-// fatal — the runtime keeps the previous schema.
+// schema is live. drizzle-kit resolves from the engine's own install — this
+// entry is engine code, not app code. An import failure is reported, never
+// fatal — the engine keeps the previous schema.
 if (workerData.dbEntry) {
   try {
     const [mod, kit] = await Promise.all([import(workerData.dbEntry), import("drizzle-kit/api")]);
@@ -76,7 +76,7 @@ try {
 
 // Task handlers from the app's built src/tasks.ts (spec §4). Task name =
 // kebab-case of the export identifier. An import failure is reported, never
-// fatal — the app keeps serving HTTP; the runtime keeps the previous defs.
+// fatal — the app keeps serving HTTP; the engine keeps the previous defs.
 const taskHandlers = new Map();
 const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, "$1-$2").replace(/_/g, "-").toLowerCase();
 const CONFIG_KEYS = ["cron", "every", "catchUp", "retries", "timeout"];
@@ -105,7 +105,7 @@ if (workerData.tasksEntry) {
 // Settings manifest from the app's built src/settings.ts (settings spec §5):
 // the DEFAULT export tagged by defineSettings(). Fields are plain data
 // (structured-clone-safe). An import failure is reported, never fatal —
-// the runtime keeps the previous defs.
+// the engine keeps the previous defs.
 if (workerData.settingsEntry) {
   try {
     const mod = await import(workerData.settingsEntry);
@@ -129,7 +129,7 @@ if (workerData.settingsEntry) {
 
 // Secrets manifest from the app's built src/secrets.ts (secret-store spec §5):
 // the DEFAULT export tagged by defineSecrets(). Slots are plain data. An
-// import failure is reported, never fatal — the runtime keeps previous slots.
+// import failure is reported, never fatal — the engine keeps previous slots.
 if (workerData.secretsEntry) {
   try {
     const mod = await import(workerData.secretsEntry);
@@ -151,7 +151,7 @@ if (workerData.secretsEntry) {
 
 // Gateways manifest from the app's built src/gateways.ts (gateways spec §5):
 // the DEFAULT export tagged by defineGateways(). Uses are plain data. An
-// import failure is reported, never fatal — the runtime keeps previous uses.
+// import failure is reported, never fatal — the engine keeps previous uses.
 if (workerData.gatewaysEntry) {
   try {
     const mod = await import(workerData.gatewaysEntry);

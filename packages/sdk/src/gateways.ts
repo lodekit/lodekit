@@ -1,7 +1,7 @@
 // The declaration side of the gateways service (spec 2026-07-10-gateways §5):
 // alias builders + a thin validator/tagger. appWorkerEntry scans the built
 // src/gateways.ts DEFAULT export for the __lodekitGateways marker and posts
-// `uses` as the gateways manifest; full validation is runtime-side. The call
+// `uses` as the gateways manifest; full validation is engine-side. The call
 // surface is the SDK singleton's `gateways` handle (client.ts) — server-only.
 
 export interface GatewayUse {

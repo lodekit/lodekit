@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveBuildInfo, getBuildInfo } from "../src/buildInfo.js";
 
-const RUNTIME_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+const ENGINE_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 // A minimal package dir outside the repo: os.tmpdir() is not inside a git work tree,
 // so git resolution fails there by construction.
@@ -28,8 +28,8 @@ describe("resolveBuildInfo", () => {
   });
 
   it("falls back to git when no stamp exists", () => {
-    const expected = execSync("git rev-parse --short HEAD", { cwd: RUNTIME_DIR, encoding: "utf8" }).trim();
-    expect(resolveBuildInfo(RUNTIME_DIR).commit).toBe(expected);
+    const expected = execSync("git rev-parse --short HEAD", { cwd: ENGINE_DIR, encoding: "utf8" }).trim();
+    expect(resolveBuildInfo(ENGINE_DIR).commit).toBe(expected);
   });
 
   it("returns a null commit when neither stamp nor git resolves", () => {
@@ -43,8 +43,8 @@ describe("resolveBuildInfo", () => {
 });
 
 describe("getBuildInfo", () => {
-  it("reports the runtime's own version", () => {
-    const pkg = JSON.parse(fs.readFileSync(path.join(RUNTIME_DIR, "package.json"), "utf8"));
+  it("reports the engine's own version", () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ENGINE_DIR, "package.json"), "utf8"));
     expect(getBuildInfo()).toEqual({ version: pkg.version, commit: expect.any(String) });
   });
 });

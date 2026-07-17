@@ -292,7 +292,7 @@ export function finishRun(
   return { state: "failed" };
 }
 
-// Boot recovery: every row still 'running' was interrupted by runtime death —
+// Boot recovery: every row still 'running' was interrupted by engine death —
 // a consumed, failed attempt (spec §7).
 export function markInterrupted(
   db: Database.Database,
@@ -302,7 +302,7 @@ export function markInterrupted(
   const rows = (db.prepare("SELECT * FROM _task_runs WHERE state = 'running'").all() as RunDbRow[]).map(toRun);
   const out: { task: string; runId: number; state: "queued" | "failed" }[] = [];
   for (const run of rows) {
-    const r = finishRun(db, run, { ok: false, message: "interrupted by runtime shutdown" }, policy(getDef(db, run.task)), now);
+    const r = finishRun(db, run, { ok: false, message: "interrupted by engine shutdown" }, policy(getDef(db, run.task)), now);
     out.push({ task: run.task, runId: run.id, state: r.state === "queued" ? "queued" : "failed" });
   }
   return out;

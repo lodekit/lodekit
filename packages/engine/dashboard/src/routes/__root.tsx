@@ -7,7 +7,7 @@ import { Header } from "../components/header";
 
 const queryClient = new QueryClient();
 
-// Injected by the runtime's dashboard build (build.ts defines) — never present in app builds.
+// Injected by the engine's dashboard build (build.ts defines) — never present in app builds.
 declare const __LODEKIT_VERSION__: string;
 declare const __LODEKIT_COMMIT__: string | null;
 
@@ -26,7 +26,7 @@ export const Route = createRootRoute({
     <html lang="en">
       <head>
         <HeadContent />
-        {/* Theme before hydration — no dark-mode flash. Served by the runtime
+        {/* Theme before hydration — no dark-mode flash. Served by the engine
             from the effective appearance.theme setting; system mode keeps the
             OS media query (settings spec §8). */}
         <script src="/_ui/theme.js" />

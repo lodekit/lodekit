@@ -39,7 +39,7 @@ server.registerTool(
   "lodekit_logs",
   {
     inputSchema: {
-      appId: z.string().optional().describe('filter to one app, or "_platform" for the runtime\'s own records; omit for everything'),
+      appId: z.string().optional().describe('filter to one app, or "_platform" for the engine\'s own records; omit for everything'),
       level: z.enum(["debug", "info", "warn", "error"]).optional().describe("minimum level"),
       limit: z.number().optional(),
       q: z.string().optional().describe("substring match on the message"),

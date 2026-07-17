@@ -130,7 +130,7 @@ let dataDirRef: string | null = null;
 
 // Opens (creating if needed) <dataDir>/_platform/settings.sqlite — the person's
 // knobs live in the Backup tree (precious). Degrades to defaults-only when it
-// can't open — the runtime must still boot; writes then fail loudly (routes 500).
+// can't open — the engine must still boot; writes then fail loudly (routes 500).
 export function initSettingsStore(dataDir: string): boolean {
   platformDb?.close();
   platformDb = null;

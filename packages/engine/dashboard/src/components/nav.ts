@@ -16,7 +16,7 @@ export const SERVICES: ServiceEntry[] = [
   { label: "Themes", icon: Palette, to: "/themes" },
 ];
 
-// Canonical service → icon map, keyed by the settings section name the runtime
+// Canonical service → icon map, keyed by the settings section name the engine
 // emits (platformSettings.ts SECTIONS). Any surface that shows a service by
 // name pulls its icon from here so the pairing never drifts; a service shares
 // its icon with the related page above (Store ↔ Data, both the Database icon).

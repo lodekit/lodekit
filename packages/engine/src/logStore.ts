@@ -42,7 +42,7 @@ const RETENTION_MAX_ROWS = 200_000;
 let db: Database.Database | null = null;
 
 // Opens (creating if needed) <stateDir>/logs.sqlite. Returns false and degrades to
-// stderr-only when the store can't open — the runtime must still boot (spec §7).
+// stderr-only when the store can't open — the engine must still boot (spec §7).
 export function initLogStore(stateDir: string): boolean {
   db?.close();
   db = null;

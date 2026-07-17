@@ -92,7 +92,7 @@ describe("appWorker", () => {
     expect((await forwardToWorker("start-app", ok)).status).not.toBe(413);
   }, 30_000);
 
-  it("a dead worker surfaces as error and respawns; runtime survives", async () => {
+  it("a dead worker surfaces as error and respawns; engine survives", async () => {
     // The crash server fn calls process.exit(1). Trigger it via the fetch handler:
     // Start dispatches POST <serverFns.base>/<fn-id>; we don't know the id, so kill
     // the worker directly instead — same observable contract.

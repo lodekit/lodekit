@@ -115,7 +115,7 @@ export function extFor(contentType: string): string | null {
   return EXT[contentType.split(";")[0].trim().toLowerCase()] ?? null;
 }
 
-// Put date in runtime-local time (spec §4.2) — never toISOString (UTC).
+// Put date in engine-local time (spec §4.2) — never toISOString (UTC).
 export function dateFolder(d = new Date()): string {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;

@@ -1,4 +1,4 @@
-// The tasks dispatch executor (spec §7) — runtime-internal, NOT part of the HTTP
+// The tasks dispatch executor (spec §7) — engine-internal, NOT part of the HTTP
 // surface. Rides the internal scheduler (server.ts registers dispatchTasks under
 // "tasks-dispatch"); durable state lives in per-app SQLite via services/tasks.
 // Serial per app, parallel across apps; at-least-once delivery.
@@ -82,7 +82,7 @@ export function evictApp(appId: string): void {
   apps.delete(appId);
 }
 
-// Boot pass (spec §7): rows still 'running' were interrupted by runtime death —
+// Boot pass (spec §7): rows still 'running' were interrupted by engine death —
 // a consumed, failed attempt. Also seeds the executor's app set from disk so
 // schedules materialize (and catch-up applies) before any worker is up.
 export function recoverInterruptedRuns(): void {

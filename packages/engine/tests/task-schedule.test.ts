@@ -40,7 +40,7 @@ describe("dueOccurrence — cron", () => {
   });
 
   it("multiple missed occurrences coalesce to the latest", () => {
-    // Two 9ams missed (runtime off for two days); only the latest fires.
+    // Two 9ams missed (engine off for two days); only the latest fires.
     const now = nineAm + 24 * HOUR + 10 * 60_000;
     const r = dueOccurrence({ ...base, highWater: midnight, now });
     expect(r).toEqual({ occurrence: nineAm + 24 * HOUR, highWater: nineAm + 24 * HOUR });

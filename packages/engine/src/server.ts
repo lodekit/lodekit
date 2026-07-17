@@ -244,7 +244,7 @@ export async function start(cfg: Config): Promise<Server> {
   onGatewaysManifest((appId, uses, error) => registerGatewaysManifest(cfg, appId, uses, error));
   onDbManifest((appId, snapshot, error) => applySchemaPush(cfg.dataDir, appId, snapshot, error));
   recoverInterruptedRuns();
-  // Before any build runs or the watcher arms: apps removed while the runtime was
+  // Before any build runs or the watcher arms: apps removed while the engine was
   // down never got their dropBuild, so their cache output would accumulate forever.
   pruneBuildCache(cfg);
   await buildDashboard(cfg); // never throws; failures surface as the fallback page

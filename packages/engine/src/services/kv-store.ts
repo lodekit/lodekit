@@ -74,7 +74,7 @@ export function del(db: Database.Database, key: string): boolean {
   return db.prepare("DELETE FROM _kv WHERE key = ?").run(key).changes > 0;
 }
 
-// Synchronous transaction = race-free in the single runtime process.
+// Synchronous transaction = race-free in the single engine process.
 // Preserves an existing TTL (Redis INCR semantics) by not touching expires_at.
 export function incr(db: Database.Database, key: string, by = 1): number {
   const txn = db.transaction((): number => {

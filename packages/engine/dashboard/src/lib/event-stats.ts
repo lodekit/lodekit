@@ -1,5 +1,5 @@
 // Pure histogram helpers for the Events explorer header — JSX-free for the same
-// reason as event-filters.ts (runtime tests import these directly).
+// reason as event-filters.ts (engine tests import these directly).
 
 export const BUCKET_STEPS = [60_000, 300_000, 1_800_000, 3_600_000, 21_600_000, 86_400_000] as const;
 

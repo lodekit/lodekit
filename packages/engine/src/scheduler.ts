@@ -1,4 +1,4 @@
-// Runtime-internal recurring tasks (NOT the future person-facing Tasks service).
+// Engine-internal recurring tasks (NOT the future person-facing Tasks service).
 // Tasks are error-isolated (a throw logs and continues) and never hold the
 // process open (unref).
 

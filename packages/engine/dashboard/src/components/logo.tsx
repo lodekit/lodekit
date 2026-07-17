@@ -27,7 +27,7 @@ export const MARKS = {
 } as const;
 
 // Tracks the effective appearance.icon_style setting (live via the settings SSE component).
-// Always the "running" mark — the logo does not reflect runtime state.
+// Always the "running" mark — the logo does not reflect engine state.
 export function Logo({ className }: SvgProps) {
   const q = useQuery<{ settings: { key: string; effective: unknown }[] }>({
     queryKey: ["settings", "_platform"],

@@ -1,7 +1,7 @@
 // The declaration side of the settings service (spec §5): builders + a thin
 // validator/tagger, PLUS the typed read facade. appWorkerEntry scans the built
 // src/settings.ts DEFAULT export for the __lodekitSettings marker and posts
-// `fields` as the settings manifest; full validation is runtime-side.
+// `fields` as the settings manifest; full validation is engine-side.
 // The facade methods delegate to the SDK singleton's `settings` handle
 // (bound by index.ts at module init), so one import gives typed reads:
 //   import settings from "./settings";  →  await settings.get("layout")

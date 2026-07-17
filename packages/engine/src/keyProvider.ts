@@ -53,7 +53,7 @@ function keychainKey(): Buffer {
     // are trusted and can read this item straight from the Keychain anyway
     // (`security find-generic-password -w`), so argv exposure ≤ the standing read;
     // macOS also hides other users' argv from non-root. `security` has no reliable
-    // stdin path, and a native Keychain module would break the buildless runtime.
+    // stdin path, and a native Keychain module would break the buildless engine.
     execFileSync(
       "security",
       ["add-generic-password", "-s", SERVICE, "-a", ACCOUNT, "-w", randomBytes(KEY_BYTES).toString("hex")],

@@ -1,7 +1,7 @@
 // OAuth 2.0 for gateways (spec 2026-07-10-gateways §7): authorization-code +
 // PKCE with zero dependencies — authorize-URL construction, state/verifier via
 // node:crypto, token exchange/refresh as plain fetch POSTs. Tokens are
-// encrypted at rest (gatewaysStore) and never leave the runtime process; the
+// encrypted at rest (gatewaysStore) and never leave the engine process; the
 // engine injects them via the token-provider seam. The agent never handles
 // tokens — the person clicks Connect in the dashboard.
 import { createHash, randomBytes } from "node:crypto";

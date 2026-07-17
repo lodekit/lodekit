@@ -17,7 +17,7 @@ function WelcomePage() {
     <main className="mx-auto max-w-2xl space-y-4 p-8">
       <h1 className="text-2xl font-semibold">Welcome to Lodekit 👋</h1>
       <p className="text-muted-foreground">
-        Lodekit is a local, self-hosted runtime where you — working with an AI coding
+        Lodekit is a local, self-hosted platform where you — working with an AI coding
         agent — build and run your own personal web tools.
       </p>
       <Card>
@@ -28,7 +28,7 @@ function WelcomePage() {
           <p>
             Everything lives in one folder: <code>apps/</code> holds each app&apos;s source,
             <code> data/</code> holds its storage. Apps are plain TanStack Start projects —
-            edit the source and the runtime rebuilds them on save.
+            edit the source and the engine rebuilds them on save.
           </p>
           <p>
             Try the <strong>Greenhouse</strong> app next door: a small conservatory that

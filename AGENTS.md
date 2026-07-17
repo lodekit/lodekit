@@ -34,7 +34,7 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
 - **`web/docs`** (`@lodekit/web-docs`) — Starlight docs site (placeholder scaffold).
 - **`manager`** (`@lodekit/manager`) — the menubar app that ships and supervises the
   platform. Packaged (`make`, electron-builder): an ad-hoc-signed `Lodekit.app` bundling a pinned
-  Lodekit-local Node + the platform payload (runtime/mcp/skill via `pnpm deploy`) in
+  Lodekit-local Node + the platform payload (engine/mcp/skill via `pnpm deploy`) in
   `Resources/`, spawning the engine as a single direct child Node process (so
   `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
   app supervising the workspace engine against `root/` on the system Node.
@@ -70,7 +70,7 @@ Package manager is **pnpm** (workspaces). From the repo root:
   pinned Node — the version is pinned there, and the bundle must be built on that same
   Node version for the `better-sqlite3` ABI to match).
 
-Runtime and MCP are **buildless** — `tsx`, no build step.
+Engine and MCP are **buildless** — `tsx`, no build step.
 
 ## Lazy, Not Negligent
 

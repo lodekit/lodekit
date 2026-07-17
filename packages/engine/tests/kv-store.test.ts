@@ -115,7 +115,7 @@ describe("kv-store ops", () => {
   });
 
   it("migrates a POC-era (key,value) table in place without data loss", () => {
-    // Build an old-shape db by hand, as the POC runtime created it.
+    // Build an old-shape db by hand, as the POC engine created it.
     const appDir = path.join(dir, "old");
     fs.mkdirSync(appDir, { recursive: true });
     const raw = new Database(path.join(appDir, "db.sqlite"));

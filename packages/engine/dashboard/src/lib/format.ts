@@ -25,7 +25,7 @@ export function relativeTime(ts: number, now: number = Date.now()): string {
 export const formatCount = (n: number): string => new Intl.NumberFormat().format(n);
 export const formatTs = (ts: number): string => new Date(ts).toLocaleString();
 
-// Timestamp-column heuristic — mirror of the runtime's rule in
+// Timestamp-column heuristic — mirror of the engine's rule in
 // services/data-explorer.ts (kept in sync by tests on both sides).
 const TS_EXACT = new Set([
   "created_at", "createdat", "created", "inserted_at", "timestamp", "ts",
@@ -39,7 +39,7 @@ export function isTimestampColumn(name: string): boolean {
   return TS_EXACT.has(lower) || TS_SUFFIX.test(lower) || TS_CAMEL.test(name);
 }
 
-// Same magnitude rules as the runtime's parseTsValue: >1e11 reads as epoch ms,
+// Same magnitude rules as the engine's parseTsValue: >1e11 reads as epoch ms,
 // >1e8 as epoch seconds; strings go through Date.parse.
 export function parseTimestampValue(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) {

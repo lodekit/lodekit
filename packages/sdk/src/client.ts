@@ -185,7 +185,7 @@ export interface LodekitClient {
 // non-OK -> throw Error carrying the server's { error } message. The return type
 // strips the routes' { error } 400 variant (parse throws before returning it, so
 // it can never be the result) while staying structurally derived from KvRoutes —
-// response-shape drift in the runtime routes fails tsc at the accesses below.
+// response-shape drift in the engine routes fails tsc at the accesses below.
 type SuccessData<R> = Exclude<R extends ClientResponse<infer O, number, "json"> ? O : never, { error: string }>;
 
 async function parse<R extends ClientResponse<unknown>>(res: R): Promise<SuccessData<R>> {
@@ -531,7 +531,7 @@ export function createClient({ baseUrl, appId }: { baseUrl: string; appId: strin
   };
 
   // The gateways door (spec §6): all external traffic flows through the
-  // runtime — the worker never holds a credential. Plain fetch (not hc): the
+  // engine — the worker never holds a credential. Plain fetch (not hc): the
   // token header decides access and the envelope carries arbitrary bodies.
   const gatewayCall = async (alias: string, desc: { method: string; path: string } & GatewayRequestOpts): Promise<GatewayResponse> => {
     const token =

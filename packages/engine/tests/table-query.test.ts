@@ -91,7 +91,7 @@ describe("format", () => {
     expect(relativeTime(now - 3 * 3_600_000, now)).toMatch(/hour/);
   });
 
-  // Mirrors the runtime rule in services/data-explorer.ts — shared cases pinned
+  // Mirrors the engine rule in services/data-explorer.ts — shared cases pinned
   // on both sides so the client and server heuristics can't drift.
   it("isTimestampColumn matches timestamp-shaped names only", () => {
     for (const name of ["created_at", "createdAt", "adopted_at", "adoptedAt", "at", "ts", "timestamp", "date", "logged_time"]) {

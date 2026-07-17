@@ -278,7 +278,7 @@ export function readValue(appId: string, slot: string): string {
 
 /** Decrypt a catalog secret by slug — the gateways engine's read path (its
  *  links reference slugs directly, not app slots). Same posture as readValue:
- *  the value never leaves the runtime process. */
+ *  the value never leaves the engine process. */
 export function readValueBySlug(slug: string): string {
   const row = store()
     .prepare("SELECT ciphertext, nonce FROM secrets WHERE slug = ?")

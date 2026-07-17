@@ -47,7 +47,7 @@ let db: Database.Database | null = null;
 
 // Opens (creating if needed) <dataDir>/_platform/events.sqlite — the bus lives in the
 // platform's internal namespace inside the Backup tree (precious; spec §1/§3). Returns
-// false and degrades to broadcast-only when it can't open — the runtime must still boot.
+// false and degrades to broadcast-only when it can't open — the engine must still boot.
 export function initEventStore(dataDir: string): boolean {
   db?.close();
   db = null;
