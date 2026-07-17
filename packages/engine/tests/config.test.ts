@@ -8,6 +8,7 @@ describe("loadConfig", () => {
     delete process.env.LODEKIT_ROOT;
     delete process.env.LODEKIT_PORT;
     delete process.env.LODEKIT_CACHE_DIR;
+    delete process.env.LODEKIT_HOST;
   });
 
   it("derives apps/data dirs and base url from root + port", () => {
@@ -65,5 +66,15 @@ describe("loadConfig", () => {
     process.env.LODEKIT_SECRETS_KEY_PROVIDER = "vault9000";
     expect(loadConfig().secretsKeyProvider).toBe(process.platform === "darwin" ? "keychain" : "file");
     delete process.env.LODEKIT_SECRETS_KEY_PROVIDER;
+  });
+
+  it("defaults host to IPv4 loopback", () => {
+    expect(loadConfig().host).toBe("127.0.0.1");
+  });
+
+  it("honors LODEKIT_HOST", () => {
+    process.env.LODEKIT_HOST = "0.0.0.0";
+    expect(loadConfig().host).toBe("0.0.0.0");
+    delete process.env.LODEKIT_HOST;
   });
 });

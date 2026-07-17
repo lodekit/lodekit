@@ -8,6 +8,10 @@ export interface Config {
   cacheDir: string;
   stateDir: string;
   port: number;
+  // Bind host for the HTTP listener. Loopback by default (issue #87); LODEKIT_HOST is
+  // the deliberate LAN-exposure escape hatch. Optional so test Config literals need not
+  // set it — start() falls back to loopback when absent.
+  host?: string;
   baseUrl: string;
   secretsKeyProvider: "keychain" | "file";
   gatewaysDir: string;
@@ -49,6 +53,7 @@ export function loadConfig(): Config {
     cacheDir,
     stateDir,
     port,
+    host: process.env.LODEKIT_HOST ?? "127.0.0.1",
     baseUrl: `http://lodekit.localhost:${port}`,
     secretsKeyProvider,
     gatewaysDir,
