@@ -18,7 +18,7 @@ import { initLogStore, queryLogs } from "../src/logStore.js";
 
 let root: string, state: string, stub: http.Server, stubPort: number;
 let mode: "echo" | "fail500" | "slow" | "big" | "unauthorized" | "retry-after" | "redirect" | "drip";
-let hits: { url: string; auth: string | null }[] = [];
+let hits: { url: string; auth: string | null; headers: Record<string, string> }[] = [];
 
 function cfg(): Config {
   return {
@@ -39,7 +39,7 @@ function writeManifest(id: string, manifest: unknown) {
 function stubManifest(auth: unknown, slots: Record<string, unknown>, basePath = "") {
   return {
     name: "Stub", base_url: `http://127.0.0.1:${stubPort}${basePath}`,
-    auth, slots,
+    auth, slots, local_network: true,
   };
 }
 
@@ -49,7 +49,7 @@ beforeEach(async () => {
   mode = "echo";
   hits = [];
   stub = http.createServer((req, res) => {
-    hits.push({ url: req.url ?? "", auth: req.headers.authorization ?? null });
+    hits.push({ url: req.url ?? "", auth: req.headers.authorization ?? null, headers: req.headers as Record<string, string> });
     if (mode === "fail500") { res.writeHead(500); res.end("boom"); return; }
     if (mode === "unauthorized") { res.writeHead(401); res.end("{}"); return; }
     if (mode === "retry-after") { res.writeHead(429, { "Retry-After": "2" }); res.end("{}"); return; }
@@ -96,6 +96,10 @@ async function reason(p: Promise<unknown>): Promise<string> {
     if (e instanceof GatewayRequestError) return e.reason;
     throw e;
   }
+}
+
+function lastHeaders(): Record<string, string> {
+  return hits[hits.length - 1]?.headers ?? {};
 }
 
 describe("auth injection + egress", () => {
@@ -156,7 +160,7 @@ describe("auth injection + egress", () => {
 
   it("base_url from a config slot works; unset config slot → unconfigured", async () => {
     writeManifest("stub", {
-      name: "HA", base_url: { from_slot: "base_url" },
+      name: "HA", base_url: { from_slot: "base_url" }, local_network: true,
       auth: { kind: "none" },
       slots: { base_url: { kind: "config", label: "Base URL" } },
     });
@@ -314,5 +318,59 @@ describe("observability", () => {
     expect(flat).not.toContain(b64);
     expect(flat).not.toContain("hunter2");
     expect(flat).toContain("•••");
+  });
+});
+
+describe("egress denial + header hardening (#88)", () => {
+  it("denies a from_slot base URL that resolves to a denied host", async () => {
+    writeManifest("ha", {
+      name: "HA", base_url: { from_slot: "base_url" },
+      auth: { kind: "none" }, slots: { base_url: { kind: "config", label: "Base" } },
+    });
+    initGatewayManifests(cfg());
+    declare("ha");
+    setGatewayConfig(APP, "probe", "base_url", "http://169.254.169.254");
+    expect(await reason(executeGatewayRequest(APP, "probe", { method: "GET", path: "/x" }))).toBe("egress_denied");
+  });
+
+  it("allows a from_slot local base URL when the manifest opts in", async () => {
+    writeManifest("ha", {
+      name: "HA", base_url: { from_slot: "base_url" }, local_network: true,
+      auth: { kind: "none" }, slots: { base_url: { kind: "config", label: "Base" } },
+    });
+    initGatewayManifests(cfg());
+    declare("ha");
+    setGatewayConfig(APP, "probe", "base_url", `http://127.0.0.1:${stubPort}`);
+    const env = await executeGatewayRequest(APP, "probe", { method: "GET", path: "/ok" });
+    expect(env.status).toBe(200);
+  });
+
+  it("denies an off-pin from_slot value", async () => {
+    writeManifest("ha", {
+      name: "HA", local_network: true,
+      base_url: { from_slot: "base_url", allowed_hosts: ["127.0.0.1"] },
+      auth: { kind: "none" }, slots: { base_url: { kind: "config", label: "Base" } },
+    });
+    initGatewayManifests(cfg());
+    declare("ha");
+    setGatewayConfig(APP, "probe", "base_url", "http://10.0.0.5");
+    expect(await reason(executeGatewayRequest(APP, "probe", { method: "GET", path: "/x" }))).toBe("egress_denied");
+  });
+
+  it("drops forwarded-identity headers", async () => {
+    writeManifest("stub", stubManifest({ kind: "none" }, {}));
+    initGatewayManifests(cfg());
+    declare("stub");
+    await executeGatewayRequest(APP, "probe", {
+      method: "GET", path: "/h",
+      headers: { "X-Forwarded-For": "1.2.3.4", "Forwarded": "for=1.2.3.4", "X-Real-IP": "1.2.3.4", "True-Client-IP": "1.2.3.4", "X-Trace": "keep" },
+    });
+    // stub records req.headers — assert forwarded gone, X-Trace kept.
+    const last = lastHeaders();
+    expect(last["x-forwarded-for"]).toBeUndefined();
+    expect(last["forwarded"]).toBeUndefined();
+    expect(last["x-real-ip"]).toBeUndefined();
+    expect(last["true-client-ip"]).toBeUndefined();
+    expect(last["x-trace"]).toBe("keep");
   });
 });
