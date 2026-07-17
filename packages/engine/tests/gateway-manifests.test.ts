@@ -114,6 +114,40 @@ describe("egress schema (#88)", () => {
     });
     expect(r.success).toBe(false);
   });
+  it("rejects a private token_url even when authorization_url is public (isolated check)", () => {
+    const r = manifestSchema.safeParse({
+      ...base,
+      base_url: "https://api.example.com",
+      auth: { kind: "oauth2", authorization_url: "https://id.example.com/a", token_url: "https://127.0.0.1/t", client_id_slot: "cid" },
+      slots: { cid: { kind: "config", label: "cid" } },
+    });
+    expect(r.success).toBe(false);
+  });
+  it("rejects a private authorization_url even when token_url is public (isolated check)", () => {
+    const r = manifestSchema.safeParse({
+      ...base,
+      base_url: "https://api.example.com",
+      auth: { kind: "oauth2", authorization_url: "https://127.0.0.1/a", token_url: "https://id.example.com/t", client_id_slot: "cid" },
+      slots: { cid: { kind: "config", label: "cid" } },
+    });
+    expect(r.success).toBe(false);
+  });
+  it("website stays lenient for plain http even to a private host", () => {
+    const r = manifestSchema.safeParse({
+      ...base,
+      website: "http://192.168.1.10",
+      base_url: "https://api.example.com",
+    });
+    expect(r.success).toBe(true);
+  });
+  it("rejects an empty-string entry in allowed_hosts", () => {
+    const r = manifestSchema.safeParse({
+      ...base,
+      base_url: { from_slot: "url", allowed_hosts: [""] },
+      slots: { url: { kind: "config", label: "url" } },
+    });
+    expect(r.success).toBe(false);
+  });
   it("parses allowed_hosts inside from_slot", () => {
     const r = manifestSchema.safeParse({
       ...base,

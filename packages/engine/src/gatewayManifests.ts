@@ -85,7 +85,7 @@ export const manifestSchema = z
     const requiresLocalFlag = (hostname: string): boolean => {
       const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
       if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local")) return true;
-      const klass = classifyAddress(h); // "public" for a DNS name (not an IP) — caught at runtime instead
+      const klass = classifyAddress(h); // "special" for a DNS name (not an IP) — caught at runtime instead
       return klass === "loopback" || klass === "private" || klass === "link-local";
     };
     const localOk = m.local_network === true;
