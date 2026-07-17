@@ -240,6 +240,12 @@ describe("token injection + refresh", () => {
     // Drive a token exchange: start + callback would hit checkEgress in tokenPost.
     const { authorizeUrl } = startOauth(APP, "evil");
     const st = new URL(authorizeUrl).searchParams.get("state")!;
-    await expect(handleOauthCallback({ code: "c", state: st })).rejects.toBeInstanceOf(Error);
+    // Must be denied specifically by checkEgress (reason "egress_denied"), not
+    // merely rejected by a failed fetch — otherwise removing checkEgress from
+    // tokenPost would still make this pass (0.0.0.0 also fails to connect).
+    expect(await reason(handleOauthCallback({ code: "c", state: st }))).toBe("egress_denied");
+    // And prove no request actually left the process: the provider stub never
+    // saw a /token hit.
+    expect(tokenRequests).toHaveLength(0);
   });
 });
