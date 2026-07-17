@@ -108,3 +108,8 @@ Rules:
 - **Menubar icon follows the style setting live** — changing the icon style in the
   dashboard now restyles the menubar icon immediately; it used to take a manager
   restart.
+
+- **The engine listens on loopback only** — the HTTP listener previously accepted
+  connections from any device on the local network; it now binds `127.0.0.1` so
+  only this machine can reach it. Deliberate wider exposure is still possible via
+  `LODEKIT_HOST`, with a startup warning that the API is unauthenticated.

@@ -230,9 +230,17 @@ export async function start(cfg: Config): Promise<Server> {
     createLogger("event-store").error("events.sqlite unavailable — event bus degrades to live-only");
   }
   const server = createServer(cfg);
-  server.listen(cfg.port, () => {
+  // Loopback unless LODEKIT_HOST says otherwise (issue #87); an absent host fails
+  // closed to loopback. The escape hatch works, but never silently.
+  const host = cfg.host ?? "127.0.0.1";
+  if (!["127.0.0.1", "::1", "localhost"].includes(host)) {
+    createLogger("host").warn(
+      `LODEKIT_HOST=${host} binds beyond loopback — the HTTP API is unauthenticated; anything that can reach this machine gets full read/write access to app data`
+    );
+  }
+  server.listen(cfg.port, host, () => {
     console.log(`Lodekit running at ${cfg.baseUrl}`);
-    createLogger("host").info(`listening on ${cfg.baseUrl}`, { port: cfg.port });
+    createLogger("host").info(`listening on ${cfg.baseUrl}`, { port: cfg.port, host });
   });
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
   const addr = server.address();
