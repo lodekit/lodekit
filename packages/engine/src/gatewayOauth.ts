@@ -113,6 +113,7 @@ async function tokenPost(manifest: GatewayManifest, auth: Oauth2, params: Record
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams(params).toString(),
+    redirect: "manual", // a 3xx here must not be followed — it would replay client_id/secret/code
     signal: AbortSignal.timeout(15_000),
   });
   const body = (await res.json().catch(() => null)) as { access_token?: string; refresh_token?: string; expires_in?: number; error?: string } | null;

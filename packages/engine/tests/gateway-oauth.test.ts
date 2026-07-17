@@ -22,7 +22,7 @@ import { initLogStore } from "../src/logStore.js";
 
 let root: string, state: string, provider: http.Server, providerPort: number;
 let tokenRequests: URLSearchParams[] = [];
-let tokenResponse: () => { status: number; body: unknown };
+let tokenResponse: () => { status: number; body: unknown; headers?: Record<string, string> };
 
 function cfg(): Config {
   return {
@@ -49,7 +49,7 @@ beforeEach(async () => {
       req.on("end", () => {
         tokenRequests.push(new URLSearchParams(raw));
         const r = tokenResponse();
-        res.writeHead(r.status, { "Content-Type": "application/json" });
+        res.writeHead(r.status, { "Content-Type": "application/json", ...r.headers });
         res.end(JSON.stringify(r.body));
       });
       return;
@@ -139,6 +139,35 @@ describe("connect flow", () => {
     expect(oauthState(APP, ALIAS)).toBe("connected");
     // a state can't be replayed
     await expect(handleOauthCallback({ code: "code-123", state: u.searchParams.get("state")! })).rejects.toThrow();
+  });
+
+  it("refuses to follow a redirect from the token endpoint (#88)", async () => {
+    setGatewayConfig(APP, ALIAS, "client_id", "interactive.public");
+    const { authorizeUrl } = startOauth(APP, ALIAS);
+    const st = new URL(authorizeUrl).searchParams.get("state")!;
+    // Stand in for an internal target (e.g. 169.254.169.254): a second local
+    // server that would happily hand back a token if the redirect were
+    // followed. We assert it never receives a request.
+    let internalHit = false;
+    const internal = http.createServer((_req, res) => {
+      internalHit = true;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ access_token: "stolen" }));
+    });
+    await new Promise<void>((r) => internal.listen(0, "127.0.0.1", r));
+    const internalPort = (internal.address() as AddressInfo).port;
+    try {
+      tokenResponse = () => ({
+        status: 302, body: {}, headers: { Location: `http://127.0.0.1:${internalPort}/` },
+      });
+      await expect(handleOauthCallback({ code: "code-123", state: st })).rejects.toThrow();
+      // Only the legitimate /token endpoint was ever hit — the redirect was
+      // not followed, and the credential-bearing POST was not replayed.
+      expect(tokenRequests).toHaveLength(1);
+      expect(internalHit).toBe(false);
+    } finally {
+      await new Promise<void>((r) => internal.close(() => r()));
+    }
   });
 
   it("the callback failure page escapes provider-controlled strings", async () => {

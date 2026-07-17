@@ -44,6 +44,12 @@ describe("classifyAddress", () => {
     expect(classifyAddress("::1")).toBe("loopback");
     expect(classifyAddress("::")).toBe("special");
   });
+  it("classifies 6to4 and NAT64 embedded-v4 forms (#88)", () => {
+    expect(classifyAddress("2002:a9fe:a9fe::")).toBe("link-local"); // wraps 169.254.169.254
+    expect(classifyAddress("2002:7f00:1::")).toBe("loopback"); // wraps 127.0.0.1
+    expect(classifyAddress("64:ff9b::7f00:1")).toBe("loopback"); // wraps 127.0.0.1
+    expect(classifyAddress("2001:4860:4860::8888")).toBe("public"); // normal public stays public
+  });
 });
 
 describe("hostAllowedByPins", () => {

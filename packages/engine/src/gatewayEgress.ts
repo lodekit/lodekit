@@ -101,6 +101,14 @@ export function classifyAddress(ip: string): AddressClass {
   if (g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0) {
     return classifyV4(embeddedV4(g));
   }
+  // 6to4 (2002::/16) — the embedded v4 target sits in the next two hextets.
+  if (g[0] === 0x2002) {
+    return classifyV4([g[1] >> 8, g[1] & 0xff, g[2] >> 8, g[2] & 0xff].join("."));
+  }
+  // NAT64 well-known prefix (64:ff9b::/96) — embedded v4 in the last two hextets.
+  if (g[0] === 0x0064 && g[1] === 0xff9b && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0) {
+    return classifyV4(embeddedV4(g));
+  }
   if ((g[0] & 0xfe00) === 0xfc00) return "private"; // fc00::/7 ULA
   if ((g[0] & 0xffc0) === 0xfe80) return "link-local"; // fe80::/10
   if ((g[0] & 0xff00) === 0xff00) return "special"; // ff00::/8 multicast
