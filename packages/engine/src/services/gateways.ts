@@ -27,6 +27,13 @@ import { getGatewayEntry, listGatewayEntries, PROVIDER_ID_RE, type GatewayEntry 
 import { executeGatewayRequest, getConnectionHealth, clearConnectionHealth, GatewayRequestError, REASON_STATUS } from "../gatewayExecutor.js";
 import { SecretsUnavailableError } from "../secretsStore.js";
 import { startOauth, handleOauthCallback } from "../gatewayOauth.js";
+import { checkEgress, EgressDeniedError, type LookupFn } from "../gatewayEgress.js";
+
+let egressLookupOverride: LookupFn | null = null;
+/** Test seam — pins the egress resolver for set-time validation. */
+export function setGatewaysEgressLookupForTest(fn: LookupFn | null): void {
+  egressLookupOverride = fn;
+}
 
 export const CATALOG_NAME = "gateways";
 
@@ -383,11 +390,32 @@ export const appGatewaysRoutes = new Hono<GatewaysEnv>()
     "/:alias/slots/:slot/value",
     zValidator("param", aliasSlotParam, validationHook),
     zValidator("json", valueBody, validationHook),
-    (c) => {
+    async (c) => {
       const { alias, slot } = c.req.valid("param");
       const def = requireSlotDef(c.var.usesDb, alias, slot);
       if (def.kind !== "config") throw new GatewaysError(`slot "${slot}" is a secret slot — link a secret instead`);
-      setGatewayConfig(c.var.appId, alias, slot, c.req.valid("json").value);
+      const value = c.req.valid("json").value;
+      // If this slot is the manifest's dynamic base URL, hold it to the same
+      // egress policy the request path enforces (best-effort — DNS/manifest can
+      // change after set-time; the executor stays authoritative). Spec §"Enforcement points".
+      const useDef = requireUse(c.var.usesDb, alias);
+      const entry = getGatewayEntry(useDef.provider);
+      const baseUrl = entry?.manifest?.base_url;
+      if (baseUrl && typeof baseUrl === "object" && baseUrl.from_slot === slot) {
+        let url: URL;
+        try { url = new URL(value); }
+        catch { throw new GatewaysError(`"${value}" is not a valid URL`); }
+        try {
+          await checkEgress(entry!.manifest!, url, {
+            ...(baseUrl.allowed_hosts ? { pins: baseUrl.allowed_hosts } : {}),
+            ...(egressLookupOverride ? { lookup: egressLookupOverride } : {}),
+          });
+        } catch (e) {
+          if (e instanceof EgressDeniedError) throw new GatewaysError(`base URL rejected: ${e.message}`);
+          throw new GatewaysError("base URL host could not be resolved");
+        }
+      }
+      setGatewayConfig(c.var.appId, alias, slot, value);
       clearConnectionHealth(c.var.appId, alias);
       emitGatewayEvent(c.var.appId, "connection-configured", { alias, slot });
       return c.json({ ok: true as const });
