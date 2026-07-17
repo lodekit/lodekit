@@ -3,11 +3,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { Server } from "node:http";
-import { start, watcherShutdown } from "@lodekit/runtime/server";
-import { loadConfig } from "@lodekit/runtime/config";
+import { start, watcherShutdown } from "@lodekit/engine/server";
+import { loadConfig } from "@lodekit/engine/config";
 import { scaffold, listApps, fetchSecrets, fetchDbSchema, selectDb } from "@lodekit/mcp/client";
 import { createClient } from "@lodekit/sdk";
-import { getSettingsDb, applySettingsManifest } from "@lodekit/runtime/services/settings";
+import { getSettingsDb, applySettingsManifest } from "@lodekit/engine/services/settings";
 
 // One server for the whole file (every test drives its own app id): per-test boots
 // re-run pruneBuildCache against the shared cache dir while the previous test's
@@ -28,7 +28,7 @@ beforeAll(async () => {
   base = `http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : 0}`;
 }, 60000);
 afterAll(async () => {
-  // Fully quiesce before removing the root (see packages/runtime/tests/watcher.test.ts):
+  // Fully quiesce before removing the root (see packages/engine/tests/watcher.test.ts):
   // drop lingering
   // connections so the server's "close" fires, then await the shutdown it kicks off
   // (watcher close → drain in-flight scaffold builds → stop workers). Otherwise a
@@ -157,7 +157,7 @@ describe("mcp tool helpers", () => {
   });
 
   it("db tools: schema lists user tables, select reads rows, writes refused", async () => {
-    const { getAppDb } = await import("@lodekit/runtime/db");
+    const { getAppDb } = await import("@lodekit/engine/db");
     const db = getAppDb(dataDir, "mcp-db");
     db.exec("CREATE TABLE IF NOT EXISTS recipes (id INTEGER PRIMARY KEY, title TEXT NOT NULL)");
     db.prepare("INSERT INTO recipes (title) VALUES ('Toast')").run();

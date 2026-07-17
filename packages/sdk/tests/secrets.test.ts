@@ -17,7 +17,7 @@ describe("defineSecrets", () => {
 });
 
 describe("secrets.get", () => {
-  const client = () => createClient({ baseUrl: "http://runtime.test", appId: "app-a" }).secrets;
+  const client = () => createClient({ baseUrl: "http://engine.test", appId: "app-a" }).secrets;
 
   beforeEach(() => {
     delete process.env.LODEKIT_WORKER_TOKEN;
@@ -37,7 +37,7 @@ describe("secrets.get", () => {
     vi.stubGlobal("fetch", fetchMock);
     expect(await client().get("api_key")).toBe("v");
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("http://runtime.test/api/apps/app-a/secrets/api_key/value");
+    expect(url).toBe("http://engine.test/api/apps/app-a/secrets/api_key/value");
     expect((init.headers as Record<string, string>)["x-lodekit-worker-token"]).toBe("tok");
   });
 

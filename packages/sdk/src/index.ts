@@ -27,12 +27,12 @@ export type { TaskConfig, DefinedTask } from "./task.js";
 export { defineSettings, boolean, string, number, select, duration } from "./settings.js";
 export type { DefinedSettings, SettingsFields, AnySetting, SettingValue } from "./settings.js";
 
-// Injected per app by the runtime's Vite build (define). Absent (e.g. under
+// Injected per app by the engine's Vite build (define). Absent (e.g. under
 // Node imports of this entry) it stays undefined and the singleton is inert.
 declare const __LODEKIT_APP_ID__: string | undefined;
 const injectedAppId = typeof __LODEKIT_APP_ID__ === "string" ? __LODEKIT_APP_ID__ : "";
 
-// Server side of the contract (an app worker): the runtime provides the loopback
+// Server side of the contract (an app worker): the engine provides the loopback
 // base; browser side: relative URLs against the page origin. Guarded so neither
 // identifier leaks into the other environment's bundle.
 const serverBaseUrl =

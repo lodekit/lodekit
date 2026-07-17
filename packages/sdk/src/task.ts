@@ -1,5 +1,5 @@
 // The declaration side of the tasks service (spec §4): a thin validator/tagger.
-// It never talks to the runtime — appWorkerEntry scans a built src/tasks.ts
+// It never talks to the engine — appWorkerEntry scans a built src/tasks.ts
 // module for the __lodekitTask marker and reports the config as the manifest.
 export interface TaskConfig<P = unknown> {
   /** 5-field cron expression, machine-local timezone. Mutually exclusive with `every`. */

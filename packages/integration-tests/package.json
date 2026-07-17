@@ -8,8 +8,8 @@
     "check": "tsc --noEmit"
   },
   "devDependencies": {
+    "@lodekit/engine": "workspace:*",
     "@lodekit/mcp": "workspace:*",
-    "@lodekit/runtime": "workspace:*",
     "@lodekit/sdk": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@types/node": "^22.10.5",

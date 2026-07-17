@@ -2,7 +2,7 @@
 // slot builders + a thin validator/tagger, PLUS the typed read facade.
 // appWorkerEntry scans the built src/secrets.ts DEFAULT export for the
 // __lodekitSecrets marker and posts `slots` as the secrets manifest; full
-// validation is runtime-side. get() delegates to the SDK singleton's
+// validation is engine-side. get() delegates to the SDK singleton's
 // `secrets` handle (bound by index.ts at module init) — server-only.
 import type { Secrets } from "./client.js";
 

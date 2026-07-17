@@ -16,7 +16,7 @@ describe("defineGateways", () => {
 });
 
 describe("gateways handle", () => {
-  const handle = () => createClient({ baseUrl: "http://runtime.test", appId: "app-a" }).gateways;
+  const handle = () => createClient({ baseUrl: "http://engine.test", appId: "app-a" }).gateways;
 
   beforeEach(() => {
     delete process.env.LODEKIT_WORKER_TOKEN;
@@ -41,7 +41,7 @@ describe("gateways handle", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ hello: "world" });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("http://runtime.test/api/apps/app-a/gateways/weather/request");
+    expect(url).toBe("http://engine.test/api/apps/app-a/gateways/weather/request");
     expect((init.headers as Record<string, string>)["x-lodekit-worker-token"]).toBe("tok");
     const sent = JSON.parse(init.body as string);
     expect(sent).toEqual({ method: "GET", path: "/data", query: { q: "Lisbon", units: "metric" } });

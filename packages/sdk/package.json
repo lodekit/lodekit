@@ -14,7 +14,7 @@
     "hono": "^4.12.0"
   },
   "devDependencies": {
-    "@lodekit/runtime": "workspace:*",
+    "@lodekit/engine": "workspace:*",
     "@types/node": "^22.10.5",
     "typescript": "^5.7.3",
     "vitest": "^3.0.0"

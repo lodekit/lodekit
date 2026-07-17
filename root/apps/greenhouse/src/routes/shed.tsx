@@ -52,7 +52,7 @@ export const exportSnapshot = createServerFn().handler(async () => {
 });
 
 // The OAuth rail, live (gateways spec §14): Connect in the dashboard, then
-// this call rides a bearer token the runtime injected — and transparently
+// this call rides a bearer token the engine injected — and transparently
 // refreshed. App code never sees the token.
 export const fetchGatewayIdentity = createServerFn().handler(async () => {
   try {

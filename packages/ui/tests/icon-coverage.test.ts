@@ -5,7 +5,7 @@ import phosphor from "../src/icons/generated/phosphor";
 import tabler from "../src/icons/generated/tabler";
 import { CANONICAL_NAMES, KNOWN_UNMAPPED } from "../src/icons/generated/names";
 
-const ROOTS = ["src", "../runtime/dashboard/src", "../runtime/src/scaffold.ts", "../../root/apps"].map(
+const ROOTS = ["src", "../engine/dashboard/src", "../engine/src/scaffold.ts", "../../root/apps"].map(
   (p) => path.resolve(__dirname, "..", p)
 );
 

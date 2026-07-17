@@ -21,8 +21,8 @@ const OUT = join(UI, "src", "icons", "generated")
 // Trees scanned for icon usage (spec §3 coverage set).
 const SCAN_TARGETS = [
   join(UI, "src"),
-  join(REPO, "packages", "runtime", "dashboard", "src"),
-  join(REPO, "packages", "runtime", "src", "scaffold.ts"),
+  join(REPO, "packages", "engine", "dashboard", "src"),
+  join(REPO, "packages", "engine", "src", "scaffold.ts"),
   join(REPO, "root", "apps"),
 ]
 

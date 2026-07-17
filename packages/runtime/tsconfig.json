@@ -1,8 +1,0 @@
-{
-  "extends": "../../tsconfig.base.json",
-  "include": ["src", "tests"],
-  // The Start fixture is sample app source (like examples/apps/*), not runtime source — it
-  // has no jsx/moduleResolution setup of its own and isn't meant to type-check here; Vite
-  // strips/transpiles it at build time the same way it does for real Lodekit apps.
-  "exclude": ["tests/fixtures/start-app"]
-}

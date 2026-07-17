@@ -21,9 +21,9 @@ describe("getPaths", () => {
       path.join(HOME, "Library", "Application Support", "Lodekit", "runtime.pid")
     );
     expect(p.nodeBin).toBe("/Applications/Lodekit.app/Contents/Resources/node/bin/node");
-    expect(p.runtimeDir).toBe("/Applications/Lodekit.app/Contents/Resources/platform/runtime");
-    expect(p.runtimeEntry).toBe(
-      "/Applications/Lodekit.app/Contents/Resources/platform/runtime/src/index.ts"
+    expect(p.engineDir).toBe("/Applications/Lodekit.app/Contents/Resources/platform/engine");
+    expect(p.engineEntry).toBe(
+      "/Applications/Lodekit.app/Contents/Resources/platform/engine/src/index.ts"
     );
     expect(p.mcpEntry).toBe("/Applications/Lodekit.app/Contents/Resources/platform/mcp/index.ts");
     expect(p.showcaseAppsDir).toBe("/Applications/Lodekit.app/Contents/Resources/platform/root/apps");
@@ -32,15 +32,15 @@ describe("getPaths", () => {
     expect(p.dashboardUrl).toBe("http://lodekit.localhost:7777");
   });
 
-  it("dev mode runs the workspace runtime against root/ on the system node", () => {
+  it("dev mode runs the workspace engine against root/ on the system node", () => {
     const p = getPaths({ packaged: false, homedir: HOME, resourcesPath: "/ignored", repoRoot: "/repo" });
     expect(p.mode).toBe("dev");
     expect(p.lodekitRoot).toBe("/repo/root");
     expect(p.cacheDir).toBe("/repo/.cache");
     expect(p.stateDir).toBe("/repo/.cache/state");
     expect(p.nodeBin).toBe("node");
-    expect(p.runtimeDir).toBe("/repo/packages/runtime");
-    expect(p.runtimeEntry).toBe("/repo/packages/runtime/src/index.ts");
+    expect(p.engineDir).toBe("/repo/packages/engine");
+    expect(p.engineEntry).toBe("/repo/packages/engine/src/index.ts");
     expect(p.showcaseAppsDir).toBe(null);
     expect(p.showcaseGatewaysDir).toBe(null);
     // Logs and pid file use the same macOS locations in both modes.

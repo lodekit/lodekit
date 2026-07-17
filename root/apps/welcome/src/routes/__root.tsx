@@ -20,7 +20,7 @@ export const Route = createRootRoute({
     <html lang="en">
       <head>
         <HeadContent />
-        {/* Theme before hydration — no dark-mode flash. Served by the runtime
+        {/* Theme before hydration — no dark-mode flash. Served by the engine
             from the effective appearance.theme setting; system mode keeps the
             OS media query (settings spec §8). */}
         <script src="/_ui/theme.js" />

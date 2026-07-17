@@ -18,7 +18,7 @@ pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `root/` is *
 member (so the sample apps never get a `node_modules`). Structure and rationale:
 `docs/specs/2026-06-30-monorepo-migration-design.md`.
 
-- **`packages/runtime`** (`@lodekit/runtime`) — the product. The **engine** — a single
+- **`packages/engine`** (`@lodekit/engine`) — the product. The **engine** — a single
   Node/Hono process (buildless, run via `tsx`) that is host + scoped API + dashboard +
   folder-watcher + SSE, and hosts TanStack Start apps in per-app worker threads. It
   serves apps from a Lodekit root (`LODEKIT_ROOT`, default `~/Documents/Lodekit`)
@@ -29,12 +29,12 @@ member (so the sample apps never get a `node_modules`). Structure and rationale:
 - **`packages/skill`** (`@lodekit/skill`) — the Claude skill (content only).
 - **`packages/integration-tests`** (`@lodekit/integration-tests`) — cross-package
   integration tests (engine↔MCP); imports the siblings by package specifier
-  (`@lodekit/runtime/*`, `@lodekit/mcp/client`), never by relative reach-in.
+  (`@lodekit/engine/*`, `@lodekit/mcp/client`), never by relative reach-in.
 - **`web/main`** (`@lodekit/web-main`) — Astro landing site.
 - **`web/docs`** (`@lodekit/web-docs`) — Starlight docs site (placeholder scaffold).
 - **`manager`** (`@lodekit/manager`) — the menubar app that ships and supervises the
   platform. Packaged (`make`, electron-builder): an ad-hoc-signed `Lodekit.app` bundling a pinned
-  Lodekit-local Node + the platform payload (runtime/mcp/skill via `pnpm deploy`) in
+  Lodekit-local Node + the platform payload (engine/mcp/skill via `pnpm deploy`) in
   `Resources/`, spawning the engine as a single direct child Node process (so
   `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
   app supervising the workspace engine against `root/` on the system Node.
@@ -55,12 +55,12 @@ Package manager is **pnpm** (workspaces). From the repo root:
   scripts). **Gotcha:** switching Node versions causes a `better-sqlite3` ABI mismatch
   (`NODE_MODULE_VERSION`) — fix with `pnpm rebuild better-sqlite3`.
 - `pnpm dev` — run the engine against the showcase apps
-  (`LODEKIT_ROOT=$(pwd)/root pnpm --filter @lodekit/runtime start`).
+  (`LODEKIT_ROOT=$(pwd)/root pnpm --filter @lodekit/engine start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
-- `pnpm test` — runs `pnpm -r test`: `@lodekit/runtime`, `@lodekit/sdk`, `@lodekit/ui`,
+- `pnpm test` — runs `pnpm -r test`: `@lodekit/engine`, `@lodekit/sdk`, `@lodekit/ui`,
   `@lodekit/manager` (supervisor/paths/logs), and `@lodekit/integration-tests`
   (`packages/integration-tests` — cross-package tests like engine↔MCP, importing
-  siblings by package specifier). Per-package: `pnpm --filter @lodekit/runtime test`.
+  siblings by package specifier). Per-package: `pnpm --filter @lodekit/engine test`.
 - `pnpm --filter @lodekit/web-main dev` | `build` — the landing site.
 - `pnpm --filter @lodekit/web-docs dev` | `build` — the docs site.
 - `pnpm --filter @lodekit/manager start` — the menubar manager in dev mode (system Node;
@@ -70,7 +70,7 @@ Package manager is **pnpm** (workspaces). From the repo root:
   pinned Node — the version is pinned there, and the bundle must be built on that same
   Node version for the `better-sqlite3` ABI to match).
 
-Runtime and MCP are **buildless** — `tsx`, no build step.
+Engine and MCP are **buildless** — `tsx`, no build step.
 
 ## Lazy, Not Negligent
 

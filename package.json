@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.30.3",
   "scripts": {
-    "dev": "LODEKIT_ROOT=$(pwd)/root LODEKIT_CACHE_DIR=$(pwd)/.cache pnpm --filter @lodekit/runtime start",
+    "dev": "LODEKIT_ROOT=$(pwd)/root LODEKIT_CACHE_DIR=$(pwd)/.cache pnpm --filter @lodekit/engine start",
     "mcp": "pnpm --filter @lodekit/mcp start",
     "test": "pnpm -r test",
     "clean": "node scripts/clean.mjs",
