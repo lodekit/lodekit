@@ -27,6 +27,15 @@ describe("classifyAddress", () => {
     expect(classifyAddress("::ffff:8.8.8.8")).toBe("public");
     expect(classifyAddress("2001:4860:4860::8888")).toBe("public");
   });
+  it("classifies IPv6 alternate spellings that bypass naive string matching", () => {
+    // v4-mapped addresses spelled as hex hextets rather than dotted-decimal.
+    expect(classifyAddress("::ffff:7f00:1")).toBe("loopback"); // 127.0.0.1
+    expect(classifyAddress("::ffff:a9fe:a9fe")).toBe("link-local"); // 169.254.169.254
+    expect(classifyAddress("::ffff:c0a8:101")).toBe("private"); // 192.168.1.1
+    // fully expanded canonical forms.
+    expect(classifyAddress("0:0:0:0:0:0:0:1")).toBe("loopback"); // ::1
+    expect(classifyAddress("0:0:0:0:0:0:0:0")).toBe("special"); // ::
+  });
 });
 
 describe("hostAllowedByPins", () => {
@@ -73,5 +82,13 @@ describe("checkEgress policy", () => {
   it("denies http toward a public host and allows http toward a local one with the flag", async () => {
     await expect(checkEgress({ local_network: true }, new URL("http://pub.example"), { lookup: pub })).rejects.toBeInstanceOf(EgressDeniedError);
     await expect(checkEgress({ local_network: true }, new URL("http://192.168.1.10"))).resolves.toBeUndefined();
+  });
+  it("denies a special address even with local_network: true", async () => {
+    await expect(checkEgress({ local_network: true }, new URL("https://[::]/"))).rejects.toBeInstanceOf(EgressDeniedError);
+    await expect(checkEgress({ local_network: true }, new URL("http://0.0.0.0"))).rejects.toBeInstanceOf(EgressDeniedError);
+  });
+  it("rejects IPv6-mapped-hextet loopback and link-local bypass spellings", async () => {
+    await expect(checkEgress({}, new URL("https://[::ffff:7f00:1]/"))).rejects.toBeInstanceOf(EgressDeniedError);
+    await expect(checkEgress({}, new URL("https://[::ffff:a9fe:a9fe]/"))).rejects.toBeInstanceOf(EgressDeniedError);
   });
 });

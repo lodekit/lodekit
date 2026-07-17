@@ -42,21 +42,58 @@ function classifyV4(ip: string): AddressClass {
   return "public";
 }
 
+// Expand a valid (isIP === 6) IPv6 string into its 8 numeric 16-bit hextets.
+// Handles "::" elision and a trailing dotted-decimal tail (v4-in-v6), so that
+// e.g. "::ffff:7f00:1" and "::ffff:127.0.0.1" normalize to the same 8 groups —
+// classification below then works from numbers, not string prefixes, closing
+// the gap where alternate spellings of the same address slipped past fixed
+// canonical-string matches.
+function expandIPv6(ip: string): number[] | null {
+  let body = ip;
+  // A trailing dotted-decimal quad occupies the last two hextets.
+  const v4tail = body.match(/(\d+\.\d+\.\d+\.\d+)$/);
+  if (v4tail) {
+    const octets = v4tail[1].split(".").map(Number);
+    if (octets.length !== 4 || octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
+    const hex = `${((octets[0] << 8) | octets[1]).toString(16)}:${((octets[2] << 8) | octets[3]).toString(16)}`;
+    body = body.slice(0, body.length - v4tail[1].length) + hex;
+  }
+  const parts = body.split("::");
+  if (parts.length > 2) return null;
+  const left = parts[0] === "" ? [] : parts[0].split(":");
+  const right = parts.length === 2 ? (parts[1] === "" ? [] : parts[1].split(":")) : [];
+  let groups: string[];
+  if (parts.length === 2) {
+    const fill = 8 - (left.length + right.length);
+    if (fill < 0) return null;
+    groups = [...left, ...Array(fill).fill("0"), ...right];
+  } else {
+    groups = left;
+  }
+  if (groups.length !== 8) return null;
+  const nums = groups.map((g) => parseInt(g, 16));
+  if (nums.some((n) => !Number.isInteger(n) || n < 0 || n > 0xffff)) return null;
+  return nums;
+}
+
 export function classifyAddress(ip: string): AddressClass {
   const kind = isIP(ip);
   if (kind === 4) return classifyV4(ip);
   if (kind !== 6) return "special"; // not an IP at all — refuse
-  const h = ip.toLowerCase();
-  // IPv4-mapped (::ffff:a.b.c.d) — classify by the embedded v4 address.
-  const mapped = h.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-  if (mapped) return classifyV4(mapped[1]);
-  if (h === "::1") return "loopback";
-  if (h === "::" ) return "special";
-  if (h.startsWith("ff")) return "special"; // ff00::/8 multicast
-  if (h.startsWith("fe8") || h.startsWith("fe9") || h.startsWith("fea") || h.startsWith("feb")) {
-    return "link-local"; // fe80::/10
+  const g = expandIPv6(ip);
+  if (!g) return "special"; // deny-by-default if expansion ever fails
+  // IPv4-mapped (::ffff:0:0/96) — classify by the embedded v4 address.
+  if (g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0xffff) {
+    const v4 = [g[6] >> 8, g[6] & 0xff, g[7] >> 8, g[7] & 0xff].join(".");
+    return classifyV4(v4);
   }
-  if (h.startsWith("fc") || h.startsWith("fd")) return "private"; // fc00::/7 ULA
+  if (g.every((n) => n === 0)) return "special"; // ::
+  if (g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0 && g[6] === 0 && g[7] === 1) {
+    return "loopback"; // ::1
+  }
+  if ((g[0] & 0xfe00) === 0xfc00) return "private"; // fc00::/7 ULA
+  if ((g[0] & 0xffc0) === 0xfe80) return "link-local"; // fe80::/10
+  if ((g[0] & 0xff00) === 0xff00) return "special"; // ff00::/8 multicast
   return "public";
 }
 
