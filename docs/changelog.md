@@ -72,6 +72,12 @@ Rules:
   dashboard (and anywhere without its own icon), and each app's emoji on that
   app's pages. Changing the menubar icon in Settings updates open tabs live.
 
+- **Safer gateways** — gateways can only reach public hosts by default; a
+  gateway that targets your own network (a local Home Assistant, a LAN device)
+  opts in with `"local_network": true`, and a person-supplied base URL can be
+  pinned to specific hosts with `allowed_hosts`. Requests to internal addresses
+  are refused with a clear message.
+
 ## Fixed
 
 - **kv-store error statuses** — internal faults in the kv API now return 500

@@ -101,6 +101,7 @@ beforeAll(async () => {
   fs.writeFileSync(path.join(gwDir, "manifest.json"), JSON.stringify({
     name: "Local probe",
     base_url: `http://127.0.0.1:${stubPort}`,
+    local_network: true,
     auth: { kind: "api_key", in: "query", param: "key", slot: "api_key" },
     slots: { api_key: { kind: "secret", label: "Probe key" } },
   }));
