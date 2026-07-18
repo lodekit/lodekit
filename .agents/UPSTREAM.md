@@ -48,7 +48,7 @@ line.
 - Persistence: session-mode note scoping ponytail to implementation (spec §6).
 
 ### mattpocock/skills
-- CONTEXT.md path: repo root (matches our existing file).
+- CONTEXT.md path: `docs/CONTEXT.md` (this repo keeps steering docs in `docs/`, not the root).
 - ADR guidance → `docs/decisions/` via the "Capturing Decisions" three-gate convention
   in using-superpowers (identical gate; single home).
 

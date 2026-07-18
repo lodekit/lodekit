@@ -21,7 +21,7 @@ Most repos have a single context:
 └── src/
 ```
 
-In this repo, CONTEXT.md also carries the app contract; the glossary discipline applies to its glossary sections.
+In this repo, CONTEXT.md lives at `docs/CONTEXT.md` (never create a root one) and also carries the app contract; the glossary discipline applies to its glossary sections.
 
 If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The map points to where each one lives:
 

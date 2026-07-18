@@ -2,8 +2,10 @@
 
 lodekit is a local, self-hosted platform on which a person — working with an AI coding
 agent — builds and runs their own personal web tools. See `docs/specs/` for detail.
-`CONTEXT.md` fixes the domain language — use its canonical terms in code, docs, and specs.
-Visual identity — palette, typography, token rules — lives in `DESIGN.md`; consult it
+`docs/CONTEXT.md` fixes the domain language — use its canonical terms in code, docs, and specs.
+Product/brand strategy — positioning, narrative, messaging, voice — lives in
+`docs/PRODUCT.md`; consult it before any outward-facing prose (landing, docs, blog).
+Visual identity — palette, typography, token rules — lives in `docs/DESIGN.md`; consult it
 before any UI, landing, or docs styling work.
 
 Behavioral guardrails for development workflow.
@@ -137,9 +139,9 @@ rule (`ponytail`-labeled bead + `// ponytail: <bead-id>` anchor).
 - **Commits & PRs:** no `Co-Authored-By` trailers in commit messages; no "Generated with Claude Code" attribution in PR bodies.
 - **Definition of done:** a new SDK/engine capability is not done until the Greenhouse
   showcase app exercises it (`root/README.md` holds the living coverage checklist).
-- **Steering docs:** root steering docs are uppercase (`AGENTS.md`, `CLAUDE.md`
-  symlink, `CONTEXT.md`, `DESIGN.md`). `CLAUDE.md` is a committed symlink to
-  `AGENTS.md` — never diverge them. Do not set `askUserQuestionTimeout` in user
+- **Steering docs:** steering docs are uppercase. `AGENTS.md` and the `CLAUDE.md`
+  symlink live at the repo root; `CONTEXT.md`, `DESIGN.md`, and `PRODUCT.md` live in
+  `docs/`. `CLAUDE.md` is a committed symlink to `AGENTS.md` — never diverge them. Do not set `askUserQuestionTimeout` in user
   settings; interactive questions must block until answered.
 - **Codebase graph:** for structure questions (call paths, impact of a change, where
   a symbol is used), query the `codebase-memory-mcp` tools (`search_graph`,
