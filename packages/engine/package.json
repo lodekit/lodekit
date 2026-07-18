@@ -6,6 +6,7 @@
   "exports": {
     "./server": "./src/server.ts",
     "./config": "./src/config.ts",
+    "./marks": "./src/marks.ts",
     "./db": "./src/db.ts",
     "./services/kv-store": "./src/services/kv-store.ts",
     "./services/log-store": "./src/services/log-store.ts",
