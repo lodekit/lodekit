@@ -1,41 +1,77 @@
 ---
 import Base from "../layouts/Base.astro";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import Header from "@/components/Header.astro";
-import Footer from "@/components/Footer.astro";
-import NotifyForm from "@/components/NotifyForm.astro";
-import Hero from "@/components/Hero.astro";
-
-const tagline = "Build small local apps on a unified stack — no build tooling to manage.";
-// TODO(confirm): repo is not public yet / no git remote configured. Update this
-// URL to the real repository before launch.
-const githubUrl = "https://github.com/lodekit/lodekit";
+import Header from "../components/Header.astro";
+import Hero from "../components/Hero.astro";
+import LoopStrip from "../components/LoopStrip.astro";
+import Pillar from "../components/Pillar.astro";
+import ServiceChips from "../components/ServiceChips.astro";
+import FileTreePrint from "../components/FileTreePrint.astro";
+import OscillationBand from "../components/OscillationBand.astro";
+import CtaBand from "../components/CtaBand.astro";
+import DevLayer from "../components/DevLayer.astro";
+import Footer from "../components/Footer.astro";
 ---
 
 <Base>
   <Header />
-  <Hero />
-  <main class="relative flex min-h-screen flex-col items-center justify-center gap-8 px-6 text-center">
-    <div class="absolute right-4 top-4">
-      <ThemeToggle client:load />
-    </div>
-    <section class="flex flex-col items-center gap-4">
-      <span
-        class="rounded-full border border-border px-3 py-1 text-xs font-medium uppercase tracking-widest text-muted-foreground"
-      >
-        Coming soon
-      </span>
-      <h1 class="text-5xl font-semibold tracking-tight sm:text-6xl">Lodekit</h1>
-      <p class="max-w-md text-balance text-lg text-muted-foreground">{tagline}</p>
-    </section>
+  <main>
+    <Hero />
+    <LoopStrip />
 
-    <NotifyForm id="try" />
+    <Pillar kicker="Cloud batteries" headline="Keep the batteries, drop the cloud.">
+      <p>
+        Everything apps need from a cloud — a real database, file storage, secrets, scheduled
+        tasks, doors to outside services — provided locally by one engine. No accounts, no meters,
+        nobody else's computer.
+      </p>
+      <ServiceChips slot="proof" />
+    </Pillar>
 
-    <footer class="text-sm text-muted-foreground">
-      <a class="underline underline-offset-4 hover:text-foreground" href={githubUrl}>GitHub</a>
-    </footer>
+    <Pillar kicker="Ownership" headline="Your data is a folder." variant="night">
+      <p>
+        Apps and data are files in one folder. Copy it and it's yours forever. No accounts to
+        lose, no export buttons to hunt for — everything readable on disk.
+      </p>
+      <FileTreePrint slot="proof" />
+    </Pillar>
+
+    <Pillar kicker="No tooling" headline="Ask for an app. Use it a minute later.">
+      <p>
+        No terminal, no builds, no node_modules. One menubar app installs the platform — it
+        provisions its own Node, builds apps on save, and serves them in your browser.
+      </p>
+      <div slot="proof" class="flex flex-wrap gap-3">
+        <span class="chip">one install</span>
+        <span class="chip">zero config</span>
+        <span class="chip">builds on save</span>
+      </div>
+    </Pillar>
+
+    <Pillar kicker="Guardrails" headline="Safe to let an agent build." variant="wash">
+      <p>
+        Guardrails, not vibes. Apps run in isolated workers, and each sees only its own data.
+        Secrets never enter app code — apps reach outside services through managed gateways. When
+        something breaks, it breaks visibly: the dashboard shows you exactly where.
+      </p>
+      <ul slot="proof" class="w-full divide-y divide-border border-y border-border text-sm">
+        <li class="py-3">Apps run in isolated workers</li>
+        <li class="py-3">Each app sees only its own data</li>
+        <li class="py-3">Secrets stay out of app code</li>
+        <li class="py-3">Failures surface in the dashboard</li>
+      </ul>
+    </Pillar>
+
+    <Pillar kicker="Coherence" headline="Ten apps that feel like one.">
+      <p>
+        Every app shares one UI library and one theme — yours to change in one place. One
+        dashboard shows every app's state, data, and scheduled work. Ten agent-built apps feel
+        like one product, not ten codepens.
+      </p>
+    </Pillar>
+
+    <OscillationBand />
+    <CtaBand />
+    <DevLayer />
   </main>
   <Footer />
 </Base>
