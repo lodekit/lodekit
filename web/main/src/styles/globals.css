@@ -344,4 +344,7 @@
   .drift-y {
     animation: none;
   }
+  .btn-primary:active {
+    transform: none;
+  }
 }
