@@ -1,0 +1,30 @@
+---
+import NotifyForm from "./NotifyForm.astro";
+import JarIllustration from "./JarIllustration.astro";
+---
+
+<section class="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-16 md:py-24 lg:grid-cols-[1.15fr_1fr]">
+  <div>
+    <p class="kicker text-muted-foreground enter" style="--stagger: 0ms">
+      The local platform for agent-built apps
+    </p>
+    <h1 class="display mt-5 enter" style="--stagger: 80ms">
+      The making got easy. The&nbsp;keeping is still broken.
+    </h1>
+    <div class="enter" style="--stagger: 160ms">
+      <p class="prose-measure mt-6 text-muted-foreground">
+        Ask your agent for an app and it will build one. The hard part is keeping it — somewhere
+        that isn't a subscription, a silo, or a folder that quietly dies. Lodekit runs your apps on
+        the computer you already own, with everything they'd need from a cloud.
+      </p>
+      <p class="mt-4 text-lg font-medium">Cloud batteries, locally, easily.</p>
+    </div>
+    <div class="enter mt-8" style="--stagger: 240ms">
+      <NotifyForm id="hero" />
+      <span class="chip mt-6 inline-block">macOS alpha · Coming soon</span>
+    </div>
+  </div>
+  <div class="enter" style="--stagger: 320ms">
+    <JarIllustration />
+  </div>
+</section>

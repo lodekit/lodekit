@@ -1,0 +1,68 @@
+---
+// The Sky in a Jar — flat woodblock-style composition (DESIGN.md §1).
+// A new illustration, not the mark: the mark stays in the lockup/favicon.
+// All fills are CSS vars so the night plate recolors the same geometry.
+---
+
+<svg
+  viewBox="0 0 520 520"
+  class="h-auto w-full max-w-[480px]"
+  role="img"
+  aria-labelledby="jar-ill-title"
+>
+  <title id="jar-ill-title">A piece of sky kept in a mason jar, clouds drifting around it.</title>
+
+  <defs>
+    <clipPath id="jar-glass">
+      <path
+        d="M170 150 C140 154 122 172 122 210 L122 408 C122 448 150 470 196 470 L304 470 C350 470 378 448 378 408 L378 210 C378 172 360 154 330 150 Z"
+      ></path>
+    </clipPath>
+    <path
+      id="jar-cloud-shape"
+      d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"
+    ></path>
+  </defs>
+
+  <!-- sun -->
+  <circle cx="452" cy="96" r="36" fill="var(--ill-sun)"></circle>
+
+  <!-- escaped clouds — the only things in this world that move -->
+  <g class="drift-x">
+    <g class="drift-y">
+      <use href="#jar-cloud-shape" transform="translate(18 118) scale(3.4)" fill="var(--ill-sky-soft)"></use>
+    </g>
+  </g>
+  <g class="drift-x" style="animation-duration: 27s;">
+    <g class="drift-y" style="animation-duration: 17s;">
+      <use href="#jar-cloud-shape" transform="translate(398 214) scale(2.3)" fill="var(--ill-sky-soft)"></use>
+    </g>
+  </g>
+
+  <!-- ground -->
+  <ellipse cx="250" cy="474" rx="152" ry="13" fill="var(--ill-ground)" opacity="0.55"></ellipse>
+  <line x1="36" y1="488" x2="484" y2="488" stroke="var(--ill-line)" stroke-width="1" opacity="0.35"></line>
+
+  <!-- the sky, kept -->
+  <g clip-path="url(#jar-glass)">
+    <rect x="122" y="150" width="256" height="112" fill="var(--ill-sky-deep)"></rect>
+    <rect x="122" y="262" width="256" height="208" fill="var(--ill-sky-soft)"></rect>
+    <use href="#jar-cloud-shape" transform="translate(166 262) scale(7)" fill="var(--ill-cloud)"></use>
+  </g>
+
+  <!-- jar outline over the sky -->
+  <path
+    d="M170 150 C140 154 122 172 122 210 L122 408 C122 448 150 470 196 470 L304 470 C350 470 378 448 378 408 L378 210 C378 172 360 154 330 150"
+    fill="none"
+    stroke="var(--ill-line)"
+    stroke-width="3"
+    stroke-linecap="round"
+  ></path>
+
+  <!-- lid -->
+  <path
+    d="M186 150 L180 108 C178 96 186 88 198 88 L302 88 C314 88 322 96 320 108 L314 150 Z"
+    fill="var(--ill-line)"
+  ></path>
+  <rect x="172" y="146" width="156" height="22" rx="11" fill="var(--ill-line)"></rect>
+</svg>
