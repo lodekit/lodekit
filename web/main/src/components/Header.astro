@@ -1,0 +1,11 @@
+---
+import Lockup from "./Lockup.astro";
+import { ThemeToggle } from "./ThemeToggle";
+---
+
+<header class="border-b border-border">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+    <Lockup />
+    <ThemeToggle client:load />
+  </div>
+</header>
