@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
+import NotifyForm from "@/components/NotifyForm.astro";
 
 const tagline = "Build small local apps on a unified stack — no build tooling to manage.";
 // TODO(confirm): repo is not public yet / no git remote configured. Update this
@@ -28,10 +29,7 @@ const githubUrl = "https://github.com/lodekit/lodekit";
       <p class="max-w-md text-balance text-lg text-muted-foreground">{tagline}</p>
     </section>
 
-    <form class="flex w-full max-w-sm items-center gap-2" aria-label="Get notified (coming soon)">
-      <Input type="email" placeholder="you@example.com" aria-label="Email address" disabled />
-      <Button type="submit" disabled>Notify me</Button>
-    </form>
+    <NotifyForm id="try" />
 
     <footer class="text-sm text-muted-foreground">
       <a class="underline underline-offset-4 hover:text-foreground" href={githubUrl}>GitHub</a>
