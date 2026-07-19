@@ -15,7 +15,7 @@ export function PromptSuggestion({
   return (
     <div
       className={cn(
-        "rounded-[3px] border px-3 py-2 transition-colors duration-200",
+        "rounded-[3px] border px-3 py-2 transition-[border-color,color,transform] duration-200",
         pressed
           ? "translate-y-px border-primary text-primary"
           : "border-border text-card-foreground"
