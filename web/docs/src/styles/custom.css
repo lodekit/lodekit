@@ -1,18 +1,22 @@
-/* Lodekit docs theme — cork amber + brand type (DESIGN.md) */
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400..600,100&family=Hanken+Grotesk:wght@400;500;600&display=swap');
+/* Lodekit docs theme — Sky in a Jar: rust/ochre accents + brand type (DESIGN.md),
+   reading-calm register. */
+@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Spline+Sans+Mono:wght@400;500&display=swap');
 
 :root {
-  /* dark scheme (Starlight default root) */
-  --sl-color-accent-low: #45260e;
-  --sl-color-accent: #ce6f26;
-  --sl-color-accent-high: #f6ad64;
-  --sl-font: 'Hanken Grotesk', system-ui, sans-serif;
+  /* dark scheme (Starlight default root) — ochre on the night plate */
+  --sl-color-accent-low: #3a2c10;
+  --sl-color-accent: #dd9741;
+  --sl-color-accent-high: #e5a85c;
+  --sl-color-bg: #121a44;
+  --sl-font: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
+  --sl-font-mono: 'Spline Sans Mono', ui-monospace, monospace; /* adjust per Step 1 */
 }
 
 :root[data-theme='light'] {
-  --sl-color-accent-low: #f7e3cf;
-  --sl-color-accent: #ce6f26;
-  --sl-color-accent-high: #9c4d10;
+  --sl-color-accent-low: #ecd9c9;
+  --sl-color-accent: #935842;
+  --sl-color-accent-high: #7c4636;
+  --sl-color-bg: #f6f1e6;
 }
 
 /* Glossary — real headings (so terms land in the page ToC) rendered as a
@@ -49,8 +53,6 @@
 .sl-markdown-content h4,
 h1[data-page-title],
 .hero h1 {
-  font-family: 'Fraunces', Georgia, serif;
-  /* the Google Fonts import pins SOFT@100 — same axis value the landing ships */
-  font-variation-settings: 'SOFT' 100;
-  font-weight: 550;
+  font-family: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
+  font-weight: 700;
 }
