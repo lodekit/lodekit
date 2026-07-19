@@ -19,6 +19,11 @@ Rules:
 
 ## New
 
+- **A new look: the Sky in a Jar** — Lodekit's woodblock-print identity lands across
+  the dashboard and every app: plum ink on aged parchment by day, pale gold on deep
+  indigo by night, a rust accent reserved for actions, and a mono voice for ids and
+  data. Themes gain a third font slot (`--font-mono`), editable in the theme editor.
+
 - **Charts and data tables** — the UI library gains charts (recharts via the stock
   shadcn chart port, themed by the `--chart-*` tokens) and a reusable data table
   (`useDataTable` + `DataTable`: sorting, filtering, pagination — client-side or
