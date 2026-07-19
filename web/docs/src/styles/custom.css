@@ -9,7 +9,7 @@
   --sl-color-accent-high: #e5a85c;
   --sl-color-bg: #121a44;
   --sl-font: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
-  --sl-font-mono: 'Spline Sans Mono', ui-monospace, monospace; /* adjust per Step 1 */
+  --sl-font-mono: 'Spline Sans Mono', ui-monospace, monospace;
 }
 
 :root[data-theme='light'] {
