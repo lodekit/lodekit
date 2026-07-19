@@ -213,7 +213,10 @@ export default function HeroDemo() {
         </div>
         <div className="border-t border-border p-3">
           <PromptInput>
-            <PromptInputDisplay text={displayedText} />
+            <PromptInputDisplay
+              text={displayedText}
+              placeholder={state.items.length === 0 ? "Ask me anything…" : ""}
+            />
             <PromptInputActions />
           </PromptInput>
         </div>

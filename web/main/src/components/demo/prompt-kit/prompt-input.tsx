@@ -25,14 +25,14 @@ export function PromptInput({
 
 export function PromptInputDisplay({
   text,
-  placeholder = "Ask for an app…",
+  placeholder = "",
 }: {
   text: string;
   placeholder?: string;
 }) {
   return (
     <div className="min-h-[2.25rem] flex-1 px-1 py-1.5 text-[0.9rem] leading-relaxed">
-      {text.length === 0 && (
+      {text.length === 0 && placeholder.length > 0 && (
         <span className="text-muted-foreground">{placeholder}</span>
       )}
       {text}
