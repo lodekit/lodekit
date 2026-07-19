@@ -2,7 +2,8 @@
 // SSR renders the completed conversation; with motion allowed the island
 // resets after the hero entrance, plays the script once, then rests.
 import { useEffect, useRef, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { Cloud, FileText, RotateCcw } from "lucide-react";
+import { MARK_BODIES } from "@lodekit/engine/marks";
 import {
   CLEAR_SCRIPT,
   EMPTY,
@@ -22,6 +23,14 @@ import { useTextStream } from "./prompt-kit/response-stream";
 import { PromptSuggestion } from "./prompt-kit/prompt-suggestion";
 
 const ENTRANCE_DELAY_MS = 900; // hero entrance (≤800ms) + settle
+
+// One icon per option, in script order (single file, cloud app, Lodekit).
+// The Lodekit icon is the jar mark — imported, never redrawn (DESIGN.md §5).
+const OPTION_ICONS = [
+  <FileText key="file" />,
+  <Cloud key="cloud" />,
+  <svg key="lodekit" viewBox="0 0 32 32" aria-hidden="true" dangerouslySetInnerHTML={{ __html: MARK_BODIES.b }} />,
+];
 
 function DemoConversationItem({
   item,
@@ -49,7 +58,14 @@ function DemoConversationItem({
       return (
         <div className="flex flex-col gap-1.5 pl-0.5">
           {item.options.map((o, i) => (
-            <PromptSuggestion key={o.label} label={o.label} detail={o.detail} pressed={item.pressed === i} />
+            <PromptSuggestion
+              key={o.label}
+              label={o.label}
+              detail={o.detail}
+              pressed={item.pressed === i}
+              icon={OPTION_ICONS[i]}
+              emphasis={o.label === "Lodekit"}
+            />
           ))}
         </div>
       );
@@ -183,16 +199,21 @@ export default function HeroDemo() {
   return (
     <div
       ref={cardRef}
-      className="flex h-[540px] flex-col overflow-hidden rounded-[8px] border border-border bg-card"
+      className="demo-window flex h-[540px] flex-col overflow-hidden rounded-[8px] border border-border bg-card"
     >
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
-        <span className="kicker text-muted-foreground">Agent session — greenhouse</span>
+      <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
+        <span aria-hidden="true" className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full bg-clay-rose/70" />
+          <span className="size-2.5 rounded-full bg-parchment/70" />
+          <span className="size-2.5 rounded-full bg-cloud-slate/70" />
+        </span>
+        <span className="kicker ml-2 text-muted-foreground">Agent session — greenhouse</span>
         {resting && !reduced && (
           <button
             type="button"
             onClick={replay}
             aria-label="Replay demo"
-            className="chip inline-flex cursor-pointer items-center gap-1.5 transition-opacity duration-200 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-[3px] focus-visible:outline-ring"
+            className="ml-auto inline-flex cursor-pointer items-center gap-1 font-mono text-[0.65rem] font-medium tracking-[0.12em] text-muted-foreground uppercase transition-colors duration-200 hover:text-foreground focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-[3px] focus-visible:outline-ring"
             style={{ transitionTimingFunction: "var(--ease-drift)" }}
           >
             <RotateCcw className="size-3" />

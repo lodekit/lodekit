@@ -48,7 +48,7 @@ export function PromptInputActions({ children }: { children?: React.ReactNode })
   return (
     <div className="flex items-center gap-2">
       {children}
-      <span className="flex size-8 items-center justify-center rounded-[3px] bg-primary text-primary-foreground">
+      <span className="flex size-8 items-center justify-center rounded-[3px] bg-secondary text-secondary-foreground">
         <ArrowUp className="size-4" />
       </span>
     </div>

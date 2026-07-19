@@ -270,6 +270,26 @@
     outline-color: var(--ink);
   }
 
+  /* the demo window is an illustration — a fixed night plate in both modes,
+     muted to read as artwork, not product UI (spec addendum 2026-07-19).
+     Role vars are overridden wholesale so the vendored components recolor
+     without edits; pale gold appears as ink only, never a fill. */
+  .demo-window {
+    --background: var(--night-hi);
+    --foreground: var(--parchment);
+    --card: var(--night-hi);
+    --card-foreground: var(--parchment);
+    --secondary: var(--night-lo);
+    --secondary-foreground: var(--parchment);
+    --muted: var(--night-lo);
+    --muted-foreground: var(--cloud-slate);
+    --border: var(--night-lo);
+    --input: var(--night-lo);
+    --primary: var(--pale-gold);
+    --primary-foreground: var(--night);
+    --ring: var(--pale-gold);
+  }
+
   /* hero demo (docs/specs/2026-07-19-hero-demo-design.md) — the pulse is
      the system's loading vocabulary; items enter on the one curve */
   .demo-item {
