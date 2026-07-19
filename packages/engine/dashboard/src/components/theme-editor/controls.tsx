@@ -20,8 +20,8 @@ import {
 import { ChartsRow, RoleRow } from "./role-row";
 
 // Curated font list (spec §4). `family` is the full CSS font-stack written into
-// --font-ui/--font-display; `googleSpec` is the css2 `family=` query segment used
-// to rebuild the @import line (null for system stacks, which need no import).
+// --font-ui/--font-display/--font-mono; `googleSpec` is the css2 `family=` query
+// segment used to rebuild the @import line (null for system stacks, which need no import).
 interface FontEntry {
   label: string;
   family: string;
@@ -76,10 +76,10 @@ function isManaged(line: string): boolean {
   return fams.length > 0 && fams.every((f) => CATALOG_FAMILIES.has(f));
 }
 
-// Rewrite ONLY the managed @import line from the two selected fonts, preserving
+// Rewrite ONLY the managed @import line from the three selected fonts, preserving
 // every other import verbatim in its original order (spec §4: never destroy CSS
 // the editor can't model). The managed line — one css2 URL covering the deduped
-// union of the selected Google families, or nothing when both are system stacks
+// union of the selected Google families, or nothing when all are system stacks
 // — replaces the first existing managed line in place, else is appended. A
 // hand-tuned Google line naming a family beyond the catalog is NOT managed, so it
 // survives and the new managed line is added alongside (worst case: a duplicated
