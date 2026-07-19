@@ -280,7 +280,7 @@
   }
 }
 
-/* ——— motion (DESIGN.md §5): one entrance, and only clouds drift ——— */
+/* ——— motion (DESIGN.md §5): one entrance; the hero demo plays once within it ——— */
 
 @keyframes enter-up {
   from {
