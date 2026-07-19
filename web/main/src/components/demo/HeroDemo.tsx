@@ -3,7 +3,6 @@
 // resets after the hero entrance, plays the script once, then rests.
 import { useEffect, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
-import { cn } from "@/lib/utils";
 import {
   CLEAR_SCRIPT,
   EMPTY,
