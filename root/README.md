@@ -56,7 +56,7 @@ is the living checklist — extend it with every new surface.
 | `task() every` | compost_sweep |
 | `logs.debug` / `info` / `warn` / `error` | compost sweep / care & seed / wilting & reset / upload failures + Shed demo row |
 | `appId` export | Potting Shed's SDK exercises card |
-| `@lodekit/ui`, `theme.css` | throughout |
+| `@lodekit/ui`, themes | throughout |
 | themes: per-app selection + `@lodekit/ui/icons` | `greenhouse-green` assignment in `themes/config.json`; nav icons |
 | themes: `--font-mono` typed field | `greenhouse-green` sets the mono voice |
 | `@lodekit/ui` `Kicker` / `Meta` | almanac: page eyebrow; run duration + payload metadata |
