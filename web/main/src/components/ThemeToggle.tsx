@@ -25,6 +25,7 @@ export function ThemeToggle() {
     <Button
       variant="outline"
       size="icon"
+      className="shadow-none [transition-timing-function:var(--ease-drift)] focus-visible:ring-0 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-ring"
       onClick={toggle}
       aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
     >

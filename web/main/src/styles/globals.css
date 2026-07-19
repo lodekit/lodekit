@@ -2,74 +2,126 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Lodekit landing theme — "The Sky in a Jar" (docs/DESIGN.md).
+ * Light = parchment plate; .dark = night plate. Physical colors
+ * (--ink, --night, --ochre, --pale-gold, …) never flip; the shadcn-named
+ * role tokens below them do.
+ */
 :root {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 3.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 0 0% 3.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 3.9%;
-  --primary: 0 0% 9%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 0 0% 96.1%;
-  --secondary-foreground: 0 0% 9%;
-  --muted: 0 0% 96.1%;
-  --muted-foreground: 0 0% 45.1%;
-  --accent: 0 0% 96.1%;
-  --accent-foreground: 0 0% 9%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 0 0% 89.8%;
-  --input: 0 0% 89.8%;
-  --ring: 0 0% 3.9%;
-  --radius: 0.5rem;
+  /* physical palette (DESIGN.md §2) */
+  --ink: #251b25;
+  --paper: #ede7d8;
+  --paper-hi: #f6f1e6;
+  --paper-lo: #dcd3be;
+  --slate-ink: #4f4f59;
+  --hairline: #cdc4ae;
+  --hairline-strong: #ab9f86;
+  --rust: #935842;
+  --rust-deep: #7c4636;
+  --ochre: #dd9741;
+  --ochre-bright: #e5a85c;
+  --night: #121a44;
+  --night-hi: #1b2452;
+  --night-lo: #242e63;
+  --pale-gold: #f3e0a5;
+  --parchment: #c6bba8;
+  --print-blue: #4b5d91;
+  --cloud-slate: #8394a9;
+  --clay-rose: #ab9184;
+
+  /* role tokens — light plate */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper-hi);
+  --card-foreground: var(--ink);
+  --popover: var(--paper-hi);
+  --popover-foreground: var(--ink);
+  --primary: var(--rust);
+  --primary-foreground: var(--paper-hi);
+  --secondary: var(--paper-lo);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper-lo);
+  --muted-foreground: var(--slate-ink);
+  --accent: var(--paper-lo);
+  --accent-foreground: var(--ink);
+  --destructive: #a61e33;
+  --destructive-foreground: var(--paper-hi);
+  --border: var(--hairline);
+  --input: var(--hairline);
+  --ring: var(--rust);
+  --radius: 5px;
+
+  /* the one curve (DESIGN.md §5) */
+  --ease-drift: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .dark {
-  --background: 0 0% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 0 0% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 0 0% 3.9%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 0 0% 98%;
-  --primary-foreground: 0 0% 9%;
-  --secondary: 0 0% 14.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 0 0% 14.9%;
-  --muted-foreground: 0 0% 63.9%;
-  --accent: 0 0% 14.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 0 0% 14.9%;
-  --input: 0 0% 14.9%;
-  --ring: 0 0% 83.1%;
+  --background: var(--night);
+  --foreground: var(--pale-gold);
+  --card: var(--night-hi);
+  --card-foreground: var(--pale-gold);
+  --popover: var(--night-hi);
+  --popover-foreground: var(--pale-gold);
+  --primary: var(--ochre);
+  --primary-foreground: var(--night);
+  --secondary: var(--night-lo);
+  --secondary-foreground: var(--pale-gold);
+  --muted: var(--night-lo);
+  --muted-foreground: var(--parchment);
+  --accent: var(--night-lo);
+  --accent-foreground: var(--pale-gold);
+  --destructive: #a61e33;
+  --destructive-foreground: var(--pale-gold);
+  --border: var(--night-lo);
+  --input: var(--night-lo);
+  --ring: var(--ochre);
 }
 
 @theme inline {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --color-paper-hi: var(--paper-hi);
+  --color-paper-lo: var(--paper-lo);
+  --color-slate-ink: var(--slate-ink);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-rust: var(--rust);
+  --color-rust-deep: var(--rust-deep);
+  --color-ochre: var(--ochre);
+  --color-ochre-bright: var(--ochre-bright);
+  --color-night: var(--night);
+  --color-night-hi: var(--night-hi);
+  --color-night-lo: var(--night-lo);
+  --color-pale-gold: var(--pale-gold);
+  --color-parchment: var(--parchment);
+  --color-print-blue: var(--print-blue);
+  --color-cloud-slate: var(--cloud-slate);
+  --color-clay-rose: var(--clay-rose);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+  --font-sans: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", system-ui, sans-serif;
+  --font-mono: "Spline Sans Mono", ui-monospace, monospace;
 }
 
 @layer base {
@@ -77,6 +129,200 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground;
+    line-height: 1.6;
+  }
+  ::selection {
+    background: var(--rust);
+    color: var(--paper-hi);
+  }
+  .dark ::selection {
+    background: var(--ochre);
+    color: var(--night);
+  }
+}
+
+@layer components {
+  /* type scale (DESIGN.md §3) */
+  .display {
+    font-weight: 700;
+    font-size: clamp(2.7rem, 6.4vw, 5rem);
+    line-height: 1.05;
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+  }
+  .headline {
+    font-weight: 700;
+    font-size: clamp(1.8rem, 3.6vw, 2.6rem);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .prose-measure {
+    max-width: 65ch;
+  }
+
+  /* chips — mono kicker voice on a recessed wash (DESIGN.md §5) */
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+    border-radius: 3px;
+    padding: 0.35em 0.7em;
+  }
+
+  /* form field (DESIGN.md §5 inputs) */
+  .field {
+    background: var(--card);
+    color: var(--card-foreground);
+    border: 1px solid var(--input);
+    border-radius: 3px;
+    padding: 0.6em 0.9em;
+    font-size: 0.95rem;
+    width: 100%;
+    transition: border-color 200ms var(--ease-drift);
+  }
+  .field::placeholder {
+    color: var(--muted-foreground);
+  }
+  .field:focus-visible {
+    border-color: var(--foreground);
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  /* primary button — brand hover crossfades the night sheet (DESIGN.md §5) */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: 3px;
+    padding: 0.85em 1.5em;
+    font-size: 0.95rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background-color 250ms var(--ease-drift),
+      color 250ms var(--ease-drift),
+      transform 100ms var(--ease-drift);
+  }
+  .btn-primary:hover {
+    background: var(--night);
+    color: var(--pale-gold);
+  }
+  .dark .btn-primary:hover {
+    background: var(--pale-gold);
+    color: var(--night);
+  }
+  .btn-primary:active {
+    transform: translateY(1px);
+  }
+  .btn-primary:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  /* on the ochre plate the night sheet still reads; keep as-is */
+
+  /* committed plates — fixed physical colors, never flip with theme */
+  .plate-night {
+    background: var(--night);
+    color: var(--pale-gold);
+  }
+  .plate-ochre {
+    background: var(--ochre);
+    color: var(--ink);
+  }
+  .plate-ochre .field {
+    background: var(--paper-hi);
+    color: var(--ink);
+    border-color: var(--hairline-strong);
+  }
+  .plate-ochre .field::placeholder {
+    color: var(--slate-ink);
+  }
+  .plate-ochre .btn-primary {
+    background: var(--rust);
+    color: var(--paper-hi);
+  }
+  .plate-ochre .btn-primary:hover {
+    background: var(--night);
+    color: var(--pale-gold);
+  }
+  .plate-ochre :focus-visible {
+    outline-color: var(--ink);
+  }
+
+  /* hero demo (docs/specs/2026-07-19-hero-demo-design.md) — the pulse is
+     the system's loading vocabulary; items enter on the one curve */
+  .demo-item {
+    animation: enter-up 450ms var(--ease-drift) both;
+  }
+  .demo-pulse {
+    animation: demo-pulse 1200ms var(--ease-drift) infinite alternate;
+  }
+}
+
+/* ——— motion (DESIGN.md §5): one entrance; the hero demo plays once within it ——— */
+
+@keyframes enter-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes enter-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes demo-pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+.enter {
+  animation: enter-up 450ms var(--ease-drift) both;
+  animation-delay: var(--stagger, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter {
+    animation: enter-fade 150ms var(--ease-drift) both;
+    animation-delay: 0ms;
+  }
+  .btn-primary:active {
+    transform: none;
+  }
+  .demo-item,
+  .demo-pulse {
+    animation: none;
   }
 }
