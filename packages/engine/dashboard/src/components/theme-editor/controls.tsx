@@ -1,5 +1,6 @@
 import { Folder, Search, Settings, Sun } from "@lodekit/ui/icons";
 import {
+  Kicker,
   Label,
   Select,
   SelectContent,
@@ -20,30 +21,31 @@ import {
 import { ChartsRow, RoleRow } from "./role-row";
 
 // Curated font list (spec §4). `family` is the full CSS font-stack written into
-// --font-ui/--font-display; `googleSpec` is the css2 `family=` query segment used
-// to rebuild the @import line (null for system stacks, which need no import).
+// --font-ui/--font-display/--font-mono; `googleSpec` is the css2 `family=` query
+// segment used to rebuild the @import line (null for system stacks, which need no import).
 interface FontEntry {
   label: string;
   family: string;
   googleSpec: string | null;
 }
 const FONT_CATALOG: readonly FontEntry[] = [
-  { label: "Fraunces", family: '"Fraunces", Georgia, serif', googleSpec: "Fraunces:opsz,wght@9..144,400..600" },
-  { label: "Hanken Grotesk", family: '"Hanken Grotesk", ui-sans-serif, system-ui, sans-serif', googleSpec: "Hanken+Grotesk:wght@400;500;600" },
+  { label: "Zen Kaku Gothic New", family: '"Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"', googleSpec: "Zen+Kaku+Gothic+New:wght@400;500;700" },
   { label: "Inter", family: '"Inter", ui-sans-serif, system-ui, sans-serif', googleSpec: "Inter:wght@400;500;600" },
   { label: "Lora", family: '"Lora", Georgia, serif', googleSpec: "Lora:wght@400;500;600" },
   { label: "Source Serif 4", family: '"Source Serif 4", Georgia, serif', googleSpec: "Source+Serif+4:wght@400;500;600" },
   { label: "IBM Plex Sans", family: '"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif', googleSpec: "IBM+Plex+Sans:wght@400;500;600" },
-  { label: "IBM Plex Mono", family: '"IBM Plex Mono", ui-monospace, monospace', googleSpec: "IBM+Plex+Mono:wght@400;500" },
   { label: "Space Grotesk", family: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif', googleSpec: "Space+Grotesk:wght@400;500;600" },
   { label: "Nunito", family: '"Nunito", ui-sans-serif, system-ui, sans-serif', googleSpec: "Nunito:wght@400;500;600" },
   { label: "Merriweather", family: '"Merriweather", Georgia, serif', googleSpec: "Merriweather:wght@400;500;600" },
+  { label: "Spline Sans Mono", family: '"Spline Sans Mono", ui-monospace, monospace', googleSpec: "Spline+Sans+Mono:wght@400;500" },
+  { label: "IBM Plex Mono", family: '"IBM Plex Mono", ui-monospace, monospace', googleSpec: "IBM+Plex+Mono:wght@400;500" },
   { label: "System sans", family: "ui-sans-serif, system-ui, sans-serif", googleSpec: null },
+  { label: "System mono", family: "ui-monospace, monospace", googleSpec: null },
   { label: "Georgia serif", family: 'Georgia, "Times New Roman", serif', googleSpec: null },
 ];
 
 // The family token of a css2 spec/param is the segment before the first ":".
-// Families use "+" for spaces (e.g. "Hanken+Grotesk"), matching the catalog form.
+// Families use "+" for spaces (e.g. "Zen+Kaku+Gothic+New"), matching the catalog form.
 function specFamily(spec: string): string {
   return spec.split(":")[0];
 }
@@ -75,17 +77,17 @@ function isManaged(line: string): boolean {
   return fams.length > 0 && fams.every((f) => CATALOG_FAMILIES.has(f));
 }
 
-// Rewrite ONLY the managed @import line from the two selected fonts, preserving
+// Rewrite ONLY the managed @import line from the three selected fonts, preserving
 // every other import verbatim in its original order (spec §4: never destroy CSS
 // the editor can't model). The managed line — one css2 URL covering the deduped
-// union of the selected Google families, or nothing when both are system stacks
+// union of the selected Google families, or nothing when all are system stacks
 // — replaces the first existing managed line in place, else is appended. A
 // hand-tuned Google line naming a family beyond the catalog is NOT managed, so it
 // survives and the new managed line is added alongside (worst case: a duplicated
 // family; never a lost one).
-function importsFor(existing: string[], fontUi: string, fontDisplay: string): string[] {
+function importsFor(existing: string[], fontUi: string, fontDisplay: string, fontMono: string): string[] {
   const specs = new Set<string>();
-  for (const family of [fontUi, fontDisplay]) {
+  for (const family of [fontUi, fontDisplay, fontMono]) {
     const entry = FONT_CATALOG.find((f) => f.family === family);
     if (entry?.googleSpec) specs.add(entry.googleSpec);
   }
@@ -142,16 +144,18 @@ export function Controls({
     update(mode === "light" ? { ...model, light: next } : { ...model, dark: next });
   };
   const setField = (patch: Partial<ThemeModel>) => update({ ...model, ...patch });
-  const setFont = (which: "ui" | "display", entry: FontEntry) => {
+  const setFont = (which: "ui" | "display" | "mono", entry: FontEntry) => {
     const fontUi = which === "ui" ? entry.family : model.fontUi;
     const fontDisplay = which === "display" ? entry.family : model.fontDisplay;
-    update({ ...model, fontUi, fontDisplay, imports: importsFor(model.imports, fontUi, fontDisplay) });
+    const fontMono = which === "mono" ? entry.family : model.fontMono;
+    update({ ...model, fontUi, fontDisplay, fontMono, imports: importsFor(model.imports, fontUi, fontDisplay, fontMono) });
   };
 
   const tokensOf = (tokens: readonly string[]) => tokens.map((token) => ({ token, value: map[token] ?? "" }));
 
   const fontUiLabel = FONT_CATALOG.find((f) => f.family === model.fontUi)?.label ?? "";
   const fontDisplayLabel = FONT_CATALOG.find((f) => f.family === model.fontDisplay)?.label ?? "";
+  const fontMonoLabel = FONT_CATALOG.find((f) => f.family === model.fontMono)?.label ?? "";
   const densityOptions = DENSITY.some((d) => d.value === model.spacing)
     ? DENSITY
     : [{ label: `Custom (${model.spacing})`, value: model.spacing }, ...DENSITY];
@@ -176,7 +180,7 @@ export function Controls({
       </ToggleGroup>
 
       <section>
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Colors</h3>
+        <h3 className="mb-1"><Kicker>Colors</Kicker></h3>
         <div>
           {ROLES.map((role) =>
             role.key === "charts" ? (
@@ -197,7 +201,7 @@ export function Controls({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Typography</h3>
+        <h3><Kicker>Typography</Kicker></h3>
         <div className="space-y-1.5">
           <Label className="text-xs">Interface font</Label>
           <Select
@@ -234,10 +238,28 @@ export function Controls({
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Mono font</Label>
+          <Select
+            value={fontMonoLabel}
+            disabled={disabled}
+            onValueChange={(label) => {
+              const entry = FONT_CATALOG.find((f) => f.label === label);
+              if (entry) setFont("mono", entry);
+            }}
+          >
+            <SelectTrigger className="w-full"><SelectValue placeholder="Select a font…" /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {FONT_CATALOG.map((f) => <SelectItem key={f.label} value={f.label}>{f.label}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Icons</h3>
+        <h3><Kicker>Icons</Kicker></h3>
         <Select
           value={model.iconLibrary}
           disabled={disabled}
@@ -264,7 +286,7 @@ export function Controls({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Shape</h3>
+        <h3><Kicker>Shape</Kicker></h3>
         <div className="space-y-1.5">
           <Label className="flex items-center justify-between text-xs">
             <span>Radius</span>
@@ -274,7 +296,7 @@ export function Controls({
             value={radius}
             min={0}
             max={1.5}
-            step={0.125}
+            step={0.0625}
             disabled={disabled}
             onValueChange={(v) => setField({ radius: `${v as number}rem` })}
           />

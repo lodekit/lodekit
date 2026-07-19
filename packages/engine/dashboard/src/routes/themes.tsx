@@ -28,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Input,
+  Meta,
   Skeleton,
   toast,
 } from "@lodekit/ui";
@@ -133,10 +134,10 @@ function ThemesView() {
       {/* Current state: the global selection plus each per-app override. */}
       <div className="mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <span>
-          Global: <span className="font-medium text-foreground">{config.global ?? "lodekit"}</span>
+          Global: <Meta className="text-foreground">{config.global ?? "lodekit"}</Meta>
         </span>
         {assignedApps.map(([appId, name]) => (
-          <Badge key={appId} variant="outline" className="gap-1">
+          <Badge key={appId} variant="outline" className="gap-1 font-mono">
             {appId} → {name}
             <button
               type="button"

@@ -185,10 +185,11 @@ The sky family — illustration, decorative geometry, and charts only:
   contrast; never for copy or controls.
 - **Clay Rose** (#AB9184, H): warm mid-tone for illustration depth.
 
-Semantic starting points for product UI (validated properly in the retheme slice):
-success #4A7B5C, warning ochre #DD9741 (collides with the dark-mode accent — in
-dark, warning chips must lean on their glyph and label, which the never-color-alone
-rule requires anyway; revisit in the retheme slice), destructive crimson #A61E33
+Semantic starting points for product UI (the retheme slice validated destructive
+via the theme-contrast gate; the rest remain starting points — the canonical token
+set carries only `--destructive`): success #4A7B5C, warning ochre #DD9741 (collides
+with the dark-mode accent — in dark, warning chips must lean on their glyph and
+label, which the never-color-alone rule requires anyway), destructive crimson #A61E33
 (deliberately redder and cooler than rust so action and danger never blur), info
 #3E5380 (a text-safe derivative of print blue). Chart series, fixed order: print
 blue #4B5D91, ochre #DD9741, rust #935842, cloud slate #8394A9, plum #251B25

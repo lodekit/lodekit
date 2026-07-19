@@ -82,7 +82,7 @@ function SecretRow({ s, invalidate }: { s: SecretMeta; invalidate: () => void })
             {s.links.length === 0
               ? <span className="text-xs text-muted-foreground">Not linked to any app</span>
               : s.links.map((l) => (
-                  <Badge key={`${l.appId}/${l.slot}`} variant="secondary">{l.appId} · {l.slot}</Badge>
+                  <Badge key={`${l.appId}/${l.slot}`} variant="secondary" className="font-mono">{l.appId} · {l.slot}</Badge>
                 ))}
           </div>
           {error && <p className="mt-1 text-sm text-destructive">{error}</p>}

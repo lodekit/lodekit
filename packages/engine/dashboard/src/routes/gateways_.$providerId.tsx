@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, ExternalLink, ScrollText } from "@lodekit/ui/icons";
 import {
-  Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label,
+  Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Meta,
   Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton,
 } from "@lodekit/ui";
 import { useSSEEvent } from "../components/sse";
@@ -99,7 +99,7 @@ function ConnectionRow({ c, providerId, invalidate }: { c: ConnectionDoc; provid
     <div className="border-b py-4 last:border-b-0">
       <div className="flex items-center justify-between gap-4">
         <Label className="flex items-center gap-2">
-          {c.appId} <code className="text-xs text-muted-foreground">{c.alias}</code>
+          <Meta>{c.appId}</Meta> <code className="text-xs text-muted-foreground">{c.alias}</code>
           <Badge variant={badge.variant}>{badge.label}</Badge>
         </Label>
         <div className="flex shrink-0 items-center gap-2">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Sheet, SheetContent, SheetHeader, SheetTitle } from "@lodekit/ui";
+import { Button, Meta, Sheet, SheetContent, SheetHeader, SheetTitle } from "@lodekit/ui";
 import { Check, Copy } from "@lodekit/ui/icons";
 
 export interface DetailField { label: string; value: unknown }
@@ -57,7 +57,9 @@ export function DetailSheet({ open, title, fields, onClose }: {
                 {d.pre ? (
                   <pre className="bg-muted mt-1 overflow-x-auto rounded p-2 text-xs whitespace-pre-wrap break-all">{d.text}</pre>
                 ) : (
-                  <p className={`text-sm break-all ${f.value == null ? "text-muted-foreground/60 italic" : ""}`}>{d.text}</p>
+                  <p className={`text-sm break-all ${f.value == null ? "text-muted-foreground/60 italic" : ""}`}>
+                    <Meta className="text-sm break-all">{d.text}</Meta>
+                  </p>
                 )}
               </div>
             );

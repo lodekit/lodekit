@@ -6,7 +6,7 @@ import {
   Badge, Button, Card, CardContent, CardHeader, CardTitle,
   Collapsible, CollapsibleContent, CollapsibleTrigger,
   Field as FieldRoot, FieldContent, FieldDescription, FieldError, FieldLabel,
-  Input, Label,
+  Input, Kicker, Label,
   Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton, Switch,
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@lodekit/ui";
@@ -244,8 +244,8 @@ function SettingRows({ entries, render }: { entries: { advanced: boolean }[]; re
       {advanced.length > 0 && (
         <Accordion>
           <AccordionItem value="advanced" className="border-b-0">
-            <AccordionTrigger className="pt-4 pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:no-underline">
-              Advanced
+            <AccordionTrigger className="pt-4 pb-2 hover:no-underline">
+              <Kicker>Advanced</Kicker>
             </AccordionTrigger>
             {/* pr-1: the outer accordion wrapper is overflow-hidden for its height
                 animation and would clip the controls' 3px focus ring at the edge. */}
@@ -308,8 +308,8 @@ function SectionedTab({ sections, renderSection }: { sections: string[]; renderS
     <>
       {sections.map((s, i) => (
         <div key={s}>
-          <div className={`pb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground ${i === 0 ? "pt-1" : "pt-4"}`}>
-            {s}
+          <div className={`pb-2 ${i === 0 ? "pt-1" : "pt-4"}`}>
+            <Kicker>{s}</Kicker>
           </div>
           {renderSection(s)}
         </div>
@@ -577,15 +577,13 @@ function SettingsView() {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:gap-8">
       {/* Floating sidebar; below md it becomes a horizontal scrollable picker. */}
-      <nav className="flex gap-1 overflow-x-auto rounded-xl border bg-card p-3 text-sm shadow-sm md:sticky md:top-24 md:block md:w-48 md:shrink-0 md:space-y-1 md:self-start">
-        <div className="hidden px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:block">
-          Settings
-        </div>
+      <nav className="flex gap-1 overflow-x-auto rounded-xl border bg-card p-3 text-sm md:sticky md:top-24 md:block md:w-48 md:shrink-0 md:space-y-1 md:self-start">
+        <div className="hidden px-2 pb-1 md:block"><Kicker>Settings</Kicker></div>
         {["General", "Appearance"].map((s) => (
           <Link key={s} to="/settings" search={{ section: s }} className={itemClass(section === s)}>{s}</Link>
         ))}
         <Link to="/settings" search={{ section: "Services" }} className={itemClass(isServices)}>Services</Link>
-        <div className="hidden pt-3 px-2 text-xs uppercase text-muted-foreground md:block">Apps</div>
+        <div className="hidden pt-3 px-2 md:block"><Kicker>Apps</Kicker></div>
         {(apps.data ?? []).map((a) => (
           <Link key={a.appId} to="/settings" search={{ section: a.appId }} className={itemClass(section === a.appId)}>
             {a.icon} {a.name}

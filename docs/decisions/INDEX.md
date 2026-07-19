@@ -10,3 +10,4 @@ context, genuine trade-off) must hold. Format: `ADR-NNNN-<kebab-title>.md`.
 | [ADR-0003](./ADR-0003-events-stats-caller-bucketed-sparse.md) | Event stats are caller-bucketed and sparse; facet maps are complete | 2026-07-16 |
 | [ADR-0004](./ADR-0004-pnpm-global-virtual-store-worktrees.md) | Worktree installs share one pnpm global virtual store | 2026-07-17 |
 | [ADR-0005](./ADR-0005-engine-rename-survivor-policy.md) | Engine rename — the "runtime" survivor policy, and "executor" for subsystems | 2026-07-17 |
+| [ADR-0006](./ADR-0006-font-mono-canonical-theme-token.md) | `--font-mono` is a typed token of the canonical theme format | 2026-07-19 |

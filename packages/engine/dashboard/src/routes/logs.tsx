@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Badge, Button, Card, CardHeader, CardTitle, Skeleton } from "@lodekit/ui";
+import { Badge, Button, Card, CardHeader, CardTitle, Meta, Skeleton } from "@lodekit/ui";
 import { useSSEEvent } from "../components/sse";
 
 const LEVELS = ["debug", "info", "warn", "error"] as const;
@@ -47,11 +47,11 @@ function Row({ r }: { r: LogRecord }) {
         className="flex w-full items-baseline gap-2 text-left"
         onClick={() => hasFields && setOpen((o) => !o)}
       >
-        <span className="shrink-0 tabular-nums text-muted-foreground">
+        <Meta className="shrink-0 text-muted-foreground">
           {new Date(r.ts).toLocaleTimeString()}
-        </span>
+        </Meta>
         {levelBadge(r.level)}
-        <span className="shrink-0 text-muted-foreground">{r.appId ?? "platform"}·{r.source}</span>
+        <Meta className="shrink-0 text-muted-foreground">{r.appId ?? "platform"}·{r.source}</Meta>
         <span className="truncate">{r.message}</span>
       </button>
       {open && hasFields && (
