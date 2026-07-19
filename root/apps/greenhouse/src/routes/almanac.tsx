@@ -7,6 +7,7 @@ import {
   Badge, Button, Card, CardContent, CardHeader, CardTitle,
   ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent,
   DataTable, DataTableColumnHeader, DataTablePagination, useDataTable,
+  Kicker, Meta,
   type ChartConfig, type ColumnDef,
 } from "@lodekit/ui";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
@@ -61,7 +62,7 @@ const runColumns: ColumnDef<TaskRun>[] = [
     accessorFn: (r) => r.finishedAt ?? r.startedAt ?? r.createdAt,
     header: ({ column }) => <DataTableColumnHeader column={column} title="When" />,
     cell: ({ getValue }) => (
-      <span className="text-muted-foreground">{fmt(getValue<number>())}</span>
+      <Meta className="text-muted-foreground">{fmt(getValue<number>())}</Meta>
     ),
   },
   {
@@ -69,7 +70,7 @@ const runColumns: ColumnDef<TaskRun>[] = [
     header: ({ column }) => <DataTableColumnHeader column={column} title="Duration" />,
     cell: ({ getValue }) => {
       const ms = getValue<number | null>();
-      return <span className="text-muted-foreground">{ms == null ? "—" : `${ms}ms`}</span>;
+      return <Meta className="text-muted-foreground">{ms == null ? "—" : `${ms}ms`}</Meta>;
     },
   },
   {
@@ -127,9 +128,12 @@ function Almanac() {
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 p-4">
-      <h1 className="text-xl font-semibold">
-        Almanac {live && <Badge>🌀 rounds in progress…</Badge>}
-      </h1>
+      <div>
+        <Kicker>Greenhouse</Kicker>
+        <h1 className="text-xl font-semibold">
+          Almanac {live && <Badge>🌀 rounds in progress…</Badge>}
+        </h1>
+      </div>
 
       <SkyJournal rows={sky} onFetch={() => void fetchWeatherNow().then(() => router.invalidate())} />
 
@@ -143,7 +147,7 @@ function Almanac() {
             <div key={r.id} className="flex items-center gap-2 text-sm">
               <Badge variant="outline">{r.task}</Badge>
               <span>{fmt(r.notBefore)}</span>
-              <span className="text-muted-foreground">{JSON.stringify(r.payload)}</span>
+              <Meta className="text-muted-foreground">{JSON.stringify(r.payload)}</Meta>
               <Button
                 size="sm"
                 variant="outline"
