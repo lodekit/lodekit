@@ -189,3 +189,40 @@ describe("roles", () => {
     expect(model.dark["border"]).toBe("oklch(1 0 0 / 10%)");
   });
 });
+
+describe("font-mono typed field", () => {
+  const base = fs.readFileSync(path.join(THEMES_DIR, "lodekit.css"), "utf8");
+  const MONO = '"Spline Sans Mono", ui-monospace, monospace';
+  // Insert a --font-mono line right after --font-display (works whether or not
+  // the vendored file ships one yet; strip any existing line first).
+  const stripped = base.replace(/^ {2}--font-mono: .*\n/m, "");
+  const withMono = stripped.replace(
+    /^( {2}--font-display: .*\n)/m,
+    `$1  --font-mono: ${MONO};\n`,
+  );
+
+  it("parses --font-mono into the model, not the color maps", () => {
+    const model = parseTheme(withMono);
+    expect(model.fontMono).toBe(MONO);
+    expect(model.light["font-mono"]).toBeUndefined();
+  });
+
+  it("round-trips a theme WITH --font-mono byte-identical", () => {
+    expect(serializeTheme(parseTheme(withMono))).toBe(withMono);
+  });
+
+  it("round-trips a theme WITHOUT --font-mono untouched (no empty line emitted)", () => {
+    const model = parseTheme(stripped);
+    expect(model.fontMono).toBe("");
+    expect(serializeTheme(model)).toBe(stripped);
+    expect(serializeTheme(model)).not.toContain("--font-mono");
+  });
+
+  it("serializes an edited-in fontMono after font-display, before radius", () => {
+    const model = { ...parseTheme(stripped), fontMono: '"IBM Plex Mono", ui-monospace, monospace' };
+    const out = serializeTheme(model);
+    expect(out).toContain('  --font-mono: "IBM Plex Mono", ui-monospace, monospace;\n');
+    expect(out.indexOf("--font-display")).toBeLessThan(out.indexOf("--font-mono"));
+    expect(out.indexOf("--font-mono")).toBeLessThan(out.indexOf("--radius:"));
+  });
+});

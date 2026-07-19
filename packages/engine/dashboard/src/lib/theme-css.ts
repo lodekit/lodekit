@@ -28,13 +28,14 @@ export interface ThemeModel {
   imports: string[]; // @import statements, verbatim (one per line, incl. trailing ";")
   fontUi: string;
   fontDisplay: string;
+  fontMono: string;
   radius: string;
   spacing: string;
   iconLibrary: string;
   light: Record<string, string>; // token → value (no leading --), insertion-ordered
   dark: Record<string, string>;
-  // Round-trip metadata, keyed by property name — color tokens, the five typed
-  // fields (font-ui/font-display/radius/spacing/icon-library), and color-scheme.
+  // Round-trip metadata, keyed by property name — color tokens, the six typed
+  // fields (font-ui/font-display/font-mono/radius/spacing/icon-library), and color-scheme.
   lightTrivia: Record<string, Trivia>;
   darkTrivia: Record<string, Trivia>;
   // Dangling comment/blank lines just before a block's closing "}", verbatim.
@@ -89,6 +90,7 @@ export const COLOR_TOKENS: readonly string[] = [
 const TYPED_FIELDS: Record<string, keyof ThemeModel> = {
   "font-ui": "fontUi",
   "font-display": "fontDisplay",
+  "font-mono": "fontMono",
   radius: "radius",
   spacing: "spacing",
   "icon-library": "iconLibrary",
@@ -212,6 +214,7 @@ export function parseTheme(css: string): ThemeModel {
     imports,
     fontUi: root.block.typed["font-ui"] ?? "",
     fontDisplay: root.block.typed["font-display"] ?? "",
+    fontMono: root.block.typed["font-mono"] ?? "",
     radius: root.block.typed["radius"] ?? "",
     spacing: root.block.typed["spacing"] ?? "",
     iconLibrary: root.block.typed["icon-library"] ?? "",
@@ -233,6 +236,7 @@ function degraded(css: string): ThemeModel {
     imports: [],
     fontUi: "",
     fontDisplay: "",
+    fontMono: "",
     radius: "",
     spacing: "",
     iconLibrary: "",
@@ -316,6 +320,7 @@ export function serializeTheme(model: ThemeModel): string {
   out += line(model.lightTrivia, "color-scheme", "  color-scheme: light;");
   out += line(model.lightTrivia, "font-ui", `  --font-ui: ${model.fontUi};`);
   out += line(model.lightTrivia, "font-display", `  --font-display: ${model.fontDisplay};`);
+  if (model.fontMono) out += line(model.lightTrivia, "font-mono", `  --font-mono: ${model.fontMono};`);
   out += line(model.lightTrivia, "radius", `  --radius: ${model.radius};`);
   out += line(model.lightTrivia, "spacing", `  --spacing: ${model.spacing};`);
   out += line(model.lightTrivia, "icon-library", `  --icon-library: ${model.iconLibrary};`);
