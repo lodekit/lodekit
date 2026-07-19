@@ -1,84 +1,88 @@
-/* Brand palette from DESIGN.md (cork amber + blue neutrals). The brand doc's
-   --accent maps to shadcn's --primary (buttons, fills, active states); shadcn's
-   own --accent stays a neutral hover wash and must not carry the amber. */
+/* Sky in a Jar — the Lodekit identity tokens (DESIGN.md): plum ink on aged
+   parchment, rust accent by day; pale gold on deep indigo, ochre by night.
+   Build-time base for @lodekit/ui consumers; the served theme (/_ui/theme.css)
+   overrides these same tokens at runtime and carries the font @import. The brand
+   accent maps to shadcn's --primary (buttons, fills, active states); shadcn's own
+   --accent stays a neutral hover wash and must not carry rust/ochre. */
 @layer lodekit-tokens {
 :root {
   /* Native scrollbars and form controls follow the theme; without this the
      browser paints them light-scheme even under .dark. */
   color-scheme: light;
-  --font-display: "Fraunces", Georgia, serif;
-  --font-ui: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --radius: 0.625rem;
+  --font-ui: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-display: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: "Spline Sans Mono", ui-monospace, monospace;
+  --radius: 0.1875rem;
   --spacing: 0.25rem;
   --icon-library: lucide;
-  --background: #f7fafd;
-  --foreground: #132c44;
-  --card: #ffffff;
-  --card-foreground: #132c44;
-  --popover: #ffffff;
-  --popover-foreground: #132c44;
-  --primary: #ce6f26;
-  --primary-foreground: #ffffff;
-  --secondary: #e9f1f8;
-  --secondary-foreground: #132c44;
-  --muted: #e9f1f8;
-  --muted-foreground: #2e4b66;
-  --accent: #e9f1f8;
-  --accent-foreground: #132c44;
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: #dbe6f0;
-  --input: #dbe6f0;
-  --ring: #ce6f26;
-  /* Categorical series (fixed order, never cycled) — CVD- and
-     contrast-validated against the card surfaces; slot 1 is the brand amber. */
-  --chart-1: #ce6f26;
-  --chart-2: #3d7ab8;
-  --chart-3: #5d9440;
-  --chart-4: #7a63c9;
-  --chart-5: #c25e88;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #132c44;
-  --sidebar-primary: #ce6f26;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e9f1f8;
-  --sidebar-accent-foreground: #132c44;
-  --sidebar-border: #dbe6f0;
-  --sidebar-ring: #ce6f26;
+  --background: #ede7d8;
+  --foreground: #251b25;
+  --card: #f6f1e6;
+  --card-foreground: #251b25;
+  --popover: #f6f1e6;
+  --popover-foreground: #251b25;
+  --primary: #935842;
+  --primary-foreground: #f6f1e6;
+  --secondary: #dcd3be;
+  --secondary-foreground: #251b25;
+  --muted: #dcd3be;
+  --muted-foreground: #4f4f59;
+  --accent: #dcd3be;
+  --accent-foreground: #251b25;
+  --destructive: #a61e33;
+  --border: #cdc4ae;
+  --input: #cdc4ae;
+  --ring: #935842;
+  /* Chart series — DESIGN.md fixed order; the sky family is charts-only. */
+  --chart-1: #4b5d91;
+  --chart-2: #dd9741;
+  --chart-3: #935842;
+  --chart-4: #8394a9;
+  --chart-5: #251b25;
+  --sidebar: #ede7d8;
+  --sidebar-foreground: #251b25;
+  --sidebar-primary: #935842;
+  --sidebar-primary-foreground: #f6f1e6;
+  --sidebar-accent: #dcd3be;
+  --sidebar-accent-foreground: #251b25;
+  --sidebar-border: #cdc4ae;
+  --sidebar-ring: #935842;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #0e1b26;
-  --foreground: #f4f9fd;
-  --card: #152634;
-  --card-foreground: #f4f9fd;
-  --popover: #152634;
-  --popover-foreground: #f4f9fd;
-  --primary: #e08a3c;
-  --primary-foreground: #1b1004;
-  --secondary: #1e3242;
-  --secondary-foreground: #f4f9fd;
-  --muted: #1e3242;
-  --muted-foreground: #b8cbdc;
-  --accent: #1e3242;
-  --accent-foreground: #f4f9fd;
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: #e08a3c;
-  --chart-1: #cd7c2c;
-  --chart-2: #4e8ec7;
-  --chart-3: #69a648;
-  --chart-4: #9280dd;
-  --chart-5: #cc6d94;
-  --sidebar: #152634;
-  --sidebar-foreground: #f4f9fd;
-  --sidebar-primary: #e08a3c;
-  --sidebar-primary-foreground: #1b1004;
-  --sidebar-accent: #1e3242;
-  --sidebar-accent-foreground: #f4f9fd;
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: #e08a3c;
+  --background: #121a44;
+  --foreground: #f3e0a5;
+  --card: #1b2452;
+  --card-foreground: #f3e0a5;
+  --popover: #1b2452;
+  --popover-foreground: #f3e0a5;
+  --primary: #dd9741;
+  --primary-foreground: #121a44;
+  --secondary: #242e63;
+  --secondary-foreground: #f3e0a5;
+  --muted: #242e63;
+  --muted-foreground: #c6bba8;
+  --accent: #242e63;
+  --accent-foreground: #f3e0a5;
+  --destructive: #e06a7d; /* derived (L): crimson brightened for AA on the night surfaces */
+  --border: rgba(243, 224, 165, 0.16); /* derived (L): gold-tinted hairline on the night plate */
+  --input: rgba(243, 224, 165, 0.22);
+  --ring: #dd9741;
+  /* derived (L): the light series brightened for the night plate (plum → pale plum). */
+  --chart-1: #7285bd;
+  --chart-2: #e5a85c;
+  --chart-3: #c07a63;
+  --chart-4: #9daec2;
+  --chart-5: #a893a8;
+  --sidebar: #121a44;
+  --sidebar-foreground: #f3e0a5;
+  --sidebar-primary: #dd9741;
+  --sidebar-primary-foreground: #121a44;
+  --sidebar-accent: #242e63;
+  --sidebar-accent-foreground: #f3e0a5;
+  --sidebar-border: rgba(243, 224, 165, 0.16);
+  --sidebar-ring: #dd9741;
 }
 }
 

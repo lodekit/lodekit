@@ -40,10 +40,11 @@ describe("model shape", () => {
   const model = parseTheme(css);
 
   it("lifts typed fields out of the token maps", () => {
-    expect(model.radius).toBe("0.625rem");
+    expect(model.radius).toBe("0.1875rem");
     expect(model.spacing).toBe("0.25rem");
     expect(model.iconLibrary).toBe("lucide");
-    expect(model.fontDisplay).toBe('"Fraunces", Georgia, serif');
+    expect(model.fontDisplay).toBe('"Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"');
+    expect(model.fontMono).toBe('"Spline Sans Mono", ui-monospace, monospace');
     expect(model.light["radius"]).toBeUndefined();
     expect(model.light["color-scheme"]).toBeUndefined();
   });
@@ -89,14 +90,14 @@ describe("non-canonical content preservation", () => {
 
   it("preserves a trailing standalone comment just before a block's }", () => {
     const css = base.replace(
-      "  --sidebar-ring: #ce6f26;\n}",
-      "  --sidebar-ring: #ce6f26;\n  /* trailing note */\n}",
+      "  --sidebar-ring: #935842;\n}",
+      "  --sidebar-ring: #935842;\n  /* trailing note */\n}",
     );
     expect(serializeTheme(parseTheme(css))).toBe(css);
   });
 
   it("preserves a comment before a typed field", () => {
-    const css = base.replace("  --radius: 0.625rem;", "  /* pick a radius */\n  --radius: 0.625rem;");
+    const css = base.replace("  --radius: 0.1875rem;", "  /* pick a radius */\n  --radius: 0.1875rem;");
     expect(serializeTheme(parseTheme(css))).toBe(css);
   });
 
@@ -145,14 +146,14 @@ describe("roles", () => {
   });
 
   it("reads the shared value when lead tokens agree", () => {
-    expect(roleValue(model, "light", brand)).toBe("#ce6f26");
+    expect(roleValue(model, "light", brand)).toBe("#935842");
   });
 
   it("reads 'mixed' when lead tokens diverge", () => {
     const border = ROLES.find((r) => r.key === "border")!;
-    // lodekit: border/input/sidebar-border are #dbe6f0 but sidebar-ring is the brand color
+    // lodekit: border/input/sidebar-border are #cdc4ae but sidebar-ring is the brand color
     expect(roleValue(model, "light", border)).toBe("mixed");
-    const mixed = applyRole(model, "light", { key: "x", label: "x", tokens: ["primary"] }, "#dbe6f0");
+    const mixed = applyRole(model, "light", { key: "x", label: "x", tokens: ["primary"] }, "#cdc4ae");
     // primary now diverges from ring/sidebar-primary
     expect(roleValue(mixed, "light", brand)).toBe("mixed");
   });
@@ -165,7 +166,7 @@ describe("roles", () => {
     expect(next.light["primary-foreground"]).toBe(readableForeground("#ff0000"));
     expect(next.light["sidebar-primary-foreground"]).toBe(readableForeground("#ff0000"));
     // immutable: original untouched, other mode untouched
-    expect(model.light["primary"]).toBe("#ce6f26");
+    expect(model.light["primary"]).toBe("#935842");
     expect(next.dark["primary"]).toBe(model.dark["primary"]);
   });
 
@@ -186,7 +187,7 @@ describe("roles", () => {
     expect(next.dark["border"]).toBe("#123456");
     expect(next.dark["input"]).toBe("#123456");
     // model still has the original oklch untouched
-    expect(model.dark["border"]).toBe("oklch(1 0 0 / 10%)");
+    expect(model.dark["border"]).toBe("rgba(243, 224, 165, 0.16)");
   });
 });
 
@@ -215,7 +216,10 @@ describe("font-mono typed field", () => {
     const model = parseTheme(stripped);
     expect(model.fontMono).toBe("");
     expect(serializeTheme(model)).toBe(stripped);
-    expect(serializeTheme(model)).not.toContain("--font-mono");
+    // Checks for a declaration line specifically (colon suffix) rather than the
+    // bare token: the header comment legitimately documents "--font-mono" as one
+    // of the typed fields in prose, with no declaration emitted.
+    expect(serializeTheme(model)).not.toContain("--font-mono:");
   });
 
   it("serializes an edited-in fontMono after font-display, before radius", () => {
