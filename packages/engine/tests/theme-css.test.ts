@@ -180,7 +180,7 @@ describe("roles", () => {
   });
 
   it("never coerces non-hex values but still writes hex on applyRole", () => {
-    // dark border/input are oklch; Border role reads mixed (sidebar-ring diverges anyway)
+    // dark border/input are rgba; Border role reads mixed (sidebar-ring diverges anyway)
     const border = ROLES.find((r) => r.key === "border")!;
     expect(roleValue(model, "dark", border)).toBe("mixed");
     const next = applyRole(model, "dark", border, "#123456");
