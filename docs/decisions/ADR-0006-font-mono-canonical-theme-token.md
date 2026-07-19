@@ -36,7 +36,8 @@ drop the line.
 - The typed-extras set is now `--font-ui`/`--font-display`/`--font-mono`/
   `--radius`/`--spacing`/`--icon-library`; parser, editor, and vendored themes must
   stay in lockstep with it.
-- Every vendored and showcase theme sets all three fonts; user themes may omit
-  `--font-mono` indefinitely (fallback is permanent API).
+- The first-party identity themes (lodekit, greenhouse-green) set all three
+  fonts; the vendored community themes and user themes may omit `--font-mono`
+  indefinitely and inherit the baked-in mono stack (fallback is permanent API).
 - The `font-mono` Tailwind utility is now theme-reactive in every app and the
   dashboard — agent-built apps inherit the mono voice with zero app-side wiring.

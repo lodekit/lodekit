@@ -176,7 +176,7 @@ describe("roles", () => {
     expect(fgOnBlack).not.toBe(fgOnWhite);
     // a dark (black) background wants a light, near-white foreground; and vice versa
     expect(readableForeground("#1e1e2e")).toBe(fgOnBlack);
-    expect(readableForeground("#f7fafd")).toBe(fgOnWhite);
+    expect(readableForeground("#f5f5f5")).toBe(fgOnWhite);
   });
 
   it("never coerces non-hex values but still writes hex on applyRole", () => {

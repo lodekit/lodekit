@@ -45,7 +45,7 @@ const FONT_CATALOG: readonly FontEntry[] = [
 ];
 
 // The family token of a css2 spec/param is the segment before the first ":".
-// Families use "+" for spaces (e.g. "Hanken+Grotesk"), matching the catalog form.
+// Families use "+" for spaces (e.g. "Zen+Kaku+Gothic+New"), matching the catalog form.
 function specFamily(spec: string): string {
   return spec.split(":")[0];
 }

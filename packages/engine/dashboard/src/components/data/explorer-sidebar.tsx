@@ -57,7 +57,7 @@ export function ExplorerSidebar() {
       {appId && (
         <nav className="mt-4 flex flex-col gap-0.5">
           <NavItem to="/data/$appId" params={{ appId }} icon={LayoutDashboard} label="Overview" exact />
-          <div className="mt-3 mb-1 flex items-center gap-2 px-2">
+          <div className="text-muted-foreground/70 mt-3 mb-1 flex items-center gap-2 px-2">
             <Database className="size-3.5" aria-hidden="true" /> <Kicker className="text-muted-foreground/70">Tables</Kicker>
           </div>
           {schema.isLoading && <Skeleton className="mx-2 h-16" />}
