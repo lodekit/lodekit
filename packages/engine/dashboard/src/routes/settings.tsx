@@ -577,7 +577,7 @@ function SettingsView() {
   return (
     <div className="flex flex-col gap-4 md:flex-row md:gap-8">
       {/* Floating sidebar; below md it becomes a horizontal scrollable picker. */}
-      <nav className="flex gap-1 overflow-x-auto rounded-xl border bg-card p-3 text-sm shadow-sm md:sticky md:top-24 md:block md:w-48 md:shrink-0 md:space-y-1 md:self-start">
+      <nav className="flex gap-1 overflow-x-auto rounded-xl border bg-card p-3 text-sm md:sticky md:top-24 md:block md:w-48 md:shrink-0 md:space-y-1 md:self-start">
         <div className="hidden px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:block">
           Settings
         </div>

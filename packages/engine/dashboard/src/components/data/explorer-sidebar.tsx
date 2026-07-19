@@ -31,7 +31,7 @@ export function ExplorerSidebar() {
   });
 
   return (
-    <aside className="rounded-xl border bg-card p-3 shadow-sm md:sticky md:top-24 md:w-56 md:shrink-0 md:self-start">
+    <aside className="rounded-xl border bg-card p-3 md:sticky md:top-24 md:w-56 md:shrink-0 md:self-start">
       {apps.data ? (
         <Select
           value={appId ?? ""}
