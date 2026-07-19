@@ -25,6 +25,17 @@ import HeroDemo from "./demo/HeroDemo";
     </div>
   </div>
   <div class="enter" style="--stagger: 320ms">
+    <script is:inline>
+      // Pre-hydration boot veil: hide the demo's SSR rest frame for motion
+      // users so it never flashes before the island resets (plan
+      // 2026-07-19-hero-demo-adjustments item 2). Self-clears as a failsafe.
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        document.documentElement.classList.add("demo-boot");
+        setTimeout(function () {
+          document.documentElement.classList.remove("demo-boot");
+        }, 3000);
+      }
+    </script>
     <HeroDemo client:load />
   </div>
 </section>

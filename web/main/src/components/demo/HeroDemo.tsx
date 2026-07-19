@@ -1,9 +1,10 @@
 // The hero demo island (docs/specs/2026-07-19-hero-demo-design.md).
 // SSR renders the completed conversation; with motion allowed the island
 // resets after the hero entrance, plays the script once, then rests.
-import { useEffect, useRef, useState } from "react";
+import { Component, useEffect, useRef, useState, type ReactNode } from "react";
 import { Cloud, FileText, RotateCcw } from "lucide-react";
 import { MARK_BODIES } from "@lodekit/engine/marks";
+import Grainient from "./Grainient";
 import {
   CLEAR_SCRIPT,
   EMPTY,
@@ -91,6 +92,18 @@ function AgentText({ text }: { text: string }) {
   );
 }
 
+// WebGL can fail (drivers, GPU-less machines) — the halo is decoration and
+// must never take the demo down with it.
+class HaloBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
 const REST = restState();
 
 function Transcript() {
@@ -117,6 +130,7 @@ export default function HeroDemo() {
   const [state, setState] = useState<DemoState>(REST);
   const [resting, setResting] = useState(true);
   const [reduced, setReduced] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const timelineRef = useRef<Timeline | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -136,10 +150,24 @@ export default function HeroDemo() {
   });
 
   useEffect(() => {
+    setHydrated(true);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setReduced(true);
       return;
     }
+    // Reset immediately so the SSR rest frame never flashes — the boot veil
+    // (inline script in Hero.astro + .demo-veil) covers the gap until this
+    // empty state has painted.
+    setResting(false);
+    prevLenRef.current = 0;
+    cycleRef.current += 1;
+    setState(EMPTY);
+    const reveal = requestAnimationFrame(() =>
+      requestAnimationFrame(() =>
+        document.documentElement.classList.remove("demo-boot")
+      )
+    );
+
     const tl = createTimeline(
       (s) => {
         if (s.items.length < prevLenRef.current) cycleRef.current += 1;
@@ -152,13 +180,7 @@ export default function HeroDemo() {
       }
     );
     timelineRef.current = tl;
-    const start = setTimeout(() => {
-      setResting(false);
-      prevLenRef.current = 0;
-      cycleRef.current += 1;
-      setState(EMPTY);
-      tl.play(SCRIPT, EMPTY);
-    }, ENTRANCE_DELAY_MS);
+    const start = setTimeout(() => tl.play(SCRIPT, EMPTY), ENTRANCE_DELAY_MS);
 
     const io = new IntersectionObserver(
       ([entry]) => {
@@ -170,9 +192,11 @@ export default function HeroDemo() {
     if (cardRef.current) io.observe(cardRef.current);
 
     return () => {
+      cancelAnimationFrame(reveal);
       clearTimeout(start);
       io.disconnect();
       tl.stop();
+      document.documentElement.classList.remove("demo-boot");
     };
   }, []);
 
@@ -197,10 +221,28 @@ export default function HeroDemo() {
   };
 
   return (
-    <div
-      ref={cardRef}
-      className="demo-window flex h-[540px] flex-col overflow-hidden rounded-[8px] border border-border bg-card"
-    >
+    <div className="relative">
+      {hydrated && !reduced && (
+        <HaloBoundary>
+          <div aria-hidden="true" className="demo-halo">
+            <Grainient
+              color1="#4b5d91"
+              color2="#8394a9"
+              color3="#ab9184"
+              timeSpeed={0.1}
+              saturation={0.55}
+              contrast={1.1}
+              grainAmount={0.12}
+              warpStrength={0.6}
+              zoom={1.1}
+            />
+          </div>
+        </HaloBoundary>
+      )}
+      <div
+        ref={cardRef}
+        className="demo-window relative z-10 flex h-[540px] flex-col overflow-hidden rounded-[8px] border border-border bg-card"
+      >
       <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
         <span aria-hidden="true" className="flex items-center gap-1.5">
           <span className="size-2.5 rounded-full bg-clay-rose/70" />
@@ -208,7 +250,7 @@ export default function HeroDemo() {
           <span className="size-2.5 rounded-full bg-cloud-slate/70" />
         </span>
         <span className="kicker ml-2 text-muted-foreground">Agent session — greenhouse</span>
-        {resting && !reduced && (
+        {hydrated && resting && !reduced && (
           <button
             type="button"
             onClick={replay}
@@ -221,7 +263,7 @@ export default function HeroDemo() {
           </button>
         )}
       </div>
-      <div aria-hidden="true" className="pointer-events-none flex min-h-0 flex-1 flex-col select-none">
+      <div aria-hidden="true" className="demo-veil pointer-events-none flex min-h-0 flex-1 flex-col select-none">
         <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto p-4">
           {state.items.map((item, i) => (
             <div key={`${cycleRef.current}:${i}`} className="demo-item">
@@ -242,7 +284,8 @@ export default function HeroDemo() {
           </PromptInput>
         </div>
       </div>
-      <Transcript />
+        <Transcript />
+      </div>
     </div>
   );
 }

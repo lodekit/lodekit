@@ -292,6 +292,24 @@
 
   /* hero demo (docs/specs/2026-07-19-hero-demo-design.md) — the pulse is
      the system's loading vocabulary; items enter on the one curve */
+  /* boot veil: pre-hydration cover so the SSR rest frame never flashes
+     before the island resets (motion users only — the inline script in
+     Hero.astro gates on prefers-reduced-motion and self-clears at 3s) */
+  html.demo-boot .demo-veil {
+    visibility: hidden;
+  }
+
+  /* the halo behind the demo window — soft, blurred, unmistakably artwork */
+  .demo-halo {
+    position: absolute;
+    inset: -28px;
+    overflow: hidden;
+    border-radius: 24px;
+    filter: blur(22px);
+    opacity: 0.45;
+    animation: enter-fade 450ms var(--ease-drift) both;
+  }
+
   .demo-item {
     animation: enter-up 450ms var(--ease-drift) both;
   }
