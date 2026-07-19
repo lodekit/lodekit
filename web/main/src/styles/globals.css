@@ -54,14 +54,6 @@
 
   /* the one curve (DESIGN.md §5) */
   --ease-drift: cubic-bezier(0.22, 1, 0.36, 1);
-
-  /* illustration plate — recolored wholesale by .dark below */
-  --ill-line: var(--ink);
-  --ill-sky-deep: var(--print-blue);
-  --ill-sky-soft: var(--cloud-slate);
-  --ill-cloud: var(--paper-hi);
-  --ill-sun: var(--ochre);
-  --ill-ground: var(--clay-rose);
 }
 
 .dark {
@@ -84,13 +76,6 @@
   --border: var(--night-lo);
   --input: var(--night-lo);
   --ring: var(--ochre);
-
-  --ill-line: var(--pale-gold);
-  --ill-sky-deep: var(--night-lo);
-  --ill-sky-soft: var(--night-hi);
-  --ill-cloud: var(--parchment);
-  --ill-sun: var(--ochre);
-  --ill-ground: var(--night-hi);
 }
 
 @theme inline {
@@ -328,38 +313,10 @@
   animation-delay: var(--stagger, 0ms);
 }
 
-/* linear is permitted solely inside the cloud-drift loop (constant speed is the point) */
-@keyframes drift-x {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(7px);
-  }
-}
-@keyframes drift-y {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-5px);
-  }
-}
-.drift-x {
-  animation: drift-x 21s linear infinite alternate;
-}
-.drift-y {
-  animation: drift-y 33s linear infinite alternate;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .enter {
     animation: enter-fade 150ms var(--ease-drift) both;
     animation-delay: 0ms;
-  }
-  .drift-x,
-  .drift-y {
-    animation: none;
   }
   .btn-primary:active {
     transform: none;
