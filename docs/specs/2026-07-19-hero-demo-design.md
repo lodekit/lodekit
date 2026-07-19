@@ -132,3 +132,33 @@ components/
 - No DESIGN.md amendment (decision 1 records the entrance-extension framing here).
 - No real chat interactivity, no real agent/MCP wiring — the demo is a movie.
 - No changes to hero copy, layout grid, or the NotifyForm column.
+
+## Addendum — 2026-07-19 iteration 1 (partner adjustments)
+
+Ten partner-requested changes after the first smoke look
+(`docs/plans/2026-07-19-hero-demo-adjustments.md`); the load-bearing shift:
+
+- **The demo is an illustration, not product UI.** The card became a macOS-style
+  window on a **fixed night plate in both modes** (`.demo-window` overrides the
+  role vars wholesale): muted interior — parchment ink, cloud-slate metadata,
+  night-lo washes — with **pale gold as ink only** (Lodekit option emphasis,
+  press state, URL, focus ring). Sky-family pigments do the decorating, per the
+  Sky-Is-Decoration rule. Titlebar: three flat dots (clay-rose / parchment /
+  cloud-slate at 70%), mono kicker title, quiet bare-mono replay. This also moves
+  the light-mode hero contrast into the hero: a dark window on the parchment page.
+- **Grainient halo.** A vendored react-bits `Grainient` WebGL field (@ f88bb89,
+  MIT, dep `ogl`) renders as a blurred, low-opacity sky-family halo behind the
+  window — the "this is artwork" signal. **Partner-approved, scoped exception to
+  DESIGN.md §5's no-ambient-motion rule**, confined to this halo; absent under
+  `prefers-reduced-motion`; wrapped in an error boundary so WebGL failure cannot
+  break the demo.
+- **First-paint fix (supersedes §1's "acceptable flash"):** an inline script veils
+  the demo's SSR conversation for motion users before hydration
+  (`html.demo-boot .demo-veil`, 3s failsafe); the island resets to empty
+  immediately on mount; the replay control renders only after hydration. No-JS
+  and reduced-motion visitors still get the full completed frame.
+- **Copy/details:** input placeholder is `Ask me anything…`, shown only before the
+  first message (blank after submit; returns after `/clear`). Tool captions:
+  *"Creating the greenhouse database on your computer"*, *"Connecting a secure
+  gateway to the weather forecast"*. Option rows carry icons (file, cloud, the
+  jar mark from `@lodekit/engine/marks`) with the Lodekit row emphasized.
