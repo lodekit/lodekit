@@ -2,7 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Button, Card, CardAction, CardContent, CardHeader, CardTitle,
-  ChartContainer, ChartTooltip, ChartTooltipContent, Skeleton,
+  ChartContainer, ChartTooltip, ChartTooltipContent, Meta, Skeleton,
   type ChartConfig,
 } from "@lodekit/ui";
 import { ArrowUpRight, Database, Folder, KeyRound, type LucideIcon } from "@lodekit/ui/icons";
@@ -45,7 +45,7 @@ function Stat({ icon: Icon, label, value, hint, to, params }: {
         )}
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-semibold tabular-nums">{value}</p>
+        <p className="font-mono text-2xl font-semibold tabular-nums">{value}</p>
         {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
       </CardContent>
     </Card>
@@ -124,7 +124,7 @@ function Overview() {
                       <span className="sr-only">{STORES[r.store].label}</span>
                       <span className="min-w-0 truncate font-mono text-xs">{r.label}</span>
                       {r.detail && <span className="text-muted-foreground text-xs">{r.detail}</span>}
-                      <span className="text-muted-foreground ml-auto shrink-0 text-xs">{relativeTime(r.at)}</span>
+                      <Meta className="text-muted-foreground ml-auto shrink-0 text-xs">{relativeTime(r.at)}</Meta>
                     </Link>
                   );
                 })}
@@ -139,7 +139,7 @@ function Overview() {
           <CardHeader>
             <CardTitle className="text-sm">
               Estimated size per table
-              <span className="text-muted-foreground ml-2 font-normal">db file {formatBytes(s.dbFileBytes)}</span>
+              <Meta className="text-muted-foreground ml-2 text-xs font-normal">db file {formatBytes(s.dbFileBytes)}</Meta>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -188,9 +188,9 @@ function Overview() {
                     className="hover:bg-accent/50 rounded-md border px-3 py-2 transition-colors"
                   >
                     <p className="truncate font-mono text-sm">{t.name}</p>
-                    <p className="text-muted-foreground text-xs">
+                    <Meta className="text-muted-foreground block text-xs">
                       {formatCount(t.rows)} rows{t.sizeBytes != null ? ` · ${formatBytes(t.sizeBytes)}` : ""}
-                    </p>
+                    </Meta>
                   </Link>
                 ))}
               </div>

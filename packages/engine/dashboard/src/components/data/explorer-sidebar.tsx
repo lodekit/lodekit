@@ -1,6 +1,6 @@
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Badge, Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton, cn } from "@lodekit/ui";
+import { Badge, Kicker, Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton, cn } from "@lodekit/ui";
 import { Database, Folder, KeyRound, LayoutDashboard, Table2, HardDrive, type LucideIcon } from "@lodekit/ui/icons";
 import { fetchApps, fetchSchema } from "../../lib/data-api";
 
@@ -57,8 +57,8 @@ export function ExplorerSidebar() {
       {appId && (
         <nav className="mt-4 flex flex-col gap-0.5">
           <NavItem to="/data/$appId" params={{ appId }} icon={LayoutDashboard} label="Overview" exact />
-          <div className="text-muted-foreground/70 mt-3 mb-1 flex items-center gap-2 px-2 text-xs font-medium uppercase tracking-wide">
-            <Database className="size-3.5" aria-hidden="true" /> Tables
+          <div className="mt-3 mb-1 flex items-center gap-2 px-2">
+            <Database className="size-3.5" aria-hidden="true" /> <Kicker className="text-muted-foreground/70">Tables</Kicker>
           </div>
           {schema.isLoading && <Skeleton className="mx-2 h-16" />}
           {schema.data?.tables.length === 0 && <p className="text-muted-foreground px-2 py-1 text-xs">No tables yet.</p>}

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Badge, Button, Card, CardHeader, CardTitle, Skeleton,
+  Badge, Button, Card, CardHeader, CardTitle, Meta, Skeleton,
   ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig,
 } from "@lodekit/ui";
 import { Bar, BarChart, XAxis } from "recharts";
@@ -82,15 +82,15 @@ function Row({ r, appName }: { r: EventRecord; appName: (id: string | null) => s
         className="flex w-full items-baseline gap-2 text-left"
         onClick={() => hasPayload && setOpen((o) => !o)}
       >
-        <span className="shrink-0 tabular-nums text-muted-foreground">
+        <Meta className="shrink-0 text-muted-foreground">
           {new Date(r.ts).toLocaleTimeString()}
-        </span>
-        <Badge variant="secondary">{r.type}</Badge>
-        <span className="shrink-0 text-muted-foreground">{r.component}</span>
-        <span className="shrink-0 text-muted-foreground">{appName(r.app)}</span>
-        <span className="truncate text-muted-foreground">
+        </Meta>
+        <Badge variant="secondary" className="font-mono">{r.type}</Badge>
+        <Meta className="shrink-0 text-muted-foreground">{r.component}</Meta>
+        <Meta className="shrink-0 text-muted-foreground">{appName(r.app)}</Meta>
+        <Meta className="truncate text-muted-foreground">
           {hasPayload ? JSON.stringify(r.payload) : ""}
-        </span>
+        </Meta>
       </button>
       {open && hasPayload && (
         <pre className="mt-1 overflow-auto rounded bg-muted p-2 text-xs">

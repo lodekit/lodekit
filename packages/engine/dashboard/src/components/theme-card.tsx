@@ -50,7 +50,7 @@ export function ThemeCard({
         <div className="flex flex-wrap items-center gap-1.5 empty:hidden">
           {theme.vendored && <Badge variant="secondary">vendored</Badge>}
           {assignments.map((a) => (
-            <Badge key={a} variant="outline">{a}</Badge>
+            <Badge key={a} variant="outline" className="font-mono">{a}</Badge>
           ))}
         </div>
       </CardHeader>

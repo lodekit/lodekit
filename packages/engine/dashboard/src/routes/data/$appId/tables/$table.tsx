@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { flexRender } from "@tanstack/react-table";
 import {
-  Button, DataTableColumnHeader, DataTablePagination, Skeleton,
+  Button, DataTableColumnHeader, DataTablePagination, Meta, Skeleton,
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
   useDataTable, type ColumnDef, type PaginationState, type SortingState,
 } from "@lodekit/ui";
@@ -28,9 +28,9 @@ function CellValue({ value, timestamp }: { value: unknown; timestamp?: boolean }
     const at = parseTimestampValue(value);
     if (at != null) {
       return (
-        <span className="block max-w-64 truncate text-xs" title={String(value)}>
+        <Meta className="block max-w-64 truncate text-xs" title={String(value)}>
           {formatTs(at)}
-        </span>
+        </Meta>
       );
     }
   }
@@ -94,7 +94,7 @@ function TableBrowser() {
           <div className="flex items-center gap-1.5">
             <DataTableColumnHeader column={column} title={c.name} />
             {c.pk && <KeyRound className="text-muted-foreground size-3" aria-label="primary key" />}
-            <span className="text-muted-foreground text-[10px] font-normal lowercase">{c.type}</span>
+            <span className="text-muted-foreground font-mono text-[10px] font-normal lowercase">{c.type}</span>
           </div>
         ),
         cell: ({ getValue }) => <CellValue value={getValue()} timestamp={isTimestampColumn(c.name)} />,

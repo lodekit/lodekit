@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
-  Button, Input, Skeleton,
+  Button, Input, Meta, Skeleton,
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@lodekit/ui";
 import {
@@ -104,9 +104,9 @@ function FilesView() {
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground font-mono text-xs">{f.contentType}</TableCell>
-                        <TableCell className="text-xs tabular-nums">{formatBytes(f.size)}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{relativeTime(f.createdAt)}</TableCell>
-                        <TableCell className="text-muted-foreground text-xs">{f.expiresAt ? formatTs(f.expiresAt) : "—"}</TableCell>
+                        <TableCell className="text-xs"><Meta className="text-xs">{formatBytes(f.size)}</Meta></TableCell>
+                        <TableCell className="text-muted-foreground text-xs"><Meta className="text-xs">{relativeTime(f.createdAt)}</Meta></TableCell>
+                        <TableCell className="text-muted-foreground text-xs"><Meta className="text-xs">{f.expiresAt ? formatTs(f.expiresAt) : "—"}</Meta></TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                           <a href={f.url} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-foreground">
                             <ExternalLink className="size-4" /><span className="sr-only">Open raw file</span>

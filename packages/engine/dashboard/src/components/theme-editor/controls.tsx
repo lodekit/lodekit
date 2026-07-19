@@ -1,5 +1,6 @@
 import { Folder, Search, Settings, Sun } from "@lodekit/ui/icons";
 import {
+  Kicker,
   Label,
   Select,
   SelectContent,
@@ -179,7 +180,7 @@ export function Controls({
       </ToggleGroup>
 
       <section>
-        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Colors</h3>
+        <h3 className="mb-1"><Kicker>Colors</Kicker></h3>
         <div>
           {ROLES.map((role) =>
             role.key === "charts" ? (
@@ -200,7 +201,7 @@ export function Controls({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Typography</h3>
+        <h3><Kicker>Typography</Kicker></h3>
         <div className="space-y-1.5">
           <Label className="text-xs">Interface font</Label>
           <Select
@@ -258,7 +259,7 @@ export function Controls({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Icons</h3>
+        <h3><Kicker>Icons</Kicker></h3>
         <Select
           value={model.iconLibrary}
           disabled={disabled}
@@ -285,7 +286,7 @@ export function Controls({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Shape</h3>
+        <h3><Kicker>Shape</Kicker></h3>
         <div className="space-y-1.5">
           <Label className="flex items-center justify-between text-xs">
             <span>Radius</span>

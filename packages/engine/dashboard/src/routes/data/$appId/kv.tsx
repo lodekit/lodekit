@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import {
-  Button, Input, Skeleton,
+  Button, Input, Meta, Skeleton,
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@lodekit/ui";
 import { ChevronLeft, ChevronRight, RefreshCw } from "@lodekit/ui/icons";
@@ -82,9 +82,9 @@ function KvView() {
                     >
                       <TableCell className="font-mono text-xs">{e.key}</TableCell>
                       <TableCell><span className="block max-w-80 truncate font-mono text-xs">{JSON.stringify(e.value)}</span></TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{relativeTime(e.createdAt)}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{relativeTime(e.updatedAt)}</TableCell>
-                      <TableCell className="text-muted-foreground text-xs">{e.expiresAt ? formatTs(e.expiresAt) : "—"}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs"><Meta className="text-xs">{relativeTime(e.createdAt)}</Meta></TableCell>
+                      <TableCell className="text-muted-foreground text-xs"><Meta className="text-xs">{relativeTime(e.updatedAt)}</Meta></TableCell>
+                      <TableCell className="text-muted-foreground text-xs"><Meta className="text-xs">{e.expiresAt ? formatTs(e.expiresAt) : "—"}</Meta></TableCell>
                     </TableRow>
                   ))
                 )}
