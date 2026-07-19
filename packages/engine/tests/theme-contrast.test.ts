@@ -73,7 +73,11 @@ for (const dir of THEME_DIRS) {
         const map = mode === "light" ? model.light : model.dark;
         for (const [fg, bg, min] of PAIRS) {
           it(`${mode}: ${fg} on ${bg} ≥ ${min}:1`, () => {
-            const ratio = contrast(map[fg] ?? "", map[bg] ?? "");
+            // A named pair must exist in the theme — a typo'd PAIRS entry or a
+            // theme that drops a token must fail loudly, never skip silently.
+            expect(map[fg], `missing token --${fg}`).toBeDefined();
+            expect(map[bg], `missing token --${bg}`).toBeDefined();
+            const ratio = contrast(map[fg], map[bg]);
             if (ratio === null) return; // non-hex — not measurable, by design
             expect(ratio).toBeGreaterThanOrEqual(min);
           });
