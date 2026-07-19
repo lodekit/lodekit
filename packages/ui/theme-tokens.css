@@ -89,6 +89,9 @@
 @theme inline {
   --font-sans: var(--font-ui);
   --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+  --ease-drift: var(--lk-ease-drift);
+  --default-transition-timing-function: var(--lk-ease-drift);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -124,9 +127,29 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --shadow-2xs: var(--lk-shadow-rest);
+  --shadow-xs: var(--lk-shadow-rest);
+  --shadow-sm: var(--lk-shadow-rest);
+  --shadow-md: var(--lk-shadow-overlay);
+  --shadow-lg: var(--lk-shadow-overlay);
+  --shadow-xl: var(--lk-shadow-overlay);
+  --shadow-2xl: var(--lk-shadow-overlay);
 }
 
 @layer base {
+  :root {
+    /* Identity physics (DESIGN.md §4–5) — ui-owned, above the theme format:
+       themes recolor tokens; these carry the print register. */
+    --lk-ease-drift: cubic-bezier(0.22, 1, 0.36, 1);
+    --lk-shadow-rest: 0 0 #0000; /* Flat Paper: nothing floats at rest */
+    --lk-shadow-lift: 0 1px 2px rgba(37, 27, 37, 0.08), 0 14px 34px -22px rgba(37, 27, 37, 0.4);
+    --lk-shadow-overlay: 0 2px 4px rgba(37, 27, 37, 0.08), 0 22px 44px -20px rgba(37, 27, 37, 0.42);
+  }
+  .dark {
+    /* Night has no shadows — elevation is the night-hi / night-lo steps. */
+    --lk-shadow-lift: 0 0 #0000;
+    --lk-shadow-overlay: 0 0 #0000;
+  }
   * {
     @apply border-border outline-ring/50;
   }
@@ -135,5 +158,17 @@
   }
   h1, h2, h3, h4 {
     font-family: var(--font-display);
+    font-weight: 700;
+  }
+  code, kbd, samp, pre {
+    font-family: var(--font-mono);
+  }
+  /* Focus is an outline, never a glow (DESIGN.md §5). Centralized so component
+     internals stay stock; !important intentionally outranks the internals'
+     outline-none and focus ring utilities. */
+  :focus-visible {
+    outline: 2px solid var(--ring) !important;
+    outline-offset: 3px !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
   }
 }
