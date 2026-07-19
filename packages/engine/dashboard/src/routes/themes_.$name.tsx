@@ -55,6 +55,7 @@ export function cssVarsFor(model: ThemeModel, mode: "light" | "dark"): Record<st
   if (model.spacing) vars["--spacing"] = model.spacing;
   if (model.fontUi) vars["--font-ui"] = model.fontUi;
   if (model.fontDisplay) vars["--font-display"] = model.fontDisplay;
+  if (model.fontMono) vars["--font-mono"] = model.fontMono;
   return vars;
 }
 
