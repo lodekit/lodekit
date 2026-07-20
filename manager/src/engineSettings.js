@@ -86,8 +86,9 @@ function createEngineSettings(deps) {
     });
   }
 
-  // Minimal SSE consumer over node:http: platform settings-change events ride
-  // the bus envelope (wire name "event", ns "_platform", type "settings-change").
+  // Minimal SSE consumer over node:http: platform settings writes ride the bus
+  // envelope (wire name "event"; component "settings", type "value-set"/"value-cleared",
+  // app null, key in payload.key).
   function defaultSubscribe(onChange) {
     const req = http.get({ host: "127.0.0.1", port, path: "/api/events" }, (res) => {
       let buf = "";
@@ -102,7 +103,12 @@ function createEngineSettings(deps) {
           if (!isEvent || !data) continue;
           try {
             const d = JSON.parse(data.slice(6));
-            if (d.type === "settings-change" && d.ns === "_platform" && d.payload) onChange(d.payload.key);
+            if (
+              d.component === "settings" &&
+              (d.type === "value-set" || d.type === "value-cleared") &&
+              d.app === null &&
+              d.payload
+            ) onChange(d.payload.key);
           } catch { /* partial or non-JSON frame — skip */ }
         }
       });

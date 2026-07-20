@@ -96,3 +96,7 @@ Rules:
   "Not Found" fallback.
 
 - **Jar-cloud icons regenerated** — small rendering artifacts fixed in the menubar icons, dashboard logo, and favicons.
+
+- **Menubar icon follows the style setting live** — changing the icon style in the
+  dashboard now restyles the menubar icon immediately; it used to take a manager
+  restart.
