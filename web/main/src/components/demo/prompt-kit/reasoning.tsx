@@ -1,7 +1,7 @@
 // Vendored from prompt-kit (MIT) — https://github.com/ibelick/prompt-kit
 // @ de80375, trimmed for the scripted hero demo: the collapsed trigger row
 // only — no expansion, no markdown; activity is the shared opacity pulse.
-import { Sparkles } from "lucide-react";
+import { SparkleIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 export function ReasoningRow({ label, active }: { label: string; active: boolean }) {
@@ -12,7 +12,7 @@ export function ReasoningRow({ label, active }: { label: string; active: boolean
         active && "demo-pulse"
       )}
     >
-      <Sparkles className="size-3.5 shrink-0" />
+      <SparkleIcon weight="thin" className="size-3.5 shrink-0" />
       <span>{label}</span>
     </div>
   );

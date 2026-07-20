@@ -143,6 +143,11 @@
     background: var(--gold);
     color: var(--night);
   }
+  /* Tailwind v4 preflight leaves buttons at cursor: default */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
 }
 
 @layer components {
@@ -201,9 +206,8 @@
     color: var(--muted-foreground);
   }
   .field:focus-visible {
-    border-color: var(--foreground);
-    outline: 2px solid var(--ring);
-    outline-offset: 3px;
+    border-color: var(--ring);
+    outline: none;
   }
 
   /* primary button — brand hover crossfades the night sheet (DESIGN.md §5) */
@@ -221,6 +225,7 @@
     transition:
       background-color 250ms var(--ease-drift),
       color 250ms var(--ease-drift),
+      opacity 250ms var(--ease-drift),
       transform 100ms var(--ease-drift);
   }
   .btn-primary:hover {
@@ -260,15 +265,19 @@
   .plate-ochre .field::placeholder {
     color: var(--slate-ink);
   }
-  /* on the ochre plate the button is print ink; hover reveals the paper sheet
-     (the night sheet reads badly against the drench — person-reviewed) */
+  .plate-ochre .field:focus-visible {
+    border-color: var(--ink);
+  }
+  /* on the ochre plate the button is print ink; hover is the chip's small
+     fade (both full sheets read too dramatic against the drench) */
   .plate-ochre .btn-primary {
     background: var(--ink);
     color: var(--pale-gold);
   }
   .plate-ochre .btn-primary:hover {
-    background: var(--paper-hi);
-    color: var(--ink);
+    background: var(--ink);
+    color: var(--pale-gold);
+    opacity: 0.7;
   }
   .plate-ochre :focus-visible {
     outline-color: var(--ink);
