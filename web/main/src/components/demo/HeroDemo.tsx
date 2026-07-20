@@ -183,7 +183,7 @@ export default function HeroDemo() {
   return (
     <div
       ref={cardRef}
-      className="flex h-[540px] flex-col overflow-hidden rounded-[8px] border border-border bg-card"
+      className="flex h-[540px] flex-col overflow-hidden rounded-[8px] border border-border bg-card font-normal"
     >
       <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
         <span className="kicker text-muted-foreground">Agent session — greenhouse</span>
