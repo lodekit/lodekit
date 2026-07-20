@@ -69,7 +69,7 @@ export function PromptInputActions({
           className="chip inline-flex h-8 items-center gap-1.5 transition-opacity duration-200 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-[3px] focus-visible:outline-ring"
           style={{ transitionTimingFunction: "var(--ease-drift)" }}
         >
-          <ArrowCounterClockwiseIcon weight="thin" className="size-3" />
+          <ArrowCounterClockwiseIcon weight="regular" className="size-3" />
           Replay
         </button>
       ) : (
@@ -77,7 +77,7 @@ export function PromptInputActions({
           aria-hidden="true"
           className="flex size-8 items-center justify-center rounded-[3px] bg-secondary text-secondary-foreground"
         >
-          <ArrowUpIcon weight="thin" className="size-4" />
+          <ArrowUpIcon weight="regular" className="size-4" />
         </span>
       )}
     </div>

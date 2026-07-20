@@ -29,7 +29,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
     >
-      {dark ? <SunIcon weight="thin" className="size-4" /> : <MoonIcon weight="thin" className="size-4" />}
+      {dark ? <SunIcon weight="regular" className="size-4" /> : <MoonIcon weight="regular" className="size-4" />}
     </Button>
   );
 }

@@ -276,10 +276,10 @@ tokens only — never fork or restyle component internals.
 
 ### Iconography
 
-Icons on brand surfaces (the landing site and docs) are **Phosphor, thin
-weight** — hairline glyphs that sit naturally beside this system's 1px rules.
-One weight, `currentColor`, sized to the text they accompany; no second icon
-family on those surfaces. (The product register keeps its stock shadcn/lucide
+Icons on brand surfaces (the landing site and docs) are **Phosphor, regular
+weight** — quiet linear glyphs in the print register. One weight,
+`currentColor`, sized to the text they accompany; no second icon family on
+those surfaces. (The product register keeps its stock shadcn/lucide
 internals — identity there flows through tokens only.)
 
 ### Motion & interaction states

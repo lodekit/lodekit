@@ -12,7 +12,7 @@ export function ReasoningRow({ label, active }: { label: string; active: boolean
         active && "demo-pulse"
       )}
     >
-      <SparkleIcon weight="thin" className="size-3.5 shrink-0" />
+      <SparkleIcon weight="regular" className="size-3.5 shrink-0" />
       <span>{label}</span>
     </div>
   );
