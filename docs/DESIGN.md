@@ -274,6 +274,14 @@ matte fills, motion that settles like paper (the full doctrine below). In produc
 components are stock shadcn/`@lodekit/ui` internals expressing identity through
 tokens only — never fork or restyle component internals.
 
+### Iconography
+
+Icons on brand surfaces (the landing site and docs) are **Phosphor, regular
+weight** — quiet linear glyphs in the print register. One weight,
+`currentColor`, sized to the text they accompany; no second icon family on
+those surfaces. (The product register keeps its stock shadcn/lucide
+internals — identity there flows through tokens only.)
+
 ### Motion & interaction states
 
 Motion is drift: a response that settles, never a bounce. The discipline is one

@@ -2,7 +2,6 @@
 // SSR renders the completed conversation; with motion allowed the island
 // resets after the hero entrance, plays the script once, then rests.
 import { useEffect, useRef, useState } from "react";
-import { RotateCcw } from "lucide-react";
 import {
   CLEAR_SCRIPT,
   EMPTY,
@@ -183,25 +182,17 @@ export default function HeroDemo() {
   return (
     <div
       ref={cardRef}
-      className="flex h-[540px] flex-col overflow-hidden rounded-[8px] border border-border bg-card"
+      className="flex h-[540px] flex-col overflow-hidden rounded-[8px] border border-border bg-card font-normal"
     >
-      <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+      <div className="border-b border-border px-4 py-2.5">
         <span className="kicker text-muted-foreground">Agent session — greenhouse</span>
-        {resting && !reduced && (
-          <button
-            type="button"
-            onClick={replay}
-            aria-label="Replay demo"
-            className="chip inline-flex cursor-pointer items-center gap-1.5 transition-opacity duration-200 hover:opacity-70 focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-[3px] focus-visible:outline-ring"
-            style={{ transitionTimingFunction: "var(--ease-drift)" }}
-          >
-            <RotateCcw className="size-3" />
-            Replay
-          </button>
-        )}
       </div>
-      <div aria-hidden="true" className="pointer-events-none flex min-h-0 flex-1 flex-col select-none">
-        <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto p-4">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div
+          ref={scrollRef}
+          aria-hidden="true"
+          className="pointer-events-none flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto p-4 select-none"
+        >
           {state.items.map((item, i) => (
             <div key={`${cycleRef.current}:${i}`} className="demo-item">
               <DemoConversationItem
@@ -214,7 +205,7 @@ export default function HeroDemo() {
         <div className="border-t border-border p-3">
           <PromptInput>
             <PromptInputDisplay text={displayedText} />
-            <PromptInputActions />
+            <PromptInputActions resting={resting && !reduced} onReplay={replay} />
           </PromptInput>
         </div>
       </div>

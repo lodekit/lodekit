@@ -283,12 +283,18 @@ importers:
       '@astrojs/react':
         specifier: ^6.0.1
         version: 6.0.1(@types/node@24.13.2)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+      '@fontsource/m-plus-1-code':
+        specifier: ^5.2.9
+        version: 5.2.9
       '@fontsource/spline-sans-mono':
         specifier: ^5.0.0
         version: 5.2.8
       '@fontsource/zen-kaku-gothic-new':
         specifier: ^5.0.0
         version: 5.2.7
+      '@phosphor-icons/react':
+        specifier: ^2.1.10
+        version: 2.1.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tailwindcss/vite':
         specifier: ^4.3.2
         version: 4.3.2(vite@8.1.3(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
@@ -301,9 +307,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      lucide-react:
-        specifier: ^1.23.0
-        version: 1.23.0(react@19.2.7)
       radix-ui:
         specifier: ^1.6.1
         version: 1.6.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -1164,6 +1167,9 @@ packages:
 
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
+
+  '@fontsource/m-plus-1-code@5.2.9':
+    resolution: {integrity: sha512-GHIn0C0Wm3/w3RfoxUpBZvJUZl3IJNnUa/h9zJEnI2Ynat86z+oxSXzMIc6KkB9pZ0crSFs/lyHHV6SFa3V4dA==}
 
   '@fontsource/spline-sans-mono@5.2.8':
     resolution: {integrity: sha512-lxHnpGHjPGPXpv+H0SwDZxUkbYrpqSlUBfe1f/ScERQcKhLbQxDMzd7TpRPqIVWC/Ze2WLu0vcOBuL1I8BD5tQ==}
@@ -7079,6 +7085,8 @@ snapshots:
       react-dom: 19.2.7(react@19.2.7)
 
   '@floating-ui/utils@0.2.11': {}
+
+  '@fontsource/m-plus-1-code@5.2.9': {}
 
   '@fontsource/spline-sans-mono@5.2.8': {}
 

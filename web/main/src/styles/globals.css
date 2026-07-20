@@ -11,16 +11,17 @@
 :root {
   /* physical palette (DESIGN.md §2) */
   --ink: #251b25;
-  --paper: #ede7d8;
-  --paper-hi: #f6f1e6;
+  --paper: #f6f1e6;
+  --paper-hi: #fcf9f0;
   --paper-lo: #dcd3be;
   --slate-ink: #4f4f59;
   --hairline: #cdc4ae;
   --hairline-strong: #ab9f86;
-  --rust: #935842;
-  --rust-deep: #7c4636;
+  --persimmon: #a93510;
+  --persimmon-deep: #8a2b0d;
   --ochre: #dd9741;
   --ochre-bright: #e5a85c;
+  --gold: #f0a73c;
   --night: #121a44;
   --night-hi: #1b2452;
   --night-lo: #242e63;
@@ -37,7 +38,7 @@
   --card-foreground: var(--ink);
   --popover: var(--paper-hi);
   --popover-foreground: var(--ink);
-  --primary: var(--rust);
+  --primary: var(--persimmon);
   --primary-foreground: var(--paper-hi);
   --secondary: var(--paper-lo);
   --secondary-foreground: var(--ink);
@@ -49,7 +50,7 @@
   --destructive-foreground: var(--paper-hi);
   --border: var(--hairline);
   --input: var(--hairline);
-  --ring: var(--rust);
+  --ring: var(--persimmon);
   --radius: 5px;
 
   /* the one curve (DESIGN.md §5) */
@@ -63,7 +64,7 @@
   --card-foreground: var(--pale-gold);
   --popover: var(--night-hi);
   --popover-foreground: var(--pale-gold);
-  --primary: var(--ochre);
+  --primary: var(--gold);
   --primary-foreground: var(--night);
   --secondary: var(--night-lo);
   --secondary-foreground: var(--pale-gold);
@@ -75,7 +76,7 @@
   --destructive-foreground: var(--pale-gold);
   --border: var(--night-lo);
   --input: var(--night-lo);
-  --ring: var(--ochre);
+  --ring: var(--gold);
 }
 
 @theme inline {
@@ -105,10 +106,11 @@
   --color-slate-ink: var(--slate-ink);
   --color-hairline: var(--hairline);
   --color-hairline-strong: var(--hairline-strong);
-  --color-rust: var(--rust);
-  --color-rust-deep: var(--rust-deep);
+  --color-persimmon: var(--persimmon);
+  --color-persimmon-deep: var(--persimmon-deep);
   --color-ochre: var(--ochre);
   --color-ochre-bright: var(--ochre-bright);
+  --color-gold: var(--gold);
   --color-night: var(--night);
   --color-night-hi: var(--night-hi);
   --color-night-lo: var(--night-lo);
@@ -130,15 +132,21 @@
   }
   body {
     @apply bg-background font-sans text-foreground;
+    font-weight: 500;
     line-height: 1.6;
   }
   ::selection {
-    background: var(--rust);
+    background: var(--persimmon);
     color: var(--paper-hi);
   }
   .dark ::selection {
-    background: var(--ochre);
+    background: var(--gold);
     color: var(--night);
+  }
+  /* Tailwind v4 preflight leaves buttons at cursor: default */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 }
 
@@ -198,9 +206,8 @@
     color: var(--muted-foreground);
   }
   .field:focus-visible {
-    border-color: var(--foreground);
-    outline: 2px solid var(--ring);
-    outline-offset: 3px;
+    border-color: var(--ring);
+    outline: none;
   }
 
   /* primary button — brand hover crossfades the night sheet (DESIGN.md §5) */
@@ -218,6 +225,7 @@
     transition:
       background-color 250ms var(--ease-drift),
       color 250ms var(--ease-drift),
+      opacity 250ms var(--ease-drift),
       transform 100ms var(--ease-drift);
   }
   .btn-primary:hover {
@@ -239,7 +247,6 @@
     opacity: 0.5;
     pointer-events: none;
   }
-  /* on the ochre plate the night sheet still reads; keep as-is */
 
   /* committed plates — fixed physical colors, never flip with theme */
   .plate-night {
@@ -258,13 +265,19 @@
   .plate-ochre .field::placeholder {
     color: var(--slate-ink);
   }
+  .plate-ochre .field:focus-visible {
+    border-color: var(--ink);
+  }
+  /* on the ochre plate the button is print ink; hover is the chip's small
+     fade (both full sheets read too dramatic against the drench) */
   .plate-ochre .btn-primary {
-    background: var(--rust);
-    color: var(--paper-hi);
+    background: var(--ink);
+    color: var(--pale-gold);
   }
   .plate-ochre .btn-primary:hover {
-    background: var(--night);
+    background: var(--ink);
     color: var(--pale-gold);
+    opacity: 0.7;
   }
   .plate-ochre :focus-visible {
     outline-color: var(--ink);
