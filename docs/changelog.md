@@ -94,3 +94,5 @@ Rules:
 - **Apps get a real not-found page** — newly scaffolded apps (and Welcome and
   Greenhouse) now render a styled 404 with a link back home instead of a bare
   "Not Found" fallback.
+
+- **Jar-cloud icons regenerated** — small rendering artifacts fixed in the menubar icons, dashboard logo, and favicons.
