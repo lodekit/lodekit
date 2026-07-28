@@ -17,7 +17,10 @@ export function Header() {
       <div className="flex items-center gap-1 border-b bg-card px-4 py-2 md:rounded-xl md:border">
         <Link to="/" aria-label="Lodekit home" className="mr-1 flex items-center gap-3">
           <Logo className="size-7 text-foreground" />
-          <span className="hidden font-display text-xl font-bold uppercase tracking-[0.22em] text-foreground sm:inline">
+          <span
+            className="hidden text-xl font-bold uppercase tracking-[0.22em] text-foreground sm:inline"
+            style={{ fontFamily: "var(--lk-font-wordmark)" }}
+          >
             Lodekit
           </span>
         </Link>

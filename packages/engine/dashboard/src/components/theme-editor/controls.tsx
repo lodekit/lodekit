@@ -39,6 +39,7 @@ const FONT_CATALOG: readonly FontEntry[] = [
   { label: "Merriweather", family: '"Merriweather", Georgia, serif', googleSpec: "Merriweather:wght@400;500;600" },
   { label: "Spline Sans Mono", family: '"Spline Sans Mono", ui-monospace, monospace', googleSpec: "Spline+Sans+Mono:wght@400;500" },
   { label: "IBM Plex Mono", family: '"IBM Plex Mono", ui-monospace, monospace', googleSpec: "IBM+Plex+Mono:wght@400;500" },
+  { label: "M PLUS 1 Code", family: '"M PLUS 1 Code", ui-monospace, monospace', googleSpec: "M+PLUS+1+Code:wght@700" },
   { label: "System sans", family: "ui-sans-serif, system-ui, sans-serif", googleSpec: null },
   { label: "System mono", family: "ui-monospace, monospace", googleSpec: null },
   { label: "Georgia serif", family: 'Georgia, "Times New Roman", serif', googleSpec: null },
