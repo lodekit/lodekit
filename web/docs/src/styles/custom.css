@@ -1,23 +1,8 @@
-/* Lodekit docs theme — Sky in a Jar: rust/ochre accents + brand type (DESIGN.md),
-   reading-calm register. */
-@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Spline+Sans+Mono:wght@400;500&display=swap');
-
-:root {
-  /* dark scheme (Starlight default root) — ochre on the night plate */
-  --sl-color-accent-low: #3a2c10;
-  --sl-color-accent: #dd9741;
-  --sl-color-accent-high: #e5a85c;
-  --sl-color-bg: #121a44;
-  --sl-font: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
-  --sl-font-mono: 'Spline Sans Mono', ui-monospace, monospace;
-}
-
-:root[data-theme='light'] {
-  --sl-color-accent-low: #ecd9c9;
-  --sl-color-accent: #935842;
-  --sl-color-accent-high: #7c4636;
-  --sl-color-bg: #f6f1e6;
-}
+/* Lodekit docs — stock Starlight styling. The brand palette and type are
+   deliberately NOT applied here: the docs site runs Starlight's defaults, and
+   the wordmark font is the single exception. The only other rule is the
+   glossary layout below, which is page structure rather than theming. */
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@700&display=swap');
 
 /* Glossary — real headings (so terms land in the page ToC) rendered as a
    two-column table. Starlight wraps each heading in .sl-heading-wrapper, so
@@ -46,13 +31,5 @@
   }
 }
 
-.site-title,
-.sl-markdown-content h1,
-.sl-markdown-content h2,
-.sl-markdown-content h3,
-.sl-markdown-content h4,
-h1[data-page-title],
-.hero h1 {
-  font-family: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
-  font-weight: 700;
-}
+/* The wordmark face is loaded above and applied in src/components/SiteTitle.astro,
+   which overrides Starlight's header title with the full lockup. */

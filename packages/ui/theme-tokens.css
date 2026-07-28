@@ -1,9 +1,9 @@
 /* Sky in a Jar — the Lodekit identity tokens (DESIGN.md): plum ink on aged
-   parchment, rust accent by day; pale gold on deep indigo, ochre by night.
+   parchment, persimmon accent by day; pale gold on deep indigo, gold by night.
    Build-time base for @lodekit/ui consumers; the served theme (/_ui/theme.css)
    overrides these same tokens at runtime and carries the font @import. The brand
    accent maps to shadcn's --primary (buttons, fills, active states); shadcn's own
-   --accent stays a neutral hover wash and must not carry rust/ochre. */
+   --accent stays a neutral hover wash and must not carry persimmon/gold. */
 @layer lodekit-tokens {
 :root {
   /* Native scrollbars and form controls follow the theme; without this the
@@ -15,14 +15,14 @@
   --radius: 0.1875rem;
   --spacing: 0.25rem;
   --icon-library: lucide;
-  --background: #ede7d8;
+  --background: #f6f1e6;
   --foreground: #251b25;
-  --card: #f6f1e6;
+  --card: #fcf9f0;
   --card-foreground: #251b25;
-  --popover: #f6f1e6;
+  --popover: #fcf9f0;
   --popover-foreground: #251b25;
-  --primary: #935842;
-  --primary-foreground: #f6f1e6;
+  --primary: #a93510;
+  --primary-foreground: #fcf9f0;
   --secondary: #dcd3be;
   --secondary-foreground: #251b25;
   --muted: #dcd3be;
@@ -32,21 +32,21 @@
   --destructive: #a61e33;
   --border: #cdc4ae;
   --input: #cdc4ae;
-  --ring: #935842;
+  --ring: #a93510;
   /* Chart series — DESIGN.md fixed order; the sky family is charts-only. */
   --chart-1: #4b5d91;
   --chart-2: #dd9741;
-  --chart-3: #935842;
+  --chart-3: #a93510;
   --chart-4: #8394a9;
   --chart-5: #251b25;
-  --sidebar: #ede7d8;
+  --sidebar: #f6f1e6;
   --sidebar-foreground: #251b25;
-  --sidebar-primary: #935842;
-  --sidebar-primary-foreground: #f6f1e6;
+  --sidebar-primary: #a93510;
+  --sidebar-primary-foreground: #fcf9f0;
   --sidebar-accent: #dcd3be;
   --sidebar-accent-foreground: #251b25;
   --sidebar-border: #cdc4ae;
-  --sidebar-ring: #935842;
+  --sidebar-ring: #a93510;
 }
 
 .dark {
@@ -57,7 +57,7 @@
   --card-foreground: #f3e0a5;
   --popover: #1b2452;
   --popover-foreground: #f3e0a5;
-  --primary: #dd9741;
+  --primary: #f0a73c;
   --primary-foreground: #121a44;
   --secondary: #242e63;
   --secondary-foreground: #f3e0a5;
@@ -68,21 +68,21 @@
   --destructive: #e06a7d; /* derived (L): crimson brightened for AA on the night surfaces */
   --border: rgba(243, 224, 165, 0.16); /* derived (L): gold-tinted hairline on the night plate */
   --input: rgba(243, 224, 165, 0.22);
-  --ring: #dd9741;
+  --ring: #f0a73c;
   /* derived (L): the light series brightened for the night plate (plum → pale plum). */
   --chart-1: #7285bd;
   --chart-2: #e5a85c;
-  --chart-3: #c07a63;
+  --chart-3: #d9714a;
   --chart-4: #9daec2;
   --chart-5: #a893a8;
   --sidebar: #121a44;
   --sidebar-foreground: #f3e0a5;
-  --sidebar-primary: #dd9741;
+  --sidebar-primary: #f0a73c;
   --sidebar-primary-foreground: #121a44;
   --sidebar-accent: #242e63;
   --sidebar-accent-foreground: #f3e0a5;
   --sidebar-border: rgba(243, 224, 165, 0.16);
-  --sidebar-ring: #dd9741;
+  --sidebar-ring: #f0a73c;
 }
 }
 
@@ -155,6 +155,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-weight: 500;
   }
   h1, h2, h3, h4 {
     font-family: var(--font-display);
@@ -162,13 +163,61 @@
   }
   code, kbd, samp, pre {
     font-family: var(--font-mono);
+    /* Body defaults to 500; the mono voice sets at 400 (DESIGN.md §3). */
+    font-weight: 400;
   }
-  /* Focus is an outline, never a glow (DESIGN.md §5). Centralized so component
-     internals stay stock; !important intentionally outranks the internals'
-     outline-none and focus ring utilities. */
-  :focus-visible {
-    outline: 2px solid var(--ring) !important;
-    outline-offset: 3px !important;
-    --tw-ring-shadow: 0 0 #0000 !important;
+  /* Focus is a BORDER, never a ring outside the element (DESIGN.md §5).
+     `outline` and Tailwind's `ring-*` both paint outside the box, so the accent
+     ended up drawn twice on anything that also tinted its own border. This is
+     the single rule that owns focus: kill the outline, resolve the border to the
+     accent, and thicken that edge with a 1px INSET shadow — which stays inside
+     the element, so nothing floats and nothing needs an exemption. Borderless
+     controls still read, because the inset shadow draws against their own edge.
+     !important outranks component internals' outline-none and ring utilities.
+     [tabindex="-1"] is excluded: those are containers (sidebar, overlay panels)
+     focused programmatically, not controls the user tabbed to. */
+  :focus-visible:not([tabindex="-1"]) {
+    outline: none !important;
+    border-color: var(--ring) !important;
+    box-shadow: inset 0 0 0 1px var(--ring) !important;
+  }
+  /* Pointer focus tints the border but withholds the ring. The transparent inset
+     shadow keeps the painted box identical to the keyboard state, so clicking a
+     field never shifts it. */
+  :focus:not(:focus-visible):not([tabindex="-1"]) {
+    outline: none !important;
+    border-color: var(--ring) !important;
+    box-shadow: inset 0 0 0 1px transparent !important;
+  }
+  /* Invalid outranks focused: a field in error must not read as merely active. */
+  [aria-invalid="true"]:focus-visible,
+  [aria-invalid="true"]:focus {
+    border-color: var(--destructive) !important;
+    box-shadow: inset 0 0 0 1px var(--destructive) !important;
+  }
+  /* A control inside a bordered group has no border of its own — its edge is the
+     group's. Left alone it would draw the focus ring around just the bare input,
+     cutting across the icons and buttons sharing that box, so the group wears it
+     instead. This is delegation, not an exemption: the edge still appears. */
+  [data-slot="input-group"]
+    :where([data-slot="input-group-control"], [data-slot="command-input"]):focus-visible {
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+  [data-slot="input-group"]:has(
+      :where([data-slot="input-group-control"], [data-slot="command-input"]):focus-visible
+    ) {
+    border-color: var(--ring) !important;
+    box-shadow: inset 0 0 0 1px var(--ring) !important;
+  }
+  /* Forced-colors mode discards box-shadow and repaints borders from the system
+     palette, so the inset edge above would leave nothing visible. Hand focus back
+     to a real outline there — the one context where the ring is correct, because
+     the OS is drawing the UI, not us. */
+  @media (forced-colors: active) {
+    :focus-visible:not([tabindex="-1"]) {
+      outline: 2px solid CanvasText !important;
+      outline-offset: 2px !important;
+    }
   }
 }
