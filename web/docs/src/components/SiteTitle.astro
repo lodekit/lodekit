@@ -1,0 +1,42 @@
+---
+// Overrides Starlight's SiteTitle so the docs header carries the full lockup
+// (DESIGN.md §5): the jar-cloud mark beside the LODEKIT wordmark, both in one
+// color. Mark geometry comes from marks.ts — the vector source of truth — so it
+// is never redrawn here. Everything else about the docs site stays stock
+// Starlight; this lockup and its font are the identity it carries.
+import { MARK_BODIES } from "@lodekit/engine/marks";
+
+const { siteTitleHref } = Astro.locals.starlightRoute;
+---
+
+<a href={siteTitleHref} class="site-title sl-flex" translate="no">
+  <svg viewBox="0 0 32 32" class="site-mark" aria-hidden="true" set:html={MARK_BODIES.b} />
+  <span class="site-wordmark">Lodekit</span>
+</a>
+
+<style>
+  .site-title {
+    align-items: center;
+    gap: 0.6em;
+    color: var(--sl-color-text-accent);
+    text-decoration: none;
+    white-space: nowrap;
+    min-width: 0;
+    opacity: 0.8;
+  }
+  /* currentColor throughout the mark, so it and the wordmark are always one color. */
+  .site-mark {
+    width: 1.5rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+  }
+  .site-wordmark {
+    font-family: "M PLUS 1 Code", ui-monospace, monospace;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    overflow: hidden;
+  }
+</style>

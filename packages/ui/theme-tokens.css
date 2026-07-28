@@ -166,30 +166,58 @@
     /* Body defaults to 500; the mono voice sets at 400 (DESIGN.md §3). */
     font-weight: 400;
   }
-  /* Focus is an outline, never a glow (DESIGN.md §5). Centralized so component
-     internals stay stock; !important intentionally outranks the internals'
-     outline-none and focus ring utilities. */
-  :focus-visible {
-    outline: 2px solid var(--ring) !important;
-    outline-offset: 3px !important;
-    --tw-ring-shadow: 0 0 #0000 !important;
-  }
-  /* Fields already answer focus by resolving their own border to the ring, so
-     the offset outline above would draw a SECOND accent ring around them — one
-     hugging the border, one floating 3px out. Inside an input group it is worse:
-     the outline traces the bare <input>, cutting across the leading icon that
-     sits beside it in the same bordered box. Listed by slot rather than by
-     element so a plain <input> in an app — which has no border treatment of its
-     own — keeps the outline and stays focus-visible. */
-  :where(
-      [data-slot="input"],
-      [data-slot="textarea"],
-      [data-slot="command-input"],
-      [data-slot="input-group-control"],
-      [data-slot="combobox-chip-input"],
-      [data-slot="sidebar-input"],
-      [data-slot="select-trigger"]
-    ):focus-visible {
+  /* Focus is a BORDER, never a ring outside the element (DESIGN.md §5).
+     `outline` and Tailwind's `ring-*` both paint outside the box, so the accent
+     ended up drawn twice on anything that also tinted its own border. This is
+     the single rule that owns focus: kill the outline, resolve the border to the
+     accent, and thicken that edge with a 1px INSET shadow — which stays inside
+     the element, so nothing floats and nothing needs an exemption. Borderless
+     controls still read, because the inset shadow draws against their own edge.
+     !important outranks component internals' outline-none and ring utilities.
+     [tabindex="-1"] is excluded: those are containers (sidebar, overlay panels)
+     focused programmatically, not controls the user tabbed to. */
+  :focus-visible:not([tabindex="-1"]) {
     outline: none !important;
+    border-color: var(--ring) !important;
+    box-shadow: inset 0 0 0 1px var(--ring) !important;
+  }
+  /* Pointer focus tints the border but withholds the ring. The transparent inset
+     shadow keeps the painted box identical to the keyboard state, so clicking a
+     field never shifts it. */
+  :focus:not(:focus-visible):not([tabindex="-1"]) {
+    outline: none !important;
+    border-color: var(--ring) !important;
+    box-shadow: inset 0 0 0 1px transparent !important;
+  }
+  /* Invalid outranks focused: a field in error must not read as merely active. */
+  [aria-invalid="true"]:focus-visible,
+  [aria-invalid="true"]:focus {
+    border-color: var(--destructive) !important;
+    box-shadow: inset 0 0 0 1px var(--destructive) !important;
+  }
+  /* A control inside a bordered group has no border of its own — its edge is the
+     group's. Left alone it would draw the focus ring around just the bare input,
+     cutting across the icons and buttons sharing that box, so the group wears it
+     instead. This is delegation, not an exemption: the edge still appears. */
+  [data-slot="input-group"]
+    :where([data-slot="input-group-control"], [data-slot="command-input"]):focus-visible {
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+  [data-slot="input-group"]:has(
+      :where([data-slot="input-group-control"], [data-slot="command-input"]):focus-visible
+    ) {
+    border-color: var(--ring) !important;
+    box-shadow: inset 0 0 0 1px var(--ring) !important;
+  }
+  /* Forced-colors mode discards box-shadow and repaints borders from the system
+     palette, so the inset edge above would leave nothing visible. Hand focus back
+     to a real outline there — the one context where the ring is correct, because
+     the OS is drawing the UI, not us. */
+  @media (forced-colors: active) {
+    :focus-visible:not([tabindex="-1"]) {
+      outline: 2px solid CanvasText !important;
+      outline-offset: 2px !important;
+    }
   }
 }

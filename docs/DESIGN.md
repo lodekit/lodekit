@@ -122,7 +122,7 @@ The system serves three surfaces with one identity, two registers:
   reserved for interaction. Identity comes through in temperature, type, and the
   mono metadata layer, never through decoration.
 - **Docs** deliberately opt out: the docs site runs stock Starlight styling, and
-  the wordmark font is the single piece of identity it carries. Reading calm
+  the header lockup is the single piece of identity it carries. Reading calm
   beats brand presence there; don't retheme it.
 
 This system translates `docs/PRODUCT.md` §7 visually: *plain-spoken* → flat inks and
@@ -331,8 +331,9 @@ exploration).
   kinetic text splitting — a print doesn't animate as you turn the page. The
   fade-up-every-section pattern is rejected by name as the saturated default.
 - **States are complete.** Every interactive element defines hover, active
-  (`translateY(1px)` or equivalent, ~100ms), `:focus-visible` (the 2px accent
-  outline, offset 3px), and disabled (50% opacity, no motion, no hover). Links
+  (`translateY(1px)` or equivalent, ~100ms), `:focus-visible` (the accent focus
+  edge — see *The Focus-Is-A-Border Rule*), and disabled (50% opacity, no motion,
+  no hover). Links
   and nav items hover by the accent underline fading in place (opacity 0→1,
   ~250ms, full width — it never slides). Loading in product is a page-lo skeleton
   wash with a slow opacity pulse — never a spinner parade.
@@ -347,6 +348,25 @@ one exception: illustration clouds may drift — two-axis paths, 20–40s period
 few pixels of travel, barely perceptible, gone under reduced motion. Clouds are
 the one thing in this world that genuinely moves; nothing else earns ambient
 motion.
+
+**The Focus-Is-A-Border Rule.** Focus is an edge *on* the element, never a ring
+*around* it. One rule in `packages/ui/theme-tokens.css` owns it for every
+focusable control: `outline: none`, the border resolves to the accent, and a
+`box-shadow: inset 0 0 0 1px` in the accent thickens that edge from the inside.
+Controls with no border of their own still read, because an inset shadow draws
+against the element's own edge. Pointer focus (`:focus:not(:focus-visible)`)
+tints the border but withholds the ring, painting a transparent inset shadow so
+the box never shifts between the two states.
+
+Both CSS `outline` and Tailwind's `ring-*` utilities paint *outside* the box, so
+either one used for focus produces the floating ring this rule exists to
+forbid — and on any control that also tints its own border, the accent gets
+drawn twice. Never reintroduce them, and never fix a doubled focus ring by
+exempting the component: the exemption is the bug repeating. Two consequences
+follow: a control inside a bordered group (an input group, a combobox) delegates
+its edge to the group, which wears the focus border so the ring cannot cut
+across the icons sharing that box; and `aria-invalid` outranks focus, so a field
+in error keeps the destructive edge rather than reading as merely active.
 
 ### Register divergences
 
@@ -369,7 +389,7 @@ It is a deliberate choice, not drift, and does not generalize.
   theme format carries no deeper/brighter hover token. Active: `translateY(1px)`,
   ~100ms. Inside the ochre band the CTA differs by design — see *Register
   divergences*.
-- **Focus:** 2px accent outline, offset 3px — an outline, never a glow.
+- **Focus:** the accent focus edge — see *The Focus-Is-A-Border Rule*.
 - **Ghost:** transparent, ink text, 1.5px hairline border at `rgba(37,27,37,.35)`;
   hover: border resolves to ink — a fade, no movement.
 
@@ -384,11 +404,7 @@ It is a deliberate choice, not drift, and does not generalize.
 ### Inputs / Fields
 
 - **Style:** page-hi fill, 1px hairline border, 3px radius, ink text, slate placeholder.
-- **Focus:** the border resolves to the accent — one border, hugging the field,
-  in both registers. Never a glow, and never the offset outline: a field that
-  draws both reads as two accent rings, and inside an input group the outline
-  traces the bare `<input>` and cuts across the leading icon. Buttons and other
-  controls without a field border keep the 2px outline at 3px offset.
+- **Focus:** the accent focus edge — see *The Focus-Is-A-Border Rule*.
 - **Error:** crimson (#A61E33) border and message — message text, never color alone.
 
 ### Chips / Badges
@@ -424,8 +440,8 @@ It is a deliberate choice, not drift, and does not generalize.
   docs site, and `dashboard/src/index.css` (which also defines
   `--lk-font-wordmark`) in product. Zen Kaku Gothic New 700 still sets headings
   and page titles everywhere; only the wordmark uses M PLUS 1 Code. The docs
-  site takes the face alone — its title keeps Starlight's own size, case, and
-  tracking, per the opt-out in §1.
+  site carries the lockup in its header via a `SiteTitle` component override,
+  and nothing else of the brand (§1).
 - **The lockup:** mark beside wordmark, gap ≈0.6em, mark 1.5rem, optically
   aligned to cap height; both in the same single color at 80% opacity, header
   and footer alike. Clear space around the lockup ≥ the width of the jar's lid;

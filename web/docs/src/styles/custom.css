@@ -31,10 +31,18 @@
   }
 }
 
-/* The wordmark font — the one piece of brand identity the docs site carries.
-   Weight 700 is declared because it is the only face loaded above; everything
-   else about the title (size, case, tracking) stays Starlight's. */
-.site-title {
-  font-family: 'M PLUS 1 Code', ui-monospace, monospace;
-  font-weight: 700;
+/* The wordmark face is loaded above and applied in src/components/SiteTitle.astro,
+   which overrides Starlight's header title with the full lockup. */
+
+/* The splash hero leads with the tagline — the lockup already names the product
+   in the header, so a second title reads as repetition. Starlight falls back to
+   the page title when hero.title is unset, so it is hidden here rather than
+   deleted: the h1 stays in the accessibility tree so the page keeps a heading. */
+.hero h1[data-page-title] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

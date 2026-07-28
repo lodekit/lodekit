@@ -9,6 +9,9 @@ export default defineConfig({
     starlight({
       title: "Lodekit",
       customCss: ["./src/styles/custom.css"],
+      // The header lockup (mark + wordmark) is the one piece of brand identity
+      // the docs site carries; everything else is stock Starlight.
+      components: { SiteTitle: "./src/components/SiteTitle.astro" },
       plugins: [starlightLinksValidator()],
       sidebar: [
         {
