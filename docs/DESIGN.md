@@ -14,6 +14,7 @@ colors:
   ochre: "#DD9741"
   ochre-bright: "#E5A85C"
   gold: "#F0A73C"
+  gold-bright: "#F2B459"
   night: "#121A44"
   night-hi: "#1B2452"
   night-lo: "#242E63"
@@ -67,9 +68,12 @@ components:
     textColor: "{colors.paper-hi}"
     rounded: "{rounded.sm}"
     padding: "0.85em 1.5em"
+  # Brand-surface hover: the night sheet crossfades in beneath the label. The
+  # product register instead steps the fill's alpha (hover:bg-primary/80) — a
+  # treatment no color token can express. See §5 Buttons.
   button-primary-hover:
-    backgroundColor: "{colors.persimmon-deep}"
-    textColor: "{colors.paper-hi}"
+    backgroundColor: "{colors.night}"
+    textColor: "{colors.pale-gold}"
   button-ghost:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
@@ -161,6 +165,10 @@ variants).
   is the docs site's `--sl-color-accent-high`.
 - **Gold** (#F0A73C, L): the dark-mode accent (8.19:1 on the night plate).
   Primary buttons, links, active states, focus rings on the night plate.
+- **Gold Bright** (#F2B459, L): the lightened gold (9.11:1 on night), the night
+  plate's counterpart to Persimmon Deep — hover and emphasis where a brighter
+  step is wanted; its one shipped consumer is the docs site's dark
+  `--sl-color-accent-high`.
 - **Ochre** (#DD9741, H): the brand drench plate — an ochre band carrying plum
   ink text — and, in light mode, illustration and charts. Not an interactive
   color in either plate.
@@ -171,7 +179,7 @@ variants).
 
 - **Plum Ink** (#251B25, H): all text, the mark, icons, strong borders. A cool
   plum-black — print ink, not gray.
-- **Slate** (#4F4F59, H): secondary/muted text on the page (≈6.6:1).
+- **Slate** (#4F4F59, H): secondary/muted text on the page (≈7.2:1).
 - **Page** (#F6F1E6, L): the light-mode surface — aged paper, lightened from
   Parchment. **Page High** (#FCF9F0, L): raised surfaces — cards, popovers,
   inputs. **Page Low** (#DCD3BE, L): recessed washes — muted fills, wells.

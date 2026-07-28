@@ -1,9 +1,9 @@
 /* Sky in a Jar — the Lodekit identity tokens (DESIGN.md): plum ink on aged
-   parchment, rust accent by day; pale gold on deep indigo, ochre by night.
+   parchment, persimmon accent by day; pale gold on deep indigo, gold by night.
    Build-time base for @lodekit/ui consumers; the served theme (/_ui/theme.css)
    overrides these same tokens at runtime and carries the font @import. The brand
    accent maps to shadcn's --primary (buttons, fills, active states); shadcn's own
-   --accent stays a neutral hover wash and must not carry rust/ochre. */
+   --accent stays a neutral hover wash and must not carry persimmon/gold. */
 @layer lodekit-tokens {
 :root {
   /* Native scrollbars and form controls follow the theme; without this the

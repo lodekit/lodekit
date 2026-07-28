@@ -46,9 +46,13 @@
   }
 }
 
+/* The wordmark (DESIGN.md §5): M PLUS 1 Code 700, uppercase, 0.22em — a label,
+   not a headline. Matches the landing's Lockup and the dashboard header. */
 .site-title {
   font-family: 'M PLUS 1 Code', ui-monospace, monospace;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
 }
 
 .sl-markdown-content h1,

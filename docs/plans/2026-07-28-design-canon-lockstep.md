@@ -23,7 +23,7 @@ product's role tokens by hand.
 ## Global Constraints
 
 - **The AA gate is the hard floor.** `theme-contrast.test.ts` covers exactly two files —
-  `packages/engine/themes/lodekit.css` and `root/themes/greenhouse-green.css` — across 15
+  `packages/engine/themes/lodekit.css` and `root/themes/greenhouse-green.css` — across 14
   pairs × light/dark. Every proposed value below is pre-checked (§ Decided values).
 - **Landing values do not win unconditionally.** Where a landing value fails the product gate,
   the product's derived value stands. Exactly one case: dark `--destructive`. The landing uses
@@ -183,7 +183,7 @@ policy the person chose (one wordmark, fixed, not theme-editable) holds.
 
 ## Verification
 
-- [ ] `pnpm test` — full workspace. The AA gate (30 assertions across the two gated themes)
+- [ ] `pnpm test` — full workspace. The AA gate (56 assertions across the two gated themes)
       and `theme-css.test.ts` are the load-bearing ones.
 - [ ] `pnpm --filter @lodekit/web-main build` — must still be clean; web/main is not edited by
       this plan, so a failure means something leaked.
