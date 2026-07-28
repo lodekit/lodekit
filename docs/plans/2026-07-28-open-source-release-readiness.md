@@ -247,32 +247,57 @@ If it still reports missing information, the reported paths fall outside every g
 
 The lint passing only proves every file has *some* license. Verify the boundary is the one the spec specifies:
 
+Write this to `/tmp/check-boundary.py` — Task 8 re-runs it:
+
 ```bash
-/tmp/reuse-venv/bin/reuse lint --json \
-  | python3 -c "
-import json,sys
-d=json.load(sys.stdin)
-want={
- 'packages/engine/src/server.ts':'AGPL-3.0-only',
- 'packages/sdk/src/secrets.ts':'Apache-2.0',
- 'packages/ui/src/components/accordion.tsx':'MIT',
- 'packages/mcp/client.ts':'Apache-2.0',
- 'root/apps/greenhouse/src/db.ts':'Apache-2.0',
- 'manager/src/main.js':'AGPL-3.0-only',
- 'web/main/src/components/demo/prompt-kit/message.tsx':'MIT',
- 'packages/engine/themes/nord.css':'MIT',
- '.agents/skills/ponytail/SKILL.md':'MIT',
- '.agents/skills/session/SKILL.md':'Apache-2.0',
+cat > /tmp/check-boundary.py <<'EOF'
+import json, os, subprocess, sys
+
+# reuse lint --json reports each file's license under "spdx_expressions" (NOT
+# "licenses"), and each entry is a dict {"value": ..., "source": ...}. Paths are
+# absolute, so relativise with os.path.relpath — never str.split on a directory
+# name, which corrupts any path containing it (e.g. packages/engine/...).
+WANT = {
+    "packages/engine/src/server.ts": "AGPL-3.0-only",
+    "packages/sdk/src/secrets.ts": "Apache-2.0",
+    "packages/ui/src/components/accordion.tsx": "MIT",
+    "packages/mcp/client.ts": "Apache-2.0",
+    "packages/skill/package.json": "Apache-2.0",
+    "root/apps/greenhouse/src/db.ts": "Apache-2.0",
+    "manager/src/main.js": "AGPL-3.0-only",
+    "web/main/src/pages/index.astro": "AGPL-3.0-only",
+    "web/main/src/components/demo/prompt-kit/message.tsx": "MIT",
+    "packages/engine/themes/nord.css": "MIT",
+    "docs/PRODUCT.md": "Apache-2.0",
+    ".agents/skills/ponytail/SKILL.md": "MIT",
+    ".agents/skills/writing-skills/SKILL.md": "MIT",
+    ".agents/skills/session/SKILL.md": "Apache-2.0",
 }
-got={f['path'].split('engine/',1)[-1]:f['licenses'] for f in d['files']}
-bad=0
-for p,exp in want.items():
-    ids=[l['value'] if isinstance(l,dict) else l for l in got.get(p,[])]
-    ok = exp in ids
-    print(('OK  ' if ok else 'BAD '), p, '->', ids, '(want', exp+')')
+
+raw = subprocess.run(
+    ["/tmp/reuse-venv/bin/reuse", "lint", "--json"],
+    capture_output=True, text=True,
+).stdout
+data = json.loads(raw)
+root = os.getcwd()
+
+def values(f):
+    return [e["value"] if isinstance(e, dict) else e
+            for e in f.get("spdx_expressions", [])]
+
+got = {os.path.relpath(f["path"], root): values(f) for f in data["files"]}
+
+bad = 0
+for path, expected in WANT.items():
+    ids = got.get(path)
+    ok = ids is not None and expected in ids
+    print(("OK  " if ok else "BAD "), path, "->", ids, "(want", expected + ")")
     bad += 0 if ok else 1
+
+print("MISMATCHES:", bad)
 sys.exit(1 if bad else 0)
-"
+EOF
+python3 /tmp/check-boundary.py
 ```
 
 Expected: every line `OK`, exit 0. Any `BAD` line means an annotation glob is wrong or mis-ordered — fix `REUSE.toml`, re-run.
@@ -1113,6 +1138,9 @@ cd /Users/sesv/Code/worktrees/lodekit/engine
 
 echo "=== reuse lint ==="
 /tmp/reuse-venv/bin/reuse lint 2>&1 | tail -3
+
+echo "=== licensing boundary still correct ==="
+python3 /tmp/check-boundary.py
 
 echo "=== manifest license fields ==="
 python3 /tmp/check-licenses.py
