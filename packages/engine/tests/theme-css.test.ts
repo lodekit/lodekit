@@ -90,8 +90,8 @@ describe("non-canonical content preservation", () => {
 
   it("preserves a trailing standalone comment just before a block's }", () => {
     const css = base.replace(
-      "  --sidebar-ring: #935842;\n}",
-      "  --sidebar-ring: #935842;\n  /* trailing note */\n}",
+      "  --sidebar-ring: #a93510;\n}",
+      "  --sidebar-ring: #a93510;\n  /* trailing note */\n}",
     );
     expect(serializeTheme(parseTheme(css))).toBe(css);
   });
@@ -146,7 +146,7 @@ describe("roles", () => {
   });
 
   it("reads the shared value when lead tokens agree", () => {
-    expect(roleValue(model, "light", brand)).toBe("#935842");
+    expect(roleValue(model, "light", brand)).toBe("#a93510");
   });
 
   it("reads 'mixed' when lead tokens diverge", () => {
@@ -166,7 +166,7 @@ describe("roles", () => {
     expect(next.light["primary-foreground"]).toBe(readableForeground("#ff0000"));
     expect(next.light["sidebar-primary-foreground"]).toBe(readableForeground("#ff0000"));
     // immutable: original untouched, other mode untouched
-    expect(model.light["primary"]).toBe("#935842");
+    expect(model.light["primary"]).toBe("#a93510");
     expect(next.dark["primary"]).toBe(model.dark["primary"]);
   });
 

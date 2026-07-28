@@ -15,14 +15,14 @@
   --radius: 0.1875rem;
   --spacing: 0.25rem;
   --icon-library: lucide;
-  --background: #ede7d8;
+  --background: #f6f1e6;
   --foreground: #251b25;
-  --card: #f6f1e6;
+  --card: #fcf9f0;
   --card-foreground: #251b25;
-  --popover: #f6f1e6;
+  --popover: #fcf9f0;
   --popover-foreground: #251b25;
-  --primary: #935842;
-  --primary-foreground: #f6f1e6;
+  --primary: #a93510;
+  --primary-foreground: #fcf9f0;
   --secondary: #dcd3be;
   --secondary-foreground: #251b25;
   --muted: #dcd3be;
@@ -32,21 +32,21 @@
   --destructive: #a61e33;
   --border: #cdc4ae;
   --input: #cdc4ae;
-  --ring: #935842;
+  --ring: #a93510;
   /* Chart series — DESIGN.md fixed order; the sky family is charts-only. */
   --chart-1: #4b5d91;
   --chart-2: #dd9741;
-  --chart-3: #935842;
+  --chart-3: #a93510;
   --chart-4: #8394a9;
   --chart-5: #251b25;
-  --sidebar: #ede7d8;
+  --sidebar: #f6f1e6;
   --sidebar-foreground: #251b25;
-  --sidebar-primary: #935842;
-  --sidebar-primary-foreground: #f6f1e6;
+  --sidebar-primary: #a93510;
+  --sidebar-primary-foreground: #fcf9f0;
   --sidebar-accent: #dcd3be;
   --sidebar-accent-foreground: #251b25;
   --sidebar-border: #cdc4ae;
-  --sidebar-ring: #935842;
+  --sidebar-ring: #a93510;
 }
 
 .dark {
@@ -57,7 +57,7 @@
   --card-foreground: #f3e0a5;
   --popover: #1b2452;
   --popover-foreground: #f3e0a5;
-  --primary: #dd9741;
+  --primary: #f0a73c;
   --primary-foreground: #121a44;
   --secondary: #242e63;
   --secondary-foreground: #f3e0a5;
@@ -68,21 +68,21 @@
   --destructive: #e06a7d; /* derived (L): crimson brightened for AA on the night surfaces */
   --border: rgba(243, 224, 165, 0.16); /* derived (L): gold-tinted hairline on the night plate */
   --input: rgba(243, 224, 165, 0.22);
-  --ring: #dd9741;
+  --ring: #f0a73c;
   /* derived (L): the light series brightened for the night plate (plum → pale plum). */
   --chart-1: #7285bd;
   --chart-2: #e5a85c;
-  --chart-3: #c07a63;
+  --chart-3: #d9714a;
   --chart-4: #9daec2;
   --chart-5: #a893a8;
   --sidebar: #121a44;
   --sidebar-foreground: #f3e0a5;
-  --sidebar-primary: #dd9741;
+  --sidebar-primary: #f0a73c;
   --sidebar-primary-foreground: #121a44;
   --sidebar-accent: #242e63;
   --sidebar-accent-foreground: #f3e0a5;
   --sidebar-border: rgba(243, 224, 165, 0.16);
-  --sidebar-ring: #dd9741;
+  --sidebar-ring: #f0a73c;
 }
 }
 
@@ -155,6 +155,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-weight: 500;
   }
   h1, h2, h3, h4 {
     font-family: var(--font-display);
