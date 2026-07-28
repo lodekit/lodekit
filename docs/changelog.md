@@ -78,6 +78,13 @@ Rules:
   dashboard (and anywhere without its own icon), and each app's emoji on that
   app's pages. Changing the menubar icon in Settings updates open tabs live.
 
+- **Lodekit is open source** — the engine and the menubar app are AGPL-3.0-only.
+  Everything your own apps touch — the SDK, the UI library, the MCP server, the
+  Claude skill, the example apps, and the documentation — is Apache-2.0, so the
+  apps you build stay yours under whatever license you pick. `LICENSING.md`
+  explains the split, and the packaged app now carries the license notices for
+  the Node and Electron runtimes it ships.
+
 ## Fixed
 
 - **kv-store error statuses** — internal faults in the kv API now return 500
