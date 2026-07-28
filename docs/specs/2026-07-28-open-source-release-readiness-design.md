@@ -248,9 +248,9 @@ No code reads them, no test asserts them, nothing can break.
 
 | Shape | Count | Files | Replacement |
 |---|---|---|---|
-| `/Users/sesv/Code/worktrees/lodekit/<branch>` | 20 | `2026-07-02-manager-v0.1.md`, `2026-07-03-tanstack-start-host.md`, `2026-07-06-docs-site-v1.md`, `2026-07-07-tasks-change-bus-migration.md`, `2026-07-09-db-store.md`, `2026-07-10-release-pipeline.md`, `2026-07-14-data-explorer.md`, `2026-07-14-ui-charts-data-table.md`, `2026-07-16-worktree-disk-usage.md`, `2026-07-17-engine-package-rename.md`, `docs/specs/2026-07-06-file-store-design.md` | `~/Code/worktrees/lodekit/<branch>` |
-| `/private/tmp/claude-501/-Users-sesv-Code-worktrees-lodekit-docs/<uuid>/scratchpad/...` | 3 | `2026-07-12-docs-content-v1.md` | `<scratchpad>/facts/...` |
-| `~/.claude/projects/-Users-sesv-Code-github-lodekit/memory/` | 2 | `2026-07-15-dev-flow-v2.md`, `docs/specs/2026-07-15-dev-flow-v2-design.md` | `~/.claude/projects/<project-slug>/memory/` |
+| `/Users/<user>/Code/worktrees/lodekit/<branch>` | 20 | `2026-07-02-manager-v0.1.md`, `2026-07-03-tanstack-start-host.md`, `2026-07-06-docs-site-v1.md`, `2026-07-07-tasks-change-bus-migration.md`, `2026-07-09-db-store.md`, `2026-07-10-release-pipeline.md`, `2026-07-14-data-explorer.md`, `2026-07-14-ui-charts-data-table.md`, `2026-07-16-worktree-disk-usage.md`, `2026-07-17-engine-package-rename.md`, `docs/specs/2026-07-06-file-store-design.md` | `~/Code/worktrees/lodekit/<branch>` |
+| `/private/tmp/claude-501/-Users-<user>-Code-worktrees-lodekit-docs/<uuid>/scratchpad/...` | 3 | `2026-07-12-docs-content-v1.md` | `<scratchpad>/facts/...` |
+| `~/.claude/projects/-Users-<user>-Code-github-lodekit/memory/` | 2 | `2026-07-15-dev-flow-v2.md`, `docs/specs/2026-07-15-dev-flow-v2-design.md` | `~/.claude/projects/<project-slug>/memory/` |
 
 `~/Code/worktrees/lodekit/` is safe as a replacement: these are historical records of how
 *this* project was worked, so the convention is accurate, and the paths were in fact
@@ -289,7 +289,7 @@ as honesty. One skim pass for anything careless; no rewrite.
 | Packed `Lodekit.app` contains Electron's `LICENSE` and `LICENSES.chromium.html` | assertion in `assert-pack.cjs` (extended) |
 | Packed `Lodekit.app` contains `Resources/node/LICENSE` | assertion in `assert-pack.cjs` (extended) |
 | `pnpm test` green | existing |
-| No `sesv` in tracked files | one-off grep at review |
+| No leaked home path (`/Users/<user>`, `-Users-<user>-`) in tracked files | one-off grep at review |
 | Every workspace manifest has a `license` field | one-off check at review |
 
 `reuse lint` is worth a CI job specifically because `REUSE.toml` uses path globs: a file

@@ -53,7 +53,7 @@
 | 10 × `package.json` | Add SPDX `license` field. |
 | `manager/scripts/assert-pack.cjs` | Copy + assert Electron and Node license files. |
 | `manager/tests/` (new file) | Test for the license-copy helper. |
-| 13 × `docs/plans/*.md`, `docs/specs/*.md` | Genericise `/Users/sesv/…` paths. |
+| 13 × `docs/plans/*.md`, `docs/specs/*.md` | Genericise `/Users/<user>/…` paths. |
 | `docs/PRODUCT.md` | One line in §3. |
 | `docs/changelog.md` | One `## New` entry. |
 
@@ -91,7 +91,7 @@ Expected: `reuse 5.x.x` (any 5.x is fine; it implements spec 3.3).
 - [ ] **Step 2: Run the lint to verify it fails**
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/engine
+cd "$(git rev-parse --show-toplevel)"
 /tmp/reuse-venv/bin/reuse lint 2>&1 | tail -20
 ```
 
@@ -376,7 +376,7 @@ git commit -m "feat: AGPL-3.0-only/Apache-2.0 licensing boundary via REUSE (<bea
 npm and GitHub both read a missing `license` as proprietary. This check is the test — write it to `/tmp/check-licenses.py`, because Step 3 and Task 8 both re-run it:
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/engine
+cd "$(git rev-parse --show-toplevel)"
 cat > /tmp/check-licenses.py <<'EOF'
 import json, sys
 want = {
@@ -467,7 +467,7 @@ git commit -m "feat: SPDX license fields on all workspace manifests (<bead-id>)"
 The spec records this as confirm-don't-assume. Run the bundle step and look:
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/engine
+cd "$(git rev-parse --show-toplevel)"
 pnpm --filter @lodekit/manager bundle 2>&1 | tail -3
 ls manager/build/node/LICENSE && echo "NODE LICENSE PRESENT"
 ```
@@ -479,7 +479,7 @@ If it is absent, the spec's §4.3 assumption is wrong: add a copy step for it in
 - [ ] **Step 2: Locate Electron's license files in the dist**
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/engine
+cd "$(git rev-parse --show-toplevel)"
 find node_modules/.pnpm -maxdepth 6 -path '*electron/dist*' \
   \( -name 'LICENSE' -o -name 'LICENSES.chromium.html' \) 2>/dev/null | head
 ```
@@ -995,14 +995,14 @@ git commit -m "docs: SECURITY.md and CONTRIBUTING.md (<bead-id>)"
 - Modify: `docs/plans/2026-07-02-manager-v0.1.md`, `docs/plans/2026-07-03-tanstack-start-host.md`, `docs/plans/2026-07-06-docs-site-v1.md`, `docs/plans/2026-07-07-tasks-change-bus-migration.md`, `docs/plans/2026-07-09-db-store.md`, `docs/plans/2026-07-10-release-pipeline.md`, `docs/plans/2026-07-12-docs-content-v1.md`, `docs/plans/2026-07-14-data-explorer.md`, `docs/plans/2026-07-14-ui-charts-data-table.md`, `docs/plans/2026-07-15-dev-flow-v2.md`, `docs/plans/2026-07-16-worktree-disk-usage.md`, `docs/plans/2026-07-17-engine-package-rename.md`, `docs/specs/2026-07-06-file-store-design.md`, `docs/specs/2026-07-15-dev-flow-v2-design.md`
 - Modify: `docs/PRODUCT.md`
 
-**Background:** 27 lines leak the macOS username `sesv`. Every one is prose in a completed plan or spec — historical execution context. No code reads them, no test asserts them. `manager/tests/paths.test.js` already uses a generic `/Users/someone` and is **not** touched. The three `/Users/jesse/…` hits under `.agents/skills/` are the upstream author's username in vendored files and are **not** touched — editing them would add an `UPSTREAM.md` divergence entry for no benefit.
+**Background:** 27 lines leak the maintainer's macOS username. Every one is prose in a completed plan or spec — historical execution context. No code reads them, no test asserts them. `manager/tests/paths.test.js` already uses a generic `/Users/someone` and is **not** touched. The three `/Users/jesse/…` hits under `.agents/skills/` are the upstream author's username in vendored files and are **not** touched — editing them would add an `UPSTREAM.md` divergence entry for no benefit.
 
 **Interfaces:**
 - Consumes: nothing.
 - Produces: nothing.
 
 **Acceptance Criteria:**
-- `git grep -n sesv` returns no hits in tracked files.
+- `git grep -nE "/Users/$(id -un)|Users-$(id -un)"` returns no hits in tracked files. Note the bare username is the wrong probe — it also matches the public GitHub handle `ulyssesv`; the leak is the home-directory path and its slug form.
 - `.agents/skills/` is unmodified.
 - `manager/tests/paths.test.js` is unmodified and `pnpm --filter @lodekit/manager test` still passes.
 - `docs/PRODUCT.md` §3 no longer says OSS positioning is open.
@@ -1011,9 +1011,10 @@ git commit -m "docs: SECURITY.md and CONTRIBUTING.md (<bead-id>)"
 - [ ] **Step 1: Write the failing check**
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/engine
-git grep -c sesv -- . | sort -t: -k2 -rn
-git grep -l sesv -- . | wc -l
+cd "$(git rev-parse --show-toplevel)"
+U=$(id -un)
+git grep -cE "/Users/$U|Users-$U" -- . | sort -t: -k2 -rn
+git grep -lE "/Users/$U|Users-$U" -- . | wc -l
 ```
 
 Expected: FAIL — 13 files listed.
@@ -1023,18 +1024,26 @@ Expected: FAIL — 13 files listed.
 Three distinct shapes, in this order:
 
 ```bash
+U=$(id -un)   # derived, so this file never quotes the home path it is removing
+
 # 1 — worktree paths (20 occurrences)
-git grep -l '/Users/sesv/Code/worktrees/lodekit' -- docs \
-  | xargs sed -i '' 's#/Users/sesv/Code/worktrees/lodekit#~/Code/worktrees/lodekit#g'
+git grep -l "/Users/$U/Code/worktrees/lodekit" -- docs \
+  | xargs sed -i '' "s#/Users/$U/Code/worktrees/lodekit#~/Code/worktrees/lodekit#g"
 
 # 2 — dead session scratchpad paths (3 occurrences, all in one file)
-sed -i '' 's#/private/tmp/claude-501/-Users-sesv-Code-worktrees-lodekit-docs/[0-9a-f-]*/scratchpad#<scratchpad>#g' \
+sed -i '' "s#/private/tmp/claude-501/-Users-$U-Code-worktrees-lodekit-docs/[0-9a-f-]*/scratchpad#<scratchpad>#g" \
   docs/plans/2026-07-12-docs-content-v1.md
 
 # 3 — Claude project-directory slug (2 occurrences)
-git grep -l 'Users-sesv-Code-github-lodekit' -- docs \
-  | xargs sed -i '' 's#-Users-sesv-Code-github-lodekit#<project-slug>#g'
+git grep -l "Users-$U-Code-github-lodekit" -- docs \
+  | xargs sed -i '' "s#-Users-$U-Code-github-lodekit#<project-slug>#g"
 ```
+
+**Exclude this plan and its spec** from the sweep — both quote the path shapes in
+order to describe the work, and a literal pass over them corrupts their own
+examples (the substitution turns an illustrative command into a no-op and
+collapses an audit table's before/after columns). They are redacted by hand
+instead, using `<user>` in prose and `$(id -un)` in commands.
 
 `~/Code/worktrees/lodekit/` is a safe replacement: these are historical records of how *this* project was worked, so the convention is accurate, the paths were in fact under a home directory, and nothing resolves them at runtime.
 
@@ -1043,7 +1052,7 @@ Note the BSD `sed -i ''` form — this is macOS.
 - [ ] **Step 3: Re-run the check to verify it passes**
 
 ```bash
-git grep -n sesv -- . ; echo "exit=$?"
+git grep -nE "/Users/$(id -un)|Users-$(id -un)" -- . ; echo "exit=$?"
 ```
 
 Expected: PASS — no output, `exit=1` (grep's no-match code).
@@ -1134,7 +1143,7 @@ git commit -m "docs: genericise local worktree paths; settle OSS positioning in 
 - [ ] **Step 2: Run every check**
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/engine
+cd "$(git rev-parse --show-toplevel)"
 
 echo "=== reuse lint ==="
 /tmp/reuse-venv/bin/reuse lint 2>&1 | tail -3
@@ -1145,8 +1154,8 @@ python3 /tmp/check-boundary.py
 echo "=== manifest license fields ==="
 python3 /tmp/check-licenses.py
 
-echo "=== no sesv ==="
-git grep -n sesv -- . && echo "FAIL: sesv present" || echo "OK: clean"
+echo "=== no leaked home path ==="
+git grep -nE "/Users/$(id -un)|Users-$(id -un)" -- . && echo "FAIL: home path present" || echo "OK: clean"
 
 echo "=== launch files present ==="
 for f in LICENSE NOTICE LICENSING.md README.md SECURITY.md CONTRIBUTING.md REUSE.toml \
