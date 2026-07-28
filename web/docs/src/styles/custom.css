@@ -1,21 +1,21 @@
-/* Lodekit docs theme — Sky in a Jar: rust/ochre accents + brand type (DESIGN.md),
+/* Lodekit docs theme — Sky in a Jar: persimmon/gold accents + brand type (DESIGN.md),
    reading-calm register. */
-@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Spline+Sans+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Spline+Sans+Mono:wght@400;500&family=M+PLUS+1+Code:wght@700&display=swap');
 
 :root {
-  /* dark scheme (Starlight default root) — ochre on the night plate */
-  --sl-color-accent-low: #3a2c10;
-  --sl-color-accent: #dd9741;
-  --sl-color-accent-high: #e5a85c;
+  /* dark scheme (Starlight default root) — gold on the night plate */
+  --sl-color-accent-low: #412d10;
+  --sl-color-accent: #f0a73c;
+  --sl-color-accent-high: #f2b459;
   --sl-color-bg: #121a44;
   --sl-font: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
   --sl-font-mono: 'Spline Sans Mono', ui-monospace, monospace;
 }
 
 :root[data-theme='light'] {
-  --sl-color-accent-low: #ecd9c9;
-  --sl-color-accent: #935842;
-  --sl-color-accent-high: #7c4636;
+  --sl-color-accent-low: #eacdc4;
+  --sl-color-accent: #a93510;
+  --sl-color-accent-high: #8a2b0d;
   --sl-color-bg: #f6f1e6;
 }
 
@@ -46,7 +46,11 @@
   }
 }
 
-.site-title,
+.site-title {
+  font-family: 'M PLUS 1 Code', ui-monospace, monospace;
+  font-weight: 700;
+}
+
 .sl-markdown-content h1,
 .sl-markdown-content h2,
 .sl-markdown-content h3,
