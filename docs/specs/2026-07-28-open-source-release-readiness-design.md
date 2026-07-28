@@ -19,10 +19,9 @@ notices, launch files, and a sweep for anything that shouldn't be public.
 - The visibility flip itself. The repo stays private until the gate is clear.
 - Security findings #87–#97. They stay open in Issues and are fixed on their own
   schedule; the repo does not go public before they are resolved.
-- Entity, funding, and trademark actions: Commons Conservancy intake, GitHub Sponsors,
-  the BOIP Benelux filing, NGI Fediversity, the Apple Developer Program.
-- npm publication. All manifests stay `private: true`; publishing is a separate
-  decision with its own blast radius.
+- Entity, funding, and trademark registration. None of it touches the codebase.
+- Developer ID signing and notarization — the beta's job.
+- npm publication. Not intended for now; all manifests stay `private: true`.
 
 ---
 
@@ -30,11 +29,11 @@ notices, launch files, and a sweep for anything that shouldn't be public.
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| License model | AGPL-3.0-**only** default + Apache-2.0 carve-outs | Chatto's split. `-only` rather than `-or-later`: `-or-later` delegates future licensing to the FSF irreversibly; with ~100% of copyright held by one author, relicensing forward stays possible at any time. Taking the option costs nothing; giving it away can't be undone. |
-| Copyright holder | `The Lodekit Authors` | No Lodekit entity exists yet, and copyright can't be assigned to one that doesn't. Idiomatic (Go, Kubernetes), always true, keeps a legal name out of every file header, and assigns cleanly to a future Lodekit BV or the Commons Conservancy. |
-| Marks | Reserved, fork-friendly, unregistered | Research §5 concludes copyright over agent-written code is weak; §6 concludes trademark is the backstop that doesn't depend on it. A NOTICE paragraph costs nothing and upgrades to a BOIP registration later. No `TRADEMARKS.md` — premature without a registration. |
+| License model | AGPL-3.0-**only** default + Apache-2.0 carve-outs | Copyleft on the product, permissive on everything a user's own app touches (§3.1). `-only` rather than `-or-later`: `-or-later` delegates future licensing to the FSF irreversibly; with ~100% of copyright held by one author, relicensing forward stays possible at any time. Taking the option costs nothing; giving it away can't be undone. |
+| Copyright holder | `The Lodekit Authors` | No Lodekit entity exists yet, and copyright can't be assigned to one that doesn't. Idiomatic (Go, Kubernetes), always true, keeps a legal name out of every file header, and assigns cleanly to a future Lodekit Org. |
+| Marks | Reserved, fork-friendly, unregistered | Research §5 concludes copyright over agent-written code is weak; §6 concludes trademark is the backstop that doesn't depend on it. A NOTICE paragraph costs nothing and upgrades cleanly if the mark is ever registered. No `TRADEMARKS.md` — premature without a registration. |
 | `docs/PRODUCT.md` | Publishes as-is | Consistent with the transparency posture; content is fair-minded by its own rule ("punch at systems, never at people"). |
-| Contributions | Closed for now, opened eventually | Chatto pattern. No DCO/CLA machinery, copyright stays in one pair of hands, and no PR surface to flood. |
+| Contributions | Closed for now, opened eventually | No DCO/CLA machinery, copyright stays in one pair of hands, and no PR surface to flood. |
 | Docs license | Apache-2.0, not CC-BY-4.0 | CC-BY is the more correct instrument for prose, but a third license family buys nothing practical. Revisit if docs get reused enough to matter. |
 
 ---
@@ -69,9 +68,8 @@ scaffold — a seam there buys nothing.
 ### 3.2 Mechanism: `REUSE.toml`, not per-file headers
 
 Full REUSE compliance wants an SPDX header on every file — ~400+ files of churn.
-`REUSE.toml` expresses the same boundary as path globs, which is precisely why Chatto
-uses it. New files inherit their glob automatically; `reuse lint` (§7) catches anything
-that falls outside every glob.
+`REUSE.toml` expresses the same boundary as path globs instead. New files inherit their
+glob automatically; `reuse lint` (§7) catches anything that falls outside every glob.
 
 Per-file `SPDX-FileCopyrightText` / `SPDX-License-Identifier` headers are added **only**
 where a file is vendored from elsewhere and its glob would otherwise misstate its
@@ -128,11 +126,17 @@ provenance; this adds the licensing half it doesn't carry.
 **The community themes need their licenses confirmed individually** before annotation —
 they are the one row above that has not been verified.
 
-### 4.2 `THIRD-PARTY-NOTICES.md`
+### 4.2 No aggregate notices file
 
-Generated for the npm dependency tree via `pnpm licenses list`. Individual packages'
-own `LICENSE` files already travel inside packaged `node_modules`; the aggregate file is
-the auditable convention on top.
+An aggregate `THIRD-PARTY-NOTICES` file is **not** produced. The obligation the npm
+dependency tree creates is notice *preservation*, and it is already satisfied: each
+package's own `LICENSE` — and, for the Apache-2.0 dependencies, its `NOTICE` if it has
+one — travels inside the packaged `node_modules`, which ship whole in
+`Resources/platform/`. An aggregate file is a courtesy convention layered on top of
+that, not a legal requirement, and it carries a maintenance cost (regeneration on every
+dependency change) for no additional compliance.
+
+The redistributed *binaries* are a different matter and are handled in §4.3.
 
 ### 4.3 Packaging: the redistribution gap
 
@@ -153,8 +157,8 @@ assert both exist — the same guard shape it already applies to the menubar ico
 
 The bundled `ffmpeg.dylib` is LGPL-2.1, which strictly also wants corresponding source
 availability. Even Electron's own releases have an open issue about this; the practical
-ecosystem mitigation is a link to Electron's source release for the exact version used,
-which `THIRD-PARTY-NOTICES.md` carries.
+ecosystem mitigation is a pointer to Electron's source release for the exact version
+used, which goes in `LICENSING.md` alongside the Electron entry.
 
 ---
 
@@ -167,14 +171,13 @@ which `THIRD-PARTY-NOTICES.md` carries.
 | `NOTICE` | Copyright line, Apache-2.0 §4(d) mechanics, trademark paragraph (§5.2). |
 | `SECURITY.md` | Alpha framing, private vulnerability reporting, scope, no bug bounty. |
 | `CONTRIBUTING.md` | Closed-contributions posture, agent workflow as documentation, human-editorial-control statement (research §5). |
-| `CODE_OF_CONDUCT.md` | Contributor Covenant. Needs a reporting contact — see §9. |
-| `THIRD-PARTY-NOTICES.md` | §4.2. |
-| `.github/PULL_REQUEST_TEMPLATE.md` | States the closed posture at the top so a fork PR doesn't waste someone's work. |
 
-**Not created:** issue forms (only collaborators file issues; they don't need a form),
-`FUNDING.yml` (Sponsors is an unmade account decision), `GOVERNANCE.md` / `SUPPORT.md`
-(solo maintainer; the README and CONTRIBUTING carry the one line each would hold),
-`TRADEMARKS.md` (§2).
+Five files, and that is the whole set. No `CODE_OF_CONDUCT.md` (with contributions
+closed there is no contributor community to govern, and the Contributor Covenant's
+required reporting contact would mean standing up a channel for nobody), no
+`THIRD-PARTY-NOTICES` (§4.2), no PR or issue templates, no `FUNDING.yml`,
+`GOVERNANCE.md`, `SUPPORT.md`, or `TRADEMARKS.md`. Each is reconsidered if and when
+contributions open.
 
 All new prose is written per the `write-documentation` skill and consults
 `docs/PRODUCT.md` for voice.
@@ -184,7 +187,9 @@ All new prose is written per the `write-documentation` skill and consults
 1. What Lodekit is — one paragraph in PRODUCT.md's voice.
 2. **Status and disclaimer** — §5.3.
 3. Install (packaged app; ad-hoc-signed caveat).
-4. Quickstart — the loop: connect an agent, scaffold an app, open it.
+4. Quickstart — a pointer to `docs.lodekit.com`, not steps inline. The docs site isn't
+   published yet, so the link is dead on day one; that is accepted rather than
+   duplicating a quickstart into the README that would then drift.
 5. How it works — short, linking to `docs/` and `CONTEXT.md`.
 6. Licensing — two sentences plus a link to `LICENSING.md`.
 7. Contributing — closed for now, link to `CONTRIBUTING.md`.
@@ -192,14 +197,12 @@ All new prose is written per the `write-documentation` skill and consults
 
 ### 5.2 Trademark paragraph (in `NOTICE`)
 
-Asserts the unregistered mark, per research §6 and Chatto's implementation:
+Asserts the unregistered mark, per research §6:
 
 - The code licenses grant no permission to use the "Lodekit" name, logos, or marks.
 - These are marks and trade names of the Lodekit project, not registered at this time.
 - Truthful referential use ("based on Lodekit", "forked from Lodekit") is expressly
   welcome — which implies that claiming official status is not.
-
-Zero cost, upgrades to a registered right if the BOIP filing happens.
 
 ### 5.3 Status and disclaimer block
 
@@ -303,34 +306,18 @@ Ticked by the person, not by this work. The repo goes public when:
 - [ ] Everything in §3–§6 landed and merged.
 - [ ] Repo description and homepage set.
 - [ ] Private vulnerability reporting enabled (Settings → Security).
-- [ ] **Post-flip:** interaction limit set to "Collaborators only". GitHub rejects this
-      on private repos (HTTP 405, verified 2026-07-28), so it is necessarily applied
-      after the flip. It is temporary by design — max 6 months, and on expiry "users can
-      resume normal activity". Renewal goes on a calendar; a scheduled workflow can
-      re-apply it via the API if the chore grates.
+- [ ] **Post-flip:** interaction limit set to "Collaborators only".
 - [ ] **Post-flip:** confirm GitHub's license detector reads `AGPL-3.0-only`.
 
 ---
 
 ## 9. Open questions
 
-- **Code-of-conduct reporting contact** — the Contributor Covenant requires a contact for
-  reports, and there is no project email today. Options: a personal address (exposes it
-  publicly and permanently), a `conduct@lodekit.com` alias on the domain you already own
-  (recommended — one alias, no identity exposure), or GitHub private vulnerability
-  reporting reused for conduct (a misuse of that channel, but zero setup). **Needs your
-  call before `CODE_OF_CONDUCT.md` can be written.** The same address, if created, is the
-  natural "feedback and bug reports by email" channel `CONTRIBUTING.md` points at while
-  contributions are closed.
 - **Community theme licenses** (§4.1) — the one unverified row; confirm per theme before
   annotating.
 - **Node `LICENSE` in the bundle** (§4.3) — expected to already ship; confirm empirically
   rather than assuming the research's claim of a gap.
-- **npm publication** — out of scope here, but the Apache-licensed packages (`sdk`, `ui`,
-  `mcp`, `skill`) are the ones that would eventually publish; the license fields set in
-  §3.4 make that a one-line change when it's decided.
-- **The services boundary** — research §12 flags this as the highest-value question for a
-  Dutch tech lawyer: whether paid services by the same person who supplies free Lodekit
-  constitute supplying it "in the course of a commercial activity" under PLD Recitals
-  13–14. Nothing in this spec depends on the answer; the README's non-commerciality
-  statement is accurate today.
+- **Feedback channel while contributions are closed** — `CONTRIBUTING.md` needs somewhere
+  to send people who aren't collaborators and therefore can't open an issue. An address
+  on the domain already owned is the obvious answer, but none exists yet. Until one does,
+  the file states the closed posture without promising a channel.
