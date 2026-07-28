@@ -1,18 +1,19 @@
 ---
 name: Lodekit
-description: The Sky in a Jar — plum ink, parchment, rust and gold in a woodblock-print register
+description: The Sky in a Jar — plum ink, parchment, persimmon and gold in a woodblock-print register
 colors:
   ink: "#251B25"
-  paper: "#EDE7D8"
-  paper-hi: "#F6F1E6"
+  paper: "#F6F1E6"
+  paper-hi: "#FCF9F0"
   paper-lo: "#DCD3BE"
   slate: "#4F4F59"
   hairline: "#CDC4AE"
   hairline-strong: "#AB9F86"
-  rust: "#935842"
-  rust-deep: "#7C4636"
+  persimmon: "#A93510"
+  persimmon-deep: "#8A2B0D"
   ochre: "#DD9741"
   ochre-bright: "#E5A85C"
+  gold: "#F0A73C"
   night: "#121A44"
   night-hi: "#1B2452"
   night-lo: "#242E63"
@@ -42,7 +43,7 @@ typography:
   body:
     fontFamily: "'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif"
     fontSize: "1rem"
-    fontWeight: 400
+    fontWeight: 500
     lineHeight: 1.6
   label:
     fontFamily: "'Spline Sans Mono', ui-monospace, monospace"
@@ -62,12 +63,12 @@ spacing:
   xl: "40px"
 components:
   button-primary:
-    backgroundColor: "{colors.rust}"
+    backgroundColor: "{colors.persimmon}"
     textColor: "{colors.paper-hi}"
     rounded: "{rounded.sm}"
     padding: "0.85em 1.5em"
   button-primary-hover:
-    backgroundColor: "{colors.rust-deep}"
+    backgroundColor: "{colors.persimmon-deep}"
     textColor: "{colors.paper-hi}"
   button-ghost:
     backgroundColor: "transparent"
@@ -105,8 +106,8 @@ have been printed: deliberate, layered, matte, calm. The color is Hokusai's "Som
 Parchment" palette applied wholesale (chosen over an initial cool-sky derivation
 after side-by-side exploration); the type, shape grammar, and component behavior are
 adapted from the Orikata landing exercise. By day the print is plum ink on
-parchment with a rust accent; by night it inverts to pale gold on deep indigo — a
-night-sky plate.
+parchment with a persimmon accent; by night it inverts to pale gold on deep
+indigo with a gold accent — a night-sky plate.
 
 The system serves three surfaces with one identity, two registers:
 
@@ -125,7 +126,9 @@ hairlines, no effects; *quietly confident* → committed type scale, sparse acce
 *warm underneath* → the parchment itself and the gold-on-indigo night; *honest to a
 fault* → real content, no decorative fakery. The previous identities are fully
 retired — cork amber/Fraunces/watercolor, and the interim cool-sky palette
-(#F4F7FA paper, #18242F ink, persimmon accent) — never mix either in.
+(#F4F7FA paper, #18242F ink, #C03F16 accent) — never mix either in. That retired
+cool-sky accent was also called persimmon; it is a different, hotter orange-red
+and has nothing to do with the current accent, persimmon #A93510 (§2).
 
 **The Print Test.** The one-sentence audit for any new surface: *if this screen could
 not plausibly be a print — too glossy, too neon, too glassy, too animated — it's
@@ -134,7 +137,7 @@ off-brand.*
 **Key Characteristics:**
 
 - Flat plum ink on aged parchment; depth from paper levels and hairlines, not shadows
-- One accent: rust by day, ochre by night — rare in product, committed on brand surfaces
+- One accent: persimmon by day, gold by night — rare in product, committed on brand surfaces
 - Night mode is a plate, not a dimming: pale gold ink on deep indigo
 - A mono metadata layer (kickers, ids, data) beside one working sans
 - Near-sharp corners (3–5px); 1px rules; matte everything
@@ -145,25 +148,32 @@ off-brand.*
 
 Ink, parchment, and pigment: Hokusai's Somber Parchment palette, assigned roles.
 Hex is canonical; lineage per swatch — (H) verbatim from the Hokusai palette,
-(L) Lodekit-derived (page surfaces lightened from Parchment, state variants).
+(L) Lodekit-derived (page surfaces lightened from Parchment, accents and state
+variants).
 
 ### Primary
 
-- **Rust** (#935842, H): the light-mode accent. Primary buttons, links, active
-  states, focus rings. Text-safe on the page (≈4.7:1 — AA, with little margin;
-  don't lighten it).
-- **Rust Deep** (#7C4636, L): hover/pressed state of rust fills (product register).
-- **Ochre** (#DD9741, H): the dark-mode accent (≈6.8:1 on night) and the brand
-  drench band (with plum ink text). In light mode, graphics and illustration only.
-- **Ochre Bright** (#E5A85C, L): dark-mode hover state of ochre fills.
+- **Persimmon** (#A93510, L): the light-mode accent. Primary buttons, links,
+  active states, focus rings. Text-safe on the page (5.82:1 — AA with real
+  margin).
+- **Persimmon Deep** (#8A2B0D, L): the deepened persimmon (7.67:1 on the page),
+  for hover and emphasis where a darker step is wanted; its one shipped consumer
+  is the docs site's `--sl-color-accent-high`.
+- **Gold** (#F0A73C, L): the dark-mode accent (8.19:1 on the night plate).
+  Primary buttons, links, active states, focus rings on the night plate.
+- **Ochre** (#DD9741, H): the brand drench plate — an ochre band carrying plum
+  ink text — and, in light mode, illustration and charts. Not an interactive
+  color in either plate.
+- **Ochre Bright** (#E5A85C, L): an illustration and chart value; its one
+  surviving consumer is the dark-mode `--chart-2`.
 
 ### Neutral
 
 - **Plum Ink** (#251B25, H): all text, the mark, icons, strong borders. A cool
   plum-black — print ink, not gray.
 - **Slate** (#4F4F59, H): secondary/muted text on the page (≈6.6:1).
-- **Page** (#EDE7D8, L): the light-mode surface — aged paper, lightened from
-  Parchment. **Page High** (#F6F1E6, L): raised surfaces — cards, popovers,
+- **Page** (#F6F1E6, L): the light-mode surface — aged paper, lightened from
+  Parchment. **Page High** (#FCF9F0, L): raised surfaces — cards, popovers,
   inputs. **Page Low** (#DCD3BE, L): recessed washes — muted fills, wells.
 - **Hairline** (#CDC4AE, L): default 1px rules and borders. **Hairline Strong**
   (#AB9F86, L) where a rule must assert (table headers, section dividers).
@@ -187,16 +197,16 @@ The sky family — illustration, decorative geometry, and charts only:
 
 Semantic starting points for product UI (the retheme slice validated destructive
 via the theme-contrast gate; the rest remain starting points — the canonical token
-set carries only `--destructive`): success #4A7B5C, warning ochre #DD9741 (collides
-with the dark-mode accent — in dark, warning chips must lean on their glyph and
-label, which the never-color-alone rule requires anyway), destructive crimson #A61E33
-(deliberately redder and cooler than rust so action and danger never blur), info
-#3E5380 (a text-safe derivative of print blue). Chart series, fixed order: print
-blue #4B5D91, ochre #DD9741, rust #935842, cloud slate #8394A9, plum #251B25
-(dark mode brightens each).
+set carries only `--destructive`): success #4A7B5C, warning ochre #DD9741 (sits
+close to gold, the dark-mode accent — in dark, warning chips must lean on their
+glyph and label, which the never-color-alone rule requires anyway), destructive
+crimson #A61E33 (deliberately redder and cooler than persimmon so action and
+danger never blur), info #3E5380 (a text-safe derivative of print blue). Chart
+series, fixed order: print blue #4B5D91, ochre #DD9741, persimmon #A93510, cloud
+slate #8394A9, plum #251B25 (dark mode brightens each).
 
-**The One Accent Rule.** In the product register, the accent (rust by day, ochre by
-night) appears on at most ~10% of any screen and only ever means "interactive or
+**The One Accent Rule.** In the product register, the accent (persimmon by day, gold
+by night) appears on at most ~10% of any screen and only ever means "interactive or
 active": the primary action, the selected state, the focus ring, the link. It never
 decorates. Brand surfaces may exceed this deliberately — an ochre drench band, a
 committed CTA moment — but always as a chosen move, never as seasoning.
@@ -215,11 +225,14 @@ reintroduce them.
 **Display/Body Font:** Zen Kaku Gothic New (with Hiragino Kaku Gothic ProN,
 system-ui fallbacks) — weights 400 / 500 / 700
 **Label/Mono Font:** Spline Sans Mono (with ui-monospace fallback) — weights 400 / 500
+**Wordmark Font:** M PLUS 1 Code (with ui-monospace fallback) — weight 700, the
+wordmark and nothing else (§5)
 
 **Character:** One calm geometric-humanist sans does all the speaking, from hero to
 caption; a soft mono annotates it — kickers, app ids, data, timestamps. The pairing
-is quiet, literate, and slightly technical, like captions on a print. Both families
-are SIL OFL (Google Fonts); load only the weights above, `font-display: swap`.
+is quiet, literate, and slightly technical, like captions on a print. All three
+families are SIL OFL (Google Fonts); load only the weights above,
+`font-display: swap`.
 
 ### Hierarchy
 
@@ -230,8 +243,12 @@ are SIL OFL (Google Fonts); load only the weights above, `font-display: swap`.
 - **Title** (500 or 700, 1.125–1.375rem fixed, 1.3): product UI headings, card
   titles, dialog titles. Product type is a fixed rem scale (~1.2 ratio); fluid
   `clamp()` belongs to brand surfaces only.
-- **Body** (400, 1rem, 1.6): reading text, `max-width: 65ch`. Compact UI text
-  (labels, table cells, meta) may drop to 0.875rem/1.45 — never running paragraphs.
+- **Body** (500, 1rem, 1.6): reading text, `max-width: 65ch`. 500 is the default
+  in both registers — `packages/ui/theme-tokens.css` sets it on `body`, so the
+  dashboard and every user app inherit it. **400 is the detailing weight**, used
+  sparingly where text should recede: notes, secondary captions, long-form demo
+  copy. Compact UI text (labels, table cells, meta) may drop to 0.875rem/1.45 —
+  never running paragraphs.
 - **Label** (mono 500, 0.72–0.8125rem): two modes. *Kicker*: uppercase,
   letter-spacing 0.12em — section eyebrows, status chips. *Data*: normal case,
   letter-spacing 0.01em — app ids, paths, values, timestamps; `tabular-nums` for
@@ -240,7 +257,9 @@ are SIL OFL (Google Fonts); load only the weights above, `font-display: swap`.
 ### Named Rules
 
 **The Two-Voice Rule.** Zen Kaku Gothic New speaks; Spline Sans Mono annotates.
-There is no third family, and mono never sets running text.
+There is no third family in copy or UI, and mono never sets running text. The
+wordmark's M PLUS 1 Code is not a third voice: it sets the wordmark and appears
+nowhere else (§5).
 
 **The Caps Budget Rule.** Uppercase exists in exactly two places: mono kickers and
 the wordmark. Never all-caps body, never all-caps sans headings.
@@ -323,15 +342,33 @@ few pixels of travel, barely perceptible, gone under reduced motion. Clouds are
 the one thing in this world that genuinely moves; nothing else earns ambient
 motion.
 
+### Register divergences
+
+Two interaction states resolve differently on brand surfaces than in product.
+Both are deliberate choices, not drift, and neither generalizes to the other
+register.
+
+- **Field focus.** On brand surfaces a focused field resolves its *border color*
+  to the accent and draws no offset outline — an offset outline collided
+  visually inside the ochre band. The product register keeps the centralized 2px
+  accent outline at 3px offset; `packages/ui/theme-tokens.css` enforces it
+  globally with `!important`.
+- **The ochre band's CTA.** Inside the ochre drench band the primary CTA is a
+  plum-ink fill with pale-gold text, and its hover is the chip's small opacity
+  fade (~0.7) rather than the night-sheet crossfade primary buttons use
+  elsewhere — persimmon on ochre clashes (2.7:1).
+
 ### Buttons
 
 - **Shape:** near-sharp (3px radius), padding 0.85em 1.5em, sans 500 at 0.95rem.
-- **Primary:** rust fill (#935842), page-high text; dark mode is ochre fill
-  (#DD9741) with deep-indigo text. Hover: brand surfaces crossfade a night sheet
+- **Primary:** persimmon fill (#A93510), page-high text; dark mode is gold fill
+  (#F0A73C) with deep-indigo text. Hover: brand surfaces crossfade a night sheet
   in beneath the label — deep indigo with pale-gold text by day, pale gold with
   indigo text by night (opacity fade, ~250ms ease-drift; it never slides);
-  product simply deepens (rust-deep #7C4636 / ochre-bright #E5A85C). Active:
-  `translateY(1px)`, ~100ms.
+  product steps the fill's alpha instead (`hover:bg-primary/80`), because the
+  theme format carries no deeper/brighter hover token. Active: `translateY(1px)`,
+  ~100ms. Inside the ochre band the CTA differs by design — see *Register
+  divergences*.
 - **Focus:** 2px accent outline, offset 3px — an outline, never a glow.
 - **Ghost:** transparent, ink text, 1.5px hairline border at `rgba(37,27,37,.35)`;
   hover: border resolves to ink — a fade, no movement.
@@ -347,7 +384,9 @@ motion.
 ### Inputs / Fields
 
 - **Style:** page-hi fill, 1px hairline border, 3px radius, ink text, slate placeholder.
-- **Focus:** border resolves to ink plus the 2px accent outline; no glow.
+- **Focus:** the 2px accent outline at 3px offset in product; on brand surfaces
+  the border resolves to the accent instead, with no outline (see *Register
+  divergences*). Never a glow.
 - **Error:** crimson (#A61E33) border and message — message text, never color alone.
 
 ### Chips / Badges
@@ -374,9 +413,15 @@ motion.
 - **Mark color:** plum ink on the page, pale gold on night. The accent is permitted
   as a deliberate brand moment (hero, favicon flourish) — one color at a time,
   always flat.
-- **The wordmark** is LODEKIT: Zen Kaku Gothic New 700, uppercase, letter-spacing
+- **The wordmark** is LODEKIT: M PLUS 1 Code 700, uppercase, letter-spacing
   0.22em, ~1.25rem — a label, not a headline. It sits in headers and footers;
-  page heroes use Display sentence case instead.
+  page heroes use Display sentence case instead. Its typeface is **fixed above
+  the theme format**: it is deliberately not one of the theme-editable font
+  fields, so switching theme never changes the wordmark. It is therefore loaded
+  per surface — `@fontsource` on the landing, the Google Fonts `@import` on the
+  docs site, and `dashboard/src/index.css` (which also defines
+  `--lk-font-wordmark`) in product. Zen Kaku Gothic New 700 still sets headings
+  and page titles everywhere; only the wordmark uses M PLUS 1 Code.
 - **The lockup:** mark beside wordmark, gap ≈0.6em, optically aligned to cap
   height; both in the same single color. Clear space around the lockup ≥ the width
   of the jar's lid; minimum mark size 16px.
@@ -400,8 +445,7 @@ motion.
   plus ochre for sun warmth) in flat print-like shapes — no gradients inside
   illustrations.
 - **Do** meet WCAG AA minimum everywhere (4.5:1 text, 3:1 UI); the text-safe pairs
-  in §2 are pre-checked — recheck anything new, and treat rust's ≈4.7:1 as a floor
-  with no room to lighten.
+  in §2 are pre-checked — recheck anything new.
 - **Do** give every interactive element the complete state set — hover, active,
   focus-visible, disabled — on the §5 duration ramp (feedback perceived ≤150ms).
 - **Do** honor `prefers-reduced-motion` and keep zoom enabled always.
@@ -414,7 +458,9 @@ motion.
   and charts only.
 - **Don't** resurrect the retired identities: no cork amber (#CE6F26 family), no
   Fraunces, no Hanken Grotesk, no watercolor — and no interim cool-sky palette
-  (#F4F7FA paper, #18242F ink, #C03F16 persimmon accent) or Orikata washi #F4EFE3.
+  (#F4F7FA paper, #18242F ink, #C03F16 accent) or Orikata washi #F4EFE3. The
+  cool-sky accent #C03F16 was also named persimmon; it is a distinct, hotter
+  orange-red and this ban does not touch the current accent, persimmon #A93510.
 - **Don't** ship glassmorphism, neon, purple-blue gradients, glows, or heavy drop
   shadows — everything must pass the Print Test (§1).
 - **Don't** use a `border-left`/`border-right` thicker than 1px as a colored accent
