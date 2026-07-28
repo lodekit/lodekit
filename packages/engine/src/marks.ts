@@ -35,7 +35,7 @@ const escapeXml = (s: string) =>
 // prefers-color-scheme block (Chromium honors media queries in SVG favicons).
 export function markFaviconSvg(style: string): string {
   const body = MARK_BODIES[isMarkStyle(style) ? style : "b"];
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>svg{color:#251b25}@media(prefers-color-scheme:dark){svg{color:#f3e0a5}}</style>${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>svg{color:#251b25}@media(prefers-color-scheme:dark){svg{color:#f6f1e6}}</style>${body}</svg>`;
 }
 
 // The manifest icon is user-authored — XML-escape it so markup in the field

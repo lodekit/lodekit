@@ -20,9 +20,9 @@ describe("favicon svg builders", () => {
     expect(markFaviconSvg("b")).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"/);
   });
 
-  it("inks the mark in plum, flipping to pale gold on the night plate (DESIGN.md §5)", () => {
+  it("inks the mark in plum, flipping to paper against dark chrome (DESIGN.md §5)", () => {
     expect(markFaviconSvg("b")).toContain("svg{color:#251b25}");
-    expect(markFaviconSvg("b")).toContain("@media(prefers-color-scheme:dark){svg{color:#f3e0a5}}");
+    expect(markFaviconSvg("b")).toContain("@media(prefers-color-scheme:dark){svg{color:#f6f1e6}}");
   });
 
   it("renders the emoji via the text technique", () => {

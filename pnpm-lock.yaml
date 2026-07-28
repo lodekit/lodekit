@@ -295,6 +295,9 @@ importers:
       '@fontsource/zen-kaku-gothic-new':
         specifier: ^5.0.0
         version: 5.2.7
+      '@lodekit/engine':
+        specifier: workspace:*
+        version: link:../../packages/engine
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -326,9 +329,6 @@ importers:
         specifier: ^4.3.2
         version: 4.3.2
     devDependencies:
-      '@lodekit/engine':
-        specifier: workspace:*
-        version: link:../../packages/engine
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.17

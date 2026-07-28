@@ -446,12 +446,14 @@ It is a deliberate choice, not drift, and does not generalize.
   aligned to cap height; both in the same single color at 80% opacity, header
   and footer alike. Clear space around the lockup ≥ the width of the jar's lid;
   minimum mark size 16px.
-- **Favicons:** the mark, plum ink flipping via `prefers-color-scheme` — to
-  **paper** on the brand sites (a neutral cream reads better than a tint against
-  dark browser chrome) and to pale gold for the platform favicon the engine
-  serves. Each app's favicon is its manifest emoji. The platform and app
-  favicons ship from the engine — don't hand-author those; the two brand-site
-  files are generated copies of `MARK_BODIES.b` and stay byte-identical.
+- **Favicons:** the mark in plum ink, flipping to **paper** via
+  `prefers-color-scheme` — one pair everywhere, brand sites and platform alike, a
+  neutral cream reading better than a tint against dark browser chrome. This is
+  the one place Pale Gold does *not* serve as the night ink: a favicon sits in
+  the browser's chrome, not on our night plate. Each app's favicon is its
+  manifest emoji. The platform and app favicons ship from the engine — don't
+  hand-author those; the two brand-site files are generated copies of
+  `MARK_BODIES.b` and stay byte-identical to it.
 
 ## 6. Do's and Don'ts
 
