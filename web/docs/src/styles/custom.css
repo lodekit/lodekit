@@ -1,23 +1,8 @@
-/* Lodekit docs theme — Sky in a Jar: persimmon/gold accents + brand type (DESIGN.md),
-   reading-calm register. */
-@import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Spline+Sans+Mono:wght@400;500&family=M+PLUS+1+Code:wght@700&display=swap');
-
-:root {
-  /* dark scheme (Starlight default root) — gold on the night plate */
-  --sl-color-accent-low: #412d10;
-  --sl-color-accent: #f0a73c;
-  --sl-color-accent-high: #f2b459;
-  --sl-color-bg: #121a44;
-  --sl-font: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
-  --sl-font-mono: 'Spline Sans Mono', ui-monospace, monospace;
-}
-
-:root[data-theme='light'] {
-  --sl-color-accent-low: #eacdc4;
-  --sl-color-accent: #a93510;
-  --sl-color-accent-high: #8a2b0d;
-  --sl-color-bg: #f6f1e6;
-}
+/* Lodekit docs — stock Starlight styling. The brand palette and type are
+   deliberately NOT applied here: the docs site runs Starlight's defaults, and
+   the wordmark font is the single exception. The only other rule is the
+   glossary layout below, which is page structure rather than theming. */
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@700&display=swap');
 
 /* Glossary — real headings (so terms land in the page ToC) rendered as a
    two-column table. Starlight wraps each heading in .sl-heading-wrapper, so
@@ -46,21 +31,10 @@
   }
 }
 
-/* The wordmark (DESIGN.md §5): M PLUS 1 Code 700, uppercase, 0.22em — a label,
-   not a headline. Matches the landing's Lockup and the dashboard header. */
+/* The wordmark font — the one piece of brand identity the docs site carries.
+   Weight 700 is declared because it is the only face loaded above; everything
+   else about the title (size, case, tracking) stays Starlight's. */
 .site-title {
   font-family: 'M PLUS 1 Code', ui-monospace, monospace;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-}
-
-.sl-markdown-content h1,
-.sl-markdown-content h2,
-.sl-markdown-content h3,
-.sl-markdown-content h4,
-h1[data-page-title],
-.hero h1 {
-  font-family: 'Zen Kaku Gothic New', 'Hiragino Kaku Gothic ProN', system-ui, sans-serif;
   font-weight: 700;
 }

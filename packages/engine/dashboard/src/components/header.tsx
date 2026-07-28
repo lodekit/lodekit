@@ -15,10 +15,16 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 mx-auto w-full min-w-80 max-w-[70rem] bg-background md:static md:px-8 md:pt-6">
       <div className="flex items-center gap-1 border-b bg-card px-4 py-2 md:rounded-xl md:border">
-        <Link to="/" aria-label="Lodekit home" className="mr-1 flex items-center gap-3">
-          <Logo className="size-7 text-foreground" />
+        {/* Lockup matches web/main's Lockup.astro — same gap, mark size, wordmark
+            size and opacity, so the identity reads identically across surfaces. */}
+        <Link
+          to="/"
+          aria-label="Lodekit home"
+          className="mr-1 flex items-center gap-[0.6em] text-foreground opacity-80"
+        >
+          <Logo className="size-6 shrink-0" />
           <span
-            className="hidden text-xl font-bold uppercase tracking-[0.22em] text-foreground sm:inline"
+            className="hidden text-[1.2rem] leading-none font-bold uppercase tracking-[0.22em] sm:inline"
             style={{ fontFamily: "var(--lk-font-wordmark)" }}
           >
             Lodekit

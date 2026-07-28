@@ -14,7 +14,6 @@ colors:
   ochre: "#DD9741"
   ochre-bright: "#E5A85C"
   gold: "#F0A73C"
-  gold-bright: "#F2B459"
   night: "#121A44"
   night-hi: "#1B2452"
   night-lo: "#242E63"
@@ -122,8 +121,9 @@ The system serves three surfaces with one identity, two registers:
   tokens. Strictly restrained: parchment surfaces, plum ink text, the accent
   reserved for interaction. Identity comes through in temperature, type, and the
   mono metadata layer, never through decoration.
-- **Docs** sit between: the brand's type and palette at reading calm, zero
-  persuasion moves.
+- **Docs** deliberately opt out: the docs site runs stock Starlight styling, and
+  the wordmark font is the single piece of identity it carries. Reading calm
+  beats brand presence there; don't retheme it.
 
 This system translates `docs/PRODUCT.md` §7 visually: *plain-spoken* → flat inks and
 hairlines, no effects; *quietly confident* → committed type scale, sparse accent;
@@ -161,14 +161,10 @@ variants).
   active states, focus rings. Text-safe on the page (5.82:1 — AA with real
   margin).
 - **Persimmon Deep** (#8A2B0D, L): the deepened persimmon (7.67:1 on the page),
-  for hover and emphasis where a darker step is wanted; its one shipped consumer
-  is the docs site's `--sl-color-accent-high`.
+  for hover and emphasis where a darker step is wanted. Reserved — no surface
+  ships it today; the brand hover is the night sheet and product steps alpha.
 - **Gold** (#F0A73C, L): the dark-mode accent (8.19:1 on the night plate).
   Primary buttons, links, active states, focus rings on the night plate.
-- **Gold Bright** (#F2B459, L): the lightened gold (9.11:1 on night), the night
-  plate's counterpart to Persimmon Deep — hover and emphasis where a brighter
-  step is wanted; its one shipped consumer is the docs site's dark
-  `--sl-color-accent-high`.
 - **Ochre** (#DD9741, H): the brand drench plate — an ochre band carrying plum
   ink text — and, in light mode, illustration and charts. Not an interactive
   color in either plate.
@@ -257,10 +253,12 @@ families are SIL OFL (Google Fonts); load only the weights above,
   sparingly where text should recede: notes, secondary captions, long-form demo
   copy. Compact UI text (labels, table cells, meta) may drop to 0.875rem/1.45 —
   never running paragraphs.
-- **Label** (mono 500, 0.72–0.8125rem): two modes. *Kicker*: uppercase,
-  letter-spacing 0.12em — section eyebrows, status chips. *Data*: normal case,
-  letter-spacing 0.01em — app ids, paths, values, timestamps; `tabular-nums` for
-  aligned figures.
+- **Label** (mono, 0.72–0.8125rem): two modes. *Kicker* (500): uppercase,
+  letter-spacing 0.12em — section eyebrows, status chips. *Data* (400): normal
+  case, letter-spacing 0.01em — app ids, paths, values, timestamps;
+  `tabular-nums` for aligned figures. The mono voice sets at 400 rather than
+  inheriting the body's 500 — at 500 it reads as emphasis instead of annotation.
+  Code, `kbd`, `samp`, and `pre` follow the data weight.
 
 ### Named Rules
 
@@ -352,15 +350,9 @@ motion.
 
 ### Register divergences
 
-Two interaction states resolve differently on brand surfaces than in product.
-Both are deliberate choices, not drift, and neither generalizes to the other
-register.
+One interaction state resolves differently on brand surfaces than in product.
+It is a deliberate choice, not drift, and does not generalize.
 
-- **Field focus.** On brand surfaces a focused field resolves its *border color*
-  to the accent and draws no offset outline — an offset outline collided
-  visually inside the ochre band. The product register keeps the centralized 2px
-  accent outline at 3px offset; `packages/ui/theme-tokens.css` enforces it
-  globally with `!important`.
 - **The ochre band's CTA.** Inside the ochre drench band the primary CTA is a
   plum-ink fill with pale-gold text, and its hover is the chip's small opacity
   fade (~0.7) rather than the night-sheet crossfade primary buttons use
@@ -392,9 +384,11 @@ register.
 ### Inputs / Fields
 
 - **Style:** page-hi fill, 1px hairline border, 3px radius, ink text, slate placeholder.
-- **Focus:** the 2px accent outline at 3px offset in product; on brand surfaces
-  the border resolves to the accent instead, with no outline (see *Register
-  divergences*). Never a glow.
+- **Focus:** the border resolves to the accent — one border, hugging the field,
+  in both registers. Never a glow, and never the offset outline: a field that
+  draws both reads as two accent rings, and inside an input group the outline
+  traces the bare `<input>` and cuts across the leading icon. Buttons and other
+  controls without a field border keep the 2px outline at 3px offset.
 - **Error:** crimson (#A61E33) border and message — message text, never color alone.
 
 ### Chips / Badges
@@ -422,20 +416,26 @@ register.
   as a deliberate brand moment (hero, favicon flourish) — one color at a time,
   always flat.
 - **The wordmark** is LODEKIT: M PLUS 1 Code 700, uppercase, letter-spacing
-  0.22em, ~1.25rem — a label, not a headline. It sits in headers and footers;
+  0.22em, 1.2rem — a label, not a headline. It sits in headers and footers;
   page heroes use Display sentence case instead. Its typeface is **fixed above
   the theme format**: it is deliberately not one of the theme-editable font
   fields, so switching theme never changes the wordmark. It is therefore loaded
   per surface — `@fontsource` on the landing, the Google Fonts `@import` on the
   docs site, and `dashboard/src/index.css` (which also defines
   `--lk-font-wordmark`) in product. Zen Kaku Gothic New 700 still sets headings
-  and page titles everywhere; only the wordmark uses M PLUS 1 Code.
-- **The lockup:** mark beside wordmark, gap ≈0.6em, optically aligned to cap
-  height; both in the same single color. Clear space around the lockup ≥ the width
-  of the jar's lid; minimum mark size 16px.
-- **Favicons:** the platform favicon is the mark (plum ink, flipping to pale gold
-  via `prefers-color-scheme`); each app's favicon is its manifest emoji. Both ship
-  from the engine — don't hand-author favicon files.
+  and page titles everywhere; only the wordmark uses M PLUS 1 Code. The docs
+  site takes the face alone — its title keeps Starlight's own size, case, and
+  tracking, per the opt-out in §1.
+- **The lockup:** mark beside wordmark, gap ≈0.6em, mark 1.5rem, optically
+  aligned to cap height; both in the same single color at 80% opacity, header
+  and footer alike. Clear space around the lockup ≥ the width of the jar's lid;
+  minimum mark size 16px.
+- **Favicons:** the mark, plum ink flipping via `prefers-color-scheme` — to
+  **paper** on the brand sites (a neutral cream reads better than a tint against
+  dark browser chrome) and to pale gold for the platform favicon the engine
+  serves. Each app's favicon is its manifest emoji. The platform and app
+  favicons ship from the engine — don't hand-author those; the two brand-site
+  files are generated copies of `MARK_BODIES.b` and stay byte-identical.
 
 ## 6. Do's and Don'ts
 

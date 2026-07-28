@@ -21,7 +21,11 @@ function Meta({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       data-slot="meta"
-      className={cn("font-mono text-[0.8125rem] tracking-[0.01em] tabular-nums", className)}
+      className={cn(
+        // font-normal: body defaults to 500, but the mono data voice sets at 400.
+        "font-mono text-[0.8125rem] font-normal tracking-[0.01em] tabular-nums",
+        className
+      )}
       {...props}
     />
   )
