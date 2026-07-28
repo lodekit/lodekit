@@ -51,7 +51,7 @@
 - [ ] **Step 1: Move the directory with history**
 
 ```bash
-git -C /Users/sesv/Code/worktrees/lodekit/service mv packages/runtime packages/engine
+git -C ~/Code/worktrees/lodekit/service mv packages/runtime packages/engine
 ```
 
 - [ ] **Step 2: Rename the package**
@@ -137,7 +137,7 @@ Each is a path-in-comment; replace `packages/runtime` → `packages/engine` (and
 - [ ] **Step 8: Regenerate lockfile + relink**
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/service && pnpm install
+cd ~/Code/worktrees/lodekit/service && pnpm install
 grep -c 'packages/runtime\|@lodekit/runtime' pnpm-lock.yaml
 ```
 Expected: `pnpm install` exits 0; grep prints `0` (exit code 1 — no matches).
@@ -218,7 +218,7 @@ git commit -m "chore(engine): rename @lodekit/runtime to @lodekit/engine — pac
 `manager/tests/supervisor.test.js`: replace every `spawnRuntime:` key with `spawnEngine:` (8 sites: lines 36,49,65,82,98,123,136,151,170); `expect(sup.errorMessage).toMatch(/Runtime exited/)` → `/Engine exited/` (line 71); prose renames: line 29 `"reaches running once the engine answers health checks"`, line 107 `"terminates a stale engine recorded in the pid file before starting"`, line 131 `"errors when the engine never becomes healthy"`. Lines 22 and 169 (`runtime.pid` literals) unchanged.
 
 ```bash
-git -C /Users/sesv/Code/worktrees/lodekit/service mv manager/tests/runtime-settings.test.js manager/tests/engine-settings.test.js
+git -C ~/Code/worktrees/lodekit/service mv manager/tests/runtime-settings.test.js manager/tests/engine-settings.test.js
 ```
 Then in `manager/tests/engine-settings.test.js`:
 ```diff
@@ -264,7 +264,7 @@ Expected: FAIL — `p.engineDir` undefined, `createEngineSettings` not exported,
 (Line 14 `pidFile: path.join(appSupportDir, "runtime.pid")` unchanged.)
 
 ```bash
-git -C /Users/sesv/Code/worktrees/lodekit/service mv manager/src/runtimeSettings.js manager/src/engineSettings.js
+git -C ~/Code/worktrees/lodekit/service mv manager/src/runtimeSettings.js manager/src/engineSettings.js
 ```
 Then in `manager/src/engineSettings.js`:
 ```diff

@@ -208,7 +208,7 @@ hook injects salience ≥ 4 + the latest `continuation-*` key under upstream's b
 budget (lean composition, not full `bd prime`).
 
 **Migration from auto memory (one-time, part of rollout):** port the still-live facts
-from `~/.claude/projects/-Users-sesv-Code-github-lodekit/memory/` into `bd remember`
+from `~/.claude/projects/<project-slug>/memory/` into `bd remember`
 (feedback → lesson/pattern at high salience; live project facts → memories; shipped
 status notes → skip, git history covers them); backlog node IDs → drain-deferrals
 reference (above); tokens-only UI rule → `DESIGN.md` (D9). Then `autoMemoryEnabled:

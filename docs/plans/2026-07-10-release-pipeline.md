@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Work happens on the `ci` branch in this worktree (`/Users/sesv/Code/worktrees/lodekit/stack`). Never fold into `master` — the person integrates.
+- Work happens on the `ci` branch in this worktree (`~/Code/worktrees/lodekit/stack`). Never fold into `master` — the person integrates.
 - Node is pinned at **24.12.0** (`prepare-bundle.mjs` hard-asserts it; this machine runs it — verify with `node --version` before any `bundle`/`make`).
 - Run all `pnpm` commands from the **repo root** (`pnpm --filter …`). Never `pnpm install` with CWD inside `manager/`.
 - All workspace versions are in lockstep at **0.1.0**: root + `packages/{runtime,mcp,sdk,skill,ui}` + `web/{main,docs}` + `manager` (9 package.json files).

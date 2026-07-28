@@ -15,9 +15,9 @@
 - Only two new dependencies, both in `packages/ui`: `recharts@^3.8.0` and `@tanstack/react-table@^8.21.3`. **No** `@tanstack/react-virtual`, no JSON-tree-viewer libs, no date libraries (use `Intl`). `@tanstack/react-query` and `react-resizable-panels` already exist elsewhere — do not re-add or wrap them.
 - Stock shadcn internals; identity via tokens only. Never hand-tune component internals to look different from upstream.
 - Base-nova composition idioms: triggers compose via `render={<Button …/>}` (Base UI), **not** Radix `asChild`. `Select` needs a null-guard on `onValueChange`, `SelectGroup` inside `SelectContent`, and `alignItemWithTrigger={false}` (see `packages/runtime/dashboard/src/routes/gateways_.$providerId.tsx`).
-- All work on the current `ui` branch in `/Users/sesv/Code/worktrees/lodekit/ui`. Commit after every task; no `Co-Authored-By` trailers, no "Generated with Claude Code" anywhere.
+- All work on the current `ui` branch in `~/Code/worktrees/lodekit/ui`. Commit after every task; no `Co-Authored-By` trailers, no "Generated with Claude Code" anywhere.
 - `docs/changelog.md` and `docs/defer.md` are append-only.
-- Run commands from the repo root `/Users/sesv/Code/worktrees/lodekit/ui` unless stated otherwise.
+- Run commands from the repo root `~/Code/worktrees/lodekit/ui` unless stated otherwise.
 
 ---
 

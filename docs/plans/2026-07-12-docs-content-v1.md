@@ -25,9 +25,9 @@ Every content task's implementer must read these first:
 
 1. **This plan's Style guide and Slug map** (below).
 2. **Facts packs** (ground truth extracted from code on 2026-07-12 — trust these over memory):
-   - `/private/tmp/claude-501/-Users-sesv-Code-worktrees-lodekit-docs/4126b334-4395-4f93-8482-3ed799c59855/scratchpad/facts/sdk-surface.md` — every SDK handle, method signature, declaration API, limits.
-   - `/private/tmp/claude-501/-Users-sesv-Code-worktrees-lodekit-docs/4126b334-4395-4f93-8482-3ed799c59855/scratchpad/facts/platform.md` — services behavior + numbers, dashboard views, manager, install/agent-connection snippets, MCP tools.
-   - `/private/tmp/claude-501/-Users-sesv-Code-worktrees-lodekit-docs/4126b334-4395-4f93-8482-3ed799c59855/scratchpad/facts/showcase-brand.md` — real Greenhouse code samples, Welcome app, brand tokens, skill headings.
+   - `<scratchpad>/facts/sdk-surface.md` — every SDK handle, method signature, declaration API, limits.
+   - `<scratchpad>/facts/platform.md` — services behavior + numbers, dashboard views, manager, install/agent-connection snippets, MCP tools.
+   - `<scratchpad>/facts/showcase-brand.md` — real Greenhouse code samples, Welcome app, brand tokens, skill headings.
 3. `context.md` at the repo root (vocabulary; the Relationships section is the mental model).
 4. When in doubt about a signature, the source: `packages/sdk/src/*.ts`, `packages/runtime/src/platformSettings.ts`.
 

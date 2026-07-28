@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Work on the `stack` worktree branch (`/Users/sesv/Code/worktrees/lodekit/stack`); commit directly to it; linear history; **no `Co-Authored-By` trailers**; never fold into `master` (person's call).
+- Work on the `stack` worktree branch (`~/Code/worktrees/lodekit/stack`); commit directly to it; linear history; **no `Co-Authored-By` trailers**; never fold into `master` (person's call).
 - `pnpm install` only from the repo root (never with CWD in `manager/`). If Node was switched: `pnpm rebuild better-sqlite3`.
 - Runtime and MCP stay buildless (`tsx`); apps are bundled — the person never builds (umbrella invariant 2).
 - Trust-boundary validation is never cut: app-id pattern, path containment, URI-decode 400s all survive the appHost rewrite.
