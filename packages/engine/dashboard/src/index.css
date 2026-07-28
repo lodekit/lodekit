@@ -1,11 +1,15 @@
-@import "@lodekit/ui/theme.css";
 /* M PLUS 1 Code 700 — the wordmark typeface, fixed above the theme format.
    Lives here (not lodekit.css's managed @import) because any family named in
    that line is subject to the theme editor's isManaged()/importsFor() rewrite,
    which would silently drop it on the first font edit. The dashboard is the
    only surface that renders a wordmark, so scoping the font here also spares
-   user apps from loading a font they never use. */
+   user apps from loading a font they never use.
+
+   Must stay ABOVE the theme.css import: that one is inlined at build time and
+   expands into rules, and an @import may not follow a rule — Lightning CSS drops
+   this line if it comes second, taking the wordmark face with it. */
 @import url("https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@700&display=swap");
+@import "@lodekit/ui/theme.css";
 
 /* Tailwind v4 dropped v3's `button { cursor: pointer }` preflight (native-cursor
    alignment) and shadcn follows it; the dashboard opts back in — shadcn's own
