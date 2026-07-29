@@ -6,7 +6,7 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import { Hono } from "hono";
 import type { Config } from "../src/config.js";
-import { platformGatewaysRoutes, appGatewaysRoutes, withGateways, applyGatewaysManifest } from "../src/services/gateways.js";
+import { platformGatewaysRoutes, appGatewaysRoutes, withGateways, applyGatewaysManifest, setGatewaysEgressLookupForTest } from "../src/services/gateways.js";
 import { initGatewayManifests, resetGatewayManifestsForTest } from "../src/gatewayManifests.js";
 import { initGatewaysStore, closeGatewaysStoreForTest } from "../src/gatewaysStore.js";
 import { initSecretStore, closeSecretStoreForTest, createSecret } from "../src/secretsStore.js";
@@ -48,7 +48,7 @@ beforeEach(async () => {
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
     name: "Stub", website: "https://stub.example",
-    base_url: `http://127.0.0.1:${stubPort}`,
+    base_url: `http://127.0.0.1:${stubPort}`, local_network: true,
     auth: { kind: "api_key", in: "query", param: "key", slot: "api_key" },
     slots: {
       api_key: { kind: "secret", label: "API key" },
@@ -191,5 +191,35 @@ describe("the request door", () => {
       body: JSON.stringify({ method: "GET", path: "https://evil.example/x" }),
     });
     expect(abs.status).toBe(400);
+  });
+});
+
+describe("set-time egress validation (#88)", () => {
+  // home.example.com is RFC-2606-ish; stub the resolver so the accept case is hermetic.
+  beforeEach(() => setGatewaysEgressLookupForTest(async (h) => (h === "home.example.com" ? ["93.184.216.34"] : ["8.8.8.8"])));
+  afterEach(() => setGatewaysEgressLookupForTest(null));
+
+  beforeEach(() => {
+    const dir = path.join(root, "gateways", "ha");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
+      name: "HA", base_url: { from_slot: "url", allowed_hosts: ["home.example.com"] },
+      auth: { kind: "none" }, slots: { url: { kind: "config", label: "Base URL" } },
+    }));
+    initGatewayManifests(cfg());
+    applyGatewaysManifest(cfg(), APP, { ha: { provider: "ha" } }, Date.now());
+  });
+
+  it("rejects an off-pin base URL value", async () => {
+    const res = await req(`/api/apps/${APP}/gateways/ha/slots/url/value`, json({ value: "https://evil.com" }, "PUT"));
+    expect(res.status).toBe(400);
+  });
+  it("rejects a denied-literal base URL value", async () => {
+    const res = await req(`/api/apps/${APP}/gateways/ha/slots/url/value`, json({ value: "https://169.254.169.254" }, "PUT"));
+    expect(res.status).toBe(400);
+  });
+  it("accepts a pinned public base URL value", async () => {
+    const res = await req(`/api/apps/${APP}/gateways/ha/slots/url/value`, json({ value: "https://home.example.com" }, "PUT"));
+    expect(res.status).toBe(200);
   });
 });

@@ -79,19 +79,82 @@ describe("manifest schema", () => {
       slots: { client_id: { kind: "config", label: "Client id" } },
     });
     expect(manifestSchema.safeParse(oauth("http://public.example/auth")).success).toBe(false);
-    expect(manifestSchema.safeParse(oauth("http://127.0.0.1:8123/auth")).success).toBe(true);
+    expect(manifestSchema.safeParse({ ...oauth("http://127.0.0.1:8123/auth"), local_network: true }).success).toBe(true);
     expect(manifestSchema.safeParse(oauth("javascript:alert(1)")).success).toBe(false);
   });
 
   it("api_key needs param/header matching its `in`; http base_url only for private hosts", () => {
     expect(manifestSchema.safeParse({ ...OWM, auth: { kind: "api_key", in: "query", slot: "api_key" } }).success).toBe(false);
     expect(manifestSchema.safeParse({ ...OWM, base_url: "http://api.example.com" }).success).toBe(false);
-    expect(manifestSchema.safeParse({ ...OWM, base_url: "http://127.0.0.1:8123" }).success).toBe(true);
+    expect(manifestSchema.safeParse({ ...OWM, base_url: "http://127.0.0.1:8123", local_network: true }).success).toBe(true);
     const fromSlot = {
       ...OWM, base_url: { from_slot: "base_url" },
       slots: { ...OWM.slots, base_url: { kind: "config", label: "Base URL" } },
     };
     expect(manifestSchema.safeParse(fromSlot).success).toBe(true);
+  });
+});
+
+describe("egress schema (#88)", () => {
+  const base = { name: "X", auth: { kind: "none" }, slots: {} } as const;
+  it("rejects a literal private base_url without local_network", () => {
+    const r = manifestSchema.safeParse({ ...base, base_url: "https://192.168.1.10" });
+    expect(r.success).toBe(false);
+  });
+  it("accepts a literal private base_url with local_network", () => {
+    const r = manifestSchema.safeParse({ ...base, base_url: "https://192.168.1.10", local_network: true });
+    expect(r.success).toBe(true);
+  });
+  it("rejects a loopback IdP token_url without the flag", () => {
+    const r = manifestSchema.safeParse({
+      ...base,
+      base_url: "https://api.example.com",
+      auth: { kind: "oauth2", authorization_url: "https://127.0.0.1/a", token_url: "https://127.0.0.1/t", client_id_slot: "cid" },
+      slots: { cid: { kind: "config", label: "cid" } },
+    });
+    expect(r.success).toBe(false);
+  });
+  it("rejects a private token_url even when authorization_url is public (isolated check)", () => {
+    const r = manifestSchema.safeParse({
+      ...base,
+      base_url: "https://api.example.com",
+      auth: { kind: "oauth2", authorization_url: "https://id.example.com/a", token_url: "https://127.0.0.1/t", client_id_slot: "cid" },
+      slots: { cid: { kind: "config", label: "cid" } },
+    });
+    expect(r.success).toBe(false);
+  });
+  it("rejects a private authorization_url even when token_url is public (isolated check)", () => {
+    const r = manifestSchema.safeParse({
+      ...base,
+      base_url: "https://api.example.com",
+      auth: { kind: "oauth2", authorization_url: "https://127.0.0.1/a", token_url: "https://id.example.com/t", client_id_slot: "cid" },
+      slots: { cid: { kind: "config", label: "cid" } },
+    });
+    expect(r.success).toBe(false);
+  });
+  it("website stays lenient for plain http even to a private host", () => {
+    const r = manifestSchema.safeParse({
+      ...base,
+      website: "http://192.168.1.10",
+      base_url: "https://api.example.com",
+    });
+    expect(r.success).toBe(true);
+  });
+  it("rejects an empty-string entry in allowed_hosts", () => {
+    const r = manifestSchema.safeParse({
+      ...base,
+      base_url: { from_slot: "url", allowed_hosts: [""] },
+      slots: { url: { kind: "config", label: "url" } },
+    });
+    expect(r.success).toBe(false);
+  });
+  it("parses allowed_hosts inside from_slot", () => {
+    const r = manifestSchema.safeParse({
+      ...base,
+      base_url: { from_slot: "url", allowed_hosts: ["home.example.com", "*.ui.nabu.casa"] },
+      slots: { url: { kind: "config", label: "url" } },
+    });
+    expect(r.success).toBe(true);
   });
 });
 

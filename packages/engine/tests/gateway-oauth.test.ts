@@ -22,7 +22,7 @@ import { initLogStore } from "../src/logStore.js";
 
 let root: string, state: string, provider: http.Server, providerPort: number;
 let tokenRequests: URLSearchParams[] = [];
-let tokenResponse: () => { status: number; body: unknown };
+let tokenResponse: () => { status: number; body: unknown; headers?: Record<string, string> };
 
 function cfg(): Config {
   return {
@@ -49,7 +49,7 @@ beforeEach(async () => {
       req.on("end", () => {
         tokenRequests.push(new URLSearchParams(raw));
         const r = tokenResponse();
-        res.writeHead(r.status, { "Content-Type": "application/json" });
+        res.writeHead(r.status, { "Content-Type": "application/json", ...r.headers });
         res.end(JSON.stringify(r.body));
       });
       return;
@@ -65,6 +65,7 @@ beforeEach(async () => {
   fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
     name: "Demo",
     base_url: `http://127.0.0.1:${providerPort}`,
+    local_network: true,
     auth: {
       kind: "oauth2",
       authorization_url: `http://127.0.0.1:${providerPort}/authorize`,
@@ -140,6 +141,35 @@ describe("connect flow", () => {
     await expect(handleOauthCallback({ code: "code-123", state: u.searchParams.get("state")! })).rejects.toThrow();
   });
 
+  it("refuses to follow a redirect from the token endpoint (#88)", async () => {
+    setGatewayConfig(APP, ALIAS, "client_id", "interactive.public");
+    const { authorizeUrl } = startOauth(APP, ALIAS);
+    const st = new URL(authorizeUrl).searchParams.get("state")!;
+    // Stand in for an internal target (e.g. 169.254.169.254): a second local
+    // server that would happily hand back a token if the redirect were
+    // followed. We assert it never receives a request.
+    let internalHit = false;
+    const internal = http.createServer((_req, res) => {
+      internalHit = true;
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ access_token: "stolen" }));
+    });
+    await new Promise<void>((r) => internal.listen(0, "127.0.0.1", r));
+    const internalPort = (internal.address() as AddressInfo).port;
+    try {
+      tokenResponse = () => ({
+        status: 302, body: {}, headers: { Location: `http://127.0.0.1:${internalPort}/` },
+      });
+      await expect(handleOauthCallback({ code: "code-123", state: st })).rejects.toThrow();
+      // Only the legitimate /token endpoint was ever hit — the redirect was
+      // not followed, and the credential-bearing POST was not replayed.
+      expect(tokenRequests).toHaveLength(1);
+      expect(internalHit).toBe(false);
+    } finally {
+      await new Promise<void>((r) => internal.close(() => r()));
+    }
+  });
+
   it("the callback failure page escapes provider-controlled strings", async () => {
     setGatewayConfig(APP, ALIAS, "client_id", "interactive.public");
     const { authorizeUrl } = startOauth(APP, ALIAS);
@@ -197,6 +227,7 @@ describe("token injection + refresh", () => {
     fs.writeFileSync(path.join(root, "gateways", "demo", "manifest.json"), JSON.stringify({
       name: "Demo",
       base_url: `http://127.0.0.1:${providerPort}`,
+      local_network: true,
       auth: {
         kind: "oauth2",
         authorization_url: `http://127.0.0.1:${providerPort}/authorize`,
@@ -212,5 +243,38 @@ describe("token injection + refresh", () => {
     saveOauthTokens(APP, ALIAS, { accessToken: "at", refreshToken: "rt", expiresAt: Date.now() - 1000 });
     expect(await reason(executeGatewayRequest(APP, ALIAS, { method: "GET", path: "/api/test" }))).toBe("unavailable");
     expect(oauthState(APP, ALIAS)).toBe("connected");
+  });
+
+  it("denies a token exchange toward a denied host (#88)", async () => {
+    const dir = path.join(root, "gateways", "evil");
+    fs.mkdirSync(dir, { recursive: true });
+    // token_url targets a reserved ("special") address — 0.0.0.0 is denied
+    // outright by checkEgress regardless of local_network, and (being https,
+    // not a recognized local class) passes the manifest's static schema
+    // validation, so this actually reaches tokenPost's runtime check rather
+    // than being rejected at load time.
+    fs.writeFileSync(path.join(dir, "manifest.json"), JSON.stringify({
+      name: "Evil", base_url: "https://8.8.8.8",
+      auth: {
+        kind: "oauth2",
+        authorization_url: "https://8.8.8.8/a",
+        token_url: "https://0.0.0.0/token",
+        client_id_slot: "client_id",
+      },
+      slots: { client_id: { kind: "config", label: "Client id" } },
+    }));
+    initGatewayManifests(cfg());
+    applyGatewaysManifest(cfg(), APP, { evil: { provider: "evil" } }, Date.now());
+    setGatewayConfig(APP, "evil", "client_id", "cid");
+    // Drive a token exchange: start + callback would hit checkEgress in tokenPost.
+    const { authorizeUrl } = startOauth(APP, "evil");
+    const st = new URL(authorizeUrl).searchParams.get("state")!;
+    // Must be denied specifically by checkEgress (reason "egress_denied"), not
+    // merely rejected by a failed fetch — otherwise removing checkEgress from
+    // tokenPost would still make this pass (0.0.0.0 also fails to connect).
+    expect(await reason(handleOauthCallback({ code: "c", state: st }))).toBe("egress_denied");
+    // And prove no request actually left the process: the provider stub never
+    // saw a /token hit.
+    expect(tokenRequests).toHaveLength(0);
   });
 });

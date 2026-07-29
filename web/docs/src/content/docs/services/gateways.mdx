@@ -90,6 +90,20 @@ injecting the credential (here: an `appid` query parameter). `slots` declare
 what a person must supply — secret slots for credentials, config slots for
 plain values like a region or account id.
 
+A gateway can also derive its base URL from a config slot —
+`"base_url": { "from_slot": "url" }` — for services whose host the person
+supplies (a self-hosted instance, a Home Assistant box). The engine still owns
+egress: the resolved URL is held to the same policy as a literal one.
+
+By default a gateway may only reach **public** hosts — the engine refuses any
+URL that resolves to a loopback, private (RFC-1918 / ULA), or link-local
+address, closing the SSRF door. A gateway that legitimately targets your own
+network (a local Home Assistant, a LAN device) declares `"local_network": true`
+at the top of its manifest; that opt-in also re-enables plain `http`. For a
+`from_slot` base URL you can additionally pin the reachable hosts with
+`"allowed_hosts": ["home.example.com", "*.ui.nabu.casa"]` — the person-supplied
+value must match one of them.
+
 **The connection** is an app's grant to use a gateway. The app declares it in
 `src/gateways.ts` under an app-local alias; the person completes it in the
 dashboard by **linking** a catalog secret into each secret slot and

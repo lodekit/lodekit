@@ -8,8 +8,9 @@
 import type { Config } from "./config.js";
 import { emitLog } from "./logger.js";
 import { emitGatewayEvent } from "./gatewayEvents.js";
-import { getGatewayEntry, isPrivateHost, type GatewayManifest } from "./gatewayManifests.js";
+import { getGatewayEntry, type GatewayManifest } from "./gatewayManifests.js";
 import { parseRate, TokenBucket, Breaker, Semaphore } from "./gatewayGuards.js";
+import { checkEgress, EgressDeniedError } from "./gatewayEgress.js";
 import {
   getGatewayLink, getGatewayConfig, GatewaysError, GatewaysNotFoundError,
 } from "./gatewaysStore.js";
@@ -19,7 +20,7 @@ import { effectiveMs, effectiveNumber, effectiveString, effectiveBoolean } from 
 
 export type GatewayFailReason =
   | "unconfigured" | "rate_limited" | "breaker_open" | "needs_reauth"
-  | "timeout" | "too_large" | "network" | "unavailable";
+  | "timeout" | "too_large" | "network" | "unavailable" | "egress_denied";
 
 export class GatewayRequestError extends Error {
   constructor(public readonly reason: GatewayFailReason, message?: string) {
@@ -29,7 +30,7 @@ export class GatewayRequestError extends Error {
 }
 
 export const REASON_STATUS: Record<GatewayFailReason, 409 | 429 | 502 | 503 | 504> = {
-  unconfigured: 409, needs_reauth: 409, rate_limited: 429,
+  unconfigured: 409, needs_reauth: 409, egress_denied: 409, rate_limited: 429,
   breaker_open: 503, unavailable: 503, timeout: 504, network: 502, too_large: 502,
 };
 
@@ -195,9 +196,6 @@ function assembleUrl(manifest: GatewayManifest, appId: string, alias: string, de
   } catch {
     throw new GatewayRequestError("unconfigured", `gateway base URL "${baseRaw}" is not a valid URL`);
   }
-  if (base.protocol !== "https:" && !(base.protocol === "http:" && isPrivateHost(base.hostname))) {
-    throw new GatewayRequestError("unconfigured", "gateway base URL must be https (http only for private hosts)");
-  }
   if (!desc.path.startsWith("/") || desc.path.includes("://")) {
     throw new GatewaysError("path must be relative and start with /");
   }
@@ -361,10 +359,11 @@ export async function executeGatewayRequest(
       record("warn", "rate_limited", null, Date.now() - started);
       throw new GatewayRequestError("rate_limited", `the ${manifest.name} gateway's rate limit is exhausted`);
     }
+    const DROP_HEADERS = new Set(["host", "cookie", "forwarded", "x-real-ip", "true-client-ip"]);
     const headers: Record<string, string> = {};
     for (const [k, v] of Object.entries(desc.headers ?? {})) {
       const lk = k.toLowerCase();
-      if (lk === "host" || lk === "cookie") continue; // never caller-suppliable
+      if (DROP_HEADERS.has(lk) || lk.startsWith("x-forwarded-")) continue; // never caller-suppliable
       if (lk === "authorization" || lk === "proxy-authorization") {
         // Unconditional, whatever the manifest's auth kind — credentials are
         // host-side by invariant, never smuggled in from the worker.
@@ -373,6 +372,13 @@ export async function executeGatewayRequest(
       headers[lk] = v;
     }
     const url = assembleUrl(manifest, appId, alias, desc);
+    const pins = typeof manifest.base_url === "object" ? manifest.base_url.allowed_hosts : undefined;
+    try {
+      await checkEgress(manifest, url, pins ? { pins } : undefined);
+    } catch (e) {
+      if (e instanceof EgressDeniedError) throw new GatewayRequestError("egress_denied", e.message);
+      throw new GatewayRequestError("network", "gateway host could not be resolved");
+    }
     const redact = expandRedact(await injectAuth(providerId, manifest, appId, alias, url, headers));
     // Network/timeout failures — during fetch or mid-body. Settles the breaker
     // (a provider failure), logs the scrubbed detail host-side, and returns a
@@ -471,7 +477,7 @@ export async function executeGatewayRequest(
     record(level, outcome, res.status, durationMs, extra);
     return envelope;
   } catch (e) {
-    if (e instanceof GatewayRequestError && (e.reason === "unconfigured" || e.reason === "needs_reauth" || e.reason === "unavailable")) {
+    if (e instanceof GatewayRequestError && (e.reason === "unconfigured" || e.reason === "needs_reauth" || e.reason === "unavailable" || e.reason === "egress_denied")) {
       record("warn", e.reason, null, Date.now() - started);
     }
     if (e instanceof GatewayRequestError && e.reason === "too_large") {

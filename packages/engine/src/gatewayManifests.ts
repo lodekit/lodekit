@@ -7,6 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import type { Config } from "./config.js";
+import { classifyAddress } from "./gatewayEgress.js";
 
 export const PROVIDER_ID_RE = /^[a-z0-9-]+$/;
 const SLOT_RE = /^[a-z0-9_]+$/;
@@ -58,7 +59,13 @@ export const manifestSchema = z
   .object({
     name: z.string().min(1).max(100),
     website: z.string().url().optional(),
-    base_url: z.union([z.string().url(), z.object({ from_slot: SLOT_NAME })]),
+    base_url: z.union([
+      z.string().url(),
+      z.object({
+        from_slot: SLOT_NAME,
+        allowed_hosts: z.array(z.string().min(1).max(253)).max(20).optional(),
+      }),
+    ]),
     auth,
     slots: z.record(SLOT_NAME, slotDef).default({}),
     limits: z
@@ -68,9 +75,20 @@ export const manifestSchema = z
         timeout_ms: z.number().int().min(100).max(60_000).optional(),
       })
       .optional(),
+    local_network: z.boolean().optional(),
   })
   .superRefine((m, ctx) => {
     const issue = (message: string) => ctx.addIssue({ code: z.ZodIssueCode.custom, message });
+    // A literal credential/base URL pointing at the person's own network is
+    // only legitimate when the manifest declares local_network — same policy
+    // the runtime enforces on resolved addresses (spec §"Egress policy").
+    const requiresLocalFlag = (hostname: string): boolean => {
+      const h = hostname.toLowerCase().replace(/^\[|\]$/g, "");
+      if (h === "localhost" || h.endsWith(".localhost") || h.endsWith(".local")) return true;
+      const klass = classifyAddress(h); // "special" for a DNS name (not an IP) — caught at runtime instead
+      return klass === "loopback" || klass === "private" || klass === "link-local";
+    };
+    const localOk = m.local_network === true;
     // z.string().url() accepts any scheme (javascript: included) — every URL the
     // dashboard renders as a link or opens must be pinned to http(s) here.
     // publicHttpOk: website is just a link, so plain http is fine anywhere;
@@ -78,9 +96,14 @@ export const manifestSchema = z
     // person's own network only — a local IdP is legit).
     const httpOnly = (url: string, field: string, publicHttpOk: boolean) => {
       const u = new URL(url);
-      if (u.protocol !== "http:" && u.protocol !== "https:") issue(`${field} must be http(s)`);
-      else if (u.protocol === "http:" && !publicHttpOk && !isPrivateHost(u.hostname)) {
+      if (u.protocol !== "http:" && u.protocol !== "https:") { issue(`${field} must be http(s)`); return; }
+      if (u.protocol === "http:" && !publicHttpOk && !isPrivateHost(u.hostname)) {
         issue(`http ${field} is allowed only for localhost/private hosts`);
+      }
+      // Credential/base fields (publicHttpOk === false) that literally target the
+      // person's network need the explicit opt-in.
+      if (!publicHttpOk && !localOk && requiresLocalFlag(u.hostname)) {
+        issue(`${field} targets a local address — set "local_network": true if this gateway is on your own network`);
       }
     };
     if (m.website) httpOnly(m.website, "website", true);
