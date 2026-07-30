@@ -1,0 +1,52 @@
+---
+// The why, as a signed letter on the night plate (spec §5.7) — the page's one
+// drenched dark moment. Pairs oscillate is → could-be and end on the gap.
+const pairs = [
+  ["Renting generic tools that fit almost", "A set of small apps shaped exactly like your life"],
+  ["Your data spread across silos you can't open", "Your data in a folder you can copy"],
+  ["A subscription per need", "One platform, no meter"],
+  ["Scripts that die when you look away", "Apps that are still running, still yours, next year"],
+];
+---
+
+<section class="plate-night relative overflow-hidden">
+  <!-- optional flourish (spec §12): drop in the visual pass if it competes with the hero cloud -->
+  <svg
+    class="cloud-drift absolute top-10 right-8 w-28 text-night-lo"
+    viewBox="0 0 120 60"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path d="M28 52a16 16 0 0 1-2-31.9A22 22 0 0 1 68 14a18 18 0 0 1 24.4 12.7A14 14 0 0 1 90 52Z" />
+  </svg>
+  <div class="relative mx-auto max-w-6xl px-6 py-16 md:py-20">
+    <p class="kicker text-parchment">Why we built Lodekit</p>
+    <div class="prose-measure mt-8 space-y-5">
+      <p>
+        Software finally comes in your size. For the first time, you can describe a tool and have
+        it exist by lunch — shaped exactly to your life, no bigger than it needs to be.
+      </p>
+      <p>
+        But the places it can live all belong to someone else. The platforms are rented, the data
+        sits in silos, and the meter runs on things you made. The alternative — keeping it
+        yourself — has meant becoming your own ops team.
+      </p>
+      <p>
+        We think the tools you ask for should be yours. On your computer, in your folder, in
+        formats you can read. Running whether or not anyone is selling you anything.
+      </p>
+      <p>So we built the home. When software is personal, it should live with you.</p>
+      <p class="text-gold">— the Lodekit makers</p>
+    </div>
+    <dl class="mt-16">
+      {
+        pairs.map(([is, couldBe]) => (
+          <div class="grid gap-2 border-t border-night-lo py-5 md:grid-cols-2 md:gap-8">
+            <dt class="text-parchment">{is}</dt>
+            <dd class="text-pale-gold">{couldBe}</dd>
+          </div>
+        ))
+      }
+    </dl>
+  </div>
+</section>
