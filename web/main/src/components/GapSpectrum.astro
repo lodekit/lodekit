@@ -1,0 +1,28 @@
+---
+// The gap, drawn (spec §5.2): a spectrum with an empty middle. Ink/slate only —
+// deliberately unresolved here; the what-is section answers it.
+---
+
+<figure class="mt-14">
+  <svg viewBox="0 0 800 96" class="w-full text-muted-foreground" role="img">
+    <title>The gap between the ways to keep an app</title>
+    <desc>A horizontal spectrum from “a single file” to “containers, dependencies, a stack to
+      operate”, with an empty interval in the middle labeled “the gap”.</desc>
+    <!-- left segment + endpoint tick -->
+    <line x1="16" y1="48" x2="300" y2="48" stroke="currentColor" stroke-width="1" />
+    <line x1="16" y1="42" x2="16" y2="54" stroke="currentColor" stroke-width="1" />
+    <!-- right segment + endpoint tick -->
+    <line x1="500" y1="48" x2="784" y2="48" stroke="currentColor" stroke-width="1" />
+    <line x1="784" y1="42" x2="784" y2="54" stroke="currentColor" stroke-width="1" />
+    <!-- open-interval brackets facing the void -->
+    <path d="M300 40 v16 M300 40 h6 M300 56 h6" stroke="currentColor" stroke-width="1" fill="none" />
+    <path d="M500 40 v16 M500 40 h-6 M500 56 h-6" stroke="currentColor" stroke-width="1" fill="none" />
+    <text x="400" y="52" text-anchor="middle" class="font-mono font-normal" font-size="13" fill="currentColor" letter-spacing="0.01em">the gap</text>
+    <text x="16" y="82" text-anchor="start" class="font-mono font-normal" font-size="13" fill="currentColor" letter-spacing="0.01em">a single file</text>
+    <text x="784" y="82" text-anchor="end" class="font-mono font-normal" font-size="13" fill="currentColor" letter-spacing="0.01em">containers, dependencies, a stack to operate</text>
+  </svg>
+  <p class="sr-only">
+    The options run from a single file at one end to containers, dependencies, and a stack to
+    operate at the other — with an empty gap in the middle.
+  </p>
+</figure>

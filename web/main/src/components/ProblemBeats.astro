@@ -1,0 +1,41 @@
+---
+import GapSpectrum from "./GapSpectrum.astro";
+
+// Labels, not numbers — the beats are a fork, not a sequence (spec §5.2).
+const beats = [
+  {
+    label: "The choice",
+    copy: "Ask for an app and your agent will offer ways to build it — a single file, a framework, a host. Weighing them is a technical call, and it lands on you.",
+  },
+  {
+    label: "The gap",
+    copy: "The options run small to large with nothing in between: a file that can't remember anything, or containers, dependencies, and a stack you now operate.",
+  },
+  {
+    label: "The sprawl",
+    copy: "A tool for an audience of one still ends up on third-party services — holding your private data, billing monthly, load-bearing. And once your data lives in their formats, leaving costs more than staying.",
+  },
+  {
+    label: "The graveyard",
+    copy: "Kept local instead, the app has no home. It forgets everything between runs, breaks silently, and joins the folder of half-working things you stopped opening.",
+  },
+];
+---
+
+<section class="border-t border-hairline-strong dark:border-border">
+  <div class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+    <p class="kicker text-muted-foreground">The problem</p>
+    <h2 class="headline mt-4">The making got easy. The keeping didn't.</h2>
+    <div class="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-2">
+      {
+        beats.map((beat) => (
+          <div>
+            <h3 class="kicker">{beat.label}</h3>
+            <p class="prose-measure mt-3 text-muted-foreground">{beat.copy}</p>
+          </div>
+        ))
+      }
+    </div>
+    <GapSpectrum />
+  </div>
+</section>
