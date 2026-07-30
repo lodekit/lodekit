@@ -120,7 +120,7 @@ sides of the split, so this is notice preservation, not a licensing conflict:
 | vendored community themes (catppuccin, dracula, nord, rose-pine) | upstream projects | per-theme, to confirm |
 
 Each gets a `REUSE.toml` annotation naming the upstream copyright holder (read from that
-upstream's own `LICENSE`) and `MIT` as the license. `.agents/UPSTREAM.md` already records
+upstream's own `LICENSE`) and `MIT` as the license. `.agents/SOURCES.md` already records
 provenance; this adds the licensing half it doesn't carry.
 
 **The community themes need their licenses confirmed individually** before annotation —
@@ -259,7 +259,7 @@ under a home directory. Nothing resolves them at runtime.
 **Not touched:** `.agents/skills/systematic-debugging/CREATION-LOG.md`,
 `.agents/skills/systematic-debugging/root-cause-tracing.md`,
 `.agents/skills/using-git-worktrees/SKILL.md` contain `/Users/jesse/...` — the *upstream*
-author's username in vendored files. Editing them would add an `UPSTREAM.md` divergence
+author's username in vendored files. Editing them would add an `SOURCES.md` divergence
 entry for no benefit.
 
 History is not rewritten. These paths remain in the 486-commit history and that is

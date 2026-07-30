@@ -1,6 +1,6 @@
 # Licensing
 
-Lodekit is licensed in two halves.
+Lodekit is licensed in two parts.
 
 **The product is copyleft.** The engine, the manager, and the marketing site are
 `AGPL-3.0-only`. If you run a modified Lodekit as a network service, the AGPL
@@ -9,7 +9,7 @@ asks you to publish your source.
 **Everything your own apps touch is permissive.** The SDK, the UI library, the
 MCP server, the Claude skill, the example apps, and the documentation are
 `Apache-2.0`. Apps you build on Lodekit are yours, under whatever license you
-choose — nothing here reaches into them.
+choose.
 
 | Tree | License |
 | --- | --- |
@@ -21,21 +21,19 @@ choose — nothing here reaches into them.
 | `docs/`, `web/docs/` | `Apache-2.0` |
 | `.agents/skills/` (vendored dev process) | `MIT`, per upstream |
 
-`REUSE.toml` is the authoritative source, and it is machine-readable — it
-records the license and copyright holder of every path, including vendored
-third-party files that differ from the tree they sit in. CI runs `reuse lint`
-on every push.
+Licensing follows the [REUSE](https://reuse.software/) specification:
+`REUSE.toml` records the license and copyright holder of every path, including
+vendored third-party code.
 
 ## Third-party code
 
-Vendored code keeps its own license and copyright notice; `REUSE.toml` names
-each holder. `.agents/UPSTREAM.md` records where the vendored development
-process came from and how it diverges.
+Vendored code keeps its own license and copyright notice. `.agents/SOURCES.md`
+records where the vendored development process came from and how it diverges.
 
 Dependencies keep their own licenses, which travel with them inside
 `node_modules` in the packaged app.
 
-## The packaged app
+## Packaged app
 
 `Lodekit.app` redistributes two third-party binaries:
 

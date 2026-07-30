@@ -6,8 +6,8 @@ Lodekit runs personal web apps on the computer you already own. You ask your AI
 coding agent for an app and the agent writes it. Lodekit builds it, serves it in
 your browser, and keeps it running. Apps get what they would otherwise need a
 cloud for: a real database, file storage, secrets, scheduled tasks, and a
-dashboard showing the state of every app. Everything worth keeping is files in
-one folder, so a backup is a copy of that folder.
+dashboard to launch and inspect your apps. Everything worth keeping is files in
+one folder, so a backup is simply a copy of that folder.
 
 ## Status and disclaimer
 
@@ -19,31 +19,20 @@ You should also know how it was built and what it does not yet do:
 
 - The codebase was written almost entirely by AI coding agents, directed,
   curated, and reviewed by a human maintainer.
-- It has not been independently reviewed or security-audited.
-- **App isolation is cooperative, not enforced.** Apps run in worker threads
-  with your full user privileges and unrestricted access to the filesystem,
-  the network, and child processes. An app can do anything you can do.
-- macOS binaries are currently ad-hoc signed and NOT notarized by Apple.
-  macOS will warn you, and you must explicitly allow the app under
-  System Settings → Privacy & Security → "Open Anyway".
-- It is macOS-only today.
-- It stores your data locally in SQLite. Take your own backups.
+- It has not yet been independently reviewed or security-audited.
+- It stores your data locally in SQLite, not encrypted. Take your own backups.
 
 Do not run Lodekit for anything where a defect would cause real damage you
 can't absorb. Report vulnerabilities via SECURITY.md.
 
 ## Install
 
-Lodekit ships as a packaged menubar app on GitHub Releases. There is no Homebrew
-cask and no installer.
+Lodekit ships as a packaged menubar app on GitHub Releases.
 
 1. Download the latest `Lodekit-darwin-*.zip` from
    [Releases](https://github.com/lodekit/lodekit/releases): `arm64` for Apple
    silicon, `x64` for Intel.
 2. Unzip it and move `Lodekit.app` into `/Applications`.
-3. Open it. macOS blocks the first launch, because the app is ad-hoc signed
-   rather than notarized. Open **System Settings → Privacy & Security**, find
-   the notice naming Lodekit, and choose **Open Anyway**.
 
 Lodekit then lives in the menubar. Its first run creates `~/Documents/Lodekit`,
 the folder holding your apps and their data, and installs two apps to look at:
@@ -52,10 +41,8 @@ icon opens the dashboard.
 
 ## Quickstart
 
-Getting from an installed Lodekit to a first working app is the job of
-[docs.lodekit.com](https://docs.lodekit.com), which is not published yet; until
-it is, the closest thing is the skill under `packages/skill/` and the design
-documents in [`docs/specs/`](docs/specs/).
+Go to [docs.lodekit.com](https://docs.lodekit.com) to start building your first
+app with Lodekit.
 
 ## How it works
 
@@ -68,9 +55,6 @@ provides storage, secrets, tasks, and gateways to outside providers as
 straight into that folder and drives the platform over **MCP**, scaffolding apps
 and reading back their data, logs, and build state; the skill teaches it how.
 
-[`docs/CONTEXT.md`](docs/CONTEXT.md) fixes the vocabulary this codebase uses, and
-[`docs/specs/`](docs/specs/) holds the design document behind each subsystem.
-
 ## Development
 
 The repository is a pnpm workspace. The engine and the MCP server are buildless:
@@ -82,9 +66,6 @@ pnpm dev       # the engine against the checked-in root/, at localhost:7777
 pnpm test      # every package's tests
 ```
 
-[`AGENTS.md`](AGENTS.md) is the working agreement for anyone changing code here,
-human or agent: architecture, conventions, and how work is tracked.
-
 ## Licensing
 
 The product is copyleft: the engine, the manager, and the marketing site are
@@ -95,12 +76,10 @@ choose. Details in [`LICENSING.md`](LICENSING.md).
 
 ## Contributing
 
-Lodekit is not taking outside pull requests during the alpha, though the
-development process is public and forking is welcome —
-[`CONTRIBUTING.md`](CONTRIBUTING.md) explains what that means.
+While Lodekit is not released yet, it is closed for contributions. Check
+[`CONTRIBUTING.md`](CONTRIBUTING.md) to learn more.
 
 ## Security
 
-[`SECURITY.md`](SECURITY.md) covers the scope, the known limits of app
-isolation, and how to report a vulnerability privately through the repository's
-Security tab.
+[`SECURITY.md`](SECURITY.md) covers the known limits of app isolation and how
+to report a vulnerability privately through the repository's Security tab.

@@ -1,8 +1,8 @@
 # Security
 
-## Status
+## Disclaimer
 
-Lodekit is alpha software. It has not been independently reviewed or
+Lodekit is pre-alpha software. It has not been independently reviewed or
 security-audited, and it does not yet offer stability or security-support
 guarantees. Known security work in progress is tracked in the public issue
 tracker.
@@ -26,20 +26,3 @@ Please do not open a public issue for a security problem.
 
 Include what you need to make the problem reproducible: affected version,
 platform, steps, and what an attacker gains. A proof of concept helps.
-
-## What to expect
-
-A single maintainer reads these. Expect an acknowledgement within a week. Fixes
-are prioritised by what an attacker actually gains and how reachable the flaw is
-in a default install.
-
-There is no bug bounty, and none is planned.
-
-## Scope
-
-In scope: the engine, the manager, the MCP server, the SDK, and the UI library
-in this repository.
-
-Out of scope: apps you or your agent write on top of Lodekit; the documented
-absence of app sandboxing described above; vulnerabilities in dependencies that
-have no exploitable path through Lodekit (report those upstream).

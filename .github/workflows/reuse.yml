@@ -1,7 +1,5 @@
 name: reuse
 
-# REUSE.toml uses path globs, so a file added outside every glob falls into
-# no-license limbo silently. This job is what notices.
 on:
   push:
     branches: [master]

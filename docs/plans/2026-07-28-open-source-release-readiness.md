@@ -151,7 +151,7 @@ SPDX-FileCopyrightText = "2026 The Lodekit Authors"
 SPDX-License-Identifier = "Apache-2.0"
 
 # --------------------------------------------- vendored: dev-process skills
-# Provenance ledger: .agents/UPSTREAM.md
+# Provenance ledger: .agents/SOURCES.md
 [[annotations]]
 path = [".agents/skills/**", ".agents/hooks/**"]
 precedence = "aggregate"
@@ -184,7 +184,7 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Matt Pocock"
 SPDX-License-Identifier = "MIT"
 
-# Lodekit's own skills — no upstream (.agents/UPSTREAM.md, "ours").
+# Lodekit's own skills — no upstream (.agents/SOURCES.md, "ours").
 [[annotations]]
 path = [
   ".agents/skills/session/**",
@@ -721,7 +721,7 @@ on every push.
 ## Third-party code
 
 Vendored code keeps its own license and copyright notice; `REUSE.toml` names
-each holder. `.agents/UPSTREAM.md` records where the vendored development
+each holder. `.agents/SOURCES.md` records where the vendored development
 process came from and how it diverges.
 
 Dependencies keep their own licenses, which travel with them inside
@@ -951,7 +951,7 @@ and the workflow the agents working on this codebase are expected to follow.
 If you want to understand how a decision was reached, the spec and plan for it
 are in the repository. If you fork Lodekit and work on it with an agent of your
 own, that process is yours to reuse — `.agents/skills/` is vendored from
-upstream projects under their own licenses, recorded in `.agents/UPSTREAM.md`.
+upstream projects under their own licenses, recorded in `.agents/SOURCES.md`.
 
 ## How this codebase is written
 
@@ -995,7 +995,7 @@ git commit -m "docs: SECURITY.md and CONTRIBUTING.md (<bead-id>)"
 - Modify: `docs/plans/2026-07-02-manager-v0.1.md`, `docs/plans/2026-07-03-tanstack-start-host.md`, `docs/plans/2026-07-06-docs-site-v1.md`, `docs/plans/2026-07-07-tasks-change-bus-migration.md`, `docs/plans/2026-07-09-db-store.md`, `docs/plans/2026-07-10-release-pipeline.md`, `docs/plans/2026-07-12-docs-content-v1.md`, `docs/plans/2026-07-14-data-explorer.md`, `docs/plans/2026-07-14-ui-charts-data-table.md`, `docs/plans/2026-07-15-dev-flow-v2.md`, `docs/plans/2026-07-16-worktree-disk-usage.md`, `docs/plans/2026-07-17-engine-package-rename.md`, `docs/specs/2026-07-06-file-store-design.md`, `docs/specs/2026-07-15-dev-flow-v2-design.md`
 - Modify: `docs/PRODUCT.md`
 
-**Background:** 27 lines leak the maintainer's macOS username. Every one is prose in a completed plan or spec — historical execution context. No code reads them, no test asserts them. `manager/tests/paths.test.js` already uses a generic `/Users/someone` and is **not** touched. The three `/Users/jesse/…` hits under `.agents/skills/` are the upstream author's username in vendored files and are **not** touched — editing them would add an `UPSTREAM.md` divergence entry for no benefit.
+**Background:** 27 lines leak the maintainer's macOS username. Every one is prose in a completed plan or spec — historical execution context. No code reads them, no test asserts them. `manager/tests/paths.test.js` already uses a generic `/Users/someone` and is **not** touched. The three `/Users/jesse/…` hits under `.agents/skills/` are the upstream author's username in vendored files and are **not** touched — editing them would add an `SOURCES.md` divergence entry for no benefit.
 
 **Interfaces:**
 - Consumes: nothing.

@@ -1,26 +1,21 @@
 # Contributing
 
-## Contributions are closed for now
+## Closed for contributions
 
-Lodekit does not accept outside pull requests at this time. This is a
-deliberate choice for the alpha, not a judgement about anyone's code, and it
-will change as the project and the maintainer's review capacity mature.
+Pull request and issue creation are **disabled prior to an initial release**.
+Bug reports and other feedback should be submitted to the community chat once
+the first release goes live.
 
-Issues and pull requests are restricted to collaborators while this holds. If
-you have found a bug or have an idea, forking and exploring is welcome — the
-whole point of the license is that you can.
+## Development process
 
-## The development process is public on purpose
+Lodekit is developed entirely with coding agents. The tooling used in the
+project is checked into the repository: `AGENTS.md`, `.agents/skills/`, and
+`docs/`. These serve as context and guardrails for the agent to follow in each
+session that causes product or engineering changes.
 
-`AGENTS.md`, `.agents/skills/`, `docs/specs/`, `docs/plans/`, and
-`docs/decisions/` are not incidental artifacts. They are the engineering
-documentation: the coding conventions, the review habits, the design reasoning,
-and the workflow the agents working on this codebase are expected to follow.
-
-If you want to understand how a decision was reached, the spec and plan for it
-are in the repository. If you fork Lodekit and work on it with an agent of your
-own, that process is yours to reuse — `.agents/skills/` is vendored from
-upstream projects under their own licenses, recorded in `.agents/UPSTREAM.md`.
+The skills used in the repository are vendored from upstream projects; see
+`.agents/SOURCES.md` for the list and how they were adapted and diverge from
+their sources.
 
 ## How this codebase is written
 
@@ -31,3 +26,15 @@ specification and plan documents in `docs/` are the record of that direction.
 
 We say this plainly because it is true and because it sets the right
 expectations — see the disclaimer in the README.
+
+## Review and audit policy
+
+While Lodekit is in pre-alpha with no release open to the public, only the
+specs and plans are reviewed by a maintainer. At this stage, maintainers steer
+architecture, technical choices, dependencies, security guidelines, interfaces,
+and other core engineering concerns that affect long-term decisions, technical
+debt, and the health of the codebase. These are represented in `docs/specs/`
+and reflected in `docs/plans/`.
+
+The review and audit level will increase gradually in later stages, and this
+document will be updated with the new policy.

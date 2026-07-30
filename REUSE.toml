@@ -1,18 +1,11 @@
 version = 1
 
-# Lodekit's licensing boundary. ORDERING IS LOAD-BEARING: when several
-# annotations match one file, the LAST matching table wins (REUSE spec 3.3).
-# Broad defaults first, carve-outs after, vendored third-party code last.
-
-# ---------------------------------------------------------------- default
 [[annotations]]
 path = "**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The Lodekit Authors"
 SPDX-License-Identifier = "AGPL-3.0-only"
 
-# ------------------------------------------------- permissive carve-outs
-# Anything a user's own app imports, or copies as a starting point.
 [[annotations]]
 path = [
   "packages/sdk/**",
@@ -27,8 +20,6 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The Lodekit Authors"
 SPDX-License-Identifier = "Apache-2.0"
 
-# --------------------------------------------- vendored: dev-process skills
-# Provenance ledger: .agents/UPSTREAM.md
 [[annotations]]
 path = [".agents/skills/**", ".agents/hooks/**"]
 precedence = "aggregate"
@@ -61,7 +52,6 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Matt Pocock"
 SPDX-License-Identifier = "MIT"
 
-# Lodekit's own skills — no upstream (.agents/UPSTREAM.md, "ours").
 [[annotations]]
 path = [
   ".agents/skills/session/**",
@@ -72,7 +62,6 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The Lodekit Authors"
 SPDX-License-Identifier = "Apache-2.0"
 
-# ------------------------------------------------ vendored: UI and themes
 [[annotations]]
 path = ["packages/ui/shadcn-tailwind.css", "packages/ui/src/components/**"]
 precedence = "aggregate"
