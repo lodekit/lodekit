@@ -1,0 +1,48 @@
+---
+import {
+  BatteryChargingIcon,
+  FolderSimpleIcon,
+  PaletteIcon,
+  ShieldCheckIcon,
+  SquaresFourIcon,
+} from "@phosphor-icons/react";
+---
+
+<ul class="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+  <li class="rounded-[5px] border border-border bg-card p-6">
+    <BatteryChargingIcon weight="regular" size={20} aria-hidden="true" />
+    <h3 class="mt-3 text-[1.125rem] font-medium">Batteries</h3>
+    <p class="mt-2 text-sm text-muted-foreground">
+      A real database, file storage, secrets, schedules, gateways — local services of one engine.
+    </p>
+  </li>
+  <li class="rounded-[5px] border border-border bg-card p-6">
+    <FolderSimpleIcon weight="regular" size={20} aria-hidden="true" />
+    <h3 class="mt-3 text-[1.125rem] font-medium">The folder</h3>
+    <p class="mt-2 text-sm text-muted-foreground">
+      Apps and data are files in <code class="font-mono text-[0.8125rem] font-normal">~/Documents/Lodekit</code>.
+      Copy it and it's yours forever.
+    </p>
+  </li>
+  <li class="rounded-[5px] border border-border bg-card p-6">
+    <SquaresFourIcon weight="regular" size={20} aria-hidden="true" />
+    <h3 class="mt-3 text-[1.125rem] font-medium">The dashboard</h3>
+    <p class="mt-2 text-sm text-muted-foreground">
+      Every app's state, data, and scheduled work — visible in one place.
+    </p>
+  </li>
+  <li class="rounded-[5px] border border-border bg-card p-6">
+    <ShieldCheckIcon weight="regular" size={20} aria-hidden="true" />
+    <h3 class="mt-3 text-[1.125rem] font-medium">Guardrails</h3>
+    <p class="mt-2 text-sm text-muted-foreground">
+      Apps run isolated and see only their own data. Secrets never enter app code.
+    </p>
+  </li>
+  <li class="rounded-[5px] border border-border bg-card p-6">
+    <PaletteIcon weight="regular" size={20} aria-hidden="true" />
+    <h3 class="mt-3 text-[1.125rem] font-medium">One theme</h3>
+    <p class="mt-2 text-sm text-muted-foreground">
+      Every app shares one UI library and one theme. Ten apps feel like one product.
+    </p>
+  </li>
+</ul>
