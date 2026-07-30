@@ -204,25 +204,6 @@
     padding: 0.35em 0.7em;
   }
 
-  /* form field (DESIGN.md §5 inputs) */
-  .field {
-    background: var(--card);
-    color: var(--card-foreground);
-    border: 1px solid var(--input);
-    border-radius: 3px;
-    padding: 0.6em 0.9em;
-    font-size: 0.95rem;
-    width: 100%;
-    transition: border-color 200ms var(--ease-drift);
-  }
-  .field::placeholder {
-    color: var(--muted-foreground);
-  }
-  .field:focus-visible {
-    border-color: var(--ring);
-    outline: none;
-  }
-
   /* primary button — brand hover crossfades the night sheet (DESIGN.md §5) */
   .btn-primary {
     display: inline-flex;
@@ -266,17 +247,6 @@
     background: var(--ochre);
     color: var(--ink);
     --ring: var(--ink);
-  }
-  .plate-ochre .field {
-    background: var(--paper-hi);
-    color: var(--ink);
-    border-color: var(--hairline-strong);
-  }
-  .plate-ochre .field::placeholder {
-    color: var(--slate-ink);
-  }
-  .plate-ochre .field:focus-visible {
-    border-color: var(--ink);
   }
   /* on the ochre plate the button is print ink; hover is the chip's small
      fade (both full sheets read too dramatic against the drench) */
