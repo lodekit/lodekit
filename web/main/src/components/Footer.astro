@@ -1,12 +1,17 @@
 ---
 import Lockup from "./Lockup.astro";
+import { DOCS_URL, GITHUB_URL } from "../lib/links";
 ---
 
-<footer class="border-t border-border">
+<footer class="border-t border-hairline-strong dark:border-border">
   <div
     class="mx-auto flex max-w-6xl flex-col items-start gap-4 px-6 py-10 sm:flex-row sm:items-center sm:justify-between"
   >
     <Lockup class="opacity-80" />
-    <p class="text-sm font-normal text-muted-foreground">macOS only, for now. · © 2026 Lodekit</p>
+    <p class="text-sm font-normal text-muted-foreground">
+      <a class="nav-link" href={DOCS_URL}>Docs</a>
+      · <a class="nav-link" href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>
+      · macOS only, for now. · © 2026 Lodekit
+    </p>
   </div>
 </footer>
