@@ -294,9 +294,11 @@ narrative at full length, evidence-honest.
 
 ## 8. Using this doc
 
-- **Landing page:** hero = complication compression (§4) → tagline as resolution;
-  section order follows the pillars (§6); oscillation pairs (§5) for the persuasion
-  band; stack names in the developer layer only.
+- **Landing page:** hero = resolution-led — tagline-family headline with a
+  situation subhead; the complication (§4) moves below the fold as the problems
+  section. Arc: problems → fit check → what-is → how-it-goes → comparison →
+  manifesto → CTA. Oscillation pairs (§5) close the manifesto; stack names in the
+  developer layer only.
 - **Docs prose:** voice per §7 (no edge); narrative rules per §5 (calm-shaped, never
   punching).
 - **Blog / launch post:** skeleton is §5 verbatim — complication, situation,
