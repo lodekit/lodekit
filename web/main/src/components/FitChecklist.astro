@@ -1,0 +1,52 @@
+---
+import { CheckCircleIcon, HourglassIcon } from "@phosphor-icons/react";
+
+const forYou = [
+  "You ask agents for tools — or you're about to.",
+  "You track real things — habits, house projects, money — in tools shaped almost right.",
+  "You run a home server, and don't want one more thing to maintain.",
+  "Your data staying yours is a requirement, not a preference.",
+];
+const notYet = [
+  "You need to share apps with other people, or work multi-user.",
+  "You want a hosted URL on the open web.",
+  "You're not on a Mac. (Windows and Linux are open questions — honestly.)",
+];
+---
+
+<section class="border-t border-hairline-strong dark:border-border">
+  <div class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+    <p class="kicker text-muted-foreground">Is it for me?</p>
+    <div class="mt-8 grid gap-x-12 gap-y-10 border-t border-border pt-8 md:grid-cols-2">
+      <div>
+        <h3 class="text-[1.125rem] font-bold">It's for you if…</h3>
+        <ul class="mt-5 space-y-4">
+          {
+            forYou.map((line) => (
+              <li class="flex gap-3">
+                <CheckCircleIcon weight="regular" size={20} className="mt-0.5 shrink-0" aria-hidden="true" />
+                <span>{line}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-[1.125rem] font-bold">Not yet, if…</h3>
+        <ul class="mt-5 space-y-4">
+          {
+            notYet.map((line) => (
+              <li class="flex gap-3">
+                <HourglassIcon weight="regular" size={20} className="mt-0.5 shrink-0" aria-hidden="true" />
+                <span>{line}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+    <p class="mt-10 text-sm font-normal text-muted-foreground">
+      That's the current truth. This page changes when it does.
+    </p>
+  </div>
+</section>
