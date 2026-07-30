@@ -7,9 +7,14 @@ import "@fontsource/m-plus-1-code/700.css";
 import "@fontsource/spline-sans-mono/400.css";
 import "@fontsource/spline-sans-mono/500.css";
 
-const title = "Lodekit — the local platform for agent-built apps";
-const description =
-  "Everything your apps need from a cloud — database, files, secrets, scheduled tasks — on the one computer you already own. Your agent builds; Lodekit runs and keeps. Coming soon.";
+interface Props {
+  title?: string;
+  description?: string;
+}
+const {
+  title = "Lodekit — the local platform for agent-built apps",
+  description = "Everything your apps need from a cloud — database, files, secrets, scheduled tasks — on the one computer you already own. Your agent builds; Lodekit runs and keeps. Coming soon.",
+} = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
