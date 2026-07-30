@@ -399,6 +399,42 @@
   .demo-pulse {
     animation: demo-pulse 1200ms var(--ease-drift) infinite alternate;
   }
+
+  /* the demo window is an illustration (spec §5.1): generic mac grays, system
+     font, print-blue accent — Lodekit tokens never enter the frame. Grays are
+     implementation-owned (spec §12) against AA + the Print Test. */
+  .demo-window {
+    --background: #ffffff;
+    --card: #ffffff;
+    --card-foreground: #1d1d1f;
+    --foreground: #1d1d1f;
+    --border: #d9d9de;
+    --secondary: #f2f2f3;
+    --secondary-foreground: #1d1d1f;
+    --muted: #f2f2f3;
+    --muted-foreground: #6e6e73;
+    --primary: #4b5d91; /* print blue — DESIGN.md reserves it for illustration */
+    --primary-foreground: #ffffff;
+    --ring: #4b5d91;
+    --font-sans: -apple-system, system-ui, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+    font-family: var(--font-sans);
+    color: var(--foreground);
+  }
+  .dark .demo-window {
+    --background: #202024;
+    --card: #202024;
+    --card-foreground: #ececf0;
+    --foreground: #ececf0;
+    --border: #3f3f46;
+    --secondary: #2b2b31;
+    --secondary-foreground: #ececf0;
+    --muted: #2b2b31;
+    --muted-foreground: #a3a3ad;
+    --primary: #93a7d4; /* lightened print-blue derivative — AA on the dark pane */
+    --primary-foreground: #202024;
+    --ring: #93a7d4;
+  }
 }
 
 /* ——— motion (DESIGN.md §5): one entrance; the hero demo plays once within it ——— */
@@ -429,6 +465,17 @@
     opacity: 0.35;
   }
 }
+@keyframes cloud-drift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(9px, -6px);
+  }
+}
+.cloud-drift {
+  animation: cloud-drift 32s linear infinite alternate;
+}
 .enter {
   animation: enter-up 450ms var(--ease-drift) both;
   animation-delay: var(--stagger, 0ms);
@@ -444,6 +491,9 @@
   }
   .demo-item,
   .demo-pulse {
+    animation: none;
+  }
+  .cloud-drift {
     animation: none;
   }
   .tooltip,
