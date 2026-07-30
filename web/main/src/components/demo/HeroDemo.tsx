@@ -13,6 +13,7 @@ import {
   type DemoState,
 } from "./script";
 import { createTimeline, type Timeline } from "./timeline";
+import { DemoWindow } from "./DemoWindow";
 import { Message, MessageContent } from "./prompt-kit/message";
 import { PromptInput, PromptInputActions, PromptInputDisplay } from "./prompt-kit/prompt-input";
 import { ToolRow } from "./prompt-kit/tool";
@@ -180,13 +181,7 @@ export default function HeroDemo() {
   };
 
   return (
-    <div
-      ref={cardRef}
-      className="flex h-[540px] flex-col overflow-hidden rounded-[8px] border border-border bg-card font-normal"
-    >
-      <div className="border-b border-border px-4 py-2.5">
-        <span className="kicker text-muted-foreground">Agent session — greenhouse</span>
-      </div>
+    <DemoWindow title="Agent — greenhouse" ref={cardRef}>
       <div className="flex min-h-0 flex-1 flex-col">
         <div
           ref={scrollRef}
@@ -210,6 +205,6 @@ export default function HeroDemo() {
         </div>
       </div>
       <Transcript />
-    </div>
+    </DemoWindow>
   );
 }
