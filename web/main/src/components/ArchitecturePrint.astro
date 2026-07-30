@@ -1,0 +1,62 @@
+---
+// The signature print (spec §4, §5.4): the cloud inside the machine — the H1
+// literalized. The page's one committed image; everything around it stays quiet.
+import { MARK_BODIES } from "@lodekit/engine/marks";
+---
+
+<figure>
+  <svg viewBox="0 0 560 400" class="w-full" role="img">
+    <title>Lodekit architecture</title>
+    <desc>Your computer, drawn as a hairline outline. The menubar holds the Lodekit manager. Inside,
+      the engine holds a small cloud of five services — database, files, secrets, schedule,
+      gateways. Apps appear as browser tabs connected to the engine, and everything is kept in one
+      folder.</desc>
+
+    <!-- the machine: your computer, as boundary -->
+    <rect x="24" y="20" width="512" height="312" rx="6" fill="none" stroke="currentColor" stroke-width="1" />
+    <path d="M8 348 h544" stroke="currentColor" stroke-width="1" />
+    <path d="M232 332 v8 h96 v-8" fill="none" stroke="currentColor" stroke-width="1" />
+
+    <!-- menubar strip with the jar-cloud mark + manager label -->
+    <line x1="24" y1="52" x2="536" y2="52" stroke="currentColor" stroke-width="1" />
+    <svg x="484" y="26" width="22" height="22" viewBox="0 0 32 32" set:html={MARK_BODIES.b} />
+    <text x="476" y="41" text-anchor="end" class="font-mono font-normal" font-size="11" fill="currentColor" letter-spacing="0.01em">manager</text>
+
+    <!-- the engine compartment holding the cloud of services -->
+    <rect x="112" y="120" width="248" height="152" rx="4" fill="none" stroke="currentColor" stroke-width="1" />
+    <text x="124" y="141" class="font-mono font-normal" font-size="11" fill="currentColor" letter-spacing="0.01em">engine</text>
+    <!-- five-lobed flat cloud: body cloud-slate, underside print-blue, one clay-rose lobe -->
+    <g>
+      <path
+        d="M156 232a20 20 0 0 1 2-39.8A26 26 0 0 1 206 174a22 22 0 0 1 34 2a20 20 0 0 1 32 4a18 18 0 0 1 26 16a17 17 0 0 1-6 36Z"
+        fill="var(--color-cloud-slate)"
+      />
+      <path d="M156 232 h136 a17 17 0 0 0 6-8 H160 a20 20 0 0 1-4 8Z" fill="var(--color-print-blue)" />
+      <circle cx="240" cy="180" r="10" fill="var(--color-clay-rose)" />
+    </g>
+    <text x="236" y="256" text-anchor="middle" class="font-mono font-normal" font-size="11" fill="currentColor" letter-spacing="0.01em">database · files · secrets · schedule · gateways</text>
+
+    <!-- apps: browser tabs, connected by hairlines -->
+    <g>
+      <path d="M392 96 h104 a4 4 0 0 1 4 4 v28 h-112 v-28 a4 4 0 0 1 4-4Z" fill="none" stroke="currentColor" stroke-width="1" />
+      <circle cx="400" cy="112" r="3" fill="var(--color-ochre)" />
+      <text x="410" y="116" class="font-mono font-normal" font-size="11" fill="currentColor" letter-spacing="0.01em">greenhouse</text>
+      <path d="M412 156 h100 a4 4 0 0 1 4 4 v28 h-108 v-28 a4 4 0 0 1 4-4Z" fill="none" stroke="currentColor" stroke-width="1" />
+      <circle cx="420" cy="172" r="3" fill="var(--color-print-blue)" />
+      <text x="430" y="176" class="font-mono font-normal" font-size="11" fill="currentColor" letter-spacing="0.01em">reading-log</text>
+      <path d="M360 180 h48 M360 200 q20 0 28-24" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.55" />
+    </g>
+
+    <!-- the folder: everything worth keeping -->
+    <g>
+      <path d="M84 296 h20 l6 7 h34 a3 3 0 0 1 3 3 v14 a3 3 0 0 1-3 3 h-60 a3 3 0 0 1-3-3 v-21 a3 3 0 0 1 3-3Z" fill="none" stroke="currentColor" stroke-width="1" />
+      <text x="158" y="314" class="font-mono font-normal" font-size="11" fill="currentColor" letter-spacing="0.01em">~/Documents/Lodekit</text>
+      <path d="M136 272 q-16 14-22 24" fill="none" stroke="currentColor" stroke-width="1" stroke-opacity="0.55" />
+    </g>
+  </svg>
+  <p class="sr-only">
+    Lodekit runs on your computer: one menubar manager, an engine holding five local services —
+    database, files, secrets, schedule, gateways — apps served to your browser, and everything
+    stored as files in ~/Documents/Lodekit.
+  </p>
+</figure>
