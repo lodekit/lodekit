@@ -1,11 +1,16 @@
 ---
 import Lockup from "./Lockup.astro";
 import { ThemeToggle } from "./ThemeToggle";
+import { DOCS_URL, GITHUB_URL } from "../lib/links";
 ---
 
-<header class="border-b border-border">
+<header class="border-b border-hairline-strong dark:border-border">
   <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
     <Lockup class="opacity-80" />
-    <ThemeToggle client:load />
+    <nav class="flex items-center gap-6" aria-label="Site">
+      <a class="nav-link text-[0.95rem]" href={DOCS_URL}>Docs</a>
+      <a class="nav-link text-[0.95rem]" href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>
+      <ThemeToggle client:load />
+    </nav>
   </div>
 </header>
