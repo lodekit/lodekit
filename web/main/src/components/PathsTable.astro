@@ -1,0 +1,132 @@
+---
+// Paths, not brands (spec §5.6). Data defined once; rendered twice (table ≥ md,
+// stacked cards below). The honesty gate: every non-Lodekit cell stays checkable
+// as a statement of the class; "good at" is never weakened.
+const rows = ["good at", "storage", "schedules", "accounts", "cost shape", "still yours next year"];
+const paths = [
+  {
+    name: "single file",
+    brands: "",
+    cells: ["instant and free", "none", "none", "none", "free", "the file, maybe"],
+  },
+  {
+    name: "hosted builder",
+    brands: "Lovable · Replit · v0",
+    cells: [
+      "zero setup, shareable",
+      "theirs",
+      "on a paid tier",
+      "required",
+      "subscription",
+      "at the vendor's pleasure",
+    ],
+  },
+  {
+    name: "no-code tool",
+    brands: "Airtable · Notion · Glide",
+    cells: [
+      "forms and tables, fast",
+      "theirs",
+      "included, up to a point",
+      "required",
+      "subscription",
+      "behind an export button",
+    ],
+  },
+  {
+    name: "Lodekit",
+    brands: "",
+    cells: [
+      "apps that live at home",
+      "yours — a real database, local",
+      "built-in, local",
+      "none",
+      "your own hardware",
+      "a folder you can copy",
+    ],
+  },
+];
+---
+
+<section>
+  <div class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+    <p class="kicker text-muted-foreground">Lodekit vs</p>
+    <h2 class="headline mt-4">Ways to keep an agent-built app.</h2>
+
+    <!-- table (md and up) -->
+    <table class="mt-12 hidden w-full border-collapse text-left md:table">
+      <thead>
+        <tr class="border-b border-hairline-strong dark:border-border">
+          <td></td>
+          {
+            paths.map((path) => (
+              <th
+                scope="col"
+                class:list={[
+                  "px-4 py-3 align-top",
+                  path.name === "Lodekit" && "border-x border-hairline-strong bg-secondary dark:border-border",
+                ]}
+              >
+                {path.name}
+                <span class="block min-h-4 font-mono text-xs font-normal tracking-[0.01em] text-muted-foreground">
+                  {path.brands}
+                </span>
+              </th>
+            ))
+          }
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map((label, r) => (
+            <tr class="border-b border-border">
+              <th scope="row" class="py-3 pr-4 font-medium">
+                {label}
+              </th>
+              {paths.map((path) => (
+                <td
+                  class:list={[
+                    "px-4 py-3 font-mono text-[0.8125rem] font-normal tracking-[0.01em] text-muted-foreground",
+                    path.name === "Lodekit" &&
+                      "border-x border-hairline-strong bg-secondary text-foreground dark:border-border",
+                  ]}
+                >
+                  {path.cells[r]}
+                </td>
+              ))}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+
+    <!-- stacked cards (below md) — same content, same order -->
+    <div class="mt-12 space-y-4 md:hidden">
+      {
+        paths.map((path) => (
+          <div
+            class:list={[
+              "rounded-[5px] border p-6",
+              path.name === "Lodekit" ? "border-hairline-strong bg-secondary dark:border-border" : "border-border bg-card",
+            ]}
+          >
+            <h3 class="text-[1.125rem] font-medium">{path.name}</h3>
+            {path.brands && (
+              <p class="mt-1 font-mono text-xs font-normal tracking-[0.01em] text-muted-foreground">{path.brands}</p>
+            )}
+            <dl class="mt-4 space-y-2">
+              {rows.map((label, r) => (
+                <div class="flex justify-between gap-4">
+                  <dt class="font-medium">{label}</dt>
+                  <dd class="text-right font-mono text-[0.8125rem] font-normal tracking-[0.01em] text-muted-foreground">
+                    {path.cells[r]}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
