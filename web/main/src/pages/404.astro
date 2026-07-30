@@ -1,0 +1,25 @@
+---
+import Base from "../layouts/Base.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+---
+
+<Base title="Page not found — Lodekit" description="There's no page at this address.">
+  <Header />
+  <main>
+    <section>
+      <div class="mx-auto max-w-2xl px-6 py-24 text-center md:py-32">
+        <p class="kicker text-muted-foreground">404 — not found</p>
+        <h1 class="headline mt-4">Nothing lives here.</h1>
+        <p class="mx-auto mt-4 max-w-prose">
+          The address may be mistyped, or the page may have moved. Everything Lodekit is on the
+          front page.
+        </p>
+        <a href="/" class="mt-8 inline-block underline underline-offset-4"
+          >Back to the front page</a
+        >
+      </div>
+    </section>
+  </main>
+  <Footer />
+</Base>
