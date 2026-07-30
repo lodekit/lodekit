@@ -1,0 +1,54 @@
+name: deploy-web-docs
+
+# Dispatch-only for now — no autodeploy.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Commit SHA or tag to deploy (defaults to the branch you dispatch from)"
+        required: false
+
+# Never cancel a half-finished sync; queued dispatches run in order.
+concurrency:
+  group: deploy-web-docs
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24.12.0"
+          cache: pnpm
+      # `...` pulls workspace deps — the site bundles @lodekit/engine/marks.
+      - run: pnpm install --filter @lodekit/web-docs...
+      - run: pnpm --filter @lodekit/web-docs build
+      # Config reaches the shell via env, never inline ${{ }} in run: blocks.
+      - name: Sync to bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.SCW_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          BUCKET: ${{ vars.WEB_DOCS_BUCKET }}
+        run: |
+          aws s3 sync web/docs/dist "s3://$BUCKET" \
+            --endpoint-url https://s3.fr-par.scw.cloud \
+            --region fr-par \
+            --delete
+      - name: Purge Edge Services cache
+        env:
+          SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          PIPELINE_ID: ${{ vars.WEB_DOCS_PIPELINE_ID }}
+        run: |
+          curl --fail-with-body -sS -X POST \
+            "https://api.scaleway.com/edge-services/v1beta1/purge-requests" \
+            -H "X-Auth-Token: $SCW_SECRET_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"pipeline_id\": \"$PIPELINE_ID\", \"all\": true}"
