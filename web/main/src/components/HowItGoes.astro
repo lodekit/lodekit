@@ -1,0 +1,148 @@
+---
+// The loop, user-driven (spec §5.5). The rail always shows all four one-liners;
+// numbers are earned here — order is information.
+import { MARK_BODIES } from "@lodekit/engine/marks";
+
+const steps = [
+  {
+    line: "Install one menubar app.",
+    copy: "That's the setup. Lodekit brings everything it needs, down to its own Node. No terminal, nothing to configure.",
+  },
+  {
+    line: "Ask your agent for the app you want.",
+    copy: "“Something to manage my greenhouse from the weather forecast.” Your agent scaffolds it and wires up the services it needs.",
+  },
+  {
+    line: "Use it in your browser a minute later.",
+    copy: "lodekit.localhost/greenhouse — a URL on your machine. Want it different? Ask again; it rebuilds on save.",
+  },
+  {
+    line: "Close the laptop. Come back next month.",
+    copy: "Still running. The forecast check fired every morning, and the data is in your folder. That's the keeping.",
+  },
+];
+---
+
+<section class="plate-wash">
+  <div class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+    <p class="kicker text-muted-foreground">How it goes</p>
+    <div class="mt-10 grid gap-10 md:grid-cols-[2fr_3fr]" data-tabs>
+      <div role="tablist" aria-label="How it goes" aria-orientation="vertical" class="flex flex-col items-start gap-5">
+        {
+          steps.map((step, i) => (
+            <button
+              type="button"
+              role="tab"
+              id={`hig-tab-${i}`}
+              aria-selected={i === 0 ? "true" : "false"}
+              aria-controls={`hig-panel-${i}`}
+              tabindex={i === 0 ? 0 : -1}
+              class="flex items-baseline gap-3 border-b-2 border-transparent pb-1 text-left transition-colors duration-250 [transition-timing-function:var(--ease-drift)] aria-selected:border-ring aria-selected:text-primary"
+            >
+              <span class="font-mono text-[0.8125rem] font-normal tracking-[0.01em]">{String(i + 1).padStart(2, "0")}</span>
+              <span>{step.line}</span>
+            </button>
+          ))
+        }
+      </div>
+      <div>
+        {
+          steps.map((step, i) => (
+            <div
+              role="tabpanel"
+              id={`hig-panel-${i}`}
+              aria-labelledby={`hig-tab-${i}`}
+              hidden={i !== 0}
+              class="hig-panel rounded-[8px] border border-border bg-card p-8"
+            >
+              <svg viewBox="0 0 120 48" class="h-12 text-muted-foreground" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1">
+                {i === 0 && (
+                  <>
+                    <rect x="4" y="14" width="112" height="14" rx="2" />
+                    {/* the jar-cloud mark in the menubar — imported, never redrawn */}
+                    <svg x="98" y="16" width="10" height="10" viewBox="0 0 32 32" set:html={MARK_BODIES.b} />
+                  </>
+                )}
+                {i === 1 && <path d="M12 10 h72 a4 4 0 0 1 4 4 v14 a4 4 0 0 1-4 4 H32 l-10 8 v-8 h-10 a4 4 0 0 1-4-4 V14 a4 4 0 0 1 4-4Z" />}
+                {i === 2 && (
+                  <>
+                    <rect x="8" y="8" width="104" height="32" rx="3" />
+                    <path d="M8 18 h104" />
+                    <circle cx="16" cy="13" r="1.5" fill="currentColor" stroke="none" />
+                  </>
+                )}
+                {i === 3 && (
+                  <>
+                    <path d="M78 12 a12 12 0 1 0 10 18 a10 10 0 0 1-10-18Z" />
+                    <path d="M28 32 a8 8 0 0 1 1-15.9 A10 10 0 0 1 48 14 a8 8 0 0 1 6 14Z" fill="var(--color-cloud-slate)" stroke="none" />
+                  </>
+                )}
+              </svg>
+              <p class="prose-measure mt-5">
+                {i === 2 ? (
+                  <>
+                    <span class="font-mono text-[0.8125rem] font-normal">lodekit.localhost/greenhouse</span>
+                    {" — a URL on your machine. Want it different? Ask again; it rebuilds on save."}
+                  </>
+                ) : (
+                  step.copy
+                )}
+              </p>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* opacity-only crossfade: replays whenever a hidden panel is shown */
+  .hig-panel:not([hidden]) {
+    animation: hig-fade 250ms var(--ease-drift);
+  }
+  @keyframes hig-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hig-panel:not([hidden]) {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  import { nextTabIndex } from "../lib/tabs";
+
+  document.querySelectorAll<HTMLElement>("[data-tabs]").forEach((root) => {
+    const tabs = [...root.querySelectorAll<HTMLButtonElement>("[role='tab']")];
+    const panels = [...root.querySelectorAll<HTMLElement>("[role='tabpanel']")];
+
+    function select(index: number, focus = false) {
+      tabs.forEach((tab, i) => {
+        tab.setAttribute("aria-selected", String(i === index));
+        tab.tabIndex = i === index ? 0 : -1;
+      });
+      panels.forEach((panel, i) => {
+        panel.hidden = i !== index;
+      });
+      if (focus) tabs[index].focus();
+    }
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener("click", () => select(i));
+      tab.addEventListener("keydown", (e) => {
+        const next = nextTabIndex(i, e.key, tabs.length);
+        if (next !== null) {
+          e.preventDefault();
+          select(next, true);
+        }
+      });
+    });
+  });
+</script>
