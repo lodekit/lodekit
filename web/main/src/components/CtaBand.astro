@@ -1,16 +1,15 @@
 ---
-import NotifyForm from "./NotifyForm.astro";
+import DownloadCta from "./DownloadCta.astro";
 ---
 
 <section class="plate-ochre">
   <div class="mx-auto max-w-2xl px-6 py-16 text-center md:py-20">
     <h2 class="headline">Give your apps a home.</h2>
     <p class="mx-auto mt-4 max-w-prose">
-      The alpha ships soon, macOS first. Leave an email and we'll send one note — the day it's
-      ready.
+      The alpha ships soon, macOS first. The docs are ready when you are.
     </p>
-    <div class="mx-auto mt-8 flex max-w-md flex-col items-center [&_[data-notify-root]]:w-full">
-      <NotifyForm id="cta" />
+    <div class="mt-8">
+      <DownloadCta id="cta" center />
     </div>
   </div>
 </section>

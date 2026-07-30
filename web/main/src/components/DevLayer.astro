@@ -1,10 +1,18 @@
-<section class="border-t border-border">
+---
+import { DOCS_URL, GITHUB_URL } from "../lib/links";
+---
+
+<section>
   <div class="mx-auto max-w-6xl px-6 py-10">
     <p class="kicker text-muted-foreground">For the curious</p>
-    <p class="prose-measure mt-3 text-sm text-muted-foreground">
+    <p class="prose-measure mt-3 text-[0.9375rem] font-normal text-muted-foreground">
       Under the hood: a single Node engine hosting TanStack Start apps in per-app workers. SQLite
       per app. shadcn/ui components under one shared theme. Agent-driven over MCP. Buildless — the
       platform owns the toolchain, down to its own pinned Node.
     </p>
+    <div class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+      <a class="nav-link" href={DOCS_URL}>Read the architecture →</a>
+      <a class="nav-link" href={GITHUB_URL} target="_blank" rel="noopener">Source on GitHub →</a>
+    </div>
   </div>
 </section>
