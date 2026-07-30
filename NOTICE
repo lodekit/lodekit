@@ -1,0 +1,24 @@
+Lodekit
+Copyright (c) 2026 The Lodekit Authors
+
+This product includes software developed by The Lodekit Authors and by third
+parties. See LICENSING.md for how the repository is licensed, and REUSE.toml
+for the authoritative, machine-readable per-path licensing.
+
+This NOTICE file is provided for the purposes of section 4(d) of the Apache
+License, Version 2.0, which applies to the permissively licensed parts of this
+repository.
+
+Trademark Notice
+----------------
+
+The licenses covering the code in this repository do not grant permission to
+use the "Lodekit" name, Lodekit logos, or other Lodekit marks.
+
+"Lodekit" and the Lodekit logos are marks and trade names of the Lodekit
+project. They are not registered trademarks at this time.
+
+Truthful, referential use is expressly welcome — describing your work as
+"based on Lodekit" or "forked from Lodekit" is fine and needs no permission.
+Using the marks in a way that suggests your project is official, endorsed, or
+affiliated is not.

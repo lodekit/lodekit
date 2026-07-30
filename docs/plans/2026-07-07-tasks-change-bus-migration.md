@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Work on the `stack` branch in this worktree (`/Users/sesv/Code/worktrees/lodekit/stack`). Never fold into `master` — the person integrates.
+- Work on the `stack` branch in this worktree (`~/Code/worktrees/lodekit/stack`). Never fold into `master` — the person integrates.
 - Surgical changes only: every changed line traces to the spec; no adjacent "improvements".
 - Commit messages: conventional-commit style matching recent history (`refactor(runtime): …`). **No `Co-Authored-By` trailers.**
 - Run all pnpm commands from the repo root (never with CWD inside `manager/`).

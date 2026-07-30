@@ -16,7 +16,7 @@
 - Explorer events views/counts filter `ns = appId AND source = appId` (excludes `_platform` ns and platform-sourced change-feed records).
 - Repo conventions: no `Co-Authored-By` trailers; commit directly on the current `service` branch; do NOT push or merge to master.
 - `tsconfig` is NodeNext: files under `packages/runtime/tests/` must use `.js` suffixes on relative imports. Dashboard client files (under `dashboard/src/`) use suffix-less imports (bundler-resolved) and are NOT part of the `tsc --noEmit` program — but any dashboard file imported from `tests/` IS pulled into it, so `dashboard/src/lib/table-query.ts` and `dashboard/src/lib/format.ts` must remain dependency-free (no imports at all).
-- All runtime commands from the repo root `/Users/sesv/Code/worktrees/lodekit/service`. Test runner: `pnpm --filter @lodekit/runtime test <file>` (vitest), typecheck: `pnpm --filter @lodekit/runtime check`.
+- All runtime commands from the repo root `~/Code/worktrees/lodekit/service`. Test runner: `pnpm --filter @lodekit/runtime test <file>` (vitest), typecheck: `pnpm --filter @lodekit/runtime check`.
 - The dashboard build regenerates `dashboard/src/routeTree.gen.ts` (untracked, generated). After adding route files, run the dashboard build test to regenerate + verify: `pnpm --filter @lodekit/runtime test tests/dashboard.test.ts`.
 
 ## File Map

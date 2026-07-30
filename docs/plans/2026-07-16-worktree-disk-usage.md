@@ -43,7 +43,7 @@
 - [ ] **Step 1: Create the work branch**
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/runtime
+cd ~/Code/worktrees/lodekit/runtime
 git checkout -b chore/worktree-disk-usage
 ```
 
@@ -171,7 +171,7 @@ git commit -m "chore: add clean/clean:worktrees scripts for build leftovers (lk-
 - [ ] **Step 1: Capture the before number**
 
 ```bash
-du -sh /Users/sesv/Code/worktrees/lodekit
+du -sh ~/Code/worktrees/lodekit
 ```
 
 Expected: ~21G.
@@ -179,7 +179,7 @@ Expected: ~21G.
 - [ ] **Step 2: Sweep**
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/runtime
+cd ~/Code/worktrees/lodekit/runtime
 pnpm clean:worktrees
 ```
 
@@ -188,19 +188,19 @@ Expected: per-worktree `reclaimed` lines — ≈3.3G for manager and infra (runt
 - [ ] **Step 3: Remove the stub dirs (not worktrees — verify first)**
 
 ```bash
-git worktree list | grep -E "stack|kv-store|website" ; ls /Users/sesv/Code/worktrees/lodekit/stack /Users/sesv/Code/worktrees/lodekit/kv-store /Users/sesv/Code/worktrees/lodekit/website
+git worktree list | grep -E "stack|kv-store|website" ; ls ~/Code/worktrees/lodekit/stack ~/Code/worktrees/lodekit/kv-store ~/Code/worktrees/lodekit/website
 ```
 
 Expected: no `git worktree list` matches (they are unregistered leftovers). Then:
 
 ```bash
-rm -rf /Users/sesv/Code/worktrees/lodekit/stack /Users/sesv/Code/worktrees/lodekit/kv-store /Users/sesv/Code/worktrees/lodekit/website
+rm -rf ~/Code/worktrees/lodekit/stack ~/Code/worktrees/lodekit/kv-store ~/Code/worktrees/lodekit/website
 ```
 
 - [ ] **Step 4: Capture the after number**
 
 ```bash
-du -sh /Users/sesv/Code/worktrees/lodekit
+du -sh ~/Code/worktrees/lodekit
 ```
 
 Expected: ~9G. Record both numbers in the bead close reason.
@@ -234,7 +234,7 @@ Expected: `true`.
 - [ ] **Step 2: Confirm nothing leaked into the repo**
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/runtime && git status --short
+cd ~/Code/worktrees/lodekit/runtime && git status --short
 ```
 
 Expected: no `.npmrc` anywhere in the output. If one appeared, delete it and use the global pnpm config file instead (`pnpm config set` wrote to the wrong location).
@@ -292,7 +292,7 @@ Expected: runtime boots and serves until the timeout kills it (`BOOT OK`). Any i
 
 ```bash
 for wt in manager infra ui service web; do
-  cd /Users/sesv/Code/worktrees/lodekit/$wt
+  cd ~/Code/worktrees/lodekit/$wt
   /usr/bin/find . -name node_modules -maxdepth 3 -type d -prune -not -path "./root/*" | xargs rm -rf
   pnpm install || echo "INSTALL FAILED: $wt"
 done
@@ -311,7 +311,7 @@ Expected: removed-packages report; frees part of the 4.6G store.
 - [ ] **Step 3: Capture the final number**
 
 ```bash
-du -sh /Users/sesv/Code/worktrees/lodekit
+du -sh ~/Code/worktrees/lodekit
 du -sh ~/.local/share/pnpm 2>/dev/null
 ```
 
@@ -320,7 +320,7 @@ Expected: worktrees ≈ 3–4G or less. Record final numbers (worktrees + pnpm d
 - [ ] **Step 4: Push the branch**
 
 ```bash
-cd /Users/sesv/Code/worktrees/lodekit/runtime && git push -u origin chore/worktree-disk-usage
+cd ~/Code/worktrees/lodekit/runtime && git push -u origin chore/worktree-disk-usage
 ```
 
 PR raising happens at session close via finishing-a-development-branch (title `chore: add worktree clean scripts`, body with Summary / Notes / Test plan per convention).

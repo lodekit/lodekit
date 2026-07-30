@@ -167,7 +167,9 @@ a terminal.
     banned from artifacts until decided.
   - macOS-only weakens "the computer you already own" — sequence for Windows/Linux
     is open.
-  - OSS/community positioning is open.
+  - OSS positioning is settled: AGPL-3.0-only product, Apache-2.0 for
+    everything a user's app touches; contributions closed through alpha.
+    See `LICENSING.md` and `CONTRIBUTING.md`.
   - Sharing/publishing is deliberately out of the story; revisit once the ownership
     position is established.
 

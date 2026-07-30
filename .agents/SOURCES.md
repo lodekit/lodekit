@@ -1,4 +1,4 @@
-# Upstream ledger
+# Sources ledger
 
 The dev process is vendored (spec: `docs/specs/2026-07-15-dev-flow-v2-design.md`).
 Resyncs are deliberate — roughly quarterly, one PR each. Every local divergence from

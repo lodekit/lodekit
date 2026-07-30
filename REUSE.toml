@@ -1,0 +1,99 @@
+version = 1
+
+[[annotations]]
+path = "**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The Lodekit Authors"
+SPDX-License-Identifier = "AGPL-3.0-only"
+
+[[annotations]]
+path = [
+  "packages/sdk/**",
+  "packages/ui/**",
+  "packages/mcp/**",
+  "packages/skill/**",
+  "root/**",
+  "docs/**",
+  "web/docs/**",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The Lodekit Authors"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = [".agents/skills/**", ".agents/hooks/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Dillon Frawley"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ".agents/skills/writing-skills/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 Jesse Vincent"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+  ".agents/skills/ponytail/**",
+  ".agents/skills/ponytail-audit/**",
+  ".agents/skills/ponytail-debt/**",
+  ".agents/skills/ponytail-review/**",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 DietrichGebert"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+  ".agents/skills/codebase-design/**",
+  ".agents/skills/domain-modeling/**",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Matt Pocock"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = [
+  ".agents/skills/session/**",
+  ".agents/skills/drain-deferrals/**",
+  ".agents/skills/release/**",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 The Lodekit Authors"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["packages/ui/shadcn-tailwind.css", "packages/ui/src/components/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2023 shadcn", "2026 The Lodekit Authors"]
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "web/main/src/components/demo/prompt-kit/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2025 Julien Thibeaut"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "packages/engine/themes/catppuccin.css"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2021 Catppuccin"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "packages/engine/themes/dracula.css"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2023 Dracula Theme"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "packages/engine/themes/nord.css"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2016-present Sven Greb"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "packages/engine/themes/rose-pine.css"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2023 Rosé Pine"
+SPDX-License-Identifier = "MIT"

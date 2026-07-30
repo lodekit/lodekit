@@ -11,7 +11,7 @@ before any UI, landing, or docs styling work.
 Behavioral guardrails for development workflow.
 Sessions start with the `session` skill (`/session [pair|auto] [spec|task]`; default
 `pair`, ceremony inferred and confirmed). The dev process is vendored in
-`.agents/skills/` — see `.agents/UPSTREAM.md` for provenance. For trivial requests the
+`.agents/skills/` — see `.agents/SOURCES.md` for provenance. For trivial requests the
 session skill's triage table applies: use judgment.
 
 ## Architecture
