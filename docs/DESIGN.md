@@ -74,7 +74,7 @@ components:
     backgroundColor: "{colors.night}"
     textColor: "{colors.pale-gold}"
   button-ghost:
-    backgroundColor: "transparent"
+    backgroundColor: "color-mix(in srgb, currentColor 8%, transparent)"
     textColor: "{colors.ink}"
     rounded: "{rounded.sm}"
     padding: "0.85em 1.5em"
@@ -390,8 +390,11 @@ It is a deliberate choice, not drift, and does not generalize.
   ~100ms. Inside the ochre band the CTA differs by design — see *Register
   divergences*.
 - **Focus:** the accent focus edge — see *The Focus-Is-A-Border Rule*.
-- **Ghost:** transparent, ink text, 1.5px hairline border at `rgba(37,27,37,.35)`;
-  hover: border resolves to ink — a fade, no movement.
+- **Ghost:** a wash of the button's own ink — `color-mix(in srgb, currentColor 8%,
+  transparent)`, no border; hover deepens the wash to 14% — a fade, no movement.
+  Deriving from `currentColor` means one rule serves every plate: parchment page,
+  night plate, and the ochre band alike. Borderless, its focus edge is the inset
+  ring drawing against the box (*The Focus-Is-A-Border Rule* anticipates this).
 
 ### Cards / Containers
 
