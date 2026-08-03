@@ -150,16 +150,27 @@
   }
 
   /* Focus-Is-A-Border (DESIGN.md §5): focus is an edge on the element, never a
-     ring around it. Pointer focus tints the border but withholds the ring. */
-  :where(a, button, [role="button"], [role="tab"], input, select, textarea, summary):focus-visible {
+     ring around it. Controls wear a 2px inset accent edge; links resolve their
+     underline to the accent instead — a ring boxing a line of text reads wrong.
+     Pointer focus tints the border but withholds the ring. */
+  :where(button, [role="button"], [role="tab"], input, select, textarea, summary, .btn-primary, .btn-ghost):focus-visible {
     outline: none;
     border-color: var(--ring);
-    box-shadow: inset 0 0 0 1px var(--ring);
+    box-shadow: inset 0 0 0 2px var(--ring);
+  }
+  :where(a):focus-visible {
+    outline: none;
+    border-color: var(--ring);
+  }
+  /* links outside the nav-link/button vocabulary still need a visible edge */
+  :where(a:not(.nav-link, .btn-primary, .btn-ghost)):focus-visible {
+    text-decoration: underline 2px var(--ring);
+    text-underline-offset: 0.2em;
   }
   :where(a, button, [role="button"], [role="tab"], input, select, textarea, summary):focus:not(:focus-visible) {
     outline: none;
     border-color: var(--ring);
-    box-shadow: inset 0 0 0 1px transparent;
+    box-shadow: inset 0 0 0 2px transparent;
   }
 }
 
@@ -220,6 +231,7 @@
       background-color 250ms var(--ease-drift),
       color 250ms var(--ease-drift),
       opacity 250ms var(--ease-drift),
+      box-shadow 150ms var(--ease-drift),
       transform 100ms var(--ease-drift);
   }
   .btn-primary:hover {
@@ -232,6 +244,11 @@
   }
   .btn-primary:active {
     transform: translateY(1px);
+  }
+  /* the accent ring vanishes on the accent fill — the primary's focus edge
+     borrows the label's ink instead */
+  .btn-primary:focus-visible {
+    box-shadow: inset 0 0 0 2px currentColor;
   }
   .btn-primary:disabled {
     opacity: 0.5;
@@ -302,6 +319,7 @@
     white-space: nowrap;
     transition:
       background-color 250ms var(--ease-drift),
+      box-shadow 150ms var(--ease-drift),
       transform 100ms var(--ease-drift);
   }
   .btn-ghost:hover {
@@ -322,7 +340,8 @@
     transition: border-color 250ms var(--ease-drift);
   }
   .nav-link:hover,
-  .nav-link[aria-current="page"] {
+  .nav-link[aria-current="page"],
+  .nav-link:focus-visible {
     border-color: var(--ring);
   }
 
