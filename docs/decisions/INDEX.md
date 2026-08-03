@@ -11,3 +11,4 @@ context, genuine trade-off) must hold. Format: `ADR-NNNN-<kebab-title>.md`.
 | [ADR-0004](./ADR-0004-pnpm-global-virtual-store-worktrees.md) | Worktree installs share one pnpm global virtual store | 2026-07-17 |
 | [ADR-0005](./ADR-0005-engine-rename-survivor-policy.md) | Engine rename — the "runtime" survivor policy, and "executor" for subsystems | 2026-07-17 |
 | [ADR-0006](./ADR-0006-font-mono-canonical-theme-token.md) | `--font-mono` is a typed token of the canonical theme format | 2026-07-19 |
+| [ADR-0007](./ADR-0007-landing-cta-download-led-no-email-capture.md) | The landing CTA is download-led; email capture is retired | 2026-07-30 |

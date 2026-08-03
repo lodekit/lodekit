@@ -1,5 +1,5 @@
 ---
-import NotifyForm from "./NotifyForm.astro";
+import DownloadCta from "./DownloadCta.astro";
 import HeroDemo from "./demo/HeroDemo";
 ---
 
@@ -9,22 +9,29 @@ import HeroDemo from "./demo/HeroDemo";
       The local platform for agent-built apps
     </p>
     <h1 class="display mt-5 enter" style="--stagger: 80ms">
-      The making got easy. The&nbsp;keeping is still broken.
+      Cloud batteries for your local&nbsp;apps.
     </h1>
-    <div class="enter" style="--stagger: 160ms">
-      <p class="prose-measure mt-6 text-muted-foreground">
-        Ask your agent for an app and it will build one. The hard part is keeping it — somewhere
-        that isn't a subscription, a silo, or a folder that quietly dies. Lodekit runs your apps on
-        the computer you already own, with everything they'd need from a cloud.
-      </p>
-      <p class="mt-4 text-lg font-medium">Cloud batteries, locally, easily.</p>
-    </div>
+    <p class="prose-measure mt-6 text-muted-foreground enter" style="--stagger: 160ms">
+      Ask your agent for an app and it will build one. Lodekit gives it everything it needs from a
+      cloud — on the computer you already own. One menubar app, your data in a folder. No accounts,
+      no subscriptions, nobody else's computer.
+    </p>
     <div class="enter mt-8" style="--stagger: 240ms">
-      <NotifyForm id="hero" />
+      <DownloadCta id="hero" />
       <span class="chip mt-6 inline-block">macOS alpha · Coming soon</span>
     </div>
   </div>
-  <div class="enter" style="--stagger: 320ms">
+  <div class="enter relative" style="--stagger: 320ms">
+    <svg
+      class="cloud-drift absolute -top-10 right-4 w-36 text-cloud-slate opacity-50"
+      viewBox="0 0 120 60"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        d="M28 52a16 16 0 0 1-2-31.9A22 22 0 0 1 68 14a18 18 0 0 1 24.4 12.7A14 14 0 0 1 90 52Z"
+      />
+    </svg>
     <HeroDemo client:load />
   </div>
 </section>

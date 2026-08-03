@@ -1,0 +1,49 @@
+---
+// The CTA pair (spec §5.11, ADR-0007): a permanently disabled Download promise
+// plus the live path — the docs. aria-disabled (not disabled) keeps the button
+// focusable and hoverable so keyboard users reach the tooltip too.
+import { AppleLogoIcon } from "@phosphor-icons/react";
+import { DOCS_URL } from "../lib/links";
+
+interface Props {
+  id: string;
+  center?: boolean;
+}
+const { id, center = false } = Astro.props;
+---
+
+<div class:list={["flex flex-wrap items-center gap-3", center && "justify-center"]} data-download-cta>
+  <span class="relative inline-flex">
+    <button
+      type="button"
+      class="btn-primary gap-2"
+      aria-disabled="true"
+      aria-describedby={`${id}-tip`}
+      data-download-button
+    >
+      <AppleLogoIcon weight="regular" size={16} aria-hidden="true" />
+      Download
+    </button>
+    <span class="tooltip" role="tooltip" id={`${id}-tip`}>Coming soon!</span>
+  </span>
+  <a class="btn-ghost" href={DOCS_URL}>Getting started</a>
+</div>
+
+<script>
+  // Tooltip on hover AND focus; Escape dismisses (spec §5.11). Astro dedupes
+  // this module script across the two placements.
+  document.querySelectorAll<HTMLElement>("[data-download-cta]").forEach((root) => {
+    const button = root.querySelector<HTMLButtonElement>("[data-download-button]")!;
+    const tip = root.querySelector<HTMLElement>("[role='tooltip']")!;
+    const show = () => tip.setAttribute("data-show", "");
+    const hide = () => tip.removeAttribute("data-show");
+    button.addEventListener("click", (e) => e.preventDefault());
+    button.addEventListener("mouseenter", show);
+    button.addEventListener("mouseleave", hide);
+    button.addEventListener("focus", show);
+    button.addEventListener("blur", hide);
+    root.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") hide();
+    });
+  });
+</script>

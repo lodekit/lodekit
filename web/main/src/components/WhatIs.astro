@@ -1,0 +1,20 @@
+---
+import ArchitecturePrint from "./ArchitecturePrint.astro";
+import FacetCards from "./FacetCards.astro";
+---
+
+<section class="border-t border-hairline-strong dark:border-border">
+  <div class="mx-auto max-w-6xl px-6 py-16 md:py-24">
+    <p class="kicker text-muted-foreground">What is Lodekit</p>
+    <h2 class="headline mt-4">One menubar app. A whole cloud inside.</h2>
+    <div class="mt-12 grid items-center gap-12 lg:grid-cols-[3fr_2fr]">
+      <ArchitecturePrint />
+      <p class="prose-measure text-muted-foreground">
+        Lodekit is one menubar app that runs a local engine. Your agent builds apps against it; the
+        engine runs them like real software — a real database, file storage, secrets, scheduled
+        tasks, gateways to the outside. Everything worth keeping is files in one folder.
+      </p>
+    </div>
+    <FacetCards />
+  </div>
+</section>

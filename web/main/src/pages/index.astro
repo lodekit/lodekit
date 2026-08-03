@@ -2,11 +2,12 @@
 import Base from "../layouts/Base.astro";
 import Header from "../components/Header.astro";
 import Hero from "../components/Hero.astro";
-import LoopStrip from "../components/LoopStrip.astro";
-import Pillar from "../components/Pillar.astro";
-import ServiceChips from "../components/ServiceChips.astro";
-import FileTreePrint from "../components/FileTreePrint.astro";
-import OscillationBand from "../components/OscillationBand.astro";
+import ProblemBeats from "../components/ProblemBeats.astro";
+import FitChecklist from "../components/FitChecklist.astro";
+import WhatIs from "../components/WhatIs.astro";
+import HowItGoes from "../components/HowItGoes.astro";
+import PathsTable from "../components/PathsTable.astro";
+import ManifestoPlate from "../components/ManifestoPlate.astro";
 import CtaBand from "../components/CtaBand.astro";
 import DevLayer from "../components/DevLayer.astro";
 import Footer from "../components/Footer.astro";
@@ -16,60 +17,12 @@ import Footer from "../components/Footer.astro";
   <Header />
   <main>
     <Hero />
-    <LoopStrip />
-
-    <Pillar kicker="Cloud batteries" headline="Keep the batteries, drop the cloud.">
-      <p>
-        Everything apps need from a cloud — a real database, file storage, secrets, scheduled
-        tasks, doors to outside services — provided locally by one engine. No accounts, no meters,
-        nobody else's computer.
-      </p>
-      <ServiceChips slot="proof" />
-    </Pillar>
-
-    <Pillar kicker="Ownership" headline="Your data is a folder." variant="night">
-      <p>
-        Apps and data are files in one folder. Copy it and it's yours forever. No accounts to
-        lose, no export buttons to hunt for — everything readable on disk.
-      </p>
-      <FileTreePrint slot="proof" />
-    </Pillar>
-
-    <Pillar kicker="No tooling" headline="Ask for an app. Use it a minute later.">
-      <p>
-        No terminal, no builds, no node_modules. One menubar app installs the platform — it
-        provisions its own Node, builds apps on save, and serves them in your browser.
-      </p>
-      <div slot="proof" class="flex flex-wrap gap-3">
-        <span class="chip">one install</span>
-        <span class="chip">zero config</span>
-        <span class="chip">builds on save</span>
-      </div>
-    </Pillar>
-
-    <Pillar kicker="Guardrails" headline="Safe to let an agent build." variant="wash">
-      <p>
-        Guardrails, not vibes. Apps run in isolated workers, and each sees only its own data.
-        Secrets never enter app code — apps reach outside services through managed gateways. When
-        something breaks, it breaks visibly: the dashboard shows you exactly where.
-      </p>
-      <ul slot="proof" class="w-full divide-y divide-border border-y border-border text-sm">
-        <li class="py-3">Apps run in isolated workers</li>
-        <li class="py-3">Each app sees only its own data</li>
-        <li class="py-3">Secrets stay out of app code</li>
-        <li class="py-3">Failures surface in the dashboard</li>
-      </ul>
-    </Pillar>
-
-    <Pillar kicker="Coherence" headline="Ten apps that feel like one.">
-      <p>
-        Every app shares one UI library and one theme — yours to change in one place. One
-        dashboard shows every app's state, data, and scheduled work. Ten agent-built apps feel
-        like one product, not ten codepens.
-      </p>
-    </Pillar>
-
-    <OscillationBand />
+    <ProblemBeats />
+    <FitChecklist />
+    <WhatIs />
+    <HowItGoes />
+    <PathsTable />
+    <ManifestoPlate />
     <CtaBand />
     <DevLayer />
   </main>
