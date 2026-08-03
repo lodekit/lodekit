@@ -32,23 +32,29 @@ jobs:
       - run: pnpm install --filter @lodekit/web-main...
       - run: pnpm --filter @lodekit/web-main build
       # Config reaches the shell via env, never inline ${{ }} in run: blocks.
-      - name: Sync to bucket
+      - name: Sync to buckets
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.SCW_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SCW_SECRET_KEY }}
           BUCKET: ${{ vars.WEB_MAIN_BUCKET }}
+          WWW_BUCKET: ${{ vars.WEB_MAIN_WWW_BUCKET }}
         run: |
-          aws s3 sync web/main/dist "s3://$BUCKET" \
-            --endpoint-url https://s3.fr-par.scw.cloud \
-            --region fr-par \
-            --delete
-      - name: Purge Edge Services cache
+          for b in "$BUCKET" "$WWW_BUCKET"; do
+            aws s3 sync web/main/dist "s3://$b" \
+              --endpoint-url https://s3.fr-par.scw.cloud \
+              --region fr-par \
+              --delete
+          done
+      - name: Purge Edge Services caches
         env:
           SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
           PIPELINE_ID: ${{ vars.WEB_MAIN_PIPELINE_ID }}
+          WWW_PIPELINE_ID: ${{ vars.WEB_MAIN_WWW_PIPELINE_ID }}
         run: |
-          curl --fail-with-body -sS -X POST \
-            "https://api.scaleway.com/edge-services/v1beta1/purge-requests" \
-            -H "X-Auth-Token: $SCW_SECRET_KEY" \
-            -H "Content-Type: application/json" \
-            -d "{\"pipeline_id\": \"$PIPELINE_ID\", \"all\": true}"
+          for p in "$PIPELINE_ID" "$WWW_PIPELINE_ID"; do
+            curl --fail-with-body -sS -X POST \
+              "https://api.scaleway.com/edge-services/v1beta1/purge-requests" \
+              -H "X-Auth-Token: $SCW_SECRET_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{\"pipeline_id\": \"$p\", \"all\": true}"
+          done
