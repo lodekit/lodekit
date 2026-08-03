@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="web/main/public/brand/lodekit-lockup-paper-bg-h128.png" alt="Lodekit" height="64">
+</p>
+
 # Lodekit
 
 **The local platform for agent-built apps.**
