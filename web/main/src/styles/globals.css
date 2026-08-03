@@ -285,40 +285,35 @@
     background: var(--night-hi);
   }
 
-  /* ghost button (DESIGN.md §5) — border resolves to full ink on hover, a fade.
-     The border draws inside the primary's footprint (padding minus border) so
-     the pair sits at the same size. */
+  /* ghost button — a wash of the button's own ink (currentColor + alpha), no
+     border, so it adapts to every plate; hover deepens the wash in place. The
+     focus edge still reads borderless: the inset ring draws against the box. */
   .btn-ghost {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5em;
-    background: transparent;
+    background: color-mix(in srgb, currentColor 8%, transparent);
     color: var(--foreground);
-    border: 1.5px solid color-mix(in srgb, var(--foreground) 35%, transparent);
     border-radius: 3px;
-    padding: calc(0.85em - 1.5px) calc(1.5em - 1.5px);
+    padding: 0.85em 1.5em;
     font-size: 0.95rem;
     font-weight: 500;
     white-space: nowrap;
     transition:
-      border-color 250ms var(--ease-drift),
+      background-color 250ms var(--ease-drift),
       transform 100ms var(--ease-drift);
   }
   .btn-ghost:hover {
-    border-color: var(--foreground);
+    background: color-mix(in srgb, currentColor 14%, transparent);
   }
   .btn-ghost:active {
     transform: translateY(1px);
   }
   /* the ochre plate is ink-on-ochre in both themes — the ghost follows the plate,
-     not the theme */
+     not the theme; the wash derives from the ink automatically */
   .plate-ochre .btn-ghost {
     color: var(--ink);
-    border-color: color-mix(in srgb, var(--ink) 45%, transparent);
-  }
-  .plate-ochre .btn-ghost:hover {
-    border-color: var(--ink);
   }
 
   /* nav / arrow links — accent underline fades in place (never slides) */
