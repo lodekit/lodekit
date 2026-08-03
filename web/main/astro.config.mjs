@@ -3,7 +3,7 @@ import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
-  site: "https://www.lodekit.com",
+  site: "https://lodekit.com",
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
