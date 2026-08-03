@@ -1,4 +1,5 @@
 ---
+import { GithubLogoIcon } from "@phosphor-icons/react";
 import Lockup from "./Lockup.astro";
 import { ThemeToggle } from "./ThemeToggle";
 import { DOCS_URL, GITHUB_URL } from "../lib/links";
@@ -8,8 +9,17 @@ import { DOCS_URL, GITHUB_URL } from "../lib/links";
   <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
     <Lockup class="opacity-80" />
     <nav class="flex items-center gap-6" aria-label="Site">
-      <a class="nav-link text-[0.95rem]" href={DOCS_URL}>Docs</a>
-      <a class="nav-link text-[0.95rem]" href={GITHUB_URL} target="_blank" rel="noopener">GitHub</a>
+      <a class="nav-link text-[0.95rem] opacity-80" href={DOCS_URL}>Docs</a>
+      <a
+        class="btn-ghost border px-2.5 py-1 font-mono text-[0.8125rem] font-normal tracking-[0.01em] opacity-80"
+        href={GITHUB_URL}
+        target="_blank"
+        rel="noopener"
+        aria-label="Lodekit on GitHub"
+      >
+        <GithubLogoIcon weight="regular" size={16} aria-hidden="true" />
+        lodekit
+      </a>
       <ThemeToggle client:load />
     </nav>
   </div>

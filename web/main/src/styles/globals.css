@@ -285,7 +285,9 @@
     background: var(--night-hi);
   }
 
-  /* ghost button (DESIGN.md §5) — border resolves to full ink on hover, a fade */
+  /* ghost button (DESIGN.md §5) — border resolves to full ink on hover, a fade.
+     The border draws inside the primary's footprint (padding minus border) so
+     the pair sits at the same size. */
   .btn-ghost {
     display: inline-flex;
     align-items: center;
@@ -295,7 +297,7 @@
     color: var(--foreground);
     border: 1.5px solid color-mix(in srgb, var(--foreground) 35%, transparent);
     border-radius: 3px;
-    padding: 0.85em 1.5em;
+    padding: calc(0.85em - 1.5px) calc(1.5em - 1.5px);
     font-size: 0.95rem;
     font-weight: 500;
     white-space: nowrap;
@@ -329,15 +331,17 @@
     border-color: var(--ring);
   }
 
-  /* tooltip — a print label, flat, no shadow (spec §5.11) */
+  /* tooltip — a print label, flat, no shadow (spec §5.11). An ink film in
+     light, a paper film in dark — physical pigments plus alpha, no new
+     colors — with a caret tying it to its trigger. */
   .tooltip {
+    --tip-bg: color-mix(in srgb, var(--ink) 90%, transparent);
     position: absolute;
     bottom: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%);
-    background: var(--popover);
-    color: var(--popover-foreground);
-    border: 1px solid var(--border);
+    background: var(--tip-bg);
+    color: var(--paper-hi);
     border-radius: 3px;
     padding: 0.35em 0.7em;
     font-size: 0.875rem;
@@ -349,6 +353,19 @@
     transition:
       opacity 200ms var(--ease-drift),
       visibility 0s 200ms;
+  }
+  .tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--tip-bg);
+  }
+  .dark .tooltip {
+    --tip-bg: color-mix(in srgb, var(--paper-hi) 92%, transparent);
+    color: var(--ink);
   }
   .tooltip[data-show] {
     opacity: 1;
