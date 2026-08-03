@@ -350,13 +350,22 @@ the one thing in this world that genuinely moves; nothing else earns ambient
 motion.
 
 **The Focus-Is-A-Border Rule.** Focus is an edge *on* the element, never a ring
-*around* it. One rule in `packages/ui/theme-tokens.css` owns it for every
-focusable control: `outline: none`, the border resolves to the accent, and a
-`box-shadow: inset 0 0 0 1px` in the accent thickens that edge from the inside.
-Controls with no border of their own still read, because an inset shadow draws
-against the element's own edge. Pointer focus (`:focus:not(:focus-visible)`)
-tints the border but withholds the ring, painting a transparent inset shadow so
-the box never shifts between the two states.
+*around* it — and the edge differs by what is focused. *Controls* (buttons,
+inputs, tabs) wear the accent edge: `outline: none`, the border resolves to the
+accent, and a `box-shadow: inset 0 0 0 2px` in the accent thickens that edge
+from the inside, fading in on the feedback ramp (~150ms). Controls with no
+border of their own still read, because an inset shadow draws against the
+element's own edge. On an accent-filled control (the primary button) the accent
+edge vanishes tone-on-tone, so its edge borrows the label's ink
+(`currentColor`) instead. *Links* are never boxed — a ring around a line of
+text reads wrong; a focused link resolves its underline to the accent exactly
+as hover does (links outside the underline vocabulary fall back to a 2px
+accent `text-decoration` underline). Pointer focus
+(`:focus:not(:focus-visible)`) tints the border but withholds the ring,
+painting a transparent inset shadow so the box never shifts between the two
+states. The product register has not yet adopted the split:
+`packages/ui/theme-tokens.css` still ships the earlier single-rule 1px edge
+(adoption tracked in the backlog).
 
 Both CSS `outline` and Tailwind's `ring-*` utilities paint *outside* the box, so
 either one used for focus produces the floating ring this rule exists to
