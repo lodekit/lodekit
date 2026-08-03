@@ -1,4 +1,4 @@
-# ![Lodekit](web/main/public/brand/lodekit-lockup-paper-bg-h128.png)
+# ![Lodekit](web/main/public/brand/lodekit-lockup-paper-bg.svg)
 
 **The local platform for agent-built apps.**
 

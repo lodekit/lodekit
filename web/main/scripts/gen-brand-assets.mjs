@@ -79,6 +79,21 @@ function lockupSvg(plate) {
   return svg(Math.ceil(w), 32, body);
 }
 
+// the on-plate lockup as vector — same lid-width clear space as the -bg- PNG
+// strips, but with the intrinsic size set to the intended display height so
+// pure-markdown consumers (the README header) get a crisp render at any DPI
+function lockupBgSvg(plate) {
+  const { body, w } = lockupBody(plate, 32, LID, LID, 32);
+  const uw = +(w + 2 * LID).toFixed(2);
+  const uh = +(32 + 2 * LID).toFixed(2);
+  const dh = 64;
+  const dw = +((dh * uw) / uh).toFixed(2);
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${dw}" height="${dh}" viewBox="0 0 ${uw} ${uh}" role="img" aria-label="Lodekit">` +
+    `<!-- ${note} --><rect width="${uw}" height="${uh}" fill="${CHIP[plate].fill}"/>${body}</svg>\n`
+  );
+}
+
 // the lockup as a chip: 16px mark (the brand minimum) in a 30px chip so the
 // clear space stays ≥ the lid width (6.99px)
 function badgeSvg(plate) {
@@ -116,16 +131,21 @@ async function png(svgText, outName, { height, scale, bg, padUnits = 0 }) {
 
 // Transparent mark PNGs keep the 32-unit box and its native margins; on-plate
 // tiles crop to the drawn ink and set its height at 3/4 of the square tile
-// side. Rendered oversized and trimmed, then scaled, so the crop is exact.
+// side. The ink box is measured on an oversized probe, then the SVG is
+// re-rendered at the exact target density — never downscaled, which would
+// smear the edges past the rasterizer's 1px antialiasing.
 async function markPng(svgText, outName, { size, bg }) {
   if (!bg) return png(svgText, outName, { height: size });
-  const hi = await sharp(Buffer.from(svgText), { density: 72 * (2048 / 32) }).png().toBuffer();
-  const ink = await sharp(hi).trim().toBuffer();
-  const scaled = await sharp(ink).resize({ height: Math.round(size * 0.75) }).png().toBuffer();
-  const m = await sharp(scaled).metadata();
+  const probe = await sharp(Buffer.from(svgText), { density: 72 * (2048 / 32) }).png().toBuffer();
+  const { info } = await sharp(probe).trim().toBuffer({ resolveWithObject: true });
+  const inkUnits = (info.height / 2048) * 32;
+  const density = 72 * (Math.round(size * 0.75) / inkUnits);
+  const at = await sharp(Buffer.from(svgText), { density }).png().toBuffer();
+  const ink = await sharp(at).trim().toBuffer();
+  const m = await sharp(ink).metadata();
   const top = Math.floor((size - m.height) / 2);
   const left = Math.floor((size - m.width) / 2);
-  await sharp(scaled)
+  await sharp(ink)
     .flatten({ background: bg })
     .extend({ top, bottom: size - m.height - top, left, right: size - m.width - left, background: bg })
     .toFile(path.join(OUT, outName));
@@ -158,6 +178,7 @@ for (const plate of ["paper", "night"]) {
         ["-bg-h128.png", { height: 128, bg, padUnits: LID }], ["-bg-h512.png", { height: 512, bg, padUnits: LID }],
       ],
     },
+    [`lodekit-lockup-${plate}-bg`]: { text: lockupBgSvg(plate), pngs: [] },
     [`lodekit-badge-${plate}`]: { text: badgeSvg(plate), pngs: [["@2x.png", { scale: 2 }], ["@4x.png", { scale: 4 }]] },
   };
   for (const [base, { text, pngs, render = png }] of Object.entries(files)) {
