@@ -9,9 +9,6 @@ packages:
 minimumReleaseAge: 10080 # 7 days
 minimumReleaseAgeExclude:
   - '@lodekit/*'
-  - '@playwright/test@1.62.1'
-  - 'playwright@1.62.1'
-  - 'playwright-core@1.62.1'
 
 # drizzle-kit's api.mjs imports drizzle-orm without declaring it — masked by
 # hidden hoisting in a per-repo virtual store, but a hard ERR_MODULE_NOT_FOUND
