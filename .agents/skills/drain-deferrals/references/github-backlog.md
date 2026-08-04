@@ -7,8 +7,10 @@ fields). Transcribed verbatim from the `github-backlog-pipeline` auto-memory.
 project query)
 
 **Create with type (REST):** `POST /repos/lodekit/lodekit/issues` accepts
-`"type": "bug" | "feature"` directly. No sub-issues (not enabled). Titles: imperative,
-short. Priority never `urgent`.
+`"type": "bug" | "feature"` directly. Sub-issues are enabled:
+`POST /repos/lodekit/lodekit/issues/{parent}/sub_issues` with `sub_issue_id` = the
+child's database ID (`.id`, not the issue number). Titles: imperative, short.
+Priority never `urgent`.
 
 ## Field → option → node ID
 
