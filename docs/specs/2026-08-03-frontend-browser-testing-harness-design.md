@@ -119,18 +119,24 @@ Repo-root `.mcp.json`, checked in:
 {
   "mcpServers": {
     "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@<exact-version>", "--headless", "--isolated"]
+      "command": "pnpm",
+      "args": ["exec", "playwright-mcp", "--headless", "--isolated"]
     }
   }
 }
 ```
 
-- `npx` fetches and caches the package on first use; Claude Code prompts once to
-  trust the project-scoped server, then every session has browser tools.
-- **Pin rule:** the `@playwright/mcp` version is chosen so its bundled Playwright
-  matches the workspace `@playwright/test` version — one shared Chromium build in the
-  cache, one postinstall download covering both. The two pins bump together.
+- `@playwright/mcp` is a root devDependency at an exact pin, with pnpm overrides
+  (`@playwright/mcp>playwright`, `@playwright/mcp>playwright-core`) forcing its
+  bundled Playwright onto the workspace `@playwright/test` version — one Chromium
+  build in the cache, one postinstall download covering both, and the MCP package
+  inside the lockfile and the supply-chain cooldown gate (an npx launcher would
+  bypass both, and its bundled Playwright would demand a second Chromium build:
+  every `@playwright/mcp` release bundles a Playwright *alpha* of the coming minor,
+  so the override — not version choice — is what keeps the browser builds aligned).
+  The two pins bump together.
+- Claude Code prompts once to trust the project-scoped server, then every session
+  has browser tools.
 - Codex reaches the same capability through its own MCP config when wired; the
   AGENTS.md lines describe the harness tool-agnostically.
 

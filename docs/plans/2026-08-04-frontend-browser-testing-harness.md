@@ -326,6 +326,16 @@ git commit -m "feat(e2e): web-main + web-docs smoke specs (lk-8gs)"
 
 ### Task 4: Playwright MCP server in `.mcp.json`
 
+> **Revised during execution:** the npx launcher below shipped first, then the final
+> branch review proved its bundled Playwright *alpha* resolves a different Chromium
+> revision (1232) than the workspace installs (1234) — no `@playwright/mcp` release
+> pins a stable Playwright. Superseding fix: `@playwright/mcp` became a root
+> devDependency (exact pin) with pnpm overrides `@playwright/mcp>playwright` and
+> `@playwright/mcp>playwright-core` set to the workspace Playwright version, and
+> `.mcp.json` launches `pnpm exec playwright-mcp --headless --isolated`. One
+> Chromium, lockfile-governed, inside the supply-chain cooldown gate. Spec §5
+> amended to match.
+
 **Files:**
 - Modify: `.mcp.json` (repo root — already exists with `codebase-memory-mcp`; add alongside, do not replace)
 
