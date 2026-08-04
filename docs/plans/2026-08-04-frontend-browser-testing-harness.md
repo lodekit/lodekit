@@ -6,13 +6,13 @@
 
 **Architecture:** One root `playwright.config.ts` with three projects (dashboard, web-main, web-docs), each backed by a `webServer` entry that boots (or reuses) the matching dev server. Smoke specs in root `e2e/` assert the page renders, the console is clean, and one key element is visible. A guarded root `postinstall` installs Chromium; `.mcp.json` gains a pinned `@playwright/mcp` server for interactive agent inspection. AGENTS.md documents it all.
 
-**Tech Stack:** `@playwright/test@1.62.1` (exact pin), `@playwright/mcp@0.0.78` (exact pin, same 1.62 Playwright line), pnpm workspace scripts.
+**Tech Stack:** `@playwright/test@1.62.0` (exact pin), `@playwright/mcp@0.0.78` (exact pin, same 1.62 Playwright line), pnpm workspace scripts.
 
 **Spec:** `docs/specs/2026-08-03-frontend-browser-testing-harness-design.md`
 
 ## Global Constraints
 
-- `@playwright/test` pinned **exactly** to `1.62.1` (no `^`). `@playwright/mcp` pinned **exactly** to `0.0.78`. The two pins bump together (spec §2, §5).
+- `@playwright/test` pinned **exactly** to `1.62.0` (no `^`). `@playwright/mcp` pinned **exactly** to `0.0.78`. The two pins bump together (spec §2, §5).
 - Postinstall guard verbatim: `[ -n "$CI" ] || playwright install chromium` (spec §3).
 - The smoke contract per spec §4: page responds; **zero `pageerror` events and zero `console.error` messages** (helper with explicit allowlist, empty to start); one key element visible.
 - `reuseExistingServer: !process.env.CI` on every webServer entry (spec §4).
@@ -30,12 +30,12 @@
 - Modify: `.gitignore` (repo root)
 
 **Interfaces:**
-- Produces: `pnpm exec playwright` CLI available workspace-wide; Chromium in `~/Library/Caches/ms-playwright`; root scripts `e2e` and `postinstall`. Task 2+ rely on `playwright test` resolving `@playwright/test@1.62.1`.
+- Produces: `pnpm exec playwright` CLI available workspace-wide; Chromium in `~/Library/Caches/ms-playwright`; root scripts `e2e` and `postinstall`. Task 2+ rely on `playwright test` resolving `@playwright/test@1.62.0`.
 
 **Acceptance Criteria:**
-- `pnpm install` on a dev machine installs `@playwright/test@1.62.1` and downloads Chromium via postinstall; a repeat run is a no-op.
+- `pnpm install` on a dev machine installs `@playwright/test@1.62.0` and downloads Chromium via postinstall; a repeat run is a no-op.
 - `CI=1 pnpm install` skips the browser download (spec §7.4).
-- `pnpm e2e --version` reports Playwright 1.62.1.
+- `pnpm e2e --version` reports Playwright 1.62.0.
 - `test-results/` and `playwright-report/` are gitignored.
 
 - [ ] **Step 1: Add the devDependency and scripts to the root `package.json`**
@@ -51,7 +51,7 @@ and add a `devDependencies` block (the root currently has none) after `"scripts"
 
 ```json
   "devDependencies": {
-    "@playwright/test": "1.62.1"
+    "@playwright/test": "1.62.0"
   },
 ```
 
@@ -60,12 +60,12 @@ Exact version — no `^`.
 - [ ] **Step 2: Install and watch the browser arrive**
 
 Run: `pnpm install`
-Expected: lockfile updates with `@playwright/test@1.62.1`; postinstall output shows Chromium downloading into `~/Library/Caches/ms-playwright` (or an instant no-op if a matching build is already cached).
+Expected: lockfile updates with `@playwright/test@1.62.0`; postinstall output shows Chromium downloading into `~/Library/Caches/ms-playwright` (or an instant no-op if a matching build is already cached).
 
 - [ ] **Step 3: Verify the CLI and the CI guard**
 
 Run: `pnpm exec playwright --version`
-Expected: `Version 1.62.1`
+Expected: `Version 1.62.0`
 
 Run: `CI=1 pnpm install`
 Expected: completes with **no** `playwright install` browser-download output (the guard short-circuits).
@@ -351,7 +351,7 @@ Edit `.mcp.json` to:
 }
 ```
 
-Exact pin `0.0.78` — its bundled Playwright is the 1.62 line, matching `@playwright/test@1.62.1` (spec §5 pin rule).
+Exact pin `0.0.78` — its bundled Playwright is the 1.62 line, matching `@playwright/test@1.62.0` (spec §5 pin rule).
 
 - [ ] **Step 2: Verify the pinned package launches**
 
@@ -461,7 +461,7 @@ Expected: no browser-download output.
 git push -u origin devex
 gh pr create --title "feat(e2e): frontend browser-testing harness — playwright smoke + MCP browser" --body "$(cat <<'EOF'
 ## Summary
-- Repo-defined browser eyes for all three frontends (dashboard, web-main, web-docs): `@playwright/test@1.62.1` root devDependency, guarded `postinstall` Chromium install (skipped under `$CI`), root `playwright.config.ts` with three projects + webServer entries, smoke specs asserting render + zero console errors + key element.
+- Repo-defined browser eyes for all three frontends (dashboard, web-main, web-docs): `@playwright/test@1.62.0` root devDependency, guarded `postinstall` Chromium install (skipped under `$CI`), root `playwright.config.ts` with three projects + webServer entries, smoke specs asserting render + zero console errors + key element.
 - Pinned `@playwright/mcp@0.0.78` project MCP server (`--headless --isolated`) for interactive in-session inspection/screenshots.
 - AGENTS.md: `pnpm e2e` facts + testing-judgment ladder.
 - Spec: `docs/specs/2026-08-03-frontend-browser-testing-harness-design.md`; plan: `docs/plans/2026-08-04-frontend-browser-testing-harness.md`. Beads: lk-8gs.
