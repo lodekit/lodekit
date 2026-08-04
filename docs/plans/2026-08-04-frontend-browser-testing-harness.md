@@ -197,13 +197,18 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: "pnpm --filter @lodekit/web-main dev -- --port 4381",
+      // ASTRO_DEV_BACKGROUND=0: Astro 7 auto-daemonizes `astro dev` when it
+      // detects an AI-agent environment, which detaches the process Playwright
+      // supervises ("exited early"). The env var is Astro's documented opt-out.
+      command: "ASTRO_DEV_BACKGROUND=0 pnpm exec astro dev --port 4381",
+      cwd: "web/main",
       url: "http://localhost:4381",
       reuseExistingServer: reuse,
       timeout: 60_000,
     },
     {
-      command: "pnpm --filter @lodekit/web-docs dev -- --port 4382",
+      command: "ASTRO_DEV_BACKGROUND=0 pnpm exec astro dev --port 4382",
+      cwd: "web/docs",
       url: "http://localhost:4382",
       reuseExistingServer: reuse,
       timeout: 60_000,
