@@ -14,7 +14,8 @@
     "clean:worktrees": "node scripts/clean.mjs --all"
   },
   "devDependencies": {
-    "@playwright/test": "1.62.0"
+    "@playwright/test": "1.62.0",
+    "@types/node": "^22.10.5"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
