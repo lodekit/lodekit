@@ -176,12 +176,12 @@ export default defineConfig({
     {
       name: "web-main",
       testMatch: /web-main\.spec\.ts/,
-      use: { baseURL: "http://localhost:4321" },
+      use: { baseURL: "http://localhost:4381" },
     },
     {
       name: "web-docs",
       testMatch: /web-docs\.spec\.ts/,
-      use: { baseURL: "http://localhost:4322" },
+      use: { baseURL: "http://localhost:4382" },
     },
   ],
   webServer: [
@@ -197,14 +197,14 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: "pnpm --filter @lodekit/web-main dev -- --port 4321",
-      url: "http://localhost:4321",
+      command: "pnpm --filter @lodekit/web-main dev -- --port 4381",
+      url: "http://localhost:4381",
       reuseExistingServer: reuse,
       timeout: 60_000,
     },
     {
-      command: "pnpm --filter @lodekit/web-docs dev -- --port 4322",
-      url: "http://localhost:4322",
+      command: "pnpm --filter @lodekit/web-docs dev -- --port 4382",
+      url: "http://localhost:4382",
       reuseExistingServer: reuse,
       timeout: 60_000,
     },
@@ -391,8 +391,8 @@ In `AGENTS.md`, in the **Build & Test** section, after the `pnpm --filter @lodek
 - `pnpm e2e` — Playwright browser smoke across the three frontends: each page
   renders with zero console errors and its key element visible. Boots the needed
   dev servers itself (reuses ones already running). Dashboard:
-  `http://lodekit.localhost:7777/_dashboard/`; web-main: `http://localhost:4321`;
-  web-docs: `http://localhost:4322`. The Chromium build arrives via the root
+  `http://lodekit.localhost:7777/_dashboard/`; web-main: `http://localhost:4381`;
+  web-docs: `http://localhost:4382`. The Chromium build arrives via the root
   `postinstall` (skipped when `$CI` is set — a CI job that needs it runs
   `pnpm exec playwright install chromium` explicitly). The Playwright MCP server
   in `.mcp.json` gives sessions an interactive headless browser for visual

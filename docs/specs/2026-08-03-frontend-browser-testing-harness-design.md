@@ -86,8 +86,8 @@ spec file):
 | Project | Server command | URL |
 |---|---|---|
 | `dashboard` | `pnpm dev` (engine against `root/`, warm `.cache`) | `http://lodekit.localhost:7777` |
-| `web-main` | `astro dev` on a fixed port | `http://localhost:4321` |
-| `web-docs` | `astro dev` on a fixed port | `http://localhost:4322` |
+| `web-main` | `astro dev` on a fixed port | `http://localhost:4381` |
+| `web-docs` | `astro dev` on a fixed port | `http://localhost:4382` |
 
 Config points:
 
