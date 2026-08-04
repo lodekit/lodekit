@@ -65,6 +65,16 @@ Package manager is **pnpm** (workspaces). From the repo root:
   siblings by package specifier). Per-package: `pnpm --filter @lodekit/engine test`.
 - `pnpm --filter @lodekit/web-main dev` | `build` — the landing site.
 - `pnpm --filter @lodekit/web-docs dev` | `build` — the docs site.
+- `pnpm e2e` — Playwright browser smoke across the three frontends: each page
+  renders with zero console errors and its key element visible. Boots the needed
+  dev servers itself (reuses ones already running). Dashboard:
+  `http://lodekit.localhost:7777/_dashboard/`; web-main: `http://localhost:4381`;
+  web-docs: `http://localhost:4382`. The Chromium build arrives via the root
+  `postinstall` (skipped when `$CI` is set — a CI job that needs it runs
+  `pnpm exec playwright install chromium` explicitly). The Playwright MCP server
+  in `.mcp.json` gives sessions an interactive headless browser for visual
+  inspection and screenshots. The `@playwright/test` and `@playwright/mcp` pins
+  bump together (same Playwright line).
 - `pnpm --filter @lodekit/manager start` — the menubar manager in dev mode (system Node;
   supervises the engine against `root/`).
 - `pnpm --filter @lodekit/manager make` — package `Lodekit.app` (runs
@@ -139,6 +149,10 @@ rule (`ponytail`-labeled bead + `// ponytail: <bead-id>` anchor).
 - **Commits & PRs:** no `Co-Authored-By` trailers in commit messages; no "Generated with Claude Code" attribution in PR bodies.
 - **Definition of done:** a new SDK/engine capability is not done until the Greenhouse
   showcase app exercises it (`root/README.md` holds the living coverage checklist).
+- **Testing-judgment ladder:** pick the lowest test layer that exercises the
+  change — pure logic → the owning package's vitest; component render behavior →
+  `@lodekit/ui` render tests; cross-frontend render/console health → `pnpm e2e`;
+  visual judgment → Playwright MCP inspection in-session.
 - **Steering docs:** steering docs are uppercase. `AGENTS.md` and the `CLAUDE.md`
   symlink live at the repo root; `CONTEXT.md`, `DESIGN.md`, and `PRODUCT.md` live in
   `docs/`. `CLAUDE.md` is a committed symlink to `AGENTS.md` — never diverge them. Do not set `askUserQuestionTimeout` in user
