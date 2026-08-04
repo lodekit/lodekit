@@ -3,6 +3,10 @@
     "codebase-memory-mcp": {
       "command": "codebase-memory-mcp",
       "args": []
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@0.0.78", "--headless", "--isolated"]
     }
   }
 }
