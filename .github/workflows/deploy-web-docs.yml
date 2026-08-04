@@ -38,10 +38,28 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SCW_SECRET_KEY }}
           BUCKET: ${{ vars.WEB_DOCS_BUCKET }}
         run: |
+          # Hashed assets first, additive only: old hashes stay alive, so HTML
+          # at origin, in the pre-purge CDN cache, or in an open tab never 404s.
+          aws s3 sync web/docs/dist/_astro "s3://$BUCKET/_astro" \
+            --endpoint-url https://s3.fr-par.scw.cloud \
+            --region fr-par \
+            --cache-control "public, max-age=31536000, immutable"
+          # Pagefind is hashed-per-build like _astro/, but its entry files
+          # (pagefind.js, pagefind-entry.json, …) mutate in place — no immutable.
+          aws s3 sync web/docs/dist/pagefind "s3://$BUCKET/pagefind" \
+            --endpoint-url https://s3.fr-par.scw.cloud \
+            --region fr-par \
+            --cache-control "public, max-age=60, must-revalidate"
+          # Then pages + public/ files. --delete never reaches _astro/ or
+          # pagefind/: removed routes disappear, old hashed assets survive
+          # (accepted growth, no GC).
           aws s3 sync web/docs/dist "s3://$BUCKET" \
             --endpoint-url https://s3.fr-par.scw.cloud \
             --region fr-par \
-            --delete
+            --exclude "_astro/*" \
+            --exclude "pagefind/*" \
+            --delete \
+            --cache-control "public, max-age=60, must-revalidate"
       - name: Purge Edge Services cache
         env:
           SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}

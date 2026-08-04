@@ -40,10 +40,20 @@ jobs:
           WWW_BUCKET: ${{ vars.WEB_MAIN_WWW_BUCKET }}
         run: |
           for b in "$BUCKET" "$WWW_BUCKET"; do
+            # Hashed assets first, additive only: old hashes stay alive, so HTML
+            # at origin, in the pre-purge CDN cache, or in an open tab never 404s.
+            aws s3 sync web/main/dist/_astro "s3://$b/_astro" \
+              --endpoint-url https://s3.fr-par.scw.cloud \
+              --region fr-par \
+              --cache-control "public, max-age=31536000, immutable"
+            # Then pages + public/ files. --delete never reaches _astro/: removed
+            # routes disappear, old hashed assets survive (accepted growth, no GC).
             aws s3 sync web/main/dist "s3://$b" \
               --endpoint-url https://s3.fr-par.scw.cloud \
               --region fr-par \
-              --delete
+              --exclude "_astro/*" \
+              --delete \
+              --cache-control "public, max-age=60, must-revalidate"
           done
       - name: Purge Edge Services caches
         env:
