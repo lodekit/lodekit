@@ -5,8 +5,8 @@
       "args": []
     },
     "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@0.0.78", "--headless", "--isolated"]
+      "command": "pnpm",
+      "args": ["exec", "playwright-mcp", "--headless", "--isolated"]
     }
   }
 }

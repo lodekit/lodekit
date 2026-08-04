@@ -14,6 +14,7 @@
     "clean:worktrees": "node scripts/clean.mjs --all"
   },
   "devDependencies": {
+    "@playwright/mcp": "0.0.78",
     "@playwright/test": "1.62.0",
     "@types/node": "^22.10.5"
   },
@@ -26,6 +27,10 @@
       "esbuild",
       "lightningcss",
       "sharp"
-    ]
+    ],
+    "overrides": {
+      "@playwright/mcp>playwright": "1.62.0",
+      "@playwright/mcp>playwright-core": "1.62.0"
+    }
   }
 }
