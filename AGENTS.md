@@ -74,7 +74,8 @@ Package manager is **pnpm** (workspaces). From the repo root:
   `pnpm exec playwright install chromium` explicitly). The Playwright MCP server
   in `.mcp.json` gives sessions an interactive headless browser for visual
   inspection and screenshots. The `@playwright/test` and `@playwright/mcp` pins
-  bump together (same Playwright line).
+  bump together (same Playwright line) — and the `pnpm.overrides` entries that
+  force the MCP's bundled Playwright move with them.
 - `pnpm --filter @lodekit/manager start` — the menubar manager in dev mode (system Node;
   supervises the engine against `root/`).
 - `pnpm --filter @lodekit/manager make` — package `Lodekit.app` (runs
