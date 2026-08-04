@@ -146,6 +146,11 @@ Conventions:
 - Browser arrives via the guarded postinstall; skipped when `$CI` is set.
 - Playwright MCP is available in-session for interactive inspection and screenshots.
 - The `@playwright/test` / `@playwright/mcp` pins bump together.
+- A **testing-judgment ladder** (a pattern observed in research on comparable
+  agent-driven repos): pick the lowest test layer that exercises the change —
+  pure logic → the owning package's vitest; component render behavior →
+  `@lodekit/ui` render tests; cross-frontend render/console health → `pnpm e2e`;
+  visual judgment → Playwright MCP inspection in-session.
 
 No new skill. No changelog entry — internal dev infrastructure, not user-facing.
 
@@ -171,5 +176,5 @@ The harness itself is verified by:
 |---|---|
 | Greenhouse/Welcome e2e through the app-worker path | bead `lk-too` (defer) |
 | Screenshot baselines once the theme stabilizes | future specs in this config; no bead — revisit at theme freeze |
-| PR CI (test job running `pnpm test` + `pnpm e2e`) | separate decision, GitHub-issue territory |
+| PR CI (test job running `pnpm test` + `pnpm e2e`) | separate decision, GitHub-issue territory. When it lands, use the pattern observed in research: cache `~/.cache/ms-playwright` keyed on `pnpm-lock.yaml` + an explicit `playwright install chromium --with-deps` step |
 | Rendered-page accessibility (axe) layer | later layer on this harness |
