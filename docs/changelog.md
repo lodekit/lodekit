@@ -125,3 +125,8 @@ Rules:
   creates (its state, caches, and logs under `~/Library`, and your Lodekit
   root's app and data folders) is created user-only (`0700`); other accounts
   on the same Mac can no longer read them.
+
+- **Lodekit.app ships on a current Electron** — the menubar app moves from a
+  two-year-old Electron to the current release, picking up its accumulated
+  Chromium and Node security fixes. Lodekit.app now requires macOS 12
+  (Monterey) or later.
