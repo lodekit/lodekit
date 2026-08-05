@@ -17,7 +17,7 @@ branch=$(git branch --show-current)
 [ -n "$branch" ] || exit 0
 
 export GIT_TERMINAL_PROMPT=0
-git fetch --prune --quiet origin master || exit 0   # offline -> leave it be
+git fetch --prune --quiet origin || exit 0   # offline -> leave it be
 
 ahead=$(git rev-list --count origin/master..HEAD)
 behind=$(git rev-list --count HEAD..origin/master)
