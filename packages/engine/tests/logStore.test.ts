@@ -101,4 +101,10 @@ describe("logStore", () => {
     expect(result).toEqual({ records: [], nextBefore: null });
     expect(err).toHaveBeenCalledWith(expect.stringContaining("[logger] log query failed:"));
   });
+
+  it("creates the state dir user-only (0700)", () => {
+    const nested = path.join(dir, "nested", "state");
+    expect(initLogStore(nested)).toBe(true);
+    expect(fs.statSync(nested).mode & 0o777).toBe(0o700);
+  });
 });

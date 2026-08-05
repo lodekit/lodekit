@@ -138,7 +138,7 @@ export function initSettingsStore(dataDir: string): boolean {
   invalidateSettingsCache();
   try {
     const dir = path.join(dataDir, "_platform");
-    fs.mkdirSync(dir, { recursive: true });
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     platformDb = new BetterSqlite3(path.join(dir, "settings.sqlite"));
     platformDb.pragma("journal_mode = WAL");
     applyMigrations(platformDb, SETTINGS_CHAIN);

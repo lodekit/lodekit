@@ -15,7 +15,7 @@ export function getAppDb(dataDir: string, appId: string): Database.Database {
   const dbPath = path.join(appDataDir, "db.sqlite");
   const cached = connections.get(dbPath);
   if (cached) return cached.db;
-  fs.mkdirSync(appDataDir, { recursive: true });
+  fs.mkdirSync(appDataDir, { recursive: true, mode: 0o700 });
   const db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
   db.pragma("foreign_keys = ON");

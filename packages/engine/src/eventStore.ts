@@ -53,7 +53,7 @@ export function initEventStore(dataDir: string): boolean {
   db = null;
   try {
     const dir = path.join(dataDir, "_platform");
-    fs.mkdirSync(dir, { recursive: true });
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     db = new Database(path.join(dir, "events.sqlite"));
     db.pragma("journal_mode = WAL");
     applyMigrations(db, EVENTS_CHAIN);

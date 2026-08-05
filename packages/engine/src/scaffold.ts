@@ -116,7 +116,7 @@ export function scaffoldApp(cfg: Config, input: ScaffoldInput) {
   const appDir = path.join(cfg.appsDir, input.appId);
   const srcDir = path.join(appDir, "src");
   const routesDir = path.join(srcDir, "routes");
-  fs.mkdirSync(routesDir, { recursive: true });
+  fs.mkdirSync(routesDir, { recursive: true, mode: 0o700 });
   const manifest = {
     name: input.name,
     appId: input.appId,

@@ -58,4 +58,12 @@ describe("icon style settings", () => {
     setIconStyle(file, "a");
     expect(fs.statSync(file).mode & 0o777).toBe(0o600);
   });
+
+  it("creates the settings directory user-only (0700)", () => {
+    const dir = tmp();
+    dirs.push(dir);
+    const file = path.join(dir, "nested", "settings.json");
+    setIconStyle(file, "a");
+    expect(fs.statSync(path.dirname(file)).mode & 0o777).toBe(0o700);
+  });
 });

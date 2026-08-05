@@ -25,7 +25,7 @@ function setIconStyle(file, style) {
   if (!ICON_STYLES.includes(style)) throw new Error(`Unknown icon style: ${style}`);
   const settings = readSettings(file);
   settings.iconStyle = style;
-  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   fs.writeFileSync(file, JSON.stringify(settings, null, 2), { mode: 0o600 });
 }
 

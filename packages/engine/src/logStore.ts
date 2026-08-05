@@ -47,7 +47,7 @@ export function initLogStore(stateDir: string): boolean {
   db?.close();
   db = null;
   try {
-    fs.mkdirSync(stateDir, { recursive: true });
+    fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
     db = new Database(path.join(stateDir, "logs.sqlite"));
     db.pragma("journal_mode = WAL");
     applyMigrations(db, LOGS_CHAIN);

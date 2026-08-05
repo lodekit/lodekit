@@ -198,7 +198,7 @@ export async function putFile(
   const contentType = opts.contentType || "application/octet-stream";
   const date = dateFolder();
   const dayDir = path.join(ctx.dir, date);
-  fs.mkdirSync(dayDir, { recursive: true });
+  fs.mkdirSync(dayDir, { recursive: true, mode: 0o700 });
 
   // Stream to a hidden temp file while hashing; rename once complete (spec §4.3).
   const tmp = path.join(dayDir, `.tmp-${crypto.randomBytes(8).toString("hex")}`);
@@ -299,7 +299,7 @@ export function copyFile(ctx: FilesCtx, from: string, to: string): FileStat | un
   if (existing) removeBytes(ctx, existing.path); // destination replace, put semantics
 
   const date = dateFolder();
-  fs.mkdirSync(path.join(ctx.dir, date), { recursive: true });
+  fs.mkdirSync(path.join(ctx.dir, date), { recursive: true, mode: 0o700 });
   const relPath = `${date}/${to}-${src.hash.slice(0, 8)}${path.extname(src.path)}`;
   fs.copyFileSync(path.join(ctx.dir, src.path), path.join(ctx.dir, relPath));
 

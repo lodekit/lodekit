@@ -54,7 +54,7 @@ function assertValidName(name: string): void {
 }
 
 function atomicWrite(file: string, content: string): void {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
   const tmp = file + ".tmp-" + process.pid;
   fs.writeFileSync(tmp, content);
   fs.renameSync(tmp, file);
