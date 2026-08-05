@@ -279,10 +279,14 @@ export async function start(cfg: Config): Promise<Server> {
   // bind whose non-loopback peers are destroyed pre-HTTP (tryListen's loopbackOnly).
   let convenience: Server | null = null;
   if (LOOPBACK_HOSTS.includes(host) && cfg.port !== 0 && cfg.port !== 80) {
-    convenience =
-      (await tryListen(app, "127.0.0.1", 80)) ?? (await tryListen(app, undefined, 80, true));
+    convenience = await tryListen(app, "127.0.0.1", 80);
+    const mode = convenience ? "kernel-loopback" : "guarded-wildcard";
+    convenience ??= await tryListen(app, undefined, 80, true);
+    if (convenience) {
+      console.log(`Also at http://lodekit.localhost/`);
+      createLogger("host").info("port-80 convenience listener up", { mode });
+    }
   }
-  if (convenience) console.log(`Also at http://lodekit.localhost/`);
   const addr = server.address();
   configureWorkers(`http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : cfg.port}`);
   initTaskExecutor(cfg);

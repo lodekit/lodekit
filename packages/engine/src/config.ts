@@ -53,7 +53,9 @@ export function loadConfig(): Config {
     cacheDir,
     stateDir,
     port,
-    host: process.env.LODEKIT_HOST ?? "127.0.0.1",
+    // || not ??: an empty LODEKIT_HOST must fail closed to loopback — Node treats
+    // a falsy listen host as the wildcard (every interface).
+    host: process.env.LODEKIT_HOST || "127.0.0.1",
     baseUrl: `http://lodekit.localhost:${port}`,
     secretsKeyProvider,
     gatewaysDir,

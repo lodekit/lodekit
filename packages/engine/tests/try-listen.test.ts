@@ -14,6 +14,10 @@ const lanIp = Object.values(os.networkInterfaces())
   .flat()
   .find((i) => i && !i.internal && i.family === "IPv4")?.address;
 
+const hasV6Loopback = Object.values(os.networkInterfaces())
+  .flat()
+  .some((i) => i?.address === "::1");
+
 let servers: Server[] = [];
 afterEach(async () => {
   await Promise.all(servers.map((s) => new Promise((r) => s.close(r))));
@@ -47,8 +51,7 @@ describe("tryListen", () => {
     expect(await res.text()).toBe("pong");
   });
 
-  it("loopbackOnly destroys non-loopback peers before HTTP", async () => {
-    if (!lanIp) return;
+  it.skipIf(!lanIp)("loopbackOnly destroys non-loopback peers before HTTP", async () => {
     const s = await tryListen(app, undefined, 0, true);
     servers = [s!];
     const port = (s!.address() as AddressInfo).port;
@@ -61,12 +64,19 @@ describe("tryListen", () => {
     ).rejects.toThrow();
   });
 
-  it("without loopbackOnly the wildcard serves non-loopback peers (the guard is what blocks)", async () => {
-    if (!lanIp) return;
+  it.skipIf(!lanIp)("without loopbackOnly the wildcard serves non-loopback peers (the guard is what blocks)", async () => {
     const s = await tryListen(app, undefined, 0);
     servers = [s!];
     const port = (s!.address() as AddressInfo).port;
-    const res = await fetch(`http://${lanIp}:${port}/ping`);
+    const res = await fetch(`http://${lanIp}:${port}/ping`, { signal: AbortSignal.timeout(2000) });
+    expect(await res.text()).toBe("pong");
+  });
+
+  it.skipIf(!hasV6Loopback)("loopbackOnly admits ::1 peers", async () => {
+    const s = await tryListen(app, undefined, 0, true);
+    servers = [s!];
+    const port = (s!.address() as AddressInfo).port;
+    const res = await fetch(`http://[::1]:${port}/ping`, { signal: AbortSignal.timeout(2000) });
     expect(await res.text()).toBe("pong");
   });
 });

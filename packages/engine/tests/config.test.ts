@@ -77,4 +77,10 @@ describe("loadConfig", () => {
     expect(loadConfig().host).toBe("0.0.0.0");
     delete process.env.LODEKIT_HOST;
   });
+
+  it("treats an empty LODEKIT_HOST as unset (fails closed to loopback)", () => {
+    process.env.LODEKIT_HOST = "";
+    expect(loadConfig().host).toBe("127.0.0.1");
+    delete process.env.LODEKIT_HOST;
+  });
 });
