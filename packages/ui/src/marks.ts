@@ -1,7 +1,8 @@
 // jar-cloud mark vector data (running variation) — the single source of truth,
-// consumed by the dashboard logo (dashboard/src/components/logo.tsx) and the
-// engine's favicon routes (server.ts). Inner markup for a 32×32 viewBox; every
-// fill/stroke is currentColor so the consumer chooses the color.
+// consumed via @lodekit/ui/marks by the engine (dashboard logo, favicon routes),
+// web/main (landing sections + brand-asset generator), and web/docs (site title).
+// Inner markup for a 32×32 viewBox; every fill/stroke is currentColor so the
+// consumer chooses the color.
 
 export type MarkStyle = "a" | "b" | "c";
 

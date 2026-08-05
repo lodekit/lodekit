@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { MARK_BODIES, type MarkStyle } from "../../../src/marks";
+import { MARK_BODIES, type MarkStyle } from "@lodekit/ui/marks";
 
 type SvgProps = { className?: string };
 
-// jar-cloud marks (running variation) — vector data lives in src/marks.ts,
+// jar-cloud marks (running variation) — vector data lives in @lodekit/ui/marks,
 // shared with the engine's favicon routes. fills/strokes are currentColor so
 // the theme's --primary carries through. dangerouslySetInnerHTML is safe here:
 // MARK_BODIES is a compile-time constant in our own module, never user input.

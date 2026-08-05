@@ -205,6 +205,7 @@ const DEEP_IMPORT_PACKAGES = [
   "@tanstack/react-start",
   "zod",
   "drizzle-orm",
+  "@lodekit/ui",
 ];
 
 function packageNameOf(specifier: string): string {
@@ -235,7 +236,6 @@ function deepImportResolver() {
 
 const appAliases = [
   { find: "@lodekit/sdk", replacement: pkgDir("@lodekit/sdk") },
-  { find: "@lodekit/ui", replacement: uiDir },
   { find: "lucide-react", replacement: lucideDir },
   { find: "recharts", replacement: rechartsDir },
   { find: "@tanstack/react-table", replacement: reactTableDir },

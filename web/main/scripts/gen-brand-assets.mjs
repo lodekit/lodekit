@@ -3,7 +3,7 @@
 // PNG exports. Run with `pnpm brand:assets`.
 //
 // Sources of truth: the jar-cloud mark is imported from
-// packages/engine/src/marks.ts (MARK_BODIES.b, the default knockout style —
+// packages/ui/src/marks.ts (MARK_BODIES.b, the default knockout style —
 // never redrawn); the wordmark is M PLUS 1 Code 700 at 0.22em tracking
 // (DESIGN.md §5), outlined to paths because GitHub-README SVGs cannot load
 // fonts. Colors and geometry follow docs/DESIGN.md: lockup gap ≈0.6em,
@@ -14,7 +14,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import opentype from "opentype.js";
 import sharp from "sharp";
-import { MARK_BODIES } from "@lodekit/engine/marks";
+import { MARK_BODIES } from "@lodekit/ui/marks";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(here, "../public/brand");
