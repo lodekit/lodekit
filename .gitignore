@@ -24,3 +24,10 @@ packages/engine/dashboard/src/routeTree.gen.ts
 .agents/internal/
 test-results/
 playwright-report/
+.env*
+.claude/settings.local.json
+.superpowers/
+.vscode/
+*.pem
+*.key
+*.p12
