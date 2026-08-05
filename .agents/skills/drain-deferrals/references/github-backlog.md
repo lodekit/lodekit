@@ -5,8 +5,8 @@ fields). Originally transcribed from the `github-backlog-pipeline` auto-memory; 
 type, sub-issue, dependency and Area entries were re-verified against the API
 2026-08-05.
 
-**GitHub project number:** (not recorded — look up at drain time via `gh api graphql`
-project query)
+**GitHub project:** number `1`, `Lodekit` (`PVT_kwDOEcfYG84BcvUg`). Newly created
+issues are added to it automatically — never add a project item by hand.
 
 **Create with type (REST):** `POST /repos/lodekit/lodekit/issues` accepts `"type"`
 directly. Four org-level types exist — always set one:
