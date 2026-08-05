@@ -273,12 +273,13 @@ export async function start(cfg: Config): Promise<Server> {
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
   // Port-free URL (#87 follow-on): http://lodekit.localhost/ needs no :7777 when 80
   // is bindable. Loopback only — never attempted when LODEKIT_HOST widened the bind —
-  // and skipped silently when taken. macOS quirk (verified on Darwin 25): Mojave's
-  // unprivileged low-port exemption covers only the wildcard address — 127.0.0.1:80
-  // gets EACCES — so after the kernel loopback bind fails, fall back to a wildcard
-  // bind whose non-loopback peers are destroyed pre-HTTP (tryListen's loopbackOnly).
+  // skipped silently when taken, and LODEKIT_PORT_FREE=0 opts out entirely (port 80
+  // is popular; other local tools may want it). macOS quirk (verified on Darwin 25):
+  // Mojave's unprivileged low-port exemption covers only the wildcard address —
+  // 127.0.0.1:80 gets EACCES — so after the kernel loopback bind fails, fall back to
+  // a wildcard bind whose non-loopback peers are destroyed pre-HTTP (loopbackOnly).
   let convenience: Server | null = null;
-  if (LOOPBACK_HOSTS.includes(host) && cfg.port !== 0 && cfg.port !== 80) {
+  if (cfg.portFree !== false && LOOPBACK_HOSTS.includes(host) && cfg.port !== 0 && cfg.port !== 80) {
     convenience = await tryListen(app, "127.0.0.1", 80);
     const mode = convenience ? "kernel-loopback" : "guarded-wildcard";
     convenience ??= await tryListen(app, undefined, 80, true);

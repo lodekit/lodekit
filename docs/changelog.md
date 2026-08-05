@@ -88,6 +88,8 @@ Rules:
 - **No port needed** — when port 80 is free on your Mac, `http://lodekit.localhost/`
   opens Lodekit without the `:7777`. The classic URL keeps working either way, and
   the port-free door is loopback-only too — nothing on your network can use it.
+  Prefer to keep port 80 for other tools? Start the engine with
+  `LODEKIT_PORT_FREE=0` to turn the door off.
 
 ## Fixed
 

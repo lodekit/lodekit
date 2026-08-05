@@ -9,6 +9,7 @@ describe("loadConfig", () => {
     delete process.env.LODEKIT_PORT;
     delete process.env.LODEKIT_CACHE_DIR;
     delete process.env.LODEKIT_HOST;
+    delete process.env.LODEKIT_PORT_FREE;
   });
 
   it("derives apps/data dirs and base url from root + port", () => {
@@ -82,5 +83,19 @@ describe("loadConfig", () => {
     process.env.LODEKIT_HOST = "";
     expect(loadConfig().host).toBe("127.0.0.1");
     delete process.env.LODEKIT_HOST;
+  });
+
+  it("enables the port-free listener by default", () => {
+    expect(loadConfig().portFree).toBe(true);
+  });
+
+  it("honors LODEKIT_PORT_FREE=0|false|off as opt-out", () => {
+    for (const v of ["0", "false", "OFF"]) {
+      process.env.LODEKIT_PORT_FREE = v;
+      expect(loadConfig().portFree).toBe(false);
+    }
+    process.env.LODEKIT_PORT_FREE = "1";
+    expect(loadConfig().portFree).toBe(true);
+    delete process.env.LODEKIT_PORT_FREE;
   });
 });
