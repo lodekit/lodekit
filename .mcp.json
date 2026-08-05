@@ -6,7 +6,7 @@
     },
     "playwright": {
       "command": "pnpm",
-      "args": ["exec", "playwright-mcp", "--headless", "--isolated"]
+      "args": ["exec", "playwright-mcp", "--headless", "--isolated", "--browser", "chromium"]
     }
   }
 }
