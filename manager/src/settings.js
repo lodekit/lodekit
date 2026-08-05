@@ -26,7 +26,7 @@ function setIconStyle(file, style) {
   const settings = readSettings(file);
   settings.iconStyle = style;
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(settings, null, 2));
+  fs.writeFileSync(file, JSON.stringify(settings, null, 2), { mode: 0o600 });
 }
 
 module.exports = { getIconStyle, setIconStyle, ICON_STYLES, DEFAULT_ICON_STYLE };

@@ -52,4 +52,10 @@ describe("icon style settings", () => {
     setIconStyle(file, "a");
     expect(JSON.parse(fs.readFileSync(file, "utf8"))).toEqual({ other: 1, iconStyle: "a" });
   });
+
+  it("creates the settings file user-only (0600)", () => {
+    const file = settingsFile();
+    setIconStyle(file, "a");
+    expect(fs.statSync(file).mode & 0o777).toBe(0o600);
+  });
 });

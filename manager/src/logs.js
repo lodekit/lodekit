@@ -48,7 +48,7 @@ function openDailyLogStream(logsDir, base, { days = DEFAULT_DAYS, now = () => ne
       if (current) current.end();
       stamp = s;
       sweepLogs(logsDir, { days, now });
-      current = fs.createWriteStream(path.join(logsDir, `${base}-${s}.log`), { flags: "a" });
+      current = fs.createWriteStream(path.join(logsDir, `${base}-${s}.log`), { flags: "a", mode: 0o600 });
     }
     return current;
   };
