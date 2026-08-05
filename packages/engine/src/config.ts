@@ -8,6 +8,14 @@ export interface Config {
   cacheDir: string;
   stateDir: string;
   port: number;
+  // Bind host for the HTTP listener. Loopback by default (issue #87); LODEKIT_HOST is
+  // the deliberate LAN-exposure escape hatch. Optional so test Config literals need not
+  // set it — start() falls back to loopback when absent.
+  host?: string;
+  // The best-effort :80 listener behind http://lodekit.localhost/ (no port). On by
+  // default; LODEKIT_PORT_FREE=0|false|off frees port 80 for other tools. Optional so
+  // test Config literals need not set it — start() treats absent as enabled.
+  portFree?: boolean;
   baseUrl: string;
   secretsKeyProvider: "keychain" | "file";
   gatewaysDir: string;
@@ -49,6 +57,10 @@ export function loadConfig(): Config {
     cacheDir,
     stateDir,
     port,
+    // || not ??: an empty LODEKIT_HOST must fail closed to loopback — Node treats
+    // a falsy listen host as the wildcard (every interface).
+    host: process.env.LODEKIT_HOST || "127.0.0.1",
+    portFree: !["0", "false", "off"].includes((process.env.LODEKIT_PORT_FREE ?? "").toLowerCase()),
     baseUrl: `http://lodekit.localhost:${port}`,
     secretsKeyProvider,
     gatewaysDir,

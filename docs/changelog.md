@@ -85,6 +85,12 @@ Rules:
   explains the split, and the packaged app now carries the license notices for
   the Node and Electron runtimes it ships.
 
+- **No port needed** — when port 80 is free on your Mac, `http://lodekit.localhost/`
+  opens Lodekit without the `:7777`. The classic URL keeps working either way, and
+  the port-free door is loopback-only too — nothing on your network can use it.
+  Prefer to keep port 80 for other tools? Start the engine with
+  `LODEKIT_PORT_FREE=0` to turn the door off.
+
 ## Fixed
 
 - **kv-store error statuses** — internal faults in the kv API now return 500
@@ -108,3 +114,8 @@ Rules:
 - **Menubar icon follows the style setting live** — changing the icon style in the
   dashboard now restyles the menubar icon immediately; it used to take a manager
   restart.
+
+- **The engine listens on loopback only** — the HTTP listener previously accepted
+  connections from any device on the local network; it now binds `127.0.0.1` so
+  only this machine can reach it. Deliberate wider exposure is still possible via
+  `LODEKIT_HOST`, with a startup warning that the API is unauthenticated.

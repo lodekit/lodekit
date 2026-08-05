@@ -8,6 +8,8 @@ describe("loadConfig", () => {
     delete process.env.LODEKIT_ROOT;
     delete process.env.LODEKIT_PORT;
     delete process.env.LODEKIT_CACHE_DIR;
+    delete process.env.LODEKIT_HOST;
+    delete process.env.LODEKIT_PORT_FREE;
   });
 
   it("derives apps/data dirs and base url from root + port", () => {
@@ -65,5 +67,35 @@ describe("loadConfig", () => {
     process.env.LODEKIT_SECRETS_KEY_PROVIDER = "vault9000";
     expect(loadConfig().secretsKeyProvider).toBe(process.platform === "darwin" ? "keychain" : "file");
     delete process.env.LODEKIT_SECRETS_KEY_PROVIDER;
+  });
+
+  it("defaults host to IPv4 loopback", () => {
+    expect(loadConfig().host).toBe("127.0.0.1");
+  });
+
+  it("honors LODEKIT_HOST", () => {
+    process.env.LODEKIT_HOST = "0.0.0.0";
+    expect(loadConfig().host).toBe("0.0.0.0");
+    delete process.env.LODEKIT_HOST;
+  });
+
+  it("treats an empty LODEKIT_HOST as unset (fails closed to loopback)", () => {
+    process.env.LODEKIT_HOST = "";
+    expect(loadConfig().host).toBe("127.0.0.1");
+    delete process.env.LODEKIT_HOST;
+  });
+
+  it("enables the port-free listener by default", () => {
+    expect(loadConfig().portFree).toBe(true);
+  });
+
+  it("honors LODEKIT_PORT_FREE=0|false|off as opt-out", () => {
+    for (const v of ["0", "false", "OFF"]) {
+      process.env.LODEKIT_PORT_FREE = v;
+      expect(loadConfig().portFree).toBe(false);
+    }
+    process.env.LODEKIT_PORT_FREE = "1";
+    expect(loadConfig().portFree).toBe(true);
+    delete process.env.LODEKIT_PORT_FREE;
   });
 });
