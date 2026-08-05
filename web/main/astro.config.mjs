@@ -7,8 +7,8 @@ export default defineConfig({
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
-    // @lodekit/engine ships raw .ts (buildless); bundle it instead of
+    // @lodekit/ui ships raw .ts (buildless); bundle it instead of
     // externalizing so the static build can compile marks.ts.
-    ssr: { noExternal: ["@lodekit/engine"] },
+    ssr: { noExternal: ["@lodekit/ui"] },
   },
 });

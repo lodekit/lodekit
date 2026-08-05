@@ -10,7 +10,7 @@ import {
   initSettingsStore, setPlatformValue, invalidateSettingsCache, closeSettingsStoreForTest,
 } from "../src/services/settings.js";
 import type { Config } from "../src/config.js";
-import { MARK_BODIES, markFaviconSvg, emojiFaviconSvg } from "../src/marks.js";
+import { MARK_BODIES, markFaviconSvg, emojiFaviconSvg } from "@lodekit/ui/marks";
 
 describe("favicon svg builders", () => {
   it("renders the requested mark and falls back to b on unknown styles", () => {

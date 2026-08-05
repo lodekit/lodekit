@@ -33,7 +33,7 @@ import { createLogger } from "./logger.js";
 import { initTaskExecutor, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskExecutor.js";
 import { sweepAllTaskRuns } from "./services/tasks.js";
 import { resolveThemeCss, extractIconLibrary, getPreviewCss, warnLegacyThemeFiles } from "./services/themes.js";
-import { markFaviconSvg, emojiFaviconSvg } from "./marks.js";
+import { markFaviconSvg, emojiFaviconSvg } from "@lodekit/ui/marks";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
