@@ -1,16 +1,39 @@
 # GitHub backlog field/option node IDs
 
 Backlog lives as issues on `lodekit/lodekit` (org-level issue types + custom issue
-fields). Transcribed verbatim from the `github-backlog-pipeline` auto-memory.
+fields). Originally transcribed from the `github-backlog-pipeline` auto-memory; the
+type, sub-issue, dependency and Area entries were re-verified against the API
+2026-08-05.
 
-**GitHub project number:** (not recorded — look up at drain time via `gh api graphql`
-project query)
+**GitHub project:** number `1`, `Lodekit` (`PVT_kwDOEcfYG84BcvUg`). Newly created
+issues are added to it automatically — never add a project item by hand.
 
-**Create with type (REST):** `POST /repos/lodekit/lodekit/issues` accepts
-`"type": "bug" | "feature"` directly. Sub-issues are enabled:
+**Create with type (REST):** `POST /repos/lodekit/lodekit/issues` accepts `"type"`
+directly. Four org-level types exist — always set one:
+
+| Type | Use for |
+|---|---|
+| `bug` | Something is broken or wrong: incorrect behaviour, a claim the code contradicts, a doc stale enough to actively mislead. |
+| `feature` | New capability a user can see or do. |
+| `chore` | Ancillary maintenance — CI, dependencies, licensing, tooling, doc accuracy, repo settings, release mechanics. Most drained deferrals land here. |
+| `track` | An umbrella grouping other issues into batches. A track carries no implementation of its own; its children do the work. |
+
+Retype an existing issue with `PATCH /repos/lodekit/lodekit/issues/{n}` and `-f type=…`.
+
+**Sub-issues** are enabled, and are how a `track` owns its children:
 `POST /repos/lodekit/lodekit/issues/{parent}/sub_issues` with `sub_issue_id` = the
-child's database ID (`.id`, not the issue number). Titles: imperative, short.
-Priority never `urgent`.
+child's database ID (`.id`, not the issue number). **A sub-issue has at most one
+parent** — an issue already owned by another track cannot be adopted, only
+cross-referenced. House pattern for a track: sub-issue links *and* a markdown batch
+list in the body, plus a "Tracked elsewhere" section naming issues that belong to a
+sibling track.
+
+**Dependencies** record ordering between issues:
+`POST /repos/lodekit/lodekit/issues/{n}/dependencies/blocked_by` with
+`{"issue_id": <int>}`. The id must be a JSON integer, so pass it via `--input -`;
+`-f issue_id=…` sends a string and 422s. Read back with the matching `GET`.
+
+Titles: imperative, short. Priority never `urgent`.
 
 ## Field → option → node ID
 
@@ -21,7 +44,8 @@ Priority never `urgent`.
 | Priority | `IFSS_kgDOApqUzA` | medium | `IFSSO_kgDOBI6PRQ` |
 | Priority | `IFSS_kgDOApqUzA` | low | `IFSSO_kgDOBI6PRg` |
 | Area | `IFSS_kgDOAqC5_g` | infra | `IFSSO_kgDOBJlXrA` |
-| Area | `IFSS_kgDOAqC5_g` | runtime | `IFSSO_kgDOBJlXrQ` |
+| Area | `IFSS_kgDOAqC5_g` | security | `IFSSO_kgDOBJ5B-g` |
+| Area | `IFSS_kgDOAqC5_g` | engine | `IFSSO_kgDOBJlXrQ` |
 | Area | `IFSS_kgDOAqC5_g` | service | `IFSSO_kgDOBJlXrg` |
 | Area | `IFSS_kgDOAqC5_g` | ui | `IFSSO_kgDOBJlXrw` |
 | Area | `IFSS_kgDOAqC5_g` | manager | `IFSSO_kgDOBJlXsA` |
