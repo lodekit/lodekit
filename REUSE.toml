@@ -62,6 +62,27 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The Lodekit Authors"
 SPDX-License-Identifier = "Apache-2.0"
 
+# The Lodekit jar-cloud mark embeds the Material Icons "cloud" glyph
+# (Google LLC, Apache-2.0) — marks.ts is the vector source; the brand
+# mark/badge/lockup assets and favicons carry the glyph verbatim or rasterized.
+[[annotations]]
+path = [
+  "packages/engine/src/marks.ts",
+  "web/main/public/favicon.svg",
+  "web/main/public/brand/lodekit-mark-*",
+  "web/main/public/brand/lodekit-badge-*",
+  "web/main/public/brand/lodekit-lockup-*",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2026 The Lodekit Authors", "Google LLC"]
+SPDX-License-Identifier = "AGPL-3.0-only AND Apache-2.0"
+
+[[annotations]]
+path = "web/docs/public/favicon.svg"
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2026 The Lodekit Authors", "Google LLC"]
+SPDX-License-Identifier = "Apache-2.0"
+
 [[annotations]]
 path = ["packages/ui/shadcn-tailwind.css", "packages/ui/src/components/**"]
 precedence = "aggregate"
