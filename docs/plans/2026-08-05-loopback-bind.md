@@ -249,7 +249,7 @@ git commit -m "feat(engine): best-effort port-80 loopback listener for a port-fr
 - **Security (mandatory)**: default tightens (all interfaces → loopback); no control weakened; the port-80 listener is loopback-only and suppressed whenever `LODEKIT_HOST` widened the bind; DNS-rebinding hardening stays #5/#8 scope, unaffected.
 
 ### Changes Made
-- None to the task bodies — findings confirmed the plan as written.
+- **Task 2 execution deviation (2026-08-05):** the plan's "macOS ≥10.14 allows unprivileged low-port binds" assumption is only true for the **wildcard** address — live probing on Darwin 25 showed `127.0.0.1:80` and `[::1]:80` return `EACCES` while `0.0.0.0:80` binds fine. A naked wildcard bind would re-expose the engine on the LAN, so `tryListen` gained a `loopbackOnly` flag: the convenience listener first attempts the kernel loopback bind (for platforms that allow it), then falls back to a wildcard bind that destroys any non-loopback peer's socket on accept, before HTTP parses a byte — guard attached before `listen()`, no unguarded window. Verified live: LAN requests to `:80` are blocked, loopback gets 200; covered by two interface-level tests (guard blocks LAN peer; without the guard the same bind serves it — proving the guard is the control). The `:7777` primary stays kernel-bound loopback; this trade-off (app-level guard on 80 vs. no port-free URL at all) is surfaced in the PR body for review.
 
 ### Deferred / Parking Lot
 - `LODEKIT_HOST=::1` breaks the worker loopback door (workers dial `127.0.0.1:<port>` hard-coded) — pre-existing edge of the recovered, approved design; filed as a `defer` bead rather than expanding this slice.

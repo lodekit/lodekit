@@ -218,6 +218,33 @@ export function createServer(cfg: Config): Server {
   return createAdaptorServer({ fetch: createApp(cfg).fetch }) as Server;
 }
 
+const LOOPBACK_HOSTS = ["127.0.0.1", "::1", "localhost"];
+
+// Best-effort single listener sharing an app (exported for tests). Any bind error
+// (port taken, EACCES) resolves null — a convenience URL is never a boot blocker.
+// An undefined host binds the wildcard; loopbackOnly then destroys any
+// non-loopback peer's socket on accept, before HTTP ever parses a byte, so the
+// served surface stays loopback even on a wildcard bind. The guard attaches
+// before listen() — no window where an unguarded socket is reachable.
+export function tryListen(
+  app: Hono,
+  host: string | undefined,
+  port: number,
+  loopbackOnly = false
+): Promise<Server | null> {
+  return new Promise((resolve) => {
+    const s = createAdaptorServer({ fetch: app.fetch }) as Server;
+    if (loopbackOnly) {
+      s.on("connection", (sock) => {
+        const a = sock.remoteAddress;
+        if (a !== "127.0.0.1" && a !== "::1" && a !== "::ffff:127.0.0.1") sock.destroy();
+      });
+    }
+    s.once("error", () => resolve(null));
+    s.listen(port, host, () => resolve(s));
+  });
+}
+
 export async function start(cfg: Config): Promise<Server> {
   initLogStore(cfg.stateDir);
   initSettingsStore(cfg.dataDir);
@@ -229,11 +256,12 @@ export async function start(cfg: Config): Promise<Server> {
   if (!initEventStore(cfg.dataDir)) {
     createLogger("event-store").error("events.sqlite unavailable — event bus degrades to live-only");
   }
-  const server = createServer(cfg);
+  const app = createApp(cfg);
+  const server = createAdaptorServer({ fetch: app.fetch }) as Server;
   // Loopback unless LODEKIT_HOST says otherwise (issue #87); an absent host fails
   // closed to loopback. The escape hatch works, but never silently.
   const host = cfg.host ?? "127.0.0.1";
-  if (!["127.0.0.1", "::1", "localhost"].includes(host)) {
+  if (!LOOPBACK_HOSTS.includes(host)) {
     createLogger("host").warn(
       `LODEKIT_HOST=${host} binds beyond loopback — the HTTP API is unauthenticated; anything that can reach this machine gets full read/write access to app data`
     );
@@ -243,6 +271,18 @@ export async function start(cfg: Config): Promise<Server> {
     createLogger("host").info(`listening on ${cfg.baseUrl}`, { port: cfg.port, host });
   });
   await new Promise<void>((resolve) => server.once("listening", () => resolve()));
+  // Port-free URL (#87 follow-on): http://lodekit.localhost/ needs no :7777 when 80
+  // is bindable. Loopback only — never attempted when LODEKIT_HOST widened the bind —
+  // and skipped silently when taken. macOS quirk (verified on Darwin 25): Mojave's
+  // unprivileged low-port exemption covers only the wildcard address — 127.0.0.1:80
+  // gets EACCES — so after the kernel loopback bind fails, fall back to a wildcard
+  // bind whose non-loopback peers are destroyed pre-HTTP (tryListen's loopbackOnly).
+  let convenience: Server | null = null;
+  if (LOOPBACK_HOSTS.includes(host) && cfg.port !== 0 && cfg.port !== 80) {
+    convenience =
+      (await tryListen(app, "127.0.0.1", 80)) ?? (await tryListen(app, undefined, 80, true));
+  }
+  if (convenience) console.log(`Also at http://lodekit.localhost/`);
   const addr = server.address();
   configureWorkers(`http://127.0.0.1:${typeof addr === "object" && addr ? addr.port : cfg.port}`);
   initTaskExecutor(cfg);
@@ -292,6 +332,7 @@ export async function start(cfg: Config): Promise<Server> {
     stop("event-sweep");
     stop("tasks-dispatch");
     stop("tasks-sweep");
+    convenience?.close();
     // Order matters: close the watcher (no new build triggers), let in-flight builds
     // finish — each may (re)start its app worker on success — and only THEN stop every
     // worker. Stopping first would let the drain resurrect a worker that outlives close;

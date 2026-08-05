@@ -85,6 +85,10 @@ Rules:
   explains the split, and the packaged app now carries the license notices for
   the Node and Electron runtimes it ships.
 
+- **No port needed** — when port 80 is free on your Mac, `http://lodekit.localhost/`
+  opens Lodekit without the `:7777`. The classic URL keeps working either way, and
+  the port-free door is loopback-only too — nothing on your network can use it.
+
 ## Fixed
 
 - **kv-store error statuses** — internal faults in the kv API now return 500
