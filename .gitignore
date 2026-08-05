@@ -1,33 +1,44 @@
+# editors & OS
 .idea
-node_modules/
-*.log
-
+.vscode/
 .DS_Store
-/data/
-root/data/
+
+# dependencies, caches, logs
+node_modules/
 .cache/
 .tanstack/
+*.log
+pnpm-debug.log*
+
+# build output
 manager/out/
 manager/.vite/
-pnpm-debug.log*
 web/*/dist/
 web/*/.astro/
-# The app contract (CONTEXT.md) calls routeTree.gen.ts "build-generated, committed" — these
-# are ignored deliberately: this repo's engine rebuilds them at dev/test time, so committing
-# them here would just churn diffs. Apps in the wild commit theirs.
+
+# runtime data
+/data/
+root/data/
+
+# rebuilt at dev/test time here; apps in the wild commit theirs (CONTEXT.md)
 packages/engine/tests/fixtures/start-app/src/routeTree.gen.ts
+packages/engine/dashboard/src/routeTree.gen.ts
 root/apps/greenhouse/src/routeTree.gen.ts
 root/apps/welcome/src/routeTree.gen.ts
-packages/engine/dashboard/src/routeTree.gen.ts
+
+# test artifacts
+test-results/
+playwright-report/
+
+# agent & tool state
 .codebase-memory/
 .beads/
 .agents/internal/
-test-results/
-playwright-report/
-.env*
-.claude/settings.local.json
 .superpowers/
-.vscode/
+.claude/settings.local.json
+
+# secrets
+.env*
 *.pem
 *.key
 *.p12
