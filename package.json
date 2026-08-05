@@ -8,8 +8,15 @@
     "dev": "LODEKIT_ROOT=$(pwd)/root LODEKIT_CACHE_DIR=$(pwd)/.cache pnpm --filter @lodekit/engine start",
     "mcp": "pnpm --filter @lodekit/mcp start",
     "test": "pnpm -r test",
+    "e2e": "playwright test",
+    "postinstall": "[ -n \"$CI\" ] || playwright install chromium",
     "clean": "node scripts/clean.mjs",
     "clean:worktrees": "node scripts/clean.mjs --all"
+  },
+  "devDependencies": {
+    "@playwright/mcp": "0.0.78",
+    "@playwright/test": "1.62.0",
+    "@types/node": "^22.10.5"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -20,6 +27,10 @@
       "esbuild",
       "lightningcss",
       "sharp"
-    ]
+    ],
+    "overrides": {
+      "@playwright/mcp>playwright": "1.62.0",
+      "@playwright/mcp>playwright-core": "1.62.0"
+    }
   }
 }

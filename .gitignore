@@ -22,3 +22,5 @@ packages/engine/dashboard/src/routeTree.gen.ts
 .codebase-memory/
 .beads/
 .agents/internal/
+test-results/
+playwright-report/

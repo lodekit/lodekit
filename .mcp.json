@@ -3,6 +3,10 @@
     "codebase-memory-mcp": {
       "command": "codebase-memory-mcp",
       "args": []
+    },
+    "playwright": {
+      "command": "pnpm",
+      "args": ["exec", "playwright-mcp", "--headless", "--isolated", "--browser", "chromium"]
     }
   }
 }
