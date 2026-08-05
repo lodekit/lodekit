@@ -71,7 +71,9 @@ const engineSettings = createEngineSettings({
   onIconStyle: (style) => applyIconStyle(style),
   cacheIconStyle: (style) => { try { setIconStyle(paths.settingsFile, style); } catch (e) { log(`settings cache: ${e.message}`); } },
   getLoginItem: () => app.getLoginItemSettings().openAtLogin,
-  setLoginItem: (v) => app.setLoginItemSettings({ openAtLogin: v }),
+  // rebuildMenu: the tray menu is a static template — without a rebuild the
+  // Launch at Login checkbox keeps showing the pre-dashboard-toggle state.
+  setLoginItem: (v) => { app.setLoginItemSettings({ openAtLogin: v }); rebuildMenu(); },
   canSetLogin: app.isPackaged,
 });
 
