@@ -159,8 +159,22 @@ Every step must contain the actual content an engineer needs. These are **plan f
 - Steps that describe what to do without showing how (code blocks required for code steps)
 - References to types, functions, or methods not defined in any task
 
+## Portable Paths
+
+Plans are committed documents — they outlive the machine they were written on and
+may be read publicly. No machine-local paths:
+
+- Tracked files: repo-relative paths (`packages/engine/src/config.ts`), never absolute.
+- Commands: write them to run from the worktree root. When a step must pin a
+  directory (multi-worktree work), use the placeholder `<worktree>` — the executor
+  substitutes the real path it received at dispatch ("Work from: …").
+- Machine-local inputs outside the repo (asset drops, downloads): `"$HOME/…"` in
+  shell (double quotes — `~` does not expand inside quotes) and `process.env.HOME`
+  in Node (`~` never expands in JS). Never a literal `/Users/<name>/…` or
+  `/home/<name>/…`.
+
 ## Remember
-- Exact file paths always
+- Exact repo-relative file paths always
 - Complete code in every step — if a step changes code, show the code
 - Exact commands with expected output
 - DRY, YAGNI, TDD, frequent commits

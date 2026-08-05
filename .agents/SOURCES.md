@@ -35,6 +35,9 @@ line.
 - using-superpowers: added a one-line session-mode nudge (spec §4) — undeclared sessions route through the `session` skill.
 - brainstorming: added pull-based pointers to codebase-design vocabulary and domain-modeling (spec §3).
 - requesting-code-review (+ code-reviewer.md): added the optional ponytail-review over-engineering lens (spec §3).
+- writing-plans: added `## Portable Paths` (committed plans carry no machine-local
+  paths — repo-relative files, `<worktree>` placeholder, `$HOME`/`process.env.HOME`
+  for machine-local inputs); the Remember bullet says repo-relative (issue #127).
 
 ### obra/superpowers
 - writing-skills: plan-location references → `docs/plans/`; namespace refs → bare.
