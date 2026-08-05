@@ -41,6 +41,20 @@ describe("Supervisor", () => {
     expect(fs.readFileSync(pidFile, "utf8")).toBe("4242");
   });
 
+  it("creates the pidfile user-only (0600)", async () => {
+    const child = fakeChild();
+    let spawned = false;
+    const pidFile = tmpPidFile();
+    const sup = new Supervisor({
+      ...fastOpts,
+      pidFile,
+      spawnEngine: () => ((spawned = true), child),
+      checkHealth: async () => spawned,
+    });
+    await sup.start();
+    expect(fs.statSync(pidFile).mode & 0o777).toBe(0o600);
+  });
+
   it("errors without spawning when the port is already taken", async () => {
     let spawnCalls = 0;
     const sup = new Supervisor({
@@ -102,6 +116,20 @@ describe("Supervisor", () => {
     await sup.stop();
     expect(child.signalsSent).toContain("SIGKILL");
     expect(sup.state).toBe("stopped");
+  });
+
+  it("creates the pidfile directory user-only (0700)", async () => {
+    const child = fakeChild();
+    let spawned = false;
+    const pidFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "lodekit-sup-")), "nested", "runtime.pid");
+    const sup = new Supervisor({
+      ...fastOpts,
+      pidFile,
+      spawnEngine: () => ((spawned = true), child),
+      checkHealth: async () => spawned,
+    });
+    await sup.start();
+    expect(fs.statSync(path.dirname(pidFile)).mode & 0o777).toBe(0o700);
   });
 
   it("terminates a stale engine recorded in the pid file before starting", async () => {

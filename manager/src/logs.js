@@ -39,7 +39,7 @@ function sweepLogs(logsDir, { days = DEFAULT_DAYS, now = () => new Date() } = {}
 // path rolls to a new file when the date stamp changes; sweep runs at open and
 // at each roll.
 function openDailyLogStream(logsDir, base, { days = DEFAULT_DAYS, now = () => new Date() } = {}) {
-  fs.mkdirSync(logsDir, { recursive: true });
+  fs.mkdirSync(logsDir, { recursive: true, mode: 0o700 });
   let current = null;
   let stamp = "";
   const roll = () => {
@@ -48,7 +48,7 @@ function openDailyLogStream(logsDir, base, { days = DEFAULT_DAYS, now = () => ne
       if (current) current.end();
       stamp = s;
       sweepLogs(logsDir, { days, now });
-      current = fs.createWriteStream(path.join(logsDir, `${base}-${s}.log`), { flags: "a" });
+      current = fs.createWriteStream(path.join(logsDir, `${base}-${s}.log`), { flags: "a", mode: 0o600 });
     }
     return current;
   };

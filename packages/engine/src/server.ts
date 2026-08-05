@@ -104,7 +104,7 @@ export function createApp(cfg: Config): Hono {
   // serveStatic (here and in appHost below) checks its root's existence at
   // construction time and logs to stderr when missing — pre-create the cache
   // dir so a fresh boot stays as silent as Express's static serving was.
-  fs.mkdirSync(cfg.cacheDir, { recursive: true });
+  fs.mkdirSync(cfg.cacheDir, { recursive: true, mode: 0o700 });
   return new Hono()
     .onError((err, c) => {
       if (err instanceof HTTPException) return err.getResponse(); // e.g. bodyLimit's 413

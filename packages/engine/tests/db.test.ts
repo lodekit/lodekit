@@ -40,4 +40,9 @@ describe("db connection management", () => {
     expect(openDbs().map((e) => e.db)).toEqual([live]);
     expect(stale.open).toBe(false);
   });
+
+  it("creates the per-app data dir user-only (0700)", () => {
+    getAppDb(dir, "demo");
+    expect(fs.statSync(path.join(dir, "demo")).mode & 0o777).toBe(0o700);
+  });
 });

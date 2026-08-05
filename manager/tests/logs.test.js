@@ -21,6 +21,21 @@ describe("dated log files", () => {
     expect(fs.readFileSync(file, "utf8")).toBe("launch one\nlaunch two\n");
   });
 
+  it("creates log files user-only (0600)", async () => {
+    const dir = tmp();
+    const stream = openDailyLogStream(dir, "runtime", { now: () => new Date("2026-07-07T10:00:00Z") });
+    stream.write("hello\n");
+    await end(stream);
+    expect(fs.statSync(path.join(dir, "runtime-20260707.log")).mode & 0o777).toBe(0o600);
+  });
+
+  it("creates the log directory user-only (0700)", async () => {
+    const dir = path.join(tmp(), "nested");
+    const stream = openDailyLogStream(dir, "manager", { now: () => new Date("2026-07-07T10:00:00Z") });
+    await end(stream);
+    expect(fs.statSync(dir).mode & 0o777).toBe(0o700);
+  });
+
   it("rolls to a new file when the date changes mid-run", async () => {
     const dir = tmp();
     let today = new Date("2026-07-07T23:59:00Z");

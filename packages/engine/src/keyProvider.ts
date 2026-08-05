@@ -68,7 +68,7 @@ function keychainKey(): Buffer {
 function fileKey(stateDir: string): Buffer {
   const file = path.join(stateDir, "secrets.key");
   if (fs.existsSync(file)) return parseKey(fs.readFileSync(file, "utf8").trim());
-  fs.mkdirSync(stateDir, { recursive: true });
+  fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
   const hex = randomBytes(KEY_BYTES).toString("hex");
   fs.writeFileSync(file, `${hex}\n`, { mode: 0o600 });
   return parseKey(hex);

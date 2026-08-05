@@ -130,6 +130,10 @@ describe("eventStore", () => {
     expect(queryEvents({})).toEqual({ records: [], next: null });
     expect(sweepEventStore()).toBe(0);
   });
+
+  it("creates data/_platform user-only (0700)", () => {
+    expect(fs.statSync(path.join(dataDir, "_platform")).mode & 0o777).toBe(0o700);
+  });
 });
 
 describe("queryEventStats", () => {

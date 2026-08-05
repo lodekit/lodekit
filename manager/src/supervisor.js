@@ -107,8 +107,8 @@ class Supervisor extends EventEmitter {
       }
     });
     try {
-      fs.mkdirSync(path.dirname(this.pidFile), { recursive: true });
-      fs.writeFileSync(this.pidFile, String(child.pid));
+      fs.mkdirSync(path.dirname(this.pidFile), { recursive: true, mode: 0o700 });
+      fs.writeFileSync(this.pidFile, String(child.pid), { mode: 0o600 });
     } catch (e) {
       await this.killChild();
       this.setState("error", `Could not write ${this.pidFile}: ${e.message}`);

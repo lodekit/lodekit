@@ -18,7 +18,7 @@ export const isGeneratedPath = (p: string): boolean =>
   p.endsWith(path.sep + "routeTree.gen.ts") || p.split(path.sep).includes(".tanstack");
 
 export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void> }> {
-  fs.mkdirSync(cfg.appsDir, { recursive: true });
+  fs.mkdirSync(cfg.appsDir, { recursive: true, mode: 0o700 });
   const log = createLogger("watcher");
   const timers = new Map<string, NodeJS.Timeout>();
 
@@ -93,7 +93,7 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
   // Themes: <root>/themes/ (theme CSS + config.json). Any change emits a
   // theme-change event on the bus — serve-time delivery means no rebuilds.
   const themesDir = path.join(cfg.root, "themes");
-  fs.mkdirSync(themesDir, { recursive: true });
+  fs.mkdirSync(themesDir, { recursive: true, mode: 0o700 });
   let themesTimer: NodeJS.Timeout | undefined;
   const themesWatcher = chokidar.watch(themesDir, { ignoreInitial: true, depth: 1 });
   themesWatcher.on("all", () => {
@@ -107,7 +107,7 @@ export async function startWatcher(cfg: Config): Promise<{ close(): Promise<void
   // themselves — the dashboard refetches, the engine reads the new registry
   // entry on the next request. mkdir first: chokidar's ready never fires for
   // a missing path, and materializing an empty gateways/ is harmless.
-  fs.mkdirSync(cfg.gatewaysDir, { recursive: true });
+  fs.mkdirSync(cfg.gatewaysDir, { recursive: true, mode: 0o700 });
   let gatewaysTimer: NodeJS.Timeout | undefined;
   const onGateways = () => {
     clearTimeout(gatewaysTimer);

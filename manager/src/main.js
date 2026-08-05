@@ -193,8 +193,8 @@ function rebuildMenu() {
 // Returns true when this launch created the root (= first run).
 function ensureLodekitRoot() {
   const isFirstRun = !fs.existsSync(paths.lodekitRoot);
-  fs.mkdirSync(path.join(paths.lodekitRoot, "apps"), { recursive: true });
-  fs.mkdirSync(path.join(paths.lodekitRoot, "data"), { recursive: true });
+  fs.mkdirSync(path.join(paths.lodekitRoot, "apps"), { recursive: true, mode: 0o700 });
+  fs.mkdirSync(path.join(paths.lodekitRoot, "data"), { recursive: true, mode: 0o700 });
   if (isFirstRun) {
     const installed = installShowcase(paths.showcaseAppsDir, paths.lodekitRoot);
     if (installed.length) log(`first run: installed showcase apps ${installed.join(", ")}`);

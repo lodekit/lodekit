@@ -119,3 +119,9 @@ Rules:
   connections from any device on the local network; it now binds `127.0.0.1` so
   only this machine can reach it. Deliberate wider exposure is still possible via
   `LODEKIT_HOST`, with a startup warning that the API is unauthenticated.
+
+- **Lodekit's files are now private to your user** — the menubar app's settings,
+  pidfile, and logs are written user-only (`0600`), and every folder Lodekit
+  creates (its state, caches, and logs under `~/Library`, and your Lodekit
+  root's app and data folders) is created user-only (`0700`); other accounts
+  on the same Mac can no longer read them.
