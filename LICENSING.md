@@ -37,6 +37,10 @@ records where the vendored development process came from and how it diverges.
 Dependencies keep their own licenses, which travel with them inside
 `node_modules` in the packaged app.
 
+The landing site self-hosts three webfonts (M PLUS 1 Code, Spline Sans Mono,
+Zen Kaku Gothic New — all `OFL-1.1`). Their copyright and license notice ships
+with the site at `/font-licenses.txt` (`web/main/public/font-licenses.txt`).
+
 ## Packaged app
 
 `Lodekit.app` redistributes two third-party binaries:

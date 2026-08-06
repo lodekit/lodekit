@@ -129,3 +129,15 @@ path = "packages/engine/themes/rose-pine.css"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2023 Rosé Pine"
 SPDX-License-Identifier = "MIT"
+
+# The landing site's webfont notice — redistributes the font projects'
+# copyright lines with the served woff2 files (issue #162).
+[[annotations]]
+path = "web/main/public/font-licenses.txt"
+precedence = "aggregate"
+SPDX-FileCopyrightText = [
+  "2021 The M+ FONTS Project Authors (https://github.com/coz-m/MPLUS_FONTS)",
+  "2022 The Spline Sans Mono Project Authors (https://github.com/SorkinType/SplineSansMono)",
+  "2022 The Zen Project Authors (https://github.com/googlefonts/zen-kakugothic)",
+]
+SPDX-License-Identifier = "OFL-1.1"
