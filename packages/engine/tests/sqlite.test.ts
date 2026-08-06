@@ -39,13 +39,9 @@ describe("openManagedDb", () => {
     expect(db.pragma("journal_mode", { simple: true })).toBe("wal");
   });
 
-  it("leaves foreign_keys off unless requested", () => {
-    const dbPath = freshDbPath();
-    const plain = track(openManagedDb(dbPath, { chain: CHAIN }));
-    expect(plain.pragma("foreign_keys", { simple: true })).toBe(0);
-    plain.close();
-    const fk = track(openManagedDb(dbPath, { chain: CHAIN, foreignKeys: true }));
-    expect(fk.pragma("foreign_keys", { simple: true })).toBe(1);
+  it("enforces foreign keys", () => {
+    const db = track(openManagedDb(freshDbPath(), { chain: CHAIN }));
+    expect(db.pragma("foreign_keys", { simple: true })).toBe(1);
   });
 
   it("does not reapply an already-applied chain", () => {

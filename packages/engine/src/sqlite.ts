@@ -11,19 +11,17 @@ export type ManagedDb = Database.Database;
 
 export interface ManagedDbOptions {
   chain: Migration[];
-  foreignKeys?: boolean;
 }
 
 // Opens (creating if needed) a read-write store: private parent dir (0700),
-// WAL, optional foreign-key enforcement, migrations applied at open — the one
-// moment of application (migrations.ts). Throws on failure; degrade policy
-// stays with each caller.
+// WAL, foreign-key enforcement (explicit — pins the driver default every store
+// already runs with), migrations applied at open — the one moment of application
+// (migrations.ts). Throws on failure; degrade policy stays with each caller.
 export function openManagedDb(dbPath: string, opts: ManagedDbOptions): ManagedDb {
   fs.mkdirSync(path.dirname(dbPath), { recursive: true, mode: 0o700 });
   const db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
-  if (opts.foreignKeys) db.pragma("foreign_keys = ON");
-  else db.pragma("foreign_keys = OFF");
+  db.pragma("foreign_keys = ON");
   applyMigrations(db, opts.chain);
   return db;
 }
