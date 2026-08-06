@@ -130,3 +130,7 @@ Rules:
   two-year-old Electron to the current release, picking up its accumulated
   Chromium and Node security fixes. Lodekit.app now requires macOS 12
   (Monterey) or later.
+
+- **Launch at Login syncs both ways** — toggling it in the dashboard now updates
+  the menubar checkbox immediately; it used to keep showing the old state, and
+  clicking it then would silently undo your dashboard change.
