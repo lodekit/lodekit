@@ -17,7 +17,7 @@ re-verifies (writing-skills discipline), and updates this ledger.
 beads-superpowers is itself derived from obra/superpowers (MIT, © 2025 Jesse Vincent)
 — several of its skills originate there (systematic-debugging's CREATION-LOG, for one,
 still points at Jesse's CLAUDE.md) — so `REUSE.toml` carries both copyrights for
-`.agents/skills/**`.
+the vendored skills and hooks.
 
 Tooling versions last verified against: `bd` 1.1.0, `codebase-memory-mcp` 0.8.1.
 `bd`/`codebase-memory-mcp` upgrades are deliberate events — re-verify and update this
