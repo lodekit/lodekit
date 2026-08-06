@@ -21,6 +21,10 @@ choose.
 | `docs/`, `web/docs/` | `Apache-2.0` |
 | `.agents/skills/` (vendored dev process) | `MIT`, per upstream |
 
+`packages/ui` vendors the shadcn/ui components (`packages/ui/src/components/`,
+MIT, © shadcn), so its `package.json` declares `Apache-2.0 AND MIT` —
+`REUSE.toml` draws the per-file boundary.
+
 Licensing follows the [REUSE](https://reuse.software/) specification:
 `REUSE.toml` records the license and copyright holder of every path, including
 vendored third-party code.
