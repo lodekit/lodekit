@@ -14,6 +14,11 @@ re-verifies (writing-skills discipline), and updates this ledger.
 | github.com/DietrichGebert/ponytail | `16f29800fd2681bdf24f3eb4ccffe38be3baec6b` | 2026-07-16 | ponytail, ponytail-review, ponytail-audit, ponytail-debt |
 | github.com/mattpocock/skills | `9603c1cc8118d08bc1b3bf34cf714f62178dea3b` | 2026-07-16 | codebase-design, domain-modeling |
 
+beads-superpowers is itself derived from obra/superpowers (MIT, © 2025 Jesse Vincent)
+— several of its skills originate there (systematic-debugging's CREATION-LOG, for one,
+still points at Jesse's CLAUDE.md) — so `REUSE.toml` carries both copyrights for
+the vendored skills and hooks.
+
 Tooling versions last verified against: `bd` 1.1.0, `codebase-memory-mcp` 0.8.1.
 `bd`/`codebase-memory-mcp` upgrades are deliberate events — re-verify and update this
 line.

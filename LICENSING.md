@@ -21,6 +21,10 @@ choose.
 | `docs/`, `web/docs/` | `Apache-2.0` |
 | `.agents/skills/` (vendored dev process) | `MIT`, per upstream |
 
+`packages/ui` vendors the shadcn/ui components (`packages/ui/src/components/`
+and `shadcn-tailwind.css`, MIT, © shadcn), so its `package.json` declares
+`Apache-2.0 AND MIT` — `REUSE.toml` draws the per-file boundary.
+
 Licensing follows the [REUSE](https://reuse.software/) specification:
 `REUSE.toml` records the license and copyright holder of every path, including
 vendored third-party code.
@@ -32,6 +36,10 @@ records where the vendored development process came from and how it diverges.
 
 Dependencies keep their own licenses, which travel with them inside
 `node_modules` in the packaged app.
+
+The landing site self-hosts three webfonts (M PLUS 1 Code, Spline Sans Mono,
+Zen Kaku Gothic New — all `OFL-1.1`). Their copyright and license notice ships
+with the site at `/font-licenses.txt` (`web/main/public/font-licenses.txt`).
 
 ## Packaged app
 
