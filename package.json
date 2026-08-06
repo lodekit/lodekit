@@ -30,7 +30,12 @@
     ],
     "overrides": {
       "@playwright/mcp>playwright": "1.62.0",
-      "@playwright/mcp>playwright-core": "1.62.0"
+      "@playwright/mcp>playwright-core": "1.62.0",
+      "@modelcontextprotocol/sdk>@hono/node-server": "2.0.12",
+      "fast-uri": "3.1.5"
+    },
+    "auditConfig": {
+      "ignoreGhsas": ["GHSA-67mh-4wv8-2f99"]
     }
   }
 }
