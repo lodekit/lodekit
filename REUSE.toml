@@ -20,14 +20,16 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The Lodekit Authors"
 SPDX-License-Identifier = "Apache-2.0"
 
+# .claude/skills/* are committed symlinks into .agents/skills/ — each carries
+# its target's licensing, mirrored per-skill below.
 [[annotations]]
-path = [".agents/skills/**", ".agents/hooks/**"]
+path = [".agents/skills/**", ".agents/hooks/**", ".claude/skills/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Dillon Frawley"
 SPDX-License-Identifier = "MIT"
 
 [[annotations]]
-path = ".agents/skills/writing-skills/**"
+path = [".agents/skills/writing-skills/**", ".claude/skills/writing-skills"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2025 Jesse Vincent"
 SPDX-License-Identifier = "MIT"
@@ -38,6 +40,10 @@ path = [
   ".agents/skills/ponytail-audit/**",
   ".agents/skills/ponytail-debt/**",
   ".agents/skills/ponytail-review/**",
+  ".claude/skills/ponytail",
+  ".claude/skills/ponytail-audit",
+  ".claude/skills/ponytail-debt",
+  ".claude/skills/ponytail-review",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 DietrichGebert"
@@ -47,6 +53,8 @@ SPDX-License-Identifier = "MIT"
 path = [
   ".agents/skills/codebase-design/**",
   ".agents/skills/domain-modeling/**",
+  ".claude/skills/codebase-design",
+  ".claude/skills/domain-modeling",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 Matt Pocock"
@@ -57,6 +65,9 @@ path = [
   ".agents/skills/session/**",
   ".agents/skills/drain-deferrals/**",
   ".agents/skills/release/**",
+  ".claude/skills/session",
+  ".claude/skills/drain-deferrals",
+  ".claude/skills/release",
 ]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2026 The Lodekit Authors"
