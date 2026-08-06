@@ -1,8 +1,6 @@
-import fs from "node:fs";
 import path from "node:path";
-import Database from "better-sqlite3";
 import { emitLog } from "./logger.js";
-import { applyMigrations } from "./migrations.js";
+import { openManagedDb, type ManagedDb } from "./sqlite.js";
 import { EVENTS_CHAIN } from "./migrations/platform.js";
 
 export interface EventRecord {
@@ -43,7 +41,7 @@ const RETENTION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const RETENTION_MAX_ROWS = 50_000;
 
 // Single-writer singleton: every event flows through the host process (spec §4).
-let db: Database.Database | null = null;
+let db: ManagedDb | null = null;
 
 // Opens (creating if needed) <dataDir>/_platform/events.sqlite — the bus lives in the
 // platform's internal namespace inside the Backup tree (precious; spec §1/§3). Returns
@@ -52,11 +50,7 @@ export function initEventStore(dataDir: string): boolean {
   db?.close();
   db = null;
   try {
-    const dir = path.join(dataDir, "_platform");
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    db = new Database(path.join(dir, "events.sqlite"));
-    db.pragma("journal_mode = WAL");
-    applyMigrations(db, EVENTS_CHAIN);
+    db = openManagedDb(path.join(dataDir, "_platform", "events.sqlite"), { chain: EVENTS_CHAIN });
     return true;
   } catch (e) {
     db = null;
