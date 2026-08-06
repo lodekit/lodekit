@@ -307,7 +307,7 @@ Identical pattern to Step 4: drop both driver imports, `fs`, `applyMigrations`; 
 
 - [ ] **Step 6: Convert `services/settings.ts`**
 
-Drop both driver imports and the `applyMigrations` import; **keep `fs` and `path`** (used at lines 91, 204, 239). Seam import path from `services/` is `../sqlite.js`. All twelve `Database.Database` annotations (lines 45, 52, 96, 102, 108, 113, 121, 128, 310, 323, 391) → `ManagedDb`. Open block (lines 140–144):
+Drop both driver imports and the `applyMigrations` import; **keep `fs` and `path`** (used at lines 91, 204, 239). Seam import path from `services/` is `../sqlite.js`. All eleven `Database.Database` annotations (lines 45, 52, 96, 102, 108, 113, 121, 128, 310, 323, 391) → `ManagedDb`. Open block (lines 140–144):
 
 ```ts
 // before:
