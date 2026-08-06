@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- **Refactor only — no behavior change.** WAL on all six read-write stores; `foreign_keys = ON` only for per-app dbs (`db.ts`); degrade-on-failure semantics and the exact stderr messages of the five init functions preserved verbatim.
+- **Refactor only — no behavior change.** WAL on all six read-write stores; `foreign_keys` stays ON everywhere — better-sqlite3 11.x enables it by default (verified live), so all six stores already run with it; the seam pins it with an explicit pragma. Degrade-on-failure semantics and the exact stderr messages of the five init functions preserved verbatim.
 - **Security floor (never simplify):** private dir mode `0o700` on every store directory (PR #195); the `/select` readonly guarantee stays connection-level, never SQL-parse-level (db-store spec §8/§9).
 - better-sqlite3 remains the driver — the swap itself is issue #143, not this slice. No new dependencies.
 - After each task: `pnpm --filter @lodekit/engine check` (tsc) and the named tests must pass.
@@ -34,6 +34,8 @@ Two short-lived readonly constructions: `packages/engine/src/services/db-store.t
 
 Type-annotation-only importers of `better-sqlite3` (every usage is exactly `Database.Database`; no `Database.Statement` etc. anywhere): `migrations.ts`, `migrations/appDb.ts`, `services/tasks.ts`, `services/kv-store.ts`, `services/file-store.ts`, `services/secret-store.ts`, `services/gateways.ts` — plus annotations inside the eight files above.
 
+**2026-08-06 amendment (post-Task-1):** the plan originally assumed SQLite's default `foreign_keys = OFF`; better-sqlite3 11.x in fact enables it per connection, so every store above already runs with FK ON. The seam therefore sets `foreign_keys = ON` unconditionally and has no `foreignKeys` option — the pragma column in the table reads as "WAL (+ FK ON like everything else)" for all six rows.
+
 ---
 
 ### Task 1: Seam module `sqlite.ts` + tests
@@ -47,13 +49,13 @@ Type-annotation-only importers of `better-sqlite3` (every usage is exactly `Data
 - Produces (Tasks 2–3 rely on these exact names):
   ```ts
   export type ManagedDb; // alias for Database.Database today
-  export interface ManagedDbOptions { chain: Migration[]; foreignKeys?: boolean }
+  export interface ManagedDbOptions { chain: Migration[] }
   export function openManagedDb(dbPath: string, opts: ManagedDbOptions): ManagedDb;
   export function openReadonlyDb(dbPath: string): ManagedDb;
   ```
 
 **Acceptance Criteria:**
-- `openManagedDb` creates the db file's parent directory recursively with mode `0o700`, opens read-write, sets `journal_mode = WAL`, sets `foreign_keys = ON` only when `opts.foreignKeys` is true, and applies `opts.chain` via `applyMigrations`; it throws (never catches) on failure.
+- `openManagedDb` creates the db file's parent directory recursively with mode `0o700`, opens read-write, sets `journal_mode = WAL`, sets `foreign_keys = ON` explicitly (better-sqlite3 already defaults it ON — the explicit pragma pins the contract for the #143 swap), and applies `opts.chain` via `applyMigrations`; it throws (never catches) on failure.
 - `openReadonlyDb` opens `{ readonly: true, fileMustExist: true }`: throws on a missing file, and write statements on the handle throw.
 - `pnpm --filter @lodekit/engine test tests/sqlite.test.ts` passes; `pnpm --filter @lodekit/engine check` clean.
 
@@ -103,13 +105,9 @@ describe("openManagedDb", () => {
     expect(db.pragma("journal_mode", { simple: true })).toBe("wal");
   });
 
-  it("leaves foreign_keys off unless requested", () => {
-    const dbPath = freshDbPath();
-    const plain = track(openManagedDb(dbPath, { chain: CHAIN }));
-    expect(plain.pragma("foreign_keys", { simple: true })).toBe(0);
-    plain.close();
-    const fk = track(openManagedDb(dbPath, { chain: CHAIN, foreignKeys: true }));
-    expect(fk.pragma("foreign_keys", { simple: true })).toBe(1);
+  it("enforces foreign keys", () => {
+    const db = track(openManagedDb(freshDbPath(), { chain: CHAIN }));
+    expect(db.pragma("foreign_keys", { simple: true })).toBe(1);
   });
 
   it("does not reapply an already-applied chain", () => {
@@ -157,18 +155,18 @@ export type ManagedDb = Database.Database;
 
 export interface ManagedDbOptions {
   chain: Migration[];
-  foreignKeys?: boolean;
 }
 
 // Opens (creating if needed) a read-write store: private parent dir (0700),
-// WAL, optional foreign-key enforcement, migrations applied at open — the one
-// moment of application (migrations.ts). Throws on failure; degrade policy
-// stays with each caller.
+// WAL, foreign-key enforcement (explicit — pins the driver default every
+// store already runs with), migrations applied at open — the one moment of
+// application (migrations.ts). Throws on failure; degrade policy stays with
+// each caller.
 export function openManagedDb(dbPath: string, opts: ManagedDbOptions): ManagedDb {
   fs.mkdirSync(path.dirname(dbPath), { recursive: true, mode: 0o700 });
   const db = new Database(dbPath);
   db.pragma("journal_mode = WAL");
-  if (opts.foreignKeys) db.pragma("foreign_keys = ON");
+  db.pragma("foreign_keys = ON");
   applyMigrations(db, opts.chain);
   return db;
 }
@@ -225,7 +223,7 @@ import { applyMigrations } from "./migrations.js";
 import { openManagedDb, type ManagedDb } from "./sqlite.js";
 ```
 
-Replace the open block in `getAppDb` (lines 18–22) — the helper's mkdir of `path.dirname(dbPath)` covers the old `fs.mkdirSync(appDataDir, ...)` exactly:
+Replace the open block in `getAppDb` (lines 18–22) — the helper's mkdir of `path.dirname(dbPath)` covers the old `fs.mkdirSync(appDataDir, ...)` exactly, and the helper sets `foreign_keys = ON` itself:
 
 ```ts
 // before:
@@ -235,7 +233,7 @@ Replace the open block in `getAppDb` (lines 18–22) — the helper's mkdir of `
   db.pragma("foreign_keys = ON");
   applyMigrations(db, APP_DB_CHAIN);
 // after:
-  const db = openManagedDb(dbPath, { chain: APP_DB_CHAIN, foreignKeys: true });
+  const db = openManagedDb(dbPath, { chain: APP_DB_CHAIN });
 ```
 
 The `appDataDir` local is then only used to build `dbPath` — keep it. Replace the three `Database.Database` annotations (lines 11, 13, 30) with `ManagedDb`. Keep all existing comments.
