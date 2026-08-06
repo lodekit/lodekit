@@ -1,7 +1,8 @@
 // The engine's single door to the SQLite driver (issue #141): every connection —
 // the read-write platform/app stores and the short-lived readonly opens — is
-// constructed here, and callers name the handle type via ManagedDb. Swapping
-// the driver (node:sqlite #143, Bun #142) is then a change to this file alone.
+// constructed here, and callers name the handle type via ManagedDb. A driver
+// swap (node:sqlite #143, Bun #142) starts here — construction and types are
+// centralized; call sites still use driver-shaped transaction/reader/raw/pragma.
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";

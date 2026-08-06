@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development (recommended) or executing-plans to implement this plan task-by-task. Each Task becomes a bead (`bd create -t task --parent <epic-id>`). Steps within tasks use checkbox (`- [ ]`) syntax for human readability.
 
-**Goal:** Every better-sqlite3 construction and type annotation in the engine flows through one seam module (`packages/engine/src/sqlite.ts`), so a future driver swap (node:sqlite, issue #143; Bun, #142) is a one-file change. Closes issue #141.
+**Goal:** Every better-sqlite3 construction and type annotation in the engine flows through one seam module (`packages/engine/src/sqlite.ts`); a future driver swap (node:sqlite #143, Bun #142) then starts from this file plus the driver-shaped call sites (`transaction`, `stmt.reader`, `stmt.raw`, `pragma`) instead of eight scattered openers. Closes issue #141.
 
-**Architecture:** A new `packages/engine/src/sqlite.ts` exports `ManagedDb` (today an alias for `Database.Database`), `openManagedDb(dbPath, { chain, foreignKeys? })` (private parent dir 0700 → open → WAL → optional foreign-key pragma → `applyMigrations`; throws on failure, so each caller keeps its own degrade policy), and `openReadonlyDb(dbPath)` (`{ readonly: true, fileMustExist: true }`, the connection-level readonly guarantee). The six read-write open/WAL/migrate copies, the two short-lived readonly constructions, and all `Database.Database` annotations are re-pointed to it. Pure refactor — zero behavior change.
+**Architecture:** A new `packages/engine/src/sqlite.ts` exports `ManagedDb` (today an alias for `Database.Database`), `openManagedDb(dbPath, { chain })` (private parent dir 0700 → open → WAL → `foreign_keys = ON` → `applyMigrations`; throws on failure, so each caller keeps its own degrade policy), and `openReadonlyDb(dbPath)` (`{ readonly: true, fileMustExist: true }`, the connection-level readonly guarantee). The six read-write open/WAL/migrate copies, the two short-lived readonly constructions, and all `Database.Database` annotations are re-pointed to it. Pure refactor — zero behavior change.
 
 **Tech Stack:** TypeScript (buildless, `tsx`), better-sqlite3, vitest.
 
