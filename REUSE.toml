@@ -25,7 +25,7 @@ SPDX-License-Identifier = "Apache-2.0"
 [[annotations]]
 path = [".agents/skills/**", ".agents/hooks/**", ".claude/skills/**"]
 precedence = "aggregate"
-SPDX-FileCopyrightText = "2026 Dillon Frawley"
+SPDX-FileCopyrightText = ["2026 Dillon Frawley", "2025 Jesse Vincent"]
 SPDX-License-Identifier = "MIT"
 
 [[annotations]]
