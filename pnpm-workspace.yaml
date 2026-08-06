@@ -5,10 +5,16 @@ packages:
 
 # Supply-chain cooldown: a published version must be at least this old (minutes)
 # before it's installable — quarantines fresh, potentially-compromised releases.
-# Pin an exact version explicitly to bypass when a genuine security patch lands.
+# Bypass for a genuine security patch: list the package below AND pin the exact
+# patched version in the dependent package.json / pnpm.overrides — the pin bounds
+# the exemption (an exact pin alone does NOT bypass; pnpm rejects it either way).
+# Remove the entry once the release ages past the window.
 minimumReleaseAge: 10080 # 7 days
 minimumReleaseAgeExclude:
   - '@lodekit/*'
+  # Security-patch bypasses, bounded by exact pins — remove after 2026-08-10:
+  - hono # 4.12.34 pinned in engine+sdk (CORS ReDoS)
+  - fast-uri # 3.1.5 pinned via pnpm.overrides (host confusion)
 
 # drizzle-kit's api.mjs imports drizzle-orm without declaring it — masked by
 # hidden hoisting in a per-repo virtual store, but a hard ERR_MODULE_NOT_FOUND
