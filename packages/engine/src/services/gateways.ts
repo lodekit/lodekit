@@ -6,7 +6,7 @@
 // registered wholesale per successful worker boot.
 import fs from "node:fs";
 import path from "node:path";
-import type Database from "better-sqlite3";
+import type { ManagedDb } from "../sqlite.js";
 import { Hono, type MiddlewareHandler } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -39,7 +39,7 @@ export interface UseDef {
 
 // ---------- declarations (per-app db) ----------
 
-export function getUsesDb(dataDir: string, appId: string): Database.Database {
+export function getUsesDb(dataDir: string, appId: string): ManagedDb {
   return getAppDb(dataDir, appId);
 }
 
@@ -112,7 +112,7 @@ export function registerGatewaysManifest(cfg: Config, appId: string, uses: Recor
   emitGatewayEvent(appId, "defs-changed"); // declarations changed — dashboard refetches
 }
 
-export function listUses(db: Database.Database): { alias: string; def: UseDef | null; error: string | null }[] {
+export function listUses(db: ManagedDb): { alias: string; def: UseDef | null; error: string | null }[] {
   const hasTable = db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = '_gateway_uses'").get();
   if (!hasTable) return [];
   const rows = db.prepare("SELECT alias, def, error FROM _gateway_uses ORDER BY alias").all() as
@@ -308,7 +308,7 @@ export function platformGatewaysRoutes(cfg: Config) {
 
 export type PlatformGatewaysRoutes = ReturnType<typeof platformGatewaysRoutes>;
 
-export type GatewaysEnv = { Variables: { usesDb: Database.Database; appId: string } };
+export type GatewaysEnv = { Variables: { usesDb: ManagedDb; appId: string } };
 
 export function withGateways(cfg: Config): MiddlewareHandler<GatewaysEnv> {
   // appGatewaysRoutes is a plain chained const (for hc type inference), so it
@@ -325,14 +325,14 @@ export function withGateways(cfg: Config): MiddlewareHandler<GatewaysEnv> {
 
 // 404 gate shared by the per-alias routes: the alias must be declared; slot
 // routes additionally resolve the provider's slot def (kind decides the verb).
-function requireUse(db: Database.Database, alias: string): UseDef {
+function requireUse(db: ManagedDb, alias: string): UseDef {
   const use = listUses(db).find((u) => u.alias === alias);
   if (!use) throw new GatewaysNotFoundError(`unknown gateway alias "${alias}"`);
   if (!use.def) throw new GatewaysError(use.error ?? "invalid gateway declaration");
   return use.def;
 }
 
-function requireSlotDef(db: Database.Database, alias: string, slot: string) {
+function requireSlotDef(db: ManagedDb, alias: string, slot: string) {
   const def = requireUse(db, alias);
   const entry = getGatewayEntry(def.provider);
   if (!entry?.manifest) throw new GatewaysError(`gateway "${def.provider}" is missing or invalid`);

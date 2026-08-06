@@ -2,17 +2,17 @@
 // shape, one moment of application (connection open). Two modes ride on it —
 // checked-in internal chains (migrations/*) and the app-schema push (db-store
 // service), which uses the ledger's sibling `_schema` snapshot instead.
-import type Database from "better-sqlite3";
+import type { ManagedDb } from "./sqlite.js";
 
 export interface Migration {
   name: string;
-  up: (db: Database.Database) => void;
+  up: (db: ManagedDb) => void;
 }
 
 // Applies the chain's pending migrations in order, each in its own transaction,
 // recording each in the `_migrations` ledger. A failing migration rolls back
 // atomically and throws — the caller decides whether boot degrades or dies.
-export function applyMigrations(db: Database.Database, chain: Migration[]): void {
+export function applyMigrations(db: ManagedDb, chain: Migration[]): void {
   const names = new Set(chain.map((m) => m.name));
   if (names.size !== chain.length) throw new Error("migration chain has duplicate names");
   db.exec(

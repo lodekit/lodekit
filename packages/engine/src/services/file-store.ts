@@ -3,7 +3,7 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 import { Transform, Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import type Database from "better-sqlite3";
+import type { ManagedDb } from "../sqlite.js";
 import { Hono, type Context, type MiddlewareHandler } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -53,7 +53,7 @@ interface Row {
 }
 
 export interface FilesCtx {
-  db: Database.Database;
+  db: ManagedDb;
   dir: string; // data/<appId>/files (absolute)
   appId: string;
   urlBase: string; // <cfg.baseUrl>/api/apps/<appId>/file-store
@@ -84,7 +84,7 @@ export function slugify(input: string): string {
 
 // Derived slugs get -2, -3, ... on collision; explicit slugs never come here
 // (an explicit slug that exists is a replace, not a collision).
-export function deriveSlug(db: Database.Database, title?: string): string {
+export function deriveSlug(db: ManagedDb, title?: string): string {
   const base = slugify(title ?? "").slice(0, 120); // room for the suffix
   const exists = db.prepare("SELECT 1 FROM _files WHERE slug = ?");
   if (!exists.get(base)) return base;

@@ -2,10 +2,10 @@
 // great rename: every historical shape (POC kv, tasks v0, _lodekit_-era) lands
 // on the bare-_ names with data preserved. Idempotence comes from the ledger;
 // the guards inside keep 001 itself safe against every starting shape.
-import type Database from "better-sqlite3";
+import type { ManagedDb } from "../sqlite.js";
 import type { Migration } from "../migrations.js";
 
-const hasTable = (db: Database.Database, name: string): boolean =>
+const hasTable = (db: ManagedDb, name: string): boolean =>
   db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name = ?").get(name) !== undefined;
 
 const RENAMES: [string, string][] = [

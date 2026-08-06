@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type { ManagedDb } from "../sqlite.js";
 import { getAppDb, openDbs } from "../db.js";
 import { emitEvent, CHANGE_FEED_TTL_S } from "../events.js";
 import { parseDuration } from "../duration.js";
@@ -64,7 +64,7 @@ export class TasksError extends Error {
   }
 }
 
-export function getTasksDb(dataDir: string, appId: string): Database.Database {
+export function getTasksDb(dataDir: string, appId: string): ManagedDb {
   return getAppDb(dataDir, appId);
 }
 
@@ -132,7 +132,7 @@ function resolveConfig(t: ManifestTask, minEveryMs: number): {
 // returners. High-water and registered_at survive an unchanged schedule and
 // reset when it changes (spec §4).
 export function applyManifest(
-  db: Database.Database,
+  db: ManagedDb,
   tasks: ManifestTask[],
   now: number,
   limits: { minEveryMs: number }
@@ -188,20 +188,20 @@ export function applyManifest(
   return { canceled };
 }
 
-export function listDefs(db: Database.Database): TaskDefRow[] {
+export function listDefs(db: ManagedDb): TaskDefRow[] {
   return (db.prepare("SELECT * FROM _task_defs ORDER BY name").all() as DefDbRow[]).map(toDef);
 }
 
-export function getDef(db: Database.Database, name: string): TaskDefRow | undefined {
+export function getDef(db: ManagedDb, name: string): TaskDefRow | undefined {
   const r = db.prepare("SELECT * FROM _task_defs WHERE name = ?").get(name) as DefDbRow | undefined;
   return r ? toDef(r) : undefined;
 }
 
-export function setHighWater(db: Database.Database, name: string, highWater: number): void {
+export function setHighWater(db: ManagedDb, name: string, highWater: number): void {
   db.prepare("UPDATE _task_defs SET high_water = ? WHERE name = ?").run(highWater, name);
 }
 
-export function hasTasks(db: Database.Database): boolean {
+export function hasTasks(db: ManagedDb): boolean {
   return (
     db.prepare("SELECT 1 FROM _task_defs LIMIT 1").get() !== undefined ||
     db.prepare("SELECT 1 FROM _task_runs LIMIT 1").get() !== undefined
@@ -209,7 +209,7 @@ export function hasTasks(db: Database.Database): boolean {
 }
 
 export function insertRun(
-  db: Database.Database,
+  db: ManagedDb,
   opts: { task: string; payload?: unknown; notBefore: number; source: RunSource; dedupeKey?: string | null; now: number }
 ): { runId: number; deduped: boolean } {
   const txn = db.transaction((): { runId: number; deduped: boolean } => {
@@ -237,7 +237,7 @@ export function insertRun(
   return txn();
 }
 
-export function hasQueuedScheduleRun(db: Database.Database, task: string): boolean {
+export function hasQueuedScheduleRun(db: ManagedDb, task: string): boolean {
   return (
     db.prepare("SELECT 1 FROM _task_runs WHERE task = ? AND state = 'queued' AND source = 'schedule' LIMIT 1")
       .get(task) !== undefined
@@ -245,7 +245,7 @@ export function hasQueuedScheduleRun(db: Database.Database, task: string): boole
 }
 
 // Oldest due queued run of a live def, atomically transitioned to running.
-export function claimNextDue(db: Database.Database, now: number): TaskRunRow | undefined {
+export function claimNextDue(db: ManagedDb, now: number): TaskRunRow | undefined {
   const txn = db.transaction((): TaskRunRow | undefined => {
     const row = db
       .prepare(
@@ -266,7 +266,7 @@ export function claimNextDue(db: Database.Database, now: number): TaskRunRow | u
 // At-least-once completion rule (spec §7): success -> succeeded; failure with
 // attempts left -> queued with exponential backoff; else terminal failed.
 export function finishRun(
-  db: Database.Database,
+  db: ManagedDb,
   run: TaskRunRow,
   result: { ok: boolean; message?: string },
   policy: { retries: number; backoffBaseMs: number; backoffCapMs: number; retired: boolean },
@@ -295,7 +295,7 @@ export function finishRun(
 // Boot recovery: every row still 'running' was interrupted by engine death —
 // a consumed, failed attempt (spec §7).
 export function markInterrupted(
-  db: Database.Database,
+  db: ManagedDb,
   now: number,
   policy: (def: TaskDefRow | undefined) => { retries: number; backoffBaseMs: number; backoffCapMs: number; retired: boolean }
 ): { task: string; runId: number; state: "queued" | "failed" }[] {
@@ -309,7 +309,7 @@ export function markInterrupted(
 }
 
 export function listRuns(
-  db: Database.Database,
+  db: ManagedDb,
   opts: { task?: string; state?: RunState; limit?: number } = {}
 ): TaskRunRow[] {
   const limit = Math.min(Math.max(1, Math.floor(opts.limit ?? 50)), 200);
@@ -323,13 +323,13 @@ export function listRuns(
   return rows.map(toRun);
 }
 
-export function getRun(db: Database.Database, id: number): TaskRunRow | undefined {
+export function getRun(db: ManagedDb, id: number): TaskRunRow | undefined {
   const r = db.prepare("SELECT * FROM _task_runs WHERE id = ?").get(id) as RunDbRow | undefined;
   return r ? toRun(r) : undefined;
 }
 
 export function lastRunOf(
-  db: Database.Database,
+  db: ManagedDb,
   task: string
 ): { runId: number; state: RunState; finishedAt: number | null; error: string | null } | undefined {
   const r = db
@@ -338,7 +338,7 @@ export function lastRunOf(
   return r ? { runId: r.id, state: r.state as RunState, finishedAt: r.finished_at, error: r.error } : undefined;
 }
 
-export function cancelRun(db: Database.Database, id: number, now: number): { task: string } | "not-queued" | "not-found" {
+export function cancelRun(db: ManagedDb, id: number, now: number): { task: string } | "not-queued" | "not-found" {
   const txn = db.transaction((): { task: string } | "not-queued" | "not-found" => {
     const run = getRun(db, id);
     if (!run) return "not-found";
@@ -351,7 +351,7 @@ export function cancelRun(db: Database.Database, id: number, now: number): { tas
 
 // Retention (spec §9): delete terminal runs that are BOTH beyond the newest
 // `keep` per task AND older than `maxAgeMs`. Never queued/running.
-export function sweepRuns(db: Database.Database, now: number, keep: number, maxAgeMs: number): number {
+export function sweepRuns(db: ManagedDb, now: number, keep: number, maxAgeMs: number): number {
   return db
     .prepare(
       `DELETE FROM _task_runs WHERE id IN (
@@ -393,10 +393,10 @@ export function emitTaskDefsChanged(appId: string): void {
   emitEvent({ app: appId, kind: "service", component: CATALOG_NAME, type: "defs-changed", ttl: CHANGE_FEED_TTL_S });
 }
 
-export type TasksEnv = { Variables: { tasksDb: Database.Database; appId: string } };
+export type TasksEnv = { Variables: { tasksDb: ManagedDb; appId: string } };
 
 // Applied by the parent router on /apps/:appId/tasks/* — validates the app id
-// and sets the better-sqlite3 handle in context vars (kv-store withDb pattern).
+// and sets the db handle in context vars (kv-store withDb pattern).
 export function withTasks(cfg: Config): MiddlewareHandler<TasksEnv> {
   return async (c, next) => {
     const appId = c.req.param("appId");
