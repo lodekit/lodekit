@@ -5,8 +5,6 @@
 // data/_platform/settings.sqlite (eventStore's singleton pattern).
 import fs from "node:fs";
 import path from "node:path";
-import type Database from "better-sqlite3";
-import BetterSqlite3 from "better-sqlite3";
 import { Hono, type MiddlewareHandler } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -19,7 +17,7 @@ import { PLATFORM_SETTINGS, PLATFORM_KEY_RE } from "../platformSettings.js";
 import { validationHook } from "../validation.js";
 import { emitEvent, CHANGE_FEED_TTL_S } from "../events.js";
 import { emitLog } from "../logger.js";
-import { applyMigrations } from "../migrations.js";
+import { openManagedDb, type ManagedDb } from "../sqlite.js";
 import { SETTINGS_CHAIN } from "../migrations/platform.js";
 
 export const CATALOG_NAME = "settings";
@@ -42,14 +40,14 @@ export class SettingsNotFoundError extends SettingsError {
 
 // ---------- per-app storage (defs + values) ----------
 
-export function getSettingsDb(dataDir: string, appId: string): Database.Database {
+export function getSettingsDb(dataDir: string, appId: string): ManagedDb {
   return getAppDb(dataDir, appId);
 }
 
 // Wholesale per successful boot (spec §5): defs absent from the manifest are
 // removed and their stored values pruned; a bad field registers with its error
 // and never poisons siblings. Dotted (override) values are not the manifest's.
-export function applySettingsManifest(db: Database.Database, fields: Record<string, unknown>, now: number): void {
+export function applySettingsManifest(db: ManagedDb, fields: Record<string, unknown>, now: number): void {
   const txn = db.transaction(() => {
     const keys = new Set<string>();
     for (const [key, raw] of Object.entries(fields)) {
@@ -93,24 +91,24 @@ export function registerSettingsManifest(cfg: Config, appId: string, fields: Rec
   emitSettingsEvent(appId, "defs-changed"); // defs changed — dashboard refetches
 }
 
-export function listAppDefs(db: Database.Database): { key: string; field: SettingField | null; error: string | null }[] {
+export function listAppDefs(db: ManagedDb): { key: string; field: SettingField | null; error: string | null }[] {
   const rows = db.prepare("SELECT key, field, error FROM _setting_defs ORDER BY key").all() as
     { key: string; field: string | null; error: string | null }[];
   return rows.map((r) => ({ key: r.key, field: r.field ? (JSON.parse(r.field) as SettingField) : null, error: r.error }));
 }
 
-export function getAppDef(db: Database.Database, key: string): { field: SettingField | null; error: string | null } | undefined {
+export function getAppDef(db: ManagedDb, key: string): { field: SettingField | null; error: string | null } | undefined {
   const r = db.prepare("SELECT field, error FROM _setting_defs WHERE key = ?").get(key) as
     { field: string | null; error: string | null } | undefined;
   return r ? { field: r.field ? (JSON.parse(r.field) as SettingField) : null, error: r.error } : undefined;
 }
 
-export function getValue(db: Database.Database, key: string): unknown {
+export function getValue(db: ManagedDb, key: string): unknown {
   const r = db.prepare("SELECT value FROM _setting_values WHERE key = ?").get(key) as { value: string } | undefined;
   return r === undefined ? undefined : (JSON.parse(r.value) as unknown);
 }
 
-export function setValue(db: Database.Database, key: string, value: unknown): void {
+export function setValue(db: ManagedDb, key: string, value: unknown): void {
   db.prepare(
     `INSERT INTO _setting_values (key, value, updated_at) VALUES (?, ?, ?)
      ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
@@ -118,14 +116,14 @@ export function setValue(db: Database.Database, key: string, value: unknown): vo
   invalidateSettingsCache();
 }
 
-export function deleteValue(db: Database.Database, key: string): void {
+export function deleteValue(db: ManagedDb, key: string): void {
   db.prepare("DELETE FROM _setting_values WHERE key = ?").run(key);
   invalidateSettingsCache();
 }
 
 // ---------- platform value store (single-writer singleton, eventStore pattern) ----------
 
-let platformDb: Database.Database | null = null;
+let platformDb: ManagedDb | null = null;
 let dataDirRef: string | null = null;
 
 // Opens (creating if needed) <dataDir>/_platform/settings.sqlite — the person's
@@ -137,11 +135,7 @@ export function initSettingsStore(dataDir: string): boolean {
   dataDirRef = dataDir;
   invalidateSettingsCache();
   try {
-    const dir = path.join(dataDir, "_platform");
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    platformDb = new BetterSqlite3(path.join(dir, "settings.sqlite"));
-    platformDb.pragma("journal_mode = WAL");
-    applyMigrations(platformDb, SETTINGS_CHAIN);
+    platformDb = openManagedDb(path.join(dataDir, "_platform", "settings.sqlite"), { chain: SETTINGS_CHAIN });
     return true;
   } catch (e) {
     platformDb = null;
@@ -307,7 +301,7 @@ export const platformSettingsRoutes = new Hono()
 
 export type PlatformSettingsRoutes = typeof platformSettingsRoutes;
 
-export type SettingsEnv = { Variables: { settingsDb: Database.Database; appId: string } };
+export type SettingsEnv = { Variables: { settingsDb: ManagedDb; appId: string } };
 
 export function withSettings(cfg: Config): MiddlewareHandler<SettingsEnv> {
   return async (c, next) => {
@@ -320,7 +314,7 @@ export function withSettings(cfg: Config): MiddlewareHandler<SettingsEnv> {
 }
 
 // The effective value of one declared setting (the SDK read path).
-function readDeclared(db: Database.Database, key: string): { found: boolean; value?: unknown } {
+function readDeclared(db: ManagedDb, key: string): { found: boolean; value?: unknown } {
   const def = getAppDef(db, key);
   if (!def || !def.field) return { found: false };
   const stored = getValue(db, key);
@@ -388,7 +382,7 @@ export const settingsRoutes = new Hono<SettingsEnv>()
   });
 
 // Bare key → the app's declared field; dotted key → a per-app platform setting.
-function fieldForAppWrite(db: Database.Database, key: string): SettingField {
+function fieldForAppWrite(db: ManagedDb, key: string): SettingField {
   if (key.includes(".")) {
     const s = PLATFORM_SETTINGS[key];
     if (!s) throw new SettingsNotFoundError(`unknown setting "${key}"`);

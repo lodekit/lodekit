@@ -2,11 +2,10 @@
 // database. This module is the data plane (query/batch/select/schema); the
 // schema push (applySchemaPush) lands beside it. Statement-text guards are
 // deliberately "organized, not paranoid" (spec §2): apps are user-trusted
-// local code; better-sqlite3 has no authorizer.
+// local code; the sqlite driver has no authorizer.
 import fs from "node:fs";
 import path from "node:path";
-import type Database from "better-sqlite3";
-import BetterSqlite3 from "better-sqlite3";
+import { openReadonlyDb, type ManagedDb } from "../sqlite.js";
 import { Hono, type MiddlewareHandler } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -47,7 +46,7 @@ export interface ProxyQuery { sql: string; params: (string | number | null)[]; m
 
 // Rows are RAW ARRAYS (drizzle's sqlite-proxy wire shape): all/values ->
 // unknown[][]; get -> flat unknown[] (empty when missing); run -> [].
-export function runQuery(db: Database.Database, q: ProxyQuery): { rows: unknown[] } {
+export function runQuery(db: ManagedDb, q: ProxyQuery): { rows: unknown[] } {
   assertAllowed(q.sql);
   const stmt = db.prepare(q.sql); // single statement only — prepare throws on trailing SQL
   if (q.method === "run" && !stmt.reader) {
@@ -90,7 +89,7 @@ function emitChange(appId: string, sql: string): void {
 
 // ---------- introspection ----------
 
-export function userSchema(db: Database.Database): { tables: { name: string; columns: unknown[]; indexes: string[] }[] } {
+export function userSchema(db: ManagedDb): { tables: { name: string; columns: unknown[]; indexes: string[] }[] } {
   const tables = (db
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '\\_%' ESCAPE '\\' AND name NOT LIKE 'sqlite\\_%' ESCAPE '\\' ORDER BY name")
     .all() as { name: string }[]).map((r) => r.name);
@@ -160,7 +159,7 @@ export const dbRoutes = new Hono<DbEnv>()
     const { sql, params } = c.req.valid("json");
     assertAllowed(sql);
     if (!fs.existsSync(c.var.dbPath)) return c.json({ error: "no database for this app yet" }, 404);
-    const ro = new BetterSqlite3(c.var.dbPath, { readonly: true, fileMustExist: true });
+    const ro = openReadonlyDb(c.var.dbPath);
     try {
       const stmt = ro.prepare(sql);
       if (!stmt.reader) throw new DbError("only SELECT statements are allowed here");

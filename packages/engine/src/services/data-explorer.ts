@@ -2,7 +2,7 @@
 // summary endpoint aggregating counts/sizes/recents across an app's stores.
 // Strictly read-only — a short-lived readonly connection, like /select.
 import fs from "node:fs";
-import BetterSqlite3 from "better-sqlite3";
+import { openReadonlyDb } from "../sqlite.js";
 import { Hono } from "hono";
 import { userSchema, type DbEnv } from "./db-store.js";
 
@@ -67,7 +67,7 @@ export function buildSummary(dbPath: string): DataSummary {
     return { tables: [], kv: { count: 0 }, files: { count: 0, totalBytes: 0 }, dbFileBytes: 0, recent: [] };
   }
 
-  const db = new BetterSqlite3(dbPath, { readonly: true, fileMustExist: true });
+  const db = openReadonlyDb(dbPath);
   try {
     const now = Date.now();
     const schema = userSchema(db);

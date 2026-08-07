@@ -6,7 +6,7 @@
 // live in the app's own db (settings' _setting_defs pattern).
 import fs from "node:fs";
 import path from "node:path";
-import type Database from "better-sqlite3";
+import type { ManagedDb } from "../sqlite.js";
 import { Hono, type MiddlewareHandler } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
@@ -41,7 +41,7 @@ function emitSecretEvent(app: string | null, type: SecretFact, payload?: Record<
 
 // ---------- slot declarations (per-app db) ----------
 
-export function getSlotsDb(dataDir: string, appId: string): Database.Database {
+export function getSlotsDb(dataDir: string, appId: string): ManagedDb {
   return getAppDb(dataDir, appId);
 }
 
@@ -104,7 +104,7 @@ export function registerSecretsManifest(cfg: Config, appId: string, slots: Recor
   emitSecretEvent(appId, "defs-changed"); // slots changed — dashboard refetches
 }
 
-export function listSlots(db: Database.Database): { slot: string; def: SlotDef | null; error: string | null }[] {
+export function listSlots(db: ManagedDb): { slot: string; def: SlotDef | null; error: string | null }[] {
   const rows = db.prepare("SELECT slot, def, error FROM _secret_slots ORDER BY slot").all() as
     { slot: string; def: string | null; error: string | null }[];
   return rows.map((r) => ({ slot: r.slot, def: r.def ? (JSON.parse(r.def) as SlotDef) : null, error: r.error }));
@@ -163,7 +163,7 @@ export const platformSecretsRoutes = new Hono()
 
 export type PlatformSecretsRoutes = typeof platformSecretsRoutes;
 
-export type SecretsEnv = { Variables: { slotsDb: Database.Database; appId: string } };
+export type SecretsEnv = { Variables: { slotsDb: ManagedDb; appId: string } };
 
 export function withSecrets(cfg: Config): MiddlewareHandler<SecretsEnv> {
   return async (c, next) => {
@@ -176,7 +176,7 @@ export function withSecrets(cfg: Config): MiddlewareHandler<SecretsEnv> {
 }
 
 // 404 gate shared by the slot routes: the slot must be declared.
-function requireSlot(db: Database.Database, slot: string): void {
+function requireSlot(db: ManagedDb, slot: string): void {
   if (!db.prepare("SELECT 1 FROM _secret_slots WHERE slot = ?").get(slot)) {
     throw new SecretsNotFoundError(`unknown slot "${slot}"`);
   }

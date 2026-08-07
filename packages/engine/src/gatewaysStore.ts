@@ -6,16 +6,13 @@
 // Gateway manifests live on disk (gatewayManifests.ts); declarations live in
 // each app's own db (services/gateways.ts). Breaker/bucket state is in-memory
 // only (gatewayExecutor.ts) — a restart forgives.
-import fs from "node:fs";
 import path from "node:path";
-import type Database from "better-sqlite3";
-import BetterSqlite3 from "better-sqlite3";
 import type { Config } from "./config.js";
 import {
   encryptValue, decryptValue, getSecretMeta, SecretsUnavailableError,
 } from "./secretsStore.js";
 import { getMasterKey } from "./keyProvider.js";
-import { applyMigrations } from "./migrations.js";
+import { openManagedDb, type ManagedDb } from "./sqlite.js";
 import { GATEWAYS_CHAIN } from "./migrations/platform.js";
 
 /** Validation/semantic error — mapped to HTTP 400 by the router. */
@@ -42,7 +39,7 @@ export interface OauthTokens {
   expiresAt?: number; // epoch ms
 }
 
-let db: Database.Database | null = null;
+let db: ManagedDb | null = null;
 let cfgRef: Config | null = null;
 let masterKey: Buffer | null = null;
 
@@ -52,11 +49,7 @@ export function initGatewaysStore(cfg: Config): boolean {
   masterKey = null;
   cfgRef = cfg;
   try {
-    const dir = path.join(cfg.dataDir, "_platform");
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    db = new BetterSqlite3(path.join(dir, "gateways.sqlite"));
-    db.pragma("journal_mode = WAL");
-    applyMigrations(db, GATEWAYS_CHAIN);
+    db = openManagedDb(path.join(cfg.dataDir, "_platform", "gateways.sqlite"), { chain: GATEWAYS_CHAIN });
     return true;
   } catch (e) {
     db = null;
@@ -72,7 +65,7 @@ export function closeGatewaysStoreForTest(): void {
   masterKey = null;
 }
 
-function store(): Database.Database {
+function store(): ManagedDb {
   if (!db) throw new SecretsUnavailableError("gateways store unavailable");
   return db;
 }

@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type { ManagedDb } from "../sqlite.js";
 import { Hono, type MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { zValidator } from "@hono/zod-validator";
@@ -38,11 +38,11 @@ const toEntry = (r: Row): Entry => ({
   expiresAt: r.expires_at,
 });
 
-export function getKv(dataDir: string, appId: string): Database.Database {
+export function getKv(dataDir: string, appId: string): ManagedDb {
   return getAppDb(dataDir, appId); // schema guaranteed by the app-db migration chain
 }
 
-export function get(db: Database.Database, key: string): { found: boolean; entry?: Entry } {
+export function get(db: ManagedDb, key: string): { found: boolean; entry?: Entry } {
   const row = db
     .prepare("SELECT key, value, created_at, updated_at, expires_at FROM _kv WHERE key = ?")
     .get(key) as Row | undefined;
@@ -55,7 +55,7 @@ export function get(db: Database.Database, key: string): { found: boolean; entry
 }
 
 export function set(
-  db: Database.Database,
+  db: ManagedDb,
   key: string,
   value: unknown,
   opts: { ttl?: number } = {}
@@ -70,13 +70,13 @@ export function set(
   ).run({ key, value: JSON.stringify(value), now, expiresAt });
 }
 
-export function del(db: Database.Database, key: string): boolean {
+export function del(db: ManagedDb, key: string): boolean {
   return db.prepare("DELETE FROM _kv WHERE key = ?").run(key).changes > 0;
 }
 
 // Synchronous transaction = race-free in the single engine process.
 // Preserves an existing TTL (Redis INCR semantics) by not touching expires_at.
-export function incr(db: Database.Database, key: string, by = 1): number {
+export function incr(db: ManagedDb, key: string, by = 1): number {
   const txn = db.transaction((): number => {
     const cur = get(db, key);
     let base = 0;
@@ -97,7 +97,7 @@ export function incr(db: Database.Database, key: string, by = 1): number {
 }
 
 export function list(
-  db: Database.Database,
+  db: ManagedDb,
   opts: { prefix?: string; limit?: number; cursor?: string } = {}
 ): { entries: Entry[]; nextCursor: string | null } {
   const limit = Math.min(Math.max(1, Math.floor(opts.limit ?? 1000)), 1000);
@@ -114,7 +114,7 @@ export function list(
   return { entries, nextCursor: rows.length === limit ? entries[entries.length - 1].key : null };
 }
 
-export function getMany(db: Database.Database, keys: string[]): Entry[] {
+export function getMany(db: ManagedDb, keys: string[]): Entry[] {
   const out: Entry[] = [];
   for (const key of keys) {
     const r = get(db, key);
@@ -124,7 +124,7 @@ export function getMany(db: Database.Database, keys: string[]): Entry[] {
 }
 
 export function setMany(
-  db: Database.Database,
+  db: ManagedDb,
   entries: { key: string; value: unknown }[],
   opts: { ttl?: number } = {}
 ): void {
@@ -134,7 +134,7 @@ export function setMany(
   txn();
 }
 
-export function sweep(db: Database.Database): string[] {
+export function sweep(db: ManagedDb): string[] {
   return (
     db
       .prepare("DELETE FROM _kv WHERE expires_at IS NOT NULL AND expires_at <= ? RETURNING key")
@@ -167,10 +167,10 @@ export function sweepAllAndBroadcast(): void {
   }
 }
 
-export type KvEnv = { Variables: { db: Database.Database; appId: string } };
+export type KvEnv = { Variables: { db: ManagedDb; appId: string } };
 
 // Applied by the parent router on /apps/:appId/kv-store/* — validates the app id
-// and sets the better-sqlite3 handle in context vars.
+// and sets the db handle in context vars.
 export function withDb(cfg: Config): MiddlewareHandler<KvEnv> {
   return async (c, next) => {
     const appId = c.req.param("appId");

@@ -3,15 +3,12 @@
 // singleton pattern). Only values are encrypted (AES-256-GCM, master key from
 // keyProvider, fetched lazily and held in memory); names/metadata/links stay
 // plaintext so the dashboard and MCP render without touching the key.
-import fs from "node:fs";
 import path from "node:path";
-import type Database from "better-sqlite3";
-import BetterSqlite3 from "better-sqlite3";
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import type { Config } from "./config.js";
 import { getMasterKey, SecretsUnavailableError } from "./keyProvider.js";
 import { slugify } from "./services/file-store.js";
-import { applyMigrations } from "./migrations.js";
+import { openManagedDb, type ManagedDb } from "./sqlite.js";
 import { SECRETS_CHAIN } from "./migrations/platform.js";
 
 export { SecretsUnavailableError };
@@ -77,7 +74,7 @@ export function decryptValue(key: Buffer, ciphertext: Buffer, nonce: Buffer): st
 
 // ---------- singleton store (settings' platform-db pattern) ----------
 
-let db: Database.Database | null = null;
+let db: ManagedDb | null = null;
 let cfgRef: Config | null = null;
 let masterKey: Buffer | null = null;
 
@@ -87,11 +84,7 @@ export function initSecretStore(cfg: Config): boolean {
   masterKey = null;
   cfgRef = cfg;
   try {
-    const dir = path.join(cfg.dataDir, "_platform");
-    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-    db = new BetterSqlite3(path.join(dir, "secrets.sqlite"));
-    db.pragma("journal_mode = WAL");
-    applyMigrations(db, SECRETS_CHAIN);
+    db = openManagedDb(path.join(cfg.dataDir, "_platform", "secrets.sqlite"), { chain: SECRETS_CHAIN });
     return true;
   } catch (e) {
     db = null;
@@ -107,7 +100,7 @@ export function closeSecretStoreForTest(): void {
   masterKey = null;
 }
 
-function store(): Database.Database {
+function store(): ManagedDb {
   if (!db) throw new SecretsUnavailableError();
   return db;
 }

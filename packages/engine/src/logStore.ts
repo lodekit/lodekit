@@ -1,7 +1,5 @@
-import fs from "node:fs";
 import path from "node:path";
-import Database from "better-sqlite3";
-import { applyMigrations } from "./migrations.js";
+import { openManagedDb, type ManagedDb } from "./sqlite.js";
 import { LOGS_CHAIN } from "./migrations/platform.js";
 
 export const LEVELS = { debug: 10, info: 20, warn: 30, error: 40 } as const;
@@ -39,7 +37,7 @@ const RETENTION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const RETENTION_MAX_ROWS = 200_000;
 
 // Single-writer singleton: every record flows through the host process (spec §5).
-let db: Database.Database | null = null;
+let db: ManagedDb | null = null;
 
 // Opens (creating if needed) <stateDir>/logs.sqlite. Returns false and degrades to
 // stderr-only when the store can't open — the engine must still boot (spec §7).
@@ -47,10 +45,7 @@ export function initLogStore(stateDir: string): boolean {
   db?.close();
   db = null;
   try {
-    fs.mkdirSync(stateDir, { recursive: true, mode: 0o700 });
-    db = new Database(path.join(stateDir, "logs.sqlite"));
-    db.pragma("journal_mode = WAL");
-    applyMigrations(db, LOGS_CHAIN);
+    db = openManagedDb(path.join(stateDir, "logs.sqlite"), { chain: LOGS_CHAIN });
     return true;
   } catch (e) {
     db = null;
