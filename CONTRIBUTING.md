@@ -10,9 +10,9 @@ the first release goes live.
 
 Lodekit is developed entirely with coding agents. The process tooling is checked
 into the repository: `AGENTS.md` (how work is tracked, developed, and released)
-plus the steering docs and specs under `docs/`. These serve as
-context and guardrails for the agent in each session that causes product or
-engineering changes.
+plus the steering docs and specs under `docs/`. They are the context and
+guardrails for the agent in every session that changes the product or the
+engineering.
 
 ## How this codebase is written
 
@@ -26,12 +26,12 @@ expectations — see the disclaimer in the README.
 
 ## Review and audit policy
 
-While Lodekit is in pre-alpha with no release open to the public, only the
-specs and plans are reviewed by a maintainer. At this stage, maintainers steer
+While Lodekit is in pre-alpha with no public release, a maintainer reviews the
+specs and plans, not every line of code. At this stage maintainers steer
 architecture, technical choices, dependencies, security guidelines, interfaces,
-and other core engineering concerns that affect long-term decisions, technical
-debt, and the health of the codebase. These are represented in `docs/specs/`
-and reflected in `docs/plans/`.
+and the other engineering concerns that shape long-term decisions, technical
+debt, and the health of the codebase. That direction is recorded in
+`docs/specs/` and reflected in `docs/plans/`.
 
 The review and audit level will increase gradually in later stages, and this
 document will be updated with the new policy.

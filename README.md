@@ -48,12 +48,12 @@ app with Lodekit.
 
 One process does the work: the **engine**, a Node server that watches your apps
 folder, builds each app it finds, runs it in its own worker thread, and serves
-it in your browser next to the dashboard. Apps are TanStack Start projects
-carrying no dependencies of their own, because the engine owns the toolchain and
-provides storage, secrets, tasks, and gateways to outside providers as
-**services** an app reaches through the SDK. Your agent writes app source
-straight into that folder and drives the platform over **MCP**, scaffolding apps
-and reading back their data, logs, and build state; the skill teaches it how.
+it in your browser next to the dashboard. Apps are TanStack Start projects with
+no dependencies of their own; the engine owns the toolchain. Storage, secrets,
+tasks, and gateways to outside providers are **services** an app reaches through
+the SDK. Your agent writes app source straight into that folder and drives the
+platform over **MCP**, scaffolding apps and reading back their data, logs, and
+build state. The skill teaches it how.
 
 ## Development
 
