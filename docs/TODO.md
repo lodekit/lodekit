@@ -43,4 +43,4 @@ PR as the work that parked it — format and drain flow in AGENTS.md §Track.
 - [2026-08-11 · bead] Watcher blind spot for app folders created at the ready boundary (was lk-zeh)
 - [2026-08-11 · spec:dev-flow-v3] Decide whether to re-wire an automated per-PR security review (policy if so: once per PR, at ready-for-review)
 - [2026-08-11 · spec:dev-flow-v3] DESIGN.md Product register: design the actual token/component treatments (the section exists, the system doesn't)
-- [2026-08-11 · rec:013-feat-tasks] Dashboard Tasks page: per-app schedule/last-run/Run-now surface (the revamp removed the inline panel; /tasks is a stub, no tracking issue found)
+- [2026-08-11 · PR #204] Dashboard Tasks page: per-app schedule/last-run/Run-now surface (the revamp removed the inline panel; /tasks is a stub, no tracking issue found)

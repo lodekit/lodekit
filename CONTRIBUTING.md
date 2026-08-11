@@ -10,7 +10,7 @@ the first release goes live.
 
 Lodekit is developed entirely with coding agents. The process tooling is checked
 into the repository: `AGENTS.md` (how work is tracked, developed, and released)
-plus the steering docs, decision records, and specs under `docs/`. These serve as
+plus the steering docs and specs under `docs/`. These serve as
 context and guardrails for the agent in each session that causes product or
 engineering changes.
 

@@ -1,10 +1,10 @@
 # Architecture
 
 The current shape of the system: what exists, where it lives, and how it fits.
-Present-tense and deliberately not exhaustive — no API or schema dumps. Rationale
-lives in `docs/recs/` (arch records); feature behavior in feat records and
-`docs/specs/`. Structural changes update this file in the same PR; claims are
-audited against the code at release time.
+Present-tense and deliberately not exhaustive — no API or schema dumps. Decision
+rationale and feature designs live in the dated `docs/specs/`. Structural changes
+update this file in the same PR; claims are audited against the code at release
+time.
 
 ## System map
 
@@ -37,8 +37,7 @@ holding sibling `apps/` + `data/` trees.
 ## Packages
 
 pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `root/` is
-**not** a member (so the sample apps never get a `node_modules`). Structure and
-rationale: `docs/specs/2026-06-30-monorepo-migration-design.md`.
+**not** a member (so the sample apps never get a `node_modules`).
 
 - **`packages/engine`** (`@lodekit/engine`) — the product. The engine process
   described above; buildless, run via `tsx`. Storage is per-app `better-sqlite3`.
@@ -80,7 +79,9 @@ rationale: `docs/specs/2026-06-30-monorepo-migration-design.md`.
   dashboard and injected host-side at the gateway boundary.
 - **The engine and MCP are buildless** — `tsx`, no build step.
 - **One word, one meaning:** "engine" names the whole process and nothing else;
-  subsystems are executors (005-arch). "Runtime" is not a Lodekit word.
+  subsystems are executors (engine rename,
+  `docs/specs/2026-07-16-events-canonical-model-design.md` §8). "Runtime" is not a
+  Lodekit word.
 
 ## Deferred subsystems
 

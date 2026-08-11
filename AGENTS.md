@@ -12,8 +12,7 @@ prose and `docs/DESIGN.md` before any styling work.
 | `AGENTS.md` (= `CLAUDE.md`) | how we work: track, develop, release, conventions | the process changes |
 | `docs/DEFINITIONS.md` | what words mean — terms, relationships, ambiguity rulings, the Definition of Done | a term is coined, renamed, or disputed |
 | `docs/ARCHITECTURE.md` | what exists and how it fits — system map, packages, invariants | structure changes, same PR |
-| `docs/recs/` | why forks were taken — `arch` (engineering decisions) + `feat` (living feature records) | a fork is taken / behavior forks, same PR |
-| `docs/specs/` | what we intended at a moment (proposal; may drift once shipped) | a feature is specified |
+| `docs/specs/` | what we intended and why (design history; may drift once shipped) | a feature is specified |
 | `docs/PRODUCT.md` | positioning, narrative, voice | strategy changes |
 | `docs/DESIGN.md` | visual identity: Cloud Captured foundations + Marketing/Product registers | the design system changes |
 | `docs/CHANGELOG.md` | unreleased changes (buffer; append-only) | a slice ships a loggable change |
@@ -21,11 +20,10 @@ prose and `docs/DESIGN.md` before any styling work.
 | `docs/TRACK.md` | GitHub backlog mechanics: types, fields, node IDs | the backlog schema changes |
 | `docs/research/` | committed research outputs | a research doc is asked for |
 
-The relationships: **spec = proposal** (point-in-time, allowed to drift) ·
-**arch rec = decision** (immutable, superseded not edited) · **feat rec +
-ARCHITECTURE.md = present truth** (rewritten in place, audited) · **plan =
-in-flight scaffolding** (branch-only, dies before merge) · **TODO.md = parked** ·
-**gh issues = backlog**.
+The relationships: **spec = proposal and rationale history** (point-in-time,
+allowed to drift) · **ARCHITECTURE.md + DEFINITIONS.md = present truth**
+(rewritten in place, audited) · **plan = in-flight scaffolding** (branch-only,
+dies before merge) · **TODO.md = parked** · **gh issues = backlog**.
 
 ## Architecture
 
@@ -155,9 +153,9 @@ Before a PR leaves draft:
 - Risk-flagged work (trust boundaries, parsers, auth, network egress)
   additionally gets a fresh-context adversarial review: a subagent briefed to
   disprove the change, not confirm it.
-- Run the records check (trigger rule in `docs/recs/INDEX.md`): fork taken →
-  arch rec; behavior forked → feat rec; structure changed → ARCHITECTURE.md;
-  loggable → CHANGELOG.md; scope fell out → TODO.md. All in this same PR.
+- Run the docs check: structure changed → ARCHITECTURE.md; term coined or
+  changed → DEFINITIONS.md; loggable → CHANGELOG.md; scope fell out → TODO.md.
+  All in this same PR.
 
 If an automated review layer is ever wired, it fires once per PR at
 ready-for-review; drafts and intermediate pushes are exempt.
@@ -198,8 +196,8 @@ body as notes — the workflow is the only creator of `v*` tags; never tag manua
 - Branch `release/vX.Y.Z`, single commit `release: vX.Y.Z`, PR title the same.
   The person reviews, edits notes, and merges — never merge a release PR
   yourself.
-- The release also runs the **records audit**: verify feat recs and
-  ARCHITECTURE.md claims against the code; report verified / stale / missing.
+- The release also runs the **steering audit**: verify ARCHITECTURE.md and
+  DEFINITIONS.md claims against the code; report verified / stale / missing.
 
 ## Conventions
 

@@ -308,8 +308,8 @@ A slice is done when all of these hold:
   and `pnpm test` passes.
 - **Showcased** — a new SDK/engine capability is exercised by the Greenhouse app
   (`root/README.md` coverage checklist).
-- **Recorded** — recs, ARCHITECTURE.md, and DEFINITIONS.md are current for any fork,
-  structure change, or term this slice introduced.
+- **Recorded** — ARCHITECTURE.md and DEFINITIONS.md are current for any structure
+  change or term this slice introduced.
 - **Logged** — docs/CHANGELOG.md has an entry if the PR's conventional type calls
   for one.
 - **Parked** — descoped scope has a TODO.md line.
