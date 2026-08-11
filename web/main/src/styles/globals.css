@@ -3,7 +3,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Lodekit landing theme — "The Sky in a Jar" (docs/DESIGN.md).
+ * Lodekit landing theme — "Cloud Captured" (docs/DESIGN.md).
  * Light = parchment plate; .dark = night plate. Physical colors
  * (--ink, --night, --ochre, --pale-gold, …) never flip; the shadcn-named
  * role tokens below them do.

@@ -31,10 +31,6 @@ test-results/
 playwright-report/
 
 # agent & tool state
-.codebase-memory/
-.beads/
-.agents/internal/
-.superpowers/
 .claude/settings.local.json
 
 # secrets

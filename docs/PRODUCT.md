@@ -1,15 +1,16 @@
-# Lodekit — Product Strategy
+# Product
 
 The brand and product strategy steering doc: positioning, narrative, messaging, and
 voice. It exists so every outward-facing artifact — landing page, docs prose, blog
 posts, launch material — and the future visual-identity work (`DESIGN.md`) draw from
 one strategic source instead of re-deriving it per session.
 
-- **Language:** `CONTEXT.md` is normative. This doc uses canonical terms (app, agent,
-  engine, service, gateway, dashboard, manager, Lodekit root) without redefining them.
-- **Boundaries:** visual identity (palette, typography, illustration) is out of scope —
-  that is `DESIGN.md`'s job, briefed by §7 here. Architecture is out of scope — that is
-  the product overview spec (`docs/specs/2026-07-02-product-overview-design.md`).
+- **Language:** `DEFINITIONS.md` is normative. This doc uses canonical terms (app,
+  agent, engine, service, gateway, dashboard, manager, Lodekit root) without
+  redefining them.
+- **Boundaries:** visual identity (palette, typography, illustration) is out of
+  scope — that is `DESIGN.md`'s job, briefed by §7 here. Architecture is out of
+  scope — that is `ARCHITECTURE.md`'s job.
 - **Provenance:** derived 2026-07-18 in a pair session using the INTENT `strategize`
   and `storytelling` disciplines: the five foundational questions run fresh, the
   narrative composed under the situation → complication → resolution pattern.

@@ -4,8 +4,7 @@
 
 Lodekit is pre-alpha software. It has not been independently reviewed or
 security-audited, and it does not yet offer stability or security-support
-guarantees. Known security work in progress is tracked in the public issue
-tracker.
+guarantees.
 
 Two properties are worth knowing before you run it:
 

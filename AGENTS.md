@@ -1,61 +1,47 @@
-# agents
+# Agents
 
 lodekit is a local, self-hosted platform on which a person — working with an AI coding
-agent — builds and runs their own personal web tools. See `docs/specs/` for detail.
-`docs/CONTEXT.md` fixes the domain language — use its canonical terms in code, docs, and specs.
-Product/brand strategy — positioning, narrative, messaging, voice — lives in
-`docs/PRODUCT.md`; consult it before any outward-facing prose (landing, docs, blog).
-Visual identity — palette, typography, token rules — lives in `docs/DESIGN.md`; consult it
-before any UI, landing, or docs styling work.
+agent — builds and runs their own personal web tools. This file is how we work; the
+map below says where everything else lives. `docs/DEFINITIONS.md` fixes the domain
+language — use its canonical terms in code, docs, and specs; when a term is unsure or
+disputed, resolve it there first. Consult `docs/PRODUCT.md` before outward-facing
+prose and `docs/DESIGN.md` before any styling work.
 
-Behavioral guardrails for development workflow.
-Sessions start with the `session` skill (`/session [pair|auto] [spec|task]`; default
-`pair`, ceremony inferred and confirmed). The dev process is vendored in
-`.agents/skills/` — see `.agents/SOURCES.md` for provenance. For trivial requests the
-session skill's triage table applies: use judgment.
+| File | Answers | Update when |
+|---|---|---|
+| `AGENTS.md` (= `CLAUDE.md`) | how we work: track, develop, release, conventions | the process changes |
+| `docs/DEFINITIONS.md` | what words mean — terms, relationships, ambiguity rulings, the Definition of Done | a term is coined, renamed, or disputed |
+| `docs/ARCHITECTURE.md` | what exists and how it fits — system map, packages, invariants | structure changes, same PR |
+| `docs/specs/` | what we intended and why (design history; may drift once shipped) | a feature is specified |
+| `docs/PRODUCT.md` | positioning, narrative, voice | strategy changes |
+| `docs/DESIGN.md` | visual identity: Cloud Captured foundations + Marketing/Product registers | the design system changes |
+| `docs/CHANGELOG.md` | unreleased changes (buffer; append-only) | a slice ships a loggable change |
+| `docs/TODO.md` | parked work: deferred, descoped, postponed | scope falls out, same PR |
+| `docs/TRACK.md` | GitHub backlog mechanics: types, fields, node IDs | the backlog schema changes |
+| `docs/research/` | committed research outputs | a research doc is asked for |
+
+The relationships: **spec = proposal and rationale history** (point-in-time,
+allowed to drift) · **ARCHITECTURE.md + DEFINITIONS.md = present truth**
+(rewritten in place, audited) · **plan = in-flight scaffolding** (branch-only,
+dies before merge) · **TODO.md = parked** · **gh issues = backlog**.
 
 ## Architecture
 
-pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `root/` is **not** a
-member (so the sample apps never get a `node_modules`). Structure and rationale:
-`docs/specs/2026-06-30-monorepo-migration-design.md`.
-
-- **`packages/engine`** (`@lodekit/engine`) — the product. The **engine** — a single
-  Node/Hono process (buildless, run via `tsx`) that is host + scoped API + dashboard +
-  folder-watcher + SSE, and hosts TanStack Start apps in per-app worker threads. It
-  serves apps from a Lodekit root (`LODEKIT_ROOT`, default `~/Documents/Lodekit`)
-  holding sibling `apps/` + `data/` trees. Storage is per-app `better-sqlite3`.
-- **`packages/mcp`** (`@lodekit/mcp`) — the Claude-facing MCP server. Reaches the engine
-  **over HTTP only** — no import-time dependency on the engine. The dependency-free HTTP
-  helpers live in `client.ts`; the MCP-SDK wiring in `index.ts`.
-- **`packages/skill`** (`@lodekit/skill`) — the Claude skill (content only).
-- **`packages/integration-tests`** (`@lodekit/integration-tests`) — cross-package
-  integration tests (engine↔MCP); imports the siblings by package specifier
-  (`@lodekit/engine/*`, `@lodekit/mcp/client`), never by relative reach-in.
-- **`web/main`** (`@lodekit/web-main`) — Astro landing site.
-- **`web/docs`** (`@lodekit/web-docs`) — Starlight docs site (placeholder scaffold).
-- **`manager`** (`@lodekit/manager`) — the menubar app that ships and supervises the
-  platform. Packaged (`make`, electron-builder): an ad-hoc-signed `Lodekit.app` bundling a pinned
-  Lodekit-local Node + the platform payload (engine/mcp/skill via `pnpm deploy`) in
-  `Resources/`, spawning the engine as a single direct child Node process (so
-  `better-sqlite3` loads outside Electron — no ABI rebuild). Dev (`start`): same menubar
-  app supervising the workspace engine against `root/` on the system Node.
-- **`root/`** — the checked-in Lodekit root: the Greenhouse showcase app (the SDK's
-  smoke-testing ground — see `root/README.md` for the definition-of-done convention) and
-  the Welcome app. Used in dev via `LODEKIT_ROOT=./root`; the packaged manager installs
-  its apps into a fresh `~/Documents/Lodekit` on first run.
-
-Deferred subsystems (designed-in, not built): docs content/theming/deploy and packaging
-polish (Developer ID signing/notarization, auto-update). See the backlog (GitHub issues).
+One engine process (Node/Hono, buildless) serves a person's apps, the scoped API,
+and the dashboard from a Lodekit root; the manager supervises it, the agent drives
+it through the MCP server, and apps are built on the SDK + UI library. The full
+system map, package inventory, and invariants live in `docs/ARCHITECTURE.md` —
+update it in the same PR as any structural change.
 
 ## Build & Test
 
 Package manager is **pnpm** (workspaces). From the repo root:
 
-- `pnpm install` — installs all packages. A clean install auto-builds the `better-sqlite3`
-  native module via the root `pnpm.onlyBuiltDependencies` allowlist (pnpm v10 gates install
-  scripts). **Gotcha:** switching Node versions causes a `better-sqlite3` ABI mismatch
-  (`NODE_MODULE_VERSION`) — fix with `pnpm rebuild better-sqlite3`.
+- `pnpm install` — installs all packages. A clean install auto-builds the
+  `better-sqlite3` native module via the root `pnpm.onlyBuiltDependencies` allowlist
+  (pnpm v10 gates install scripts). **Gotcha:** switching Node versions causes a
+  `better-sqlite3` ABI mismatch (`NODE_MODULE_VERSION`) — fix with
+  `pnpm rebuild better-sqlite3`.
 - `pnpm dev` — run the engine against the showcase apps
   (`LODEKIT_ROOT=$(pwd)/root pnpm --filter @lodekit/engine start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
@@ -85,80 +71,151 @@ Package manager is **pnpm** (workspaces). From the repo root:
 
 Engine and MCP are **buildless** — `tsx`, no build step.
 
-## Lazy, Not Negligent
+## Track
 
-Simplicity never means cutting safety. The `ponytail` skill (vendored, default
-intensity `full`) owns this discipline during implementation — the ladder, the
-never-simplify floor (trust-boundary validation, data-loss handling, security,
-accessibility; one runnable check per non-trivial logic), and the shortcut-marker
-rule (`ponytail`-labeled bead + `// ponytail: <bead-id>` anchor).
+- **Backlog** — GitHub issues (`gh issue list`), the durable backlog. Four
+  org-level issue types — `bug` (broken or wrong), `feature` (new capability),
+  `chore` (maintenance), `track` (umbrella grouping others) — and three fields:
+  Priority (never `urgent`), Area (the owning surface), Definition (undefined =
+  needs deep spec, partial = needs light design, defined = solution known).
+  Titles imperative and short. API mechanics — node IDs, sub-issues,
+  dependencies, field mutations — are in `docs/TRACK.md`.
+- **Deferrals** — `docs/TODO.md`. When scope falls out at any phase, append one
+  line in the same PR as the work that descoped it:
+  `- [YYYY-MM-DD · <provenance>] description` — provenance is where it fell out
+  (`spec:slug`, `PR #N`, `session`); an optional leading `P0`/`P1` marks urgency.
+  Single lines only, so parallel-worktree merges stay trivial.
+- **Drain** — periodically, on the person's ask: group TODO lines into themes,
+  file gh issues or tracks per `docs/TRACK.md`, delete the drained lines, and
+  raise a PR linking every issue created.
+- **In-session steps** — the harness's own todo tracker, nothing else. Never a
+  tracking file.
 
-## Surgical Changes
+## Develop
 
-- Every changed line must trace directly to the request.
-- Touch only what you must. Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken. Match existing style, even if you'd do it differently.
-- Remove imports, variables, and functions that YOUR changes made unused.
-- Don't delete pre-existing dead code. If you notice it, mention it.
+Match ceremony to the shape of the ask, and say which lane you're taking: a
+**question** gets an answer — no artifacts. **Research** gets findings, committed
+to `docs/research/` only if a doc was asked for — no branch, no records. A **small
+change** gets a branch, the change, and a PR. A **bug** gets reproduced before it
+gets fixed, and lands with a regression test. A **feature** gets a spec first —
+when the ask looks feature-shaped and no spec exists, propose one before building.
 
+### Start
 
-## Surface, Don't Assume
+Always a feature branch; never commit to master. The default finish is push + PR;
+the person may set a different intent at session start (commit-don't-push, hold
+and iterate). Before starting: `git fetch origin --prune`; if the worktree branch
+is stale or already merged, reset to a fresh branch off `origin/master`.
 
-- When something is genuinely ambiguous and the plan doesn't settle it, name the ambiguity and present the options.
-- Don't pick an interpretation silently.
-- If a simpler path exists than the one requested, say so before building.
+### Specify
+
+Spec-worthy: a new user-visible capability, a cross-cutting change, or anything
+security-boundary-shaped. Write `docs/specs/YYYY-MM-DD-<slug>-design.md` (house
+format: Goals / Non-goals / Decision record / numbered design sections / Rollout /
+Verification), commit it, push, and open the draft PR — the spec is reviewable on
+GitHub from the moment it exists: the person approves in session, comments on the
+PR, or edits the file in a worktree. The spec is approved before planning.
+
+### Plan
+
+For multi-task work, plans live in `docs/plans/` on the branch — never on master
+(lifecycle in `docs/plans/README.md`):
+
+- Write `docs/plans/YYYY-MM-DD-<slug>.md`: ordered tasks, each self-contained
+  (context, files touched, acceptance criteria, how to verify) so a task brief
+  can be handed to a subagent as-is. A header line names the spec it implements;
+  split a spec into two or more plans when the work comes in slices.
+- Commit and push; open the draft PR if Specify didn't. Ask for approval in
+  session; the person may defer ("proceed, I'll review on GitHub") — then review
+  arrives as PR comments or file edits to reconcile.
+- Tick checkboxes and push as tasks land — the draft PR is the live progress view
+  and the cross-session continuation artifact (`gh pr list` finds in-flight work).
+
+Single-sitting tasks need no plan.
+
+### Implement
+
+- Execute the plan inline by default; delegate to subagents when the work
+  genuinely fans out.
+- Tests: write the failing test first when it cheaply expresses the change — bug
+  regressions and pure logic. Otherwise pick the lowest rung that exercises the
+  change and land the test with it: pure logic → the owning package's vitest;
+  component render → `@lodekit/ui` render tests; cross-frontend health →
+  `pnpm e2e`; visual judgment → Playwright MCP in-session.
+- A new SDK/engine capability isn't done until the Greenhouse showcase exercises
+  it (`root/README.md` checklist — part of the Definition of Done).
+- If a simpler path exists than the one requested, say so before building it.
+
+### Review
+
+Before a PR leaves draft:
+
+- Self-review the whole branch diff — correctness plus a security lens.
+- Risk-flagged work (trust boundaries, parsers, auth, network egress)
+  additionally gets a fresh-context adversarial review: a subagent briefed to
+  disprove the change, not confirm it.
+- Run the docs check: structure changed → ARCHITECTURE.md; term coined or
+  changed → DEFINITIONS.md; loggable → CHANGELOG.md; scope fell out → TODO.md.
+  All in this same PR.
+
+If an automated review layer is ever wired, it fires once per PR at
+ready-for-review; drafts and intermediate pushes are exempt.
+
+### End
+
+- Delete the plan files in the final commit (`docs/plans/` back to README-only) —
+  the squash takes the branch's final tree, and the PR body becomes master's
+  commit message (`PR_TITLE`/`PR_BODY` squash settings).
+- Rewrite the PR body: **Summary** (what and why), **Notes** (decisions taken,
+  follow-ups, TODO lines filed, and a blob permalink to each plan's final
+  version — link the deletion commit's parent so the file resolves), **Test
+  plan** (what was verified). Check the Definition of Done
+  (`docs/DEFINITIONS.md`) before flipping to ready.
+- Flip the draft to ready (or push + open the PR). Merging is the person's call —
+  never merge unattended.
+- Squash-merge only: one commit per PR whose subject is the PR title, so
+  conventional-prefixed titles are load-bearing. Resolve conflicts with
+  `git rebase master`, never a plain merge.
+
+## Release
+
+Merging a `release: vX.Y.Z` PR triggers `.github/workflows/release.yml`, which
+builds the mac zips, tags `vX.Y.Z`, and publishes the GitHub Release with the PR
+body as notes — the workflow is the only creator of `v*` tags; never tag manually.
+
+- Pre-flight (all must pass; on failure stop and report): on `master`, clean
+  tree, up to date; `pnpm test` passes; version lockstep across all 10
+  package.json files (root, `packages/{engine,mcp,sdk,skill,ui,integration-tests}`,
+  `web/{main,docs}`, `manager`); `gh auth status`; no release PR already open;
+  `docs/CHANGELOG.md` has at least one entry.
+- Bump all 10 together — features → minor, fixes only → patch; confirm the bump
+  with the person.
+- Drain the buffer verbatim into `web/docs/src/content/docs/changelog.md` under a
+  prepended `## [X.Y.Z](compare-url) (YYYY-MM-DD)` heading; cross-check merged
+  PRs (`gh pr list --state merged`) for loggable work missing an entry and
+  surface gaps — never silently add. Reset the buffer to its rules header.
+- Branch `release/vX.Y.Z`, single commit `release: vX.Y.Z`, PR title the same.
+  The person reviews, edits notes, and merges — never merge a release PR
+  yourself.
+- The release also runs the **steering audit**: verify ARCHITECTURE.md and
+  DEFINITIONS.md claims against the code; report verified / stale / missing.
 
 ## Conventions
 
-- **Backlog:** deferred work and known gaps live as GitHub issues (`gh issue list`) —
-  the only durable human backlog.
-- **Deferrals:** work descoped or deferred during a session is filed as a bead labeled
-  `defer` (severity/confidence stamp, provenance — spec/plan/PR — in the body); list
-  deferrals filed in the PR body. The person periodically drains them with the
-  `drain-deferrals` skill. `docs/defer.md` and `roadmap.md` are retired — never
-  recreate either; where an older spec/plan says "append to defer.md" or "add to
-  roadmap.md", that now means: file a `defer`-labeled bead.
-- **Task tracking:** beads (`bd`) for ALL work tracking — TodoWrite/TaskCreate/markdown
-  TODOs are forbidden. Bead IDs go in commit messages and PR bodies. Session close =
-  land the plane: `bd close` → `bd dolt push` → `git push`.
-- **Changelog buffer:** `docs/changelog.md` collects unreleased user-facing
-  changes. A slice that ships something a Lodekit user can see or do appends an entry
-  under `## New` or `## Fixed`, in the same PR as the code; internal work appends
-  nothing. **Append-only** for agents — rewording and cutting happen in the release PR
-  review.
-- **Docs:** Specs live in `docs/specs/`. Plans live in `docs/plans/`.
-- **Branching:** All changes to `master` land via PR — no direct pushes, docs and
-  typos included. Slice work happens on a branch/worktree; finishing a slice means
-  pushing the branch and raising a PR.
-  - PRs are **squash-merged only** (repo settings disable merge commits and rebase
-    merges; branches auto-delete on merge). `master` stays a single linear line —
-    one commit per PR, whose subject is the PR title, so **conventional-prefixed PR
-    titles are load-bearing**. Still `git rebase master` to resolve conflicts before
-    merging; never a plain `git merge`.
-  - PR shape: conventional-prefixed title (`feat:`, `fix:`, scoped variants); body
-    with **Summary** (what changed and why), **Notes** (decisions taken, known
-    follow-ups), and **Test plan** (checklist of what was verified).
-  - **Merging is the person's call.** The agent raises the PR and stops — never
-    merge unattended.
-  - Regenerate `pnpm-lock.yaml` conflicts with `pnpm install --lockfile-only` rather than hand-merging.
-- **Releases:** `/release` (skill at `.agents/skills/release/SKILL.md`) assembles a
-  semver release PR: lockstep version bump + drain of `docs/changelog.md` into the
-  docs changelog page. Merging it triggers the GitHub release build; the workflow is
-  the only creator of `v*` tags. Portable agent skills live in `.agents/skills/`
-  (Claude Code discovers them via committed `.claude/skills` symlinks; Codex reads
-  `.agents/skills/` natively).
-- **Commits & PRs:** no `Co-Authored-By` trailers in commit messages; no "Generated with Claude Code" attribution in PR bodies.
-- **Definition of done:** a new SDK/engine capability is not done until the Greenhouse
-  showcase app exercises it (`root/README.md` holds the living coverage checklist).
-- **Testing-judgment ladder:** pick the lowest test layer that exercises the
-  change — pure logic → the owning package's vitest; component render behavior →
-  `@lodekit/ui` render tests; cross-frontend render/console health → `pnpm e2e`;
-  visual judgment → Playwright MCP inspection in-session.
-- **Steering docs:** steering docs are uppercase. `AGENTS.md` and the `CLAUDE.md`
-  symlink live at the repo root; `CONTEXT.md`, `DESIGN.md`, and `PRODUCT.md` live in
-  `docs/`. `CLAUDE.md` is a committed symlink to `AGENTS.md` — never diverge them. Do not set `askUserQuestionTimeout` in user
-  settings; interactive questions must block until answered.
-- **Codebase graph:** for structure questions (call paths, impact of a change, where
-  a symbol is used), query the `codebase-memory-mcp` tools (`search_graph`,
-  `trace_path`, `detect_changes`) first; fall back to grep when results are thin.
-  Index the current worktree on demand (`index_repository`) if missing or stale.
+- **Commits & PRs:** conventional-prefixed titles (`feat:`, `fix:`, scoped
+  variants); no `Co-Authored-By` trailers; no "Generated with" attribution.
+  Multiline gh bodies via `--body-file`, never escaped `\n` — and verify the
+  stored body after create/edit.
+- **Lockfile:** regenerate `pnpm-lock.yaml` conflicts with
+  `pnpm install --lockfile-only`, never hand-merge.
+- **Steering docs** are uppercase. `AGENTS.md` lives at the repo root; `CLAUDE.md`
+  is a committed symlink to it — never diverge them. The rest live in `docs/` per
+  the map above.
+- **Canonical docs stand alone:** ARCHITECTURE.md, DEFINITIONS.md, DESIGN.md, and
+  PRODUCT.md never link to specs — they carry present truth on their own terms;
+  specs are history and may drift.
+- **Prose wraps at ~90 columns** in steering docs and specs; tables, code, YAML
+  frontmatter, and TODO.md's single-line entries are exempt.
+- **docs/CHANGELOG.md** is append-only for agents (category and entry rules in
+  its header); **docs/TODO.md** appends are single lines; plan files never reach
+  master.
