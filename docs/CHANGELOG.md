@@ -1,19 +1,19 @@
 # Changelog buffer
 
 Unreleased changes. A slice that ships a loggable change appends an entry here, in
-the same PR as the code; the release flow (AGENTS.md §Release) drains this file into
+the same PR as the code. The release flow (AGENTS.md §Release) drains this file into
 the docs changelog page (`web/docs/src/content/docs/changelog.md`) and resets it.
 
 Rules:
 
-- **Append-only for agents** — never reword or remove existing entries; editorial
+- **Append-only for agents.** Never reword or remove existing entries; editorial
   cuts and rewording happen in the release PR review.
-- **Write for a person using Lodekit** — what they can do now, never how it was
+- **Write for a person using Lodekit**: what they can do now, never how it was
   built. Entry shape: `* **scope:** what changed ([#PR])`.
-- **Category follows the PR's conventional type** — `feat` → Features, `fix` → Bug
-  Fixes, `perf` → Performance Improvements, `refactor` → Code Refactoring; a `!`
-  (breaking) additionally adds a line under `### ⚠ BREAKING CHANGES` with the
-  migration note. `chore`/`docs`/`test`/`ci` PRs append nothing.
+- **Category follows the PR's conventional type**: `feat` → Features, `fix` → Bug
+  Fixes, `perf` → Performance Improvements, `refactor` → Code Refactoring. A `!`
+  (breaking) also adds a line under `### ⚠ BREAKING CHANGES` with the migration
+  note. `chore`/`docs`/`test`/`ci` PRs append nothing.
 - Keep the category headings; the drain lifts them verbatim under the version
   heading. Omitting an empty section is fine; ⚠ BREAKING CHANGES comes first when
   present.

@@ -1,7 +1,7 @@
 # TODO
 
 Parked work: deferred, descoped, postponed. One line per item, appended in the same
-PR as the work that parked it — format and drain flow in AGENTS.md §Track.
+PR as the work that parked it. Format and drain flow are in AGENTS.md §Track.
 
 - [2026-08-11 · bead] P1 Hero demo adjustments round 1 — reverted from web, resume from hero-demo-adjustments-r1 (was lk-2el)
 - [2026-08-11 · bead] P1 Gateway egress: connection-time enforcement (close pre-flight TOCTOU) (was lk-9r4)
