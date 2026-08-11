@@ -15,7 +15,7 @@ directly. Four org-level types exist — always set one:
 |---|---|
 | `bug` | Something is broken or wrong: incorrect behaviour, a claim the code contradicts, a doc stale enough to actively mislead. |
 | `feature` | New capability a user can see or do. |
-| `chore` | Ancillary maintenance — CI, dependencies, licensing, tooling, doc accuracy, repo settings, release mechanics. Most drained deferrals land here. |
+| `chore` | Maintenance — CI, dependencies, licensing, tooling, doc accuracy, repo settings, release mechanics. Most drained deferrals land here. |
 | `track` | An umbrella grouping other issues into batches. A track carries no implementation of its own; its children do the work. |
 
 Retype an existing issue with `PATCH /repos/lodekit/lodekit/issues/{n}` and `-f type=…`.
@@ -23,7 +23,7 @@ Retype an existing issue with `PATCH /repos/lodekit/lodekit/issues/{n}` and `-f 
 **Sub-issues** are enabled, and are how a `track` owns its children:
 `POST /repos/lodekit/lodekit/issues/{parent}/sub_issues` with `sub_issue_id` = the
 child's database ID (`.id`, not the issue number). **A sub-issue has at most one
-parent** — an issue already owned by another track cannot be adopted, only
+parent**: an issue already owned by another track cannot be adopted, only
 cross-referenced. House pattern for a track: sub-issue links *and* a markdown batch
 list in the body, plus a "Tracked elsewhere" section naming issues that belong to a
 sibling track.
@@ -95,8 +95,8 @@ mutation($issueId: ID!, $fields: [IssueFieldCreateOrUpdateInput!]!) {
 
 Syntax note: use the no-index `fields[][subkey]` form. gh groups consecutive
 `fields[][…]` subkeys into one array element and starts a new element when a subkey
-repeats, producing `{"fields":[{fieldId, singleSelectOptionId}, …]}` — a proper list,
-as `[IssueFieldCreateOrUpdateInput!]!` requires. Numeric indices
+repeats, producing `{"fields":[{fieldId, singleSelectOptionId}, …]}`, the proper list
+that `[IssueFieldCreateOrUpdateInput!]!` requires. Numeric indices
 (`fields[0][fieldId]=…`) build a JSON *object* keyed `"0"`/`"1"` instead, which
 GraphQL variable coercion rejects. Confirm the built shape with
 `gh api graphql --verbose` (it prints `GraphQL variables:`) before the first real
