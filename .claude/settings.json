@@ -1,4 +1,4 @@
 {
   "autoMemoryEnabled": false,
-  "enabledMcpjsonServers": ["codebase-memory-mcp"]
+  "enabledMcpjsonServers": ["playwright"]
 }

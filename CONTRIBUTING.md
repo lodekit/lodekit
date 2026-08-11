@@ -8,14 +8,11 @@ the first release goes live.
 
 ## Development process
 
-Lodekit is developed entirely with coding agents. The tooling used in the
-project is checked into the repository: `AGENTS.md`, `.agents/skills/`, and
-`docs/`. These serve as context and guardrails for the agent to follow in each
-session that causes product or engineering changes.
-
-The skills used in the repository are vendored from upstream projects; see
-`.agents/SOURCES.md` for the list and how they were adapted and diverge from
-their sources.
+Lodekit is developed entirely with coding agents. The process tooling is checked
+into the repository: `AGENTS.md` (how work is tracked, developed, and released)
+plus the steering docs, decision records, and specs under `docs/`. These serve as
+context and guardrails for the agent in each session that causes product or
+engineering changes.
 
 ## How this codebase is written
 

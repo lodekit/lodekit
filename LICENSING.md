@@ -19,7 +19,6 @@ choose.
 | `packages/sdk/`, `packages/ui/`, `packages/mcp/`, `packages/skill/` | `Apache-2.0` |
 | `root/` (example apps, gateways, themes) | `Apache-2.0` |
 | `docs/`, `web/docs/` | `Apache-2.0` |
-| `.agents/skills/` (vendored dev process) | `MIT`, per upstream |
 
 `packages/ui` vendors the shadcn/ui components (`packages/ui/src/components/`
 and `shadcn-tailwind.css`, MIT, © shadcn), so its `package.json` declares
@@ -31,8 +30,7 @@ vendored third-party code.
 
 ## Third-party code
 
-Vendored code keeps its own license and copyright notice. `.agents/SOURCES.md`
-records where the vendored development process came from and how it diverges.
+Vendored code keeps its own license and copyright notice.
 
 Dependencies keep their own licenses, which travel with them inside
 `node_modules` in the packaged app.
