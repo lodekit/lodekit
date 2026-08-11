@@ -1,4 +1,4 @@
-# Lodekit — Product Strategy
+# Product
 
 The brand and product strategy steering doc: positioning, narrative, messaging, and
 voice. It exists so every outward-facing artifact — landing page, docs prose, blog

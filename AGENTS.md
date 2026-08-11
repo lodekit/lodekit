@@ -1,4 +1,4 @@
-# agents
+# Agents
 
 lodekit is a local, self-hosted platform on which a person — working with an AI coding
 agent — builds and runs their own personal web tools. See `docs/specs/` for detail.
@@ -7,12 +7,6 @@ Product/brand strategy — positioning, narrative, messaging, voice — lives in
 `docs/PRODUCT.md`; consult it before any outward-facing prose (landing, docs, blog).
 Visual identity — palette, typography, token rules — lives in `docs/DESIGN.md`; consult it
 before any UI, landing, or docs styling work.
-
-Behavioral guardrails for development workflow.
-Sessions start with the `session` skill (`/session [pair|auto] [spec|task]`; default
-`pair`, ceremony inferred and confirmed). The dev process is vendored in
-`.agents/skills/` — see `.agents/SOURCES.md` for provenance. For trivial requests the
-session skill's triage table applies: use judgment.
 
 ## Architecture
 
@@ -84,29 +78,6 @@ Package manager is **pnpm** (workspaces). From the repo root:
   Node version for the `better-sqlite3` ABI to match).
 
 Engine and MCP are **buildless** — `tsx`, no build step.
-
-## Lazy, Not Negligent
-
-Simplicity never means cutting safety. The `ponytail` skill (vendored, default
-intensity `full`) owns this discipline during implementation — the ladder, the
-never-simplify floor (trust-boundary validation, data-loss handling, security,
-accessibility; one runnable check per non-trivial logic), and the shortcut-marker
-rule (`ponytail`-labeled bead + `// ponytail: <bead-id>` anchor).
-
-## Surgical Changes
-
-- Every changed line must trace directly to the request.
-- Touch only what you must. Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken. Match existing style, even if you'd do it differently.
-- Remove imports, variables, and functions that YOUR changes made unused.
-- Don't delete pre-existing dead code. If you notice it, mention it.
-
-
-## Surface, Don't Assume
-
-- When something is genuinely ambiguous and the plan doesn't settle it, name the ambiguity and present the options.
-- Don't pick an interpretation silently.
-- If a simpler path exists than the one requested, say so before building.
 
 ## Conventions
 

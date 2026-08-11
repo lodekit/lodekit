@@ -95,7 +95,7 @@ components:
     padding: "0.35em 0.7em"
 ---
 
-# Design System: Lodekit
+# Design
 
 ## 1. Overview
 

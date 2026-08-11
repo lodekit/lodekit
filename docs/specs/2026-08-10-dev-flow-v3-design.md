@@ -1,0 +1,469 @@
+# Dev Flow v3 — skill-less process, consolidated steering (design)
+
+**Date:** 2026-08-10 · **Updated:** 2026-08-11
+**Status:** draft-for-review
+**Scope:** the development *process* of this repo — steering docs, records, deferrals,
+config wiring. No product code changes.
+**Evidence base:** `docs/research/2026-08-06-dev-process-audit-and-v3-proposal.md`
+(the audit of 630 session transcripts and the direction set from it). This spec cites
+it as "the audit" and does not re-derive its findings.
+
+## Goals
+
+1. **One steering doc instead of a skill tree.** All process guidance lives in a short
+   AGENTS.md that states goals and constraints, not choreography. The audit showed the
+   skill corpus was ~99K tokens of process text of which ~60% was never followed, and
+   that current models do better with plain stated rules than with step scaffolding,
+   iron laws, and pressure language (audit §9). This iteration runs **zero skills** and
+   **zero hooks** — deliberately, to find the real floor before adding anything back.
+2. **Every durable thing is a committed, PR-reviewed file.** Records, deferrals,
+   architecture, terminology — plain markdown in `docs/`, edited in the same PR as the
+   change that motivates the edit. Nothing that syncs, daemonizes, or lives outside the
+   repo (beads/Dolt was the least reliable component in the whole setup — audit §6).
+3. **Ceremony scales with the shape of the work, and review can be asynchronous.**
+   Questions get answers, research gets findings, small changes get a branch and a PR,
+   features get a spec and a plan — and the spec and plan are on a draft PR from the
+   moment they exist, so the person can review them in session, in GitHub comments, or
+   by editing the files in a worktree.
+
+## Non-goals
+
+- **Environment changes.** The bd/Dolt data and the `codebase-memory-mcp` binary and
+  its user-global config stay untouched on the person's machine. This spec removes
+  *repo* references only.
+- **Provider trials.** No superpowers/agent-skills vendoring this iteration. If the
+  skill-less floor shows a real gap, individual skills come back on demonstrated pain,
+  not in advance (the audit's not-in-use inventory is the cautionary tale).
+- **Product code.** The only workflow-adjacent code candidate (per-PR CI) is
+  deliberately deferred to `docs/TODO.md`.
+
+## Decision record (settled during brainstorm, 2026-08-10/11)
+
+- **D1 — Records:** one flat directory, `docs/recs/###-<kind>-<slug>.md`, where kind is
+  `arch` (ADR format: dated, mostly immutable, superseded not edited) or `feat` (FDR
+  format: living, rewritten in place). Single three-digit sequence across both kinds.
+  `docs/recs/INDEX.md` holds the table, the trigger rule, and both templates.
+- **D2 — Records seeding:** in this PR, so the migration is atomic — the seven retired
+  `docs/decisions/` ADRs are recreated as `arch` records and the shipped feature
+  surface is backfilled as `feat` records, distilled from `docs/specs/` and the code.
+- **D3 — Plans:** implementation plans are branch-only documents in `docs/plans/`
+  (`YYYY-MM-DD-<slug>.md`; a spec may be implemented as multiple plans — the agent
+  splits when the work comes in slices), committed and pushed while the work is in
+  flight so they are reviewable on the draft PR, and **deleted before merge — plans
+  never land on master.** The PR body's Notes section keeps a blob permalink to each
+  plan's final version — GitHub's `refs/pull/*` keep those commits reachable after
+  the branch auto-deletes, so the executed plan stays consultable during final review
+  and after merge. Accepted tradeoff: the archive lives in GitHub, not the repo. On
+  master the directory holds only a README describing this lifecycle; the existing
+  plan corpus (~50 docs) is deleted in this PR. Draft PRs are raised early — at spec
+  commit when a spec exists, at first plan commit otherwise.
+- **D4 — DESIGN.md:** shared foundations, two registers. One token base (**Cloud
+  Captured**); `Marketing` (web-main) and `Product` (dashboard, web-docs, manager) as
+  register sections layered on it.
+- **D5 — Worktree freshness:** text-only. The Start section instructs it; no hooks.
+- **D6 — Backlog mechanics:** semantics in AGENTS.md §Track; the field/node-ID table
+  and mutation mechanics in `docs/TRACK.md`.
+- **D7 — Automated review policy:** if an automated security-review layer is wired, it
+  fires **once per PR, at ready-for-review**; drafts and intermediate pushes are
+  exempt. Verified 2026-08-11: no such layer currently exists — the fleet the audit
+  measured (69% of all transcripts) is no longer present in user-level, worktree-local,
+  or repo config. The policy is recorded for whenever one returns; a TODO line carries
+  the re-wire decision.
+- **D8 — Per-PR CI:** stays a TODO line (ports the existing `lk-bv3` deferral).
+- **D9 — Build & Test:** stays in AGENTS.md. Agents are the only developers
+  (CONTRIBUTING.md); README keeps its three-command public summary.
+- **D10 — Principles:** DEFINITIONS.md's Principles section moves to
+  `docs/ARCHITECTURE.md` as **Invariants**. DEFINITIONS keeps Terms / Relationships /
+  **Ambiguities** (renamed from "Flagged ambiguities") plus the Definition of Done
+  (D14).
+- **D11 — Beads port:** straight-port all open beads to TODO.md (mechanical, ids kept
+  for traceability); triage happens later as a normal drain. The two
+  codebase-memory-mcp beads die in the port instead of moving.
+- **D12 — In-session tracking:** the TodoWrite/TaskCreate prohibition is dropped;
+  harness-native todos are the in-session tracker. They are session-scoped UI, not
+  shared state — cross-session state lives in draft PRs and TODO.md.
+- **D13 — TDD stance:** test-first where a failing test cheaply expresses the change
+  (bug regressions, pure logic); otherwise the testing-judgment ladder picks the layer
+  and the test lands with the change. No universal test-first law (the audit's iron law
+  had 100% silent non-compliance).
+- **D14 — Definition of Done:** becomes its own section in `docs/DEFINITIONS.md` (the
+  canonical definition home), replacing the one-line Greenhouse convention in
+  AGENTS.md. Contents in §5.
+- **D15 — Changelog taxonomy:** the buffer and the released changelog follow chatto's
+  structure — `⚠ BREAKING CHANGES` / `Features` / `Bug Fixes` /
+  `Performance Improvements` / `Code Refactoring` — with entries derived from the PR's
+  conventional prefix. Details in §Release.
+
+## 1. Document taxonomy after this work
+
+| File | Answers | Updated when |
+|---|---|---|
+| `AGENTS.md` (= `CLAUDE.md` symlink) | how we work: track, develop, release, conventions | the process changes (via PR, like everything) |
+| `docs/DEFINITIONS.md` | what words mean — canonical terms, relationships, ambiguity rulings, the Definition of Done | a term is coined, renamed, or disputed |
+| `docs/ARCHITECTURE.md` | what exists and how it fits — system map, package inventory, invariants | structure changes, in the same PR |
+| `docs/recs/` | why forks were taken: `arch` (engineering decisions) and `feat` (living feature records) | at the fork / when behavior forks, in the same PR |
+| `docs/specs/` | what we intended at a moment (proposal; may drift once shipped) | a feature is specified |
+| `docs/PRODUCT.md` | positioning, narrative, voice | strategy changes |
+| `docs/DESIGN.md` | visual identity: Cloud Captured foundations + Marketing/Product registers | the design system changes |
+| `docs/CHANGELOG.md` | unreleased changes (buffer; chatto-style categories, append-only) | a slice ships a loggable change |
+| `docs/TODO.md` | parked work: deferred, descoped, postponed | scope falls out, in the same PR |
+| `docs/TRACK.md` | GitHub backlog mechanics: issue types, fields, node IDs | the backlog schema changes |
+| `docs/research/` | committed research outputs | a research lane is asked for a doc |
+
+Transient, never on master: plan documents under **`docs/plans/`** — branch-only
+(D3), deleted before merge and permalinked from the PR body; on master the directory
+carries only its lifecycle README.
+
+The relationships, stated once in AGENTS.md so sessions route updates correctly:
+**spec = proposal** (point-in-time, allowed to drift) · **arch rec = decision**
+(immutable, superseded not edited) · **feat rec + ARCHITECTURE.md = present truth**
+(rewritten in place, audited) · **plan = in-flight scaffolding** (dies with the
+branch; archived as a PR permalink) · **TODO.md = parked** · **gh issues = backlog**.
+
+Gone from the tree: `docs/CONTEXT.md` (→ `DEFINITIONS.md`), `docs/changelog.md`
+(→ `CHANGELOG.md`, a case-only rename — explicit `git mv` on macOS), the
+`docs/plans/` corpus (~50 docs deleted; the directory stays, README-only — D3),
+`docs/decisions/` (recreated under `recs/` by the D2 seeding),
+`.agents/` (skills, hooks, scripts, SOURCES.md), `.claude/skills/`.
+
+## 2. AGENTS.md — the rewrite
+
+Structure: intro (what lodekit is + the taxonomy table above) → **Track** →
+**Develop** (Start / Specify / Plan / Implement / Review / End) → **Release** →
+**Conventions**. The Architecture section moves to `docs/ARCHITECTURE.md`, leaving a
+three-line orientation + pointer. Build & Test stays as-is (D9). Register throughout:
+plain statements with their reasons — no MUST walls, no red-flag tables (audit §9).
+
+### Track
+
+- **Backlog** = GitHub issues. The four org types (`bug`, `feature`, `chore`,
+  `track`) and the three fields (Priority — never `urgent`; Area; Definition =
+  undefined/partial/defined) with one-line semantics; titles imperative and short.
+  Mechanics — node IDs, sub-issue and dependency endpoints, the GraphQL mutation and
+  its syntax traps — live in `docs/TRACK.md` (D6).
+- **Deferrals** = `docs/TODO.md`. When scope falls out at any phase, append one line,
+  in the same PR as the work that descoped it:
+  `- [YYYY-MM-DD · <provenance>] description` — provenance is the spec/PR/session
+  shape it fell out of; an optional leading `P0`/`P1` marks urgency; ported items keep
+  their bead id as a `(was lk-xxx)` suffix. Single-line appends keep parallel-worktree
+  merges trivial.
+- **Drain** = a periodic consolidation the person asks for (no skill): group TODO
+  lines into themes, create gh issues or tracks per `docs/TRACK.md`, delete the
+  drained lines, raise a PR linking every issue created. The PR is the audit trail.
+- **In-session steps** = harness-native todos (D12). Never a tracking file.
+
+### Develop → Start
+
+Match ceremony to the shape of the ask, and say which lane you're taking:
+a **question** gets an answer (no artifacts); **research** gets findings, committed to
+`docs/research/` only if asked (no branch, no records); a **small change** gets a
+branch, the change, and a PR; a **bug** gets reproduced before it gets fixed; a
+**feature** gets a spec first — *probe the person* when the ask looks feature-shaped
+but no spec exists. This paragraph is what retires the "research only, no session"
+incantation (audit §4).
+
+Mechanics: always a feature branch (the person may name a different finishing intent
+at session start — see End); never commit to master. Before starting:
+`git fetch origin --prune`; if the worktree branch is stale or already merged, reset
+to a fresh branch off `origin/master` (D5 — this replaces the worktree-refresh hook).
+
+### Develop → Specify
+
+Spec-worthy: a new user-visible capability, a cross-cutting change, or anything
+security-boundary-shaped. The spec goes to `docs/specs/YYYY-MM-DD-<slug>-design.md`
+(house format: Goals / Non-goals / Decision record / numbered sections / Rollout /
+Verification). Commit it on the branch, push, and **open the draft PR now** — from
+this moment the spec is reviewable on GitHub: the person approves in session, comments
+on the PR, or checks the branch out in a worktree and edits the file directly. The
+spec is approved before planning. Small fixes and chores skip this entirely.
+
+### Develop → Plan
+
+For multi-task work, plans are documents on the branch — never on master (D3):
+
+1. Write `docs/plans/YYYY-MM-DD-<slug>.md`, with the full plan-doc discipline: ordered
+   tasks, each self-contained (context, files touched, acceptance criteria, how to
+   verify), sized so a task brief can be handed to an executor subagent as-is. This is
+   what keeps subagent fan-out and cheap-model delegation possible. A header line
+   names the spec it implements. One plan is the norm; the agent may split a spec's
+   implementation into two or more plans when the work comes in slices — each its own
+   file, executed in order.
+2. Commit and push; open the draft PR here if Specify didn't already. Spec and plans
+   are now both on the PR for review — comments or direct file edits in a worktree.
+3. Approval gate: ask in session by default. The person may defer ("proceed, I'll
+   review on GitHub"), in which case implementation continues and review arrives
+   asynchronously as PR comments or file edits to reconcile.
+4. Tick the plan's checkboxes and push as tasks land — the draft PR stays a live view
+   of progress, and together with the plan files it is the cross-session continuation
+   artifact (any fresh session finds in-flight work via `gh pr list`).
+
+`docs/plans/README.md` (committed, permanent) documents this lifecycle and is the
+directory's only resident on master.
+
+Single-sitting tasks need no plan.
+
+### Develop → Implement
+
+- Execute the plans if there are any — inline by default; delegate tasks to subagents
+  when the work genuinely fans out (the briefs are self-contained by construction).
+- **Tests (D13):** write the failing test first when it cheaply expresses the change —
+  bug fixes (the regression test is the reproduction) and pure logic. Otherwise pick
+  the lowest layer of the testing-judgment ladder and land the test with the change:
+  pure logic → owning package's vitest; component render → `@lodekit/ui` render tests;
+  cross-frontend health → `pnpm e2e`; visual judgment → Playwright MCP in-session.
+- If a simpler path exists than the one requested, say so before building it.
+
+### Develop → Review
+
+- Before flipping to ready: a whole-branch self-review of the diff — correctness plus
+  a security lens (the whole-branch pass is the one that caught real vulnerabilities;
+  per-task review scaffolding found nothing ~98% of the time — audit §2/§11).
+- Risk-flagged work (trust boundaries, parsers, auth, network egress) additionally
+  gets a fresh-context adversarial review — a subagent briefed to *disprove* the
+  change, not confirm it.
+- Automated review (D7): none is currently wired; the standing policy if one returns
+  is once per PR, at ready-for-review, drafts exempt.
+- Records check, run silently as part of assembling the PR (§3's trigger rule):
+  did this change take a fork? → arch rec. Did behavior fork? → the feat rec.
+  Structure change? → ARCHITECTURE.md. Loggable? → CHANGELOG.md entry.
+  Scope fell out? → TODO.md line. All in this same PR.
+
+### Develop → End
+
+- Delete the plan files in the final commit — `docs/plans/` goes back to README-only;
+  plans never reach master (the squash takes the branch's final tree, and the repo
+  squashes with `PR_TITLE`/`PR_BODY`, so the PR body becomes master's commit message).
+- Write the PR body: **Summary** (what and why), **Notes** (decisions, follow-ups,
+  TODO lines filed, and a **blob permalink to each plan's final version** — via
+  GitHub's PR refs the executed plans stay consultable during final review and after
+  merge), **Test plan** (checklist of what was verified). Check the Definition of
+  Done (`docs/DEFINITIONS.md`) before flipping to ready.
+- The person may set a different finishing intent at session start — commit-don't-push,
+  hold-and-iterate. A held branch is already tracked by its draft PR, which closes the
+  unmerged-PR dead zone (audit §5) with no extra machinery.
+- Merging is the person's call, always. Squash-merge only; `git rebase master` for
+  conflicts, never a plain merge; conventional-prefixed PR titles are load-bearing
+  (they become master's commit subjects).
+
+### Release
+
+The `/release` skill's content, folded in and corrected:
+
+- Pre-flight: on `master`, clean, up to date; `pnpm test` passes; version lockstep
+  across all **10** package.json files (root, `packages/{engine,mcp,sdk,skill,ui,integration-tests}`,
+  `web/{main,docs}`, `manager`); `gh auth status`; no open `release: vX.Y.Z` PR;
+  `docs/CHANGELOG.md` has at least one entry.
+- Bump all 10 together (features → minor, fixes → patch, breaking → major once out of
+  0.x; confirm with the person).
+- Notes = the buffer drained verbatim under a
+  `## [X.Y.Z](compare-url) (YYYY-MM-DD)` heading (chatto structure, D15) prepended to
+  `web/docs/src/content/docs/changelog.md`; cross-check merged PRs for missing entries
+  and *surface* gaps, never silently add. Reset the buffer to its rules header.
+- Branch `release/vX.Y.Z`, single commit `release: vX.Y.Z`, PR title the same (the
+  workflow's trigger — it alone creates `v*` tags). The person merges.
+- **Records audit** rides the release: verify feat recs and ARCHITECTURE.md claims
+  against the codebase; report verified / stale / missing. Lax capture + honest
+  periodic audit is the chosen trade.
+
+**Changelog buffer format (D15).** `docs/CHANGELOG.md` keeps a rules header, then
+chatto's category taxonomy:
+
+```markdown
+### ⚠ BREAKING CHANGES        # only when present, always first
+### Features
+### Bug Fixes
+### Performance Improvements
+### Code Refactoring
+```
+
+A slice appends one entry under the category matching its PR's conventional prefix
+(`feat` → Features, `fix` → Bug Fixes, `perf` → Performance Improvements,
+`refactor` → Code Refactoring; a `!` prefix additionally adds a ⚠ line describing the
+break and migration). Entry shape: `* **scope:** what changed ([#PR])` — phrased for a
+person using Lodekit. `chore`/`docs`/`test`/`ci` PRs append nothing. Append-only for
+agents; rewording happens in the release PR review.
+
+### Conventions
+
+Survivors: no `Co-Authored-By` trailers, no "Generated with" attribution ·
+conventional PR titles · `pnpm install --lockfile-only` for lockfile conflicts ·
+CHANGELOG.md is append-only for agents · steering docs are uppercase; `CLAUDE.md` is a
+committed symlink to `AGENTS.md`, never diverged.
+New: multiline gh bodies via `--body-file` (never escaped `\n`), and verify the stored
+body after create/edit · TODO.md appends are single lines · plan files never reach
+master (`docs/plans/` is README-only there).
+Dropped: the TodoWrite prohibition (D12), the beads rules, the codebase-graph
+convention, the `askUserQuestionTimeout` note, the Lazy/Surgical/Surface sections
+(current-model defaults; the one surviving line moved to Implement).
+
+## 3. Records — `docs/recs/`
+
+```
+docs/recs/
+├── INDEX.md               # table, trigger rule, both templates
+├── 001-arch-<slug>.md     # ADR format: Context / Decision / Consequences
+├── 002-arch-<slug>.md
+└── 008-feat-<slug>.md     # FDR format: Overview / Behavior / Design Decisions / Related
+```
+
+- **One flat directory, one sequence (D1):** three-digit numbers shared across both
+  kinds; the kind token (`arch`/`feat`) sits in the filename. Cite records by stem —
+  `recs/004-arch-engine-rename`, or `rec 012` in prose when unambiguous.
+- **Trigger rule (when to record):** record when a fork was taken — an alternative was
+  seriously considered and foreclosed, or the choice is one a future reader could not
+  infer from the code. Engineering-shaped → an `arch` record; feature-behavior-shaped →
+  the feature's `feat` record. **Do not record** quirks, how-tos, or research
+  findings — environment facts that change agent behavior go to AGENTS.md; everything
+  else deliberately has no memory home. The check runs at gates that already exist
+  (spec approval, PR assembly) as a question the agent answers itself — never a "worth
+  capturing?" prompt to the person (that gate's sub-50% yield is why v2's version
+  failed — audit §3).
+- **arch records** (ADR format): `# NNN-arch: Title`, Date, Context / Decision /
+  Consequences. Mostly immutable; superseded by a new record, noted in the INDEX
+  status column. Remit is engineering decisions broadly, not literally architecture —
+  "adopt CI" qualifies.
+- **feat records** (FDR format): `# NNN-feat: Feature`, Status + Last-reviewed stamp,
+  Overview / Behavior (user-visible, no implementation) / numbered Design Decisions
+  each **Decision · Why · Tradeoff** / Related (recs, specs) / optional Open
+  Questions. Rewritten in place — the record describes the feature *today*, never a
+  changelog. Bloat guard: not a code walkthrough, not a file index, not an API dump —
+  if it names function signatures or schemas, pull back to behavior + rationale.
+- **Freshness:** same-PR upkeep is part of the Definition of Done; the release-time
+  audit is the safety net. INDEX.md is updated in the same PR as any record change.
+- **Seeding (D2 — in this PR):** the seven retired `docs/decisions/` ADRs are
+  recreated as `arch` records 001–007 (rewritten into the format, content preserved),
+  and the shipped feature surface is backfilled as `feat` records distilled from
+  `docs/specs/` and the code. Candidate inventory (final call during implementation):
+  dashboard, app lifecycle (watch/build/serve), db/kv/file stores & data explorer,
+  settings, tasks, backups, gateways & egress guardrails, secret-store, themes & theme
+  editor, per-app favicons, MCP surface, logging/events. Each seeded feat record gets
+  an honest Last-reviewed stamp of this PR's date.
+
+## 4. `docs/ARCHITECTURE.md`
+
+Single file (expandable later), RFC-shaped, present-tense, no exhaustive API/schema
+lists — rationale lives in recs, behavior in feat recs and specs:
+
+1. **System map** — how manager / engine / MCP / skill / dashboard / apps relate at
+   runtime, as a short numbered flow (modeled on chatto's inventory INDEX).
+2. **Packages** — the inventory currently in AGENTS.md §Architecture, trimmed to
+   responsibilities and boundaries.
+3. **Invariants** (D10) — the ex-Principles content ("no dev servers, no terminal
+   builds; Lodekit controls the build chain programmatically, down to its own Node")
+   plus any standing boundary rules worth stating once (e.g. MCP reaches the engine
+   over HTTP only).
+4. **Deferred subsystems** — the designed-in-not-built paragraph, moved from AGENTS.md.
+
+Upkeep: structural changes update it in the same PR (same rule as recs); audited at
+release time.
+
+## 5. DEFINITIONS.md and DESIGN.md
+
+**DEFINITIONS.md** is officially the place ambiguity goes to die: canonical terms,
+relationships, and rulings, technical and non-technical, in a near key-value
+register — no bodies of text. Sections after this work: **Terms / Relationships /
+Ambiguities / Definition of Done**. Principles moves out (D10); "Flagged ambiguities"
+is renamed "Ambiguities". AGENTS.md keeps the one-line pointer ("use its canonical
+terms in code, docs, and specs; unsure or disputed → resolve here first").
+
+**Definition of Done (D14)** — the new section, verbatim:
+
+```markdown
+## Definition of Done
+
+A slice is done when all of these hold:
+
+- **Complete** — every plan task is done or explicitly moved to TODO.md.
+- **Tested** — a test exists at the lowest ladder rung that exercises the change,
+  and `pnpm test` passes.
+- **Showcased** — a new SDK/engine capability is exercised by the Greenhouse app
+  (`root/README.md` coverage checklist).
+- **Recorded** — recs, ARCHITECTURE.md, and DEFINITIONS.md are current for any fork,
+  structure change, or term this slice introduced.
+- **Logged** — docs/CHANGELOG.md has an entry if the PR's conventional type calls
+  for one.
+- **Parked** — descoped scope has a TODO.md line.
+- **Clean** — docs/plans/ is README-only; the branch is pushed; the PR body carries
+  Summary / Notes (with plan permalinks) / Test plan.
+```
+
+**DESIGN.md** restructures to **Foundations / Marketing / Product** (D4): the
+frontmatter tokens and the palette/typography/elevation sections are the shared
+**Cloud Captured** foundations; Marketing carries web-main's register and component
+treatments; Product carries dashboard/web-docs/manager register, components, and
+density. The existing "Register divergences" content dissolves into the two register
+sections. Content work beyond the restructure (actually designing the Product
+register) is its own future slice, not this PR.
+
+## 6. TODO.md port and TRACK.md
+
+- **Port (D11):** every open bead becomes one TODO.md line with today's date,
+  `bead` provenance, and its `(was lk-xxx)` suffix; P2 beads carry a `P1` marker,
+  P3 none (the old P2/P3 split collapses — TODO.md is a buffer, not a tracker).
+  Dropped, not ported: `lk-8i3`, `lk-9la` (codebase-memory-mcp adoption items).
+  New lines added at port time: per-PR CI (D8, ports `lk-bv3` — already among the
+  port set, so this is a marker update, not a new line) and the automated-review
+  re-wire decision (D7). The bd database itself is untouched (environment; `.beads/`
+  was never tracked).
+- **TRACK.md:** the retired `drain-deferrals/references/github-backlog.md` content,
+  carried over intact — project number, the four issue types, sub-issue and dependency
+  endpoints, the field/option node-ID table, the `setIssueFieldValue` mutation with
+  the `fields[][…]` syntax note, the worked example, and the ~2s/issue throttle note.
+
+## 7. Removal & edit sweep
+
+Beyond the sections above, the same PR:
+
+- Deletes `.agents/` (skills, hooks, scripts, SOURCES.md) and the `.claude/skills/`
+  symlinks (already staged in the working tree).
+- `.claude/settings.json`: hooks and plugin blocks removed (staged);
+  `enabledMcpjsonServers` becomes `["playwright"]` (drops codebase-memory-mcp, keeps
+  the remaining server pre-approved).
+- `.mcp.json`: the `codebase-memory-mcp` server entry is removed; playwright stays.
+- `.gitignore`: drops the `.beads/` and `.superpowers/` lines.
+- `CONTRIBUTING.md` §Development process: rewritten — no skills or SOURCES.md; the
+  checked-in tooling is AGENTS.md plus the `docs/` steering docs, records, and specs.
+- `README.md`: pointer check only (its Development section already matches D9).
+- `SECURITY.md`: the tracker-reference edit is already staged; no further change.
+- `docs/plans/`: the ~50 committed plan docs are deleted; `docs/plans/README.md`
+  (the D3 lifecycle note) is added.
+- `docs/changelog.md` → `docs/CHANGELOG.md` via explicit `git mv` (case-insensitive
+  FS); the buffer's rules header is rewritten for the D15 taxonomy, and the Release
+  section's paths update with it.
+- `docs/CONTEXT.md` → `docs/DEFINITIONS.md` lands as a rename (content mostly intact,
+  so git's rename detection preserves blame).
+
+## 8. Rollout
+
+One PR off this branch (`devex`), containing: this spec · the AGENTS.md rewrite ·
+`docs/ARCHITECTURE.md` · `docs/recs/` with INDEX **and the full D2 seeding** (7 arch +
+~10–12 feat records) · DEFINITIONS/DESIGN restructures (including the DoD section) ·
+TODO.md port · TRACK.md · the §7 sweep. The seeding makes this a large PR by design —
+the migration is atomic. Suggested review order for the person: this spec →
+AGENTS.md → recs/INDEX.md → the seeded records → the rest of the sweep.
+
+Follow-ups, each its own session, captured as TODO lines: first TODO drain · per-PR
+CI · the automated-review re-wire decision · Product register design in DESIGN.md.
+
+## 9. Verification
+
+- `pnpm test` and `pnpm e2e` unaffected (no product code).
+- `CLAUDE.md` still resolves to `AGENTS.md`; no dangling `.claude/skills` symlinks.
+- A fresh session smoke per lane: a question, a research ask, and a small change —
+  checking the session routes by shape, finds the docs it needs, and (for the change)
+  produces the early-draft-PR + plan flow unprompted, with the plan deleted and
+  permalinked from Notes before ready.
+- `git log --follow` shows continuity across the CONTEXT→DEFINITIONS and
+  changelog→CHANGELOG renames.
+- TODO.md line count matches the ported bead count minus the two dropped, plus the
+  D7 line.
+- Every seeded feat record's claims spot-checked against the code (the first records
+  audit, effectively).
+
+## 10. Deferred (TODO.md lines, filed with the port)
+
+- Automated-review fleet: decide whether to re-wire one (policy if so: once per PR,
+  at ready-for-review — D7).
+- Per-PR CI running `pnpm test` (D8, was `lk-bv3`).
+- DESIGN.md Product register: design the actual token/component treatments (D4 created
+  the section, not the system).
