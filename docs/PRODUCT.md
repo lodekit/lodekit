@@ -2,15 +2,15 @@
 
 The brand and product strategy steering doc: positioning, narrative, messaging, and
 voice. It exists so every outward-facing artifact — landing page, docs prose, blog
-posts, launch material — and the future visual-identity work (`DESIGN.md`) draw from
-one strategic source instead of re-deriving it per session.
+posts, launch material — and the visual-identity work (`DESIGN.md`) draw from one
+strategic source instead of re-deriving it per session.
 
 - **Language:** `DEFINITIONS.md` is normative. This doc uses canonical terms (app,
   agent, engine, service, gateway, dashboard, manager, Lodekit root) without
   redefining them.
 - **Boundaries:** visual identity (palette, typography, illustration) is out of
-  scope — that is `DESIGN.md`'s job, briefed by §7 here. Architecture is out of
-  scope — that is `ARCHITECTURE.md`'s job.
+  scope; that is `DESIGN.md`'s job, briefed by §7 here. Architecture is out of
+  scope; that is `ARCHITECTURE.md`'s job.
 - **Provenance:** derived 2026-07-18 in a pair session using the INTENT `strategize`
   and `storytelling` disciplines: the five foundational questions run fresh, the
   narrative composed under the situation → complication → resolution pattern.
@@ -19,7 +19,7 @@ one strategic source instead of re-deriving it per session.
 - **Evidence flags:** claims carry `[firsthand]` (building and using Lodekit),
   `[desk]` (public information about the market), or `[hypothesis]` (believed, not
   yet validated — see §3 open questions). No primary user research exists yet; this
-  doc is honest about that rather than dressed up as if it did.
+  doc says so plainly rather than dressing claims up.
 
 ## 1. Product statement
 
@@ -33,10 +33,10 @@ You describe the app; your agent builds it; Lodekit runs it and keeps it. No acc
 no subscriptions, nobody else's computer. Your apps and your data are files in a
 folder — back it up and it's yours forever.
 
-"Batteries" is a marketing metaphor only — it never enters the domain language
-(`CONTEXT.md` fixes *service* as the domain word). The tagline's three words carry the
-three promises: **cloud batteries** (capability), **locally** (ownership), **easily**
-(no tooling).
+"Batteries" is a marketing metaphor only; it never enters the domain language
+(`DEFINITIONS.md` fixes *service* as the domain word). The tagline's three words
+carry the three promises: **cloud batteries** (capability), **locally** (ownership),
+**easily** (no tooling).
 
 ## 2. The derivation — five foundational questions
 
@@ -51,8 +51,8 @@ time `[desk]`. But what the agent produces has no good place to live:
 
 - **Frequency:** every agent-built tool faces the where-does-it-live question
   immediately — hosting, data, persistence, secrets, scheduling `[firsthand]`.
-- **Severity:** for the primary audience (§2.2) it is adoption-blocking, not an
-  inconvenience: without a home, the tool either moves to a hosted platform (cost,
+- **Severity:** for the primary audience (§2.2) it blocks adoption; it is not a mere
+  inconvenience. Without a home, the tool either moves to a hosted platform (cost,
   account, silo) or dies. Widely reported as the "graveyard of half-working scripts"
   experience `[desk]` `[hypothesis — severity for non-devs specifically is unvalidated]`.
 - **Trajectory:** growing fast. Agent capability compounds; the keeping problem
@@ -85,14 +85,14 @@ SDK). Marketing addresses the person. The skill instructs; it never persuades.
 
 ### 2.3 Solution fit — is this the right form factor?
 
-The form factor: one installed menubar app (the manager) supervising one local engine;
-apps are URLs in the person's browser; everything precious is files in one folder
-(the Lodekit root). Fit for the primary audience:
+The form factor: one installed menubar app (the manager) supervising one local
+engine; apps are URLs in the person's browser; everything precious is files in one
+folder (the Lodekit root). Fit for the primary audience:
 
-- No terminal, no builds, no per-app installs — the platform owns the toolchain, down
-  to its own pinned Node `[firsthand]`.
-- Backup = copy a folder. Ownership is legible even to someone who never opens a code
-  editor.
+- No terminal, no builds, no per-app installs — the platform owns the toolchain,
+  down to its own pinned Node `[firsthand]`.
+- Backup = copy a folder. Ownership is legible even to someone who never opens a
+  code editor.
 - Apps in the browser meet people where personal tools already live.
 
 Rejected forms: per-app desktop bundles (heavy, no shared services), hosted cloud
@@ -101,11 +101,11 @@ Rejected forms: per-app desktop bundles (heavy, no shared services), hosted clou
 ### 2.4 Feature validation — is the feature set right?
 
 - **Essential (adoption-blocking without):** durable storage (db-store, kv-store,
-  file-store), the zero-tooling build-and-run loop, the dashboard (see and trust what
-  runs), agent drivability (skill + MCP), one-install distribution (manager).
-- **Differentiators:** **gateways** — apps reach external providers through a managed
-  door and credentials never enter agent-written code. This is the trust story:
-  guardrails are what make agent-built software safe to live with
+  file-store), the zero-tooling build-and-run loop, the dashboard (see and trust
+  what runs), agent drivability (skill + MCP), one-install distribution (manager).
+- **Differentiators:** **gateways** — apps reach external providers through a
+  managed door and credentials never enter agent-written code. This is the trust
+  story: guardrails are what make agent-built software safe to live with
   `[hypothesis — that trust is a top adoption barrier]`. Also: scheduled tasks,
   one shared theme (ten agent-built apps feel like one product, not ten codepens),
   theming as the person's surface.
@@ -125,8 +125,8 @@ Rejected forms: per-app desktop bundles (heavy, no shared services), hosted clou
 | Local-first tools | Obsidian, Anytype | Your data, one great app | A single app, not a platform for building your own |
 | The incumbent | Spreadsheets; doing nothing | Free, already open | Everything is a workaround — the pain Lodekit names |
 
-**White space:** the intersection *agent-built × locally-owned × batteries-included ×
-non-dev-operable* is unoccupied — no player above holds more than two of the four.
+**White space:** the intersection *agent-built × locally-owned × batteries-included
+× non-dev-operable* is unoccupied; no player above holds more than two of the four.
 Self-host platforms prove the local appetite exists at consumer scale; hosted AI
 builders prove the build-by-describing behavior exists at consumer scale. Lodekit is
 the join.
@@ -139,12 +139,12 @@ a terminal.
 
 - **Context:** agents collapsed the cost of making software; MCP and skills made
   agent-agnostic infrastructure possible; personal hardware sits idle and capable.
-- **Gap:** agent-built software has nowhere good to live — it rents a home in someone
-  else's cloud or rots homeless on disk.
+- **Gap:** agent-built software has nowhere good to live — it rents a home in
+  someone else's cloud or rots homeless on disk.
 - **Opportunity:** own the keeping layer of the agent era. Whoever gives personal
   software a durable, owned home becomes the default substrate for it.
 - **Goals:** v0.1 — a person completes the loop assisted. 0.x — an unassisted
-  stranger completes it. The load-bearing product metric is **kept**: an app still in
+  stranger completes it. The central product metric is **kept**: an app still in
   weekly use 30 days after scaffold `[hypothesis — instrumentation to be designed]`.
   Secondary: time to first running app; apps per instance over time.
 - **Constraints:** small team; macOS-first alpha (ad-hoc signed); agent-agnostic by
@@ -152,8 +152,8 @@ a terminal.
   sync, no sharing, macOS-only are all currently true and must not be papered over.
 - **Guiding principles:**
   1. **Ownership is the point** — local is why, not just how.
-  2. **The person never touches tooling** — a terminal appearing anywhere is a defect
-     in the story.
+  2. **The person never touches tooling** — a terminal appearing anywhere is a
+     defect in the story.
   3. **Guardrails make agent code livable** — trust is engineered, not asked for.
   4. **Many apps, one product** — coherence is a feature the person can feel.
   5. **Punch at systems, never at people** — the enemy is subscriptions, silos, and
@@ -177,18 +177,18 @@ a terminal.
 ## 4. Positioning — the enemy
 
 The story leads with the enemy, in two beats. Both beats are documented trade-offs
-(§2.5), not manufactured tension — keep them factual wherever they appear.
+(§2.5), not manufactured tension; keep them factual wherever they appear.
 
 1. **Someone else's computer.** The hosted path: your app behind an account, on a
-   meter, in a silo. You made it, but it lives at the vendor's pleasure — and so does
-   your data.
-2. **The graveyard.** The local path: output with no home. It needs tooling you don't
-   have, keeps nothing durably, breaks silently, and joins the folder of half-working
-   things you stopped opening.
+   meter, in a silo. You made it, but it lives at the vendor's pleasure — and so
+   does your data.
+2. **The graveyard.** The local path: output with no home. It needs tooling you
+   don't have, keeps nothing durably, breaks silently, and joins the folder of
+   half-working things you stopped opening.
 
-Compression: **agent-built software today either lives on someone else's computer or
-dies in a folder.** Lodekit is positioned as the third path — and the tagline is the
-resolution compressed: keep the batteries, drop the cloud.
+Compression: **agent-built software today either lives on someone else's computer
+or dies in a folder.** Lodekit is positioned as the third path, and the tagline is
+the resolution compressed: keep the batteries, drop the cloud.
 
 **What Lodekit is not** (guards against drift): not a deployment platform, not a
 hosting company, not an app store, not a dev tool that happens to run locally, not
@@ -197,7 +197,7 @@ an agent. It is the home — the platform apps live on.
 ## 5. Brand narrative
 
 Pattern: **situation → complication → resolution** (INTENT storytelling), told
-enemy-first — artifacts open on the complication, then earn the situation and land
+enemy-first: artifacts open on the complication, then earn the situation and land
 the resolution. This is the canonical telling; landing hero, launch post, and About
 prose are compressions or expansions of it.
 
@@ -242,16 +242,16 @@ For persuasion surfaces (landing sections, launch post). Oscillate; end on the g
   heroic. Compose user stories kishōtenketsu-style (introduction → development →
   twist → settling) rather than forcing conflict arcs onto a habit tracker.
 - **Story is not evidence.** The narrative makes people care; §2's evidence makes
-  claims true. Never cite the story as proof, and never smooth real user data into a
-  cleaner arc than it had — once real users exist, their mess stays visible.
-- **Keep the complication factual.** The two beats survive because they are checkable
-  trade-offs. If an artifact needs a bigger enemy than the evidence supports, the
-  artifact is wrong.
+  claims true. Never cite the story as proof, and never smooth real user data into
+  a cleaner arc than it had — once real users exist, their mess stays visible.
+- **Keep the complication factual.** The two beats survive because they are
+  checkable trade-offs. If an artifact needs a bigger enemy than the evidence
+  supports, the artifact is wrong.
 
 ## 6. Messaging
 
-Five pillars. Every outward claim should trace to one; an artifact that needs a sixth
-should question itself first.
+Five pillars. Every outward claim should trace to one; an artifact that needs a
+sixth should question itself first.
 
 | # | Pillar | The claim | Proof points |
 | --- | --- | --- | --- |
@@ -264,22 +264,22 @@ should question itself first.
 **Message architecture by audience:** the primary audience gets pillars in the order
 above — outcome and ownership first, mechanics as proof. The developer audience gets
 the same pillars plus the honesty layer: name the stack (TanStack Start, SQLite,
-shadcn, MCP) one level below the headline — never in it. Credibility for developers
+shadcn, MCP) one level below the headline, never in it. Credibility for developers
 comes from real names; warmth for non-devs comes from never leading with them.
 
-**Language rules:** canonical terms end-to-end (`CONTEXT.md`) — *app* (never tool,
-project, widget), *agent* (never Claude-as-generic, AI, assistant), *service* in
-product surfaces ("batteries" only in marketing prose). Marketing may simplify; it may
-never rename.
+**Language rules:** canonical terms end-to-end (`DEFINITIONS.md`) — *app* (never
+tool, project, widget), *agent* (never Claude-as-generic, AI, assistant), *service*
+in product surfaces ("batteries" only in marketing prose). Marketing may simplify;
+it may never rename.
 
 ## 7. Voice & tone
 
-The personality, stated as attributes so the future `DESIGN.md` session can translate
-it visually. Voice attributes: **plain-spoken** (short words, concrete nouns),
-**quietly confident** (states, doesn't hype), **wry, not cynical** (the edge points at
-systems, per principle 5), **warm underneath** (the product is about keeping things —
-domestic verbs like *live*, *keep*, *home* are on-voice), **honest to a fault**
-(limitations stated plainly; "macOS only, for now" over silence).
+The personality, stated as attributes so `DESIGN.md` can translate it visually.
+Voice attributes: **plain-spoken** (short words, concrete nouns), **quietly
+confident** (states, doesn't hype), **wry, not cynical** (the edge points at
+systems, per principle 5), **warm underneath** (the product is about keeping
+things — domestic verbs like *live*, *keep*, *home* are on-voice), **honest to a
+fault** (limitations stated plainly; "macOS only, for now" over silence).
 
 | Do | Don't |
 | --- | --- |
@@ -300,12 +300,12 @@ narrative at full length, evidence-honest.
   section. Arc: problems → fit check → what-is → how-it-goes → comparison →
   manifesto → CTA. Oscillation pairs (§5) close the manifesto; stack names in the
   developer layer only.
-- **Docs prose:** voice per §7 (no edge); narrative rules per §5 (calm-shaped, never
-  punching).
+- **Docs prose:** voice per §7 (no edge); narrative rules per §5 (calm-shaped,
+  never punching).
 - **Blog / launch post:** skeleton is §5 verbatim — complication, situation,
   resolution, why-now — with §2 evidence keeping it honest.
-- **`DESIGN.md` session (next):** brief in = §7 attributes + §4 positioning + the
-  audience of §2.2. Visual identity decisions happen there, not here.
-- **Amending:** positioning, pillar, or narrative changes land here first, then flow
-  outward — artifacts never fork the strategy locally. Resolve an open question in §3
-  by editing this doc in the same change.
+- **`DESIGN.md`:** its brief is §7's attributes, §4's positioning, and §2.2's
+  audience. Visual identity decisions happen there, not here.
+- **Amending:** positioning, pillar, or narrative changes land here first, then
+  flow outward — artifacts never fork the strategy locally. Resolve an open
+  question in §3 by editing this doc in the same change.
