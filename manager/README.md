@@ -1,9 +1,9 @@
 # @lodekit/manager
 
-The manager: the thin menubar app that ships and supervises the platform. Packaged, it is
-THE Lodekit download — `Lodekit.app` carries a pinned Lodekit-local Node and the platform
-payload (engine, MCP server, skill) in its `Resources/`, and touches nothing on the
-person's system (no system Node, no PATH). Spec:
+The manager is the thin menubar app that ships and supervises the platform. Packaged,
+it is the Lodekit download: `Lodekit.app` carries a pinned Lodekit-local Node and the
+platform payload (engine, MCP server, skill) in its `Resources/`, and touches nothing
+on the person's system — no system Node, no PATH. Spec:
 `docs/specs/2026-07-02-manager-v0.1-design.md`.
 
 ## Commands
@@ -11,10 +11,10 @@ person's system (no system Node, no PATH). Spec:
 - `pnpm --filter @lodekit/manager start` — dev mode: menubar app supervising the workspace
   engine against `root/` (system Node).
 - `pnpm --filter @lodekit/manager test` — vitest suite (supervisor, paths, logs).
-- `pnpm --filter @lodekit/manager make` — build the payload + fetch the pinned Node
+- `pnpm --filter @lodekit/manager make` — build the payload and fetch the pinned Node
   (`scripts/prepare-bundle.mjs`, one-place version pin), then package the ad-hoc-signed
   arm64 `Lodekit.app` (zip under `out/make/`).
-- **Gotcha:** always run `pnpm install` from the repo root, never from `manager/` — this
+- **Gotcha:** always run `pnpm install` from the repo root, never from `manager/`. This
   package's `.npmrc` (`node-linker=hoisted`, required by Forge's dev-start check) would
   otherwise rewrite the whole workspace's node_modules layout and break engine builds.
 
@@ -92,5 +92,6 @@ claude mcp add lodekit -- /Applications/Lodekit.app/Contents/Resources/node/bin/
   /Applications/Lodekit.app/Contents/Resources/platform/mcp/index.ts
 ```
 
-Link the skill by pointing your agent at the `SKILL.md` path above (per-agent guides land
-with the docs site; until then these snippets are the setup story — spec §8).
+Link the skill by pointing your agent at the `SKILL.md` path above. Per-agent guides
+will land with the docs site; until then these snippets are the setup instructions
+(spec §8).
