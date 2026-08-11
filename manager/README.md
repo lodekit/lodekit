@@ -18,6 +18,40 @@ person's system (no system Node, no PATH). Spec:
   package's `.npmrc` (`node-linker=hoisted`, required by Forge's dev-start check) would
   otherwise rewrite the whole workspace's node_modules layout and break engine builds.
 
+## Packaged-app smoke checklist
+
+Manual verification of a packaged build — the part `pnpm test`/`pnpm e2e` can't cover.
+Run on a clean macOS account **without** system Node or pnpm (`node -v` and `pnpm -v` both
+fail). Build the artifact first: `pnpm --filter @lodekit/manager make`.
+
+1. [ ] Install: unzip, move `Lodekit.app` to `/Applications`, right-click → Open.
+2. [ ] "⬡" appears in the menu bar; no dock icon; menu reads "Lodekit — starting…" then
+       "Lodekit — running".
+3. [ ] First run: `~/Documents/Lodekit/apps` + `data` were created and pre-populated with
+       the showcase apps (greenhouse + welcome); the dashboard opened in the browser by
+       itself, showing both apps go `building… → ready`.
+4. [ ] An app builds and serves: open Greenhouse from the dashboard — it renders the
+       seeded conservatory page (e.g. "Fernando") — and interact with it (e.g. edit
+       `~/Documents/Lodekit/apps/greenhouse` source, watch it rebuild).
+5. [ ] Never-clobber / delete-to-empty: delete both `~/Documents/Lodekit/apps/greenhouse`
+       and `~/Documents/Lodekit/apps/welcome`, relaunch Lodekit.app — the app grid is
+       empty and stays empty (no reinstall on this or any later launch).
+6. [ ] MCP: paste the snippet below into an agent's MCP config; the agent lists Lodekit
+       tools and can call them. (Headless check:
+       `echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' | <command + args from the snippet below>`
+       prints an `initialize` result.)
+7. [ ] Stop/Start from the menu works; "Open Logs" shows `manager.log` + `runtime.log`.
+8. [ ] Error surfacing: with Lodekit stopped, start a dev engine on the port (from the repo:
+       `pnpm dev`), then Start → menu shows "Lodekit — error" with the port-in-use message;
+       stop the dev engine, Restart → running. (A non-engine process squatting the port
+       surfaces differently — the spawned engine exits and the menu shows "Engine exited
+       unexpectedly"; both are surfaced errors, never a crash.)
+9. [ ] "Launch at Login": toggle on, log out/in, Lodekit is running.
+10. [ ] Quit: `pgrep -f "Resources/platform/engine"` prints nothing (no orphan).
+11. [ ] Crash cleanup: `kill -9 <manager pid>` while running (find it via Activity
+        Monitor), relaunch Lodekit.app — it terminates the stale engine (pid file) and
+        reaches "running".
+
 ## Installing the alpha (assisted)
 
 1. Unzip and move `Lodekit.app` to `/Applications`.
