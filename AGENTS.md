@@ -37,10 +37,11 @@ update it in the same PR as any structural change.
 
 Package manager is **pnpm** (workspaces). From the repo root:
 
-- `pnpm install` — installs all packages. A clean install auto-builds the `better-sqlite3`
-  native module via the root `pnpm.onlyBuiltDependencies` allowlist (pnpm v10 gates install
-  scripts). **Gotcha:** switching Node versions causes a `better-sqlite3` ABI mismatch
-  (`NODE_MODULE_VERSION`) — fix with `pnpm rebuild better-sqlite3`.
+- `pnpm install` — installs all packages. A clean install auto-builds the
+  `better-sqlite3` native module via the root `pnpm.onlyBuiltDependencies` allowlist
+  (pnpm v10 gates install scripts). **Gotcha:** switching Node versions causes a
+  `better-sqlite3` ABI mismatch (`NODE_MODULE_VERSION`) — fix with
+  `pnpm rebuild better-sqlite3`.
 - `pnpm dev` — run the engine against the showcase apps
   (`LODEKIT_ROOT=$(pwd)/root pnpm --filter @lodekit/engine start`).
 - `pnpm mcp` — run the MCP server (`pnpm --filter @lodekit/mcp start`).
@@ -210,6 +211,11 @@ body as notes — the workflow is the only creator of `v*` tags; never tag manua
 - **Steering docs** are uppercase. `AGENTS.md` lives at the repo root; `CLAUDE.md`
   is a committed symlink to it — never diverge them. The rest live in `docs/` per
   the map above.
+- **Canonical docs stand alone:** ARCHITECTURE.md, DEFINITIONS.md, DESIGN.md, and
+  PRODUCT.md never link to specs — they carry present truth on their own terms;
+  specs are history and may drift.
+- **Prose wraps at ~90 columns** in steering docs and specs; tables, code, YAML
+  frontmatter, and TODO.md's single-line entries are exempt.
 - **docs/CHANGELOG.md** is append-only for agents (category and entry rules in
   its header); **docs/TODO.md** appends are single lines; plan files never reach
   master.

@@ -2,9 +2,8 @@
 
 The current shape of the system: what exists, where it lives, and how it fits.
 Present-tense and deliberately not exhaustive — no API or schema dumps. Decision
-rationale and feature designs live in the dated `docs/specs/`. Structural changes
-update this file in the same PR; claims are audited against the code at release
-time.
+rationale and feature designs live in the dated specs. Structural changes update
+this file in the same PR; claims are audited against the code at release time.
 
 ## System map
 
@@ -74,17 +73,7 @@ pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `root/` is
   instances only if ever proven necessary). Lodekit controls the build chain
   **programmatically (via code, not shell commands)** — down to provisioning its
   own Lodekit-local Node, never the system's.
-- **The MCP server reaches the engine over HTTP only** — never an import.
+- **The engine and MCP are buildless** — `tsx`, no build step.
 - **Credentials never enter the app worker.** Secrets are linked in the
   dashboard and injected host-side at the gateway boundary.
-- **The engine and MCP are buildless** — `tsx`, no build step.
-- **One word, one meaning:** "engine" names the whole process and nothing else;
-  subsystems are executors (engine rename,
-  `docs/specs/2026-07-16-events-canonical-model-design.md` §8). "Runtime" is not a
-  Lodekit word.
-
-## Deferred subsystems
-
-Designed-in, not built: docs content/theming/deploy and packaging polish
-(Developer ID signing/notarization, auto-update). See the backlog
-(`gh issue list`) and `docs/TODO.md`.
+- **The MCP server reaches the engine over HTTP only** — never an import.

@@ -274,9 +274,11 @@ Dark mode has no shadows at all: elevation is night → night-hi → night-lo li
 
 Shadow vocabulary:
 
-- **lift** (`box-shadow: 0 1px 2px rgba(37,27,37,.08), 0 14px 34px -22px rgba(37,27,37,.4)`):
+- **lift**
+  (`box-shadow: 0 1px 2px rgba(37,27,37,.08), 0 14px 34px -22px rgba(37,27,37,.4)`):
   hover state of clickable cards on Marketing surfaces.
-- **overlay** (`box-shadow: 0 2px 4px rgba(37,27,37,.08), 0 22px 44px -20px rgba(37,27,37,.42)`):
+- **overlay**
+  (`box-shadow: 0 2px 4px rgba(37,27,37,.08), 0 22px 44px -20px rgba(37,27,37,.42)`):
   dialogs, popovers, dropdown menus — both registers.
 
 **The Flat Paper Rule.** Surfaces are flat at rest. A shadow is always an answer to
@@ -394,8 +396,8 @@ register's own moves live in §2 and §3.
 
 - **The mark** is the jar-cloud, three styles — a "Solid", b "Knockout" (default),
   c "Outline" — with vector source of truth in `packages/ui/src/marks.ts`
-  (`@lodekit/ui/marks`; 32×32 viewBox, `currentColor` throughout). Never redraw, re-proportion, rotate,
-  or gradient-fill it; new consumers import from marks.ts.
+  (`@lodekit/ui/marks`; 32×32 viewBox, `currentColor` throughout). Never redraw,
+  re-proportion, rotate, or gradient-fill it; new consumers import from marks.ts.
 - **Mark color:** plum ink on the page, pale gold on night. The accent is permitted
   as a deliberate brand moment (hero, favicon flourish) — one color at a time,
   always flat.

@@ -68,7 +68,9 @@ Rules:
   UI's icon set: Nord uses Tabler and Rosé Pine uses Phosphor, while the rest
   stay on Lucide.
 
-- **Events explorer** — the dashboard Events view can now filter by app, kind (engine / services / apps), component, event type, and date range, with a live filtered count and time histogram.
+- **Events explorer** — the dashboard Events view can now filter by app, kind (engine /
+  services / apps), component, event type, and date range, with a live filtered count
+  and time histogram.
 
 - **Theme library in the dashboard.** The dashboard's Themes page shows every
   installed theme as a card — its palette swatches and a light/dark preview,
@@ -118,7 +120,8 @@ Rules:
   Greenhouse) now render a styled 404 with a link back home instead of a bare
   "Not Found" fallback.
 
-- **Jar-cloud icons regenerated** — small rendering artifacts fixed in the menubar icons, dashboard logo, and favicons.
+- **Jar-cloud icons regenerated** — small rendering artifacts fixed in the menubar
+  icons, dashboard logo, and favicons.
 
 - **Menubar icon follows the style setting live** — changing the icon style in the
   dashboard now restyles the menubar icon immediately; it used to take a manager

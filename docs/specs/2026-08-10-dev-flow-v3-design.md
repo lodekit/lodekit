@@ -246,9 +246,10 @@ Single-sitting tasks need no plan.
 The `/release` skill's content, folded in and corrected:
 
 - Pre-flight: on `master`, clean, up to date; `pnpm test` passes; version lockstep
-  across all **10** package.json files (root, `packages/{engine,mcp,sdk,skill,ui,integration-tests}`,
-  `web/{main,docs}`, `manager`); `gh auth status`; no open `release: vX.Y.Z` PR;
-  `docs/CHANGELOG.md` has at least one entry.
+  across all **10** package.json files (root,
+  `packages/{engine,mcp,sdk,skill,ui,integration-tests}`, `web/{main,docs}`,
+  `manager`); `gh auth status`; no open `release: vX.Y.Z` PR; `docs/CHANGELOG.md`
+  has at least one entry.
 - Bump all 10 together (features → minor, fixes → patch, breaking → major once out of
   0.x; confirm with the person).
 - Notes = the buffer drained verbatim under a
@@ -287,7 +288,10 @@ CHANGELOG.md is append-only for agents · steering docs are uppercase; `CLAUDE.m
 committed symlink to `AGENTS.md`, never diverged.
 New: multiline gh bodies via `--body-file` (never escaped `\n`), and verify the stored
 body after create/edit · TODO.md appends are single lines · plan files never reach
-master (`docs/plans/` is README-only there).
+master (`docs/plans/` is README-only there) · canonical docs (ARCHITECTURE,
+DEFINITIONS, DESIGN, PRODUCT) never link to specs — they carry present truth on their
+own terms · prose wraps at ~90 columns (tables, code, frontmatter, and TODO.md's
+single-line entries exempt).
 Dropped: the TodoWrite prohibition (D11), the beads rules, the codebase-graph
 convention, the `askUserQuestionTimeout` note, the Lazy/Surgical/Surface sections
 (current-model defaults; the one surviving line moved to Implement).
@@ -390,6 +394,8 @@ Beyond the sections above, the same PR:
   section's paths update with it.
 - `docs/CONTEXT.md` → `docs/DEFINITIONS.md` lands as a rename (content mostly intact,
   so git's rename detection preserves blame).
+- Canonical docs drop their spec links (the stand-alone convention above);
+  PRODUCT.md's stale `CONTEXT.md` pointer updates to DEFINITIONS.md.
 
 ## 7. Rollout
 
