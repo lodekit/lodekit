@@ -55,18 +55,18 @@ Captured values and identity physics. Spec §2.
 
 ## Task 3 — The `shadcn` theme + default flip
 
-- [ ] Add `packages/engine/themes/shadcn.css`: header naming the source
+- [x] Add `packages/engine/themes/shadcn.css`: header naming the source
       (ui.shadcn.com, MIT); one css2 `@import` (Geist 400/500/600, Geist Mono
       400/500); `--font-ui`/`--font-display` Geist stacks, `--font-mono` Geist Mono
       stack; `--radius: 0.625rem`, `--spacing: 0.25rem`, `--icon-library: lucide`;
       31 tokens in both plates, stock neutral oklch→hex. No physics fields.
-- [ ] `DEFAULT_THEME = "shadcn"` in `packages/engine/src/services/themes.ts`;
+- [x] `DEFAULT_THEME = "shadcn"` in `packages/engine/src/services/themes.ts`;
       `resolveThemeCss()` floor reads vendored `shadcn.css`; update stale comments
       in `themes.ts` / `server.ts`.
-- [ ] Update tests: `themes.test.ts` (six vendored themes; resolution and
+- [x] Update tests: `themes.test.ts` (six vendored themes; resolution and
       delete-while-selected fall back to `shadcn`), `themes-api.test.ts`,
       `ui-serving.test.ts` degrade paths.
-- [ ] `theme-contrast.test.ts`: gate `shadcn` (both plates, not `AA_EXEMPT`). If a
+- [x] `theme-contrast.test.ts`: gate `shadcn` (both plates, not `AA_EXEMPT`). If a
       stock pair fails, tune minimally toward the nearest AA-passing value and
       comment the deviation in the theme file.
 

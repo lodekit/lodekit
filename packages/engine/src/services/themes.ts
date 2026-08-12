@@ -2,7 +2,7 @@
 // A theme is a CSS token file (`<name>.css`). Vendored themes ship with the
 // engine (packages/engine/themes/, read-only); user themes live in the Lodekit
 // root at `<root>/themes/`, alongside `config.json` (the global + per-app
-// selections). Resolution is app → global → the vendored `lodekit` default, with
+// selections). Resolution is app → global → the vendored `shadcn` default, with
 // per-step fallback when a selected theme's file is missing. Name grammar equals
 // the app-id grammar (registry's isValidAppId) — validated before any path join.
 import fs from "node:fs";
@@ -14,7 +14,7 @@ import { emitEvent } from "../events.js";
 import type { Config } from "../config.js";
 
 export const THEME_MAX_BYTES = 512 * 1024;
-export const DEFAULT_THEME = "lodekit";
+export const DEFAULT_THEME = "shadcn";
 
 export interface ThemeInfo {
   name: string;
@@ -145,7 +145,7 @@ export function resolveThemeName(cfg: Config, appId?: string): string {
   return DEFAULT_THEME;
 }
 
-// Never throws: the vendored lodekit.css content is the last-resort floor, and
+// Never throws: the vendored shadcn.css content is the last-resort floor, and
 // an empty string is the absolute floor if even that read fails.
 export function resolveThemeCss(cfg: Config, appId?: string): string {
   try {

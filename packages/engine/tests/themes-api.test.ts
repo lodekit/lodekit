@@ -41,7 +41,7 @@ describe("/_ui theme delivery", () => {
     let r = await fetch(base + "/_ui/theme.css");
     expect(r.status).toBe(200);
     expect(r.headers.get("content-type")).toContain("text/css");
-    expect(await r.text()).toContain("--icon-library"); // lodekit default
+    expect(await r.text()).toContain("--icon-library"); // vendored shadcn default
     r = await fetch(base + "/_ui/theme.css?app=not-an-app"); // unknown app: still 200, global
     expect(r.status).toBe(200);
     expect(r.headers.get("cache-control")).toBe("no-store");
@@ -64,6 +64,7 @@ describe("/api/themes", () => {
   it("lists themes with config", async () => {
     const doc = await (await fetch(base + "/api/themes")).json();
     expect(Array.isArray(doc.themes)).toBe(true);
+    expect(doc.themes.some((t: { name: string; vendored: boolean }) => t.name === "shadcn" && t.vendored)).toBe(true);
     expect(doc.themes.some((t: { name: string; vendored: boolean }) => t.name === "lodekit" && t.vendored)).toBe(true);
     expect(doc.config).toEqual({});
   });
