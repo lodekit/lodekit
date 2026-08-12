@@ -6,7 +6,7 @@
 
 ## Task 1 — Canonical format: physics fields
 
-- [ ] Extend the theme model in `packages/engine/dashboard/src/lib/theme-css.ts`,
+- [x] Extend the theme model in `packages/engine/dashboard/src/lib/theme-css.ts`,
       following the `--font-mono` optional-field precedent:
       `:root`-only typed fields `fontWeightBody` (`--font-weight-body`) and
       `easeDefault` (`--default-transition-timing-function`); per-plate optional
@@ -14,7 +14,7 @@
       `--shadow-md`, `--shadow-lg`, `--shadow-xl`, `--shadow-2xl` (allowed in
       `:root` and `.dark`, like the color set; `.dark` absent → inherits `:root`).
       Absent field → empty model value → no line serialized.
-- [ ] Extend `packages/engine/tests/theme-css.test.ts`: round-trip byte-identical
+- [x] Extend `packages/engine/tests/theme-css.test.ts`: round-trip byte-identical
       for themes with none / some / all fields, per-plate shadow divergence, and
       edited-in cases; every existing vendored fixture still round-trips.
 
