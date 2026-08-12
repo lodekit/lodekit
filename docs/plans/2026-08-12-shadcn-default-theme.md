@@ -83,7 +83,7 @@ Welcome render neutral shadcn with Geist.
 - [x] `root/themes/greenhouse-green.css`: same physics block (showcase exercises
       the new fields — Definition of Done). `root/README.md` checklist gains the
       row.
-- [ ] Visual check (Playwright MCP or browser): switch global theme to `lodekit` —
+- [x] Visual check (Playwright MCP or browser): switch global theme to `lodekit` —
       flat at rest, ink overlays on popovers, body 500, drift easing; focus is the
       stock ring (expected change).
 
@@ -130,15 +130,15 @@ lodekit's overlay shadows, fonts show as matched selections.
 
 ## Task 7 — Verification and close-out
 
-- [ ] `pnpm test`, `pnpm e2e`, `pnpm --filter @lodekit/web-docs build` all green.
-- [ ] Visual pass (`pnpm dev` + Playwright MCP): dashboard/Welcome neutral shadcn;
+- [x] `pnpm test`, `pnpm e2e`, `pnpm --filter @lodekit/web-docs build` all green.
+- [x] Visual pass (`pnpm dev` + Playwright MCP): dashboard/Welcome neutral shadcn;
       Greenhouse moss Cloud Captured with flat elevation; global switch to
       `lodekit` restores the identity; editor Effects round-trip.
-- [ ] Self-review the whole branch diff (correctness + security; themes endpoints
+- [x] Self-review the whole branch diff (correctness + security; themes endpoints
       are a validated-slug surface — confirm no path-handling changes).
-- [ ] Close the Focus-Is-A-Border product-adoption backlog issue with a comment
+- [x] Close the Focus-Is-A-Border product-adoption backlog issue with a comment
       linking PR #208 (`gh issue list --search "focus"` to find it).
-- [ ] Delete this plan file in the final commit; rewrite the PR body (Summary /
+- [x] Delete this plan file in the final commit; rewrite the PR body (Summary /
       Notes with plan permalink to the deletion commit's parent / Test plan);
       check the Definition of Done; flip PR #208 to ready.
 
