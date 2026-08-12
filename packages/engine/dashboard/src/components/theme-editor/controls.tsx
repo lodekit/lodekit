@@ -16,6 +16,7 @@ import {
   applyRole,
   ROLES,
   roleValue,
+  SHADOW_TOKENS,
   type ThemeModel,
 } from "../../lib/theme-css";
 import { ChartsRow, RoleRow } from "./role-row";
@@ -30,6 +31,7 @@ interface FontEntry {
 }
 const FONT_CATALOG: readonly FontEntry[] = [
   { label: "Zen Kaku Gothic New", family: '"Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"', googleSpec: "Zen+Kaku+Gothic+New:wght@400;500;700" },
+  { label: "Geist", family: '"Geist", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"', googleSpec: "Geist:wght@400;500;600" },
   { label: "Inter", family: '"Inter", ui-sans-serif, system-ui, sans-serif', googleSpec: "Inter:wght@400;500;600" },
   { label: "Lora", family: '"Lora", Georgia, serif', googleSpec: "Lora:wght@400;500;600" },
   { label: "Source Serif 4", family: '"Source Serif 4", Georgia, serif', googleSpec: "Source+Serif+4:wght@400;500;600" },
@@ -37,6 +39,7 @@ const FONT_CATALOG: readonly FontEntry[] = [
   { label: "Space Grotesk", family: '"Space Grotesk", ui-sans-serif, system-ui, sans-serif', googleSpec: "Space+Grotesk:wght@400;500;600" },
   { label: "Nunito", family: '"Nunito", ui-sans-serif, system-ui, sans-serif', googleSpec: "Nunito:wght@400;500;600" },
   { label: "Merriweather", family: '"Merriweather", Georgia, serif', googleSpec: "Merriweather:wght@400;500;600" },
+  { label: "Geist Mono", family: '"Geist Mono", ui-monospace, monospace', googleSpec: "Geist+Mono:wght@400;500" },
   { label: "Spline Sans Mono", family: '"Spline Sans Mono", ui-monospace, monospace', googleSpec: "Spline+Sans+Mono:wght@400;500" },
   { label: "IBM Plex Mono", family: '"IBM Plex Mono", ui-monospace, monospace', googleSpec: "IBM+Plex+Mono:wght@400;500" },
   { label: "M PLUS 1 Code", family: '"M PLUS 1 Code", ui-monospace, monospace', googleSpec: "M+PLUS+1+Code:wght@400;500;700" },
@@ -123,6 +126,37 @@ const DENSITY: readonly { label: string; value: string }[] = [
 
 const ICON_LIBRARIES = ["lucide", "phosphor", "tabler"] as const;
 
+// Effects presets (spec 2026-08-12 §5). Physics are optional format fields: absent
+// = stock. Presets write exact values; anything else displays "Custom" — the same
+// honesty rule as the color roles' "mixed" state.
+const DRIFT_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+const FLAT_SHADOW = "0 0 #0000";
+
+type PresetValue = "stock" | "custom" | string;
+
+function elevationOf(model: ThemeModel): "stock" | "flat" | "custom" {
+  const present = (m: Record<string, string>) => SHADOW_TOKENS.some((t) => m[t] !== undefined);
+  if (!present(model.light) && !present(model.dark)) return "stock";
+  const allFlat = (m: Record<string, string>) => SHADOW_TOKENS.every((t) => m[t] === FLAT_SHADOW);
+  return allFlat(model.light) && allFlat(model.dark) ? "flat" : "custom";
+}
+
+function easingOf(model: ThemeModel): PresetValue {
+  if (!model.easeDefault) return "stock";
+  return model.easeDefault === DRIFT_EASE ? "drift" : "custom";
+}
+
+function weightOf(model: ThemeModel): PresetValue {
+  if (!model.fontWeightBody || model.fontWeightBody === "400") return "normal";
+  return model.fontWeightBody === "500" ? "medium" : "custom";
+}
+
+// Preset options, prepending a non-actionable "Custom" entry when the model
+// holds values no preset produces (mirrors the Density select's pattern).
+function presetOptions(current: PresetValue, options: { label: string; value: string }[]) {
+  return current === "custom" ? [{ label: "Custom", value: "custom" }, ...options] : options;
+}
+
 export function Controls({
   model,
   mode,
@@ -162,6 +196,22 @@ export function Controls({
     : [{ label: `Custom (${model.spacing})`, value: model.spacing }, ...DENSITY];
   const radiusNum = Number.parseFloat(model.radius);
   const radius = Number.isFinite(radiusNum) ? Math.min(1.5, Math.max(0, radiusNum)) : 0.5;
+  const elevation = elevationOf(model);
+  const easing = easingOf(model);
+  const weight = weightOf(model);
+  // Writes (or, with undefined, removes) the whole shadow scale in BOTH plates:
+  // elevation is one surface decision, not a per-plate edit.
+  const setShadows = (value: string | undefined) => {
+    const apply = (m: Record<string, string>) => {
+      const next = { ...m };
+      for (const t of SHADOW_TOKENS) {
+        if (value === undefined) delete next[t];
+        else next[t] = value;
+      }
+      return next;
+    };
+    update({ ...model, light: apply(model.light), dark: apply(model.dark) });
+  };
 
   return (
     <div className="space-y-6">
@@ -313,6 +363,73 @@ export function Controls({
             <SelectContent>
               <SelectGroup>
                 {densityOptions.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h3><Kicker>Effects</Kicker></h3>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Elevation</Label>
+          <Select
+            value={elevation}
+            disabled={disabled}
+            onValueChange={(v) => {
+              if (v === "stock") setShadows(undefined);
+              else if (v === "flat") setShadows(FLAT_SHADOW);
+            }}
+          >
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {presetOptions(elevation, [
+                  { label: "Stock", value: "stock" },
+                  { label: "Flat", value: "flat" },
+                ]).map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Easing</Label>
+          <Select
+            value={easing}
+            disabled={disabled}
+            onValueChange={(v) => {
+              if (v === "stock") setField({ easeDefault: "" });
+              else if (v === "drift") setField({ easeDefault: DRIFT_EASE });
+            }}
+          >
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {presetOptions(easing, [
+                  { label: "Stock", value: "stock" },
+                  { label: "Drift", value: "drift" },
+                ]).map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Body weight</Label>
+          <Select
+            value={weight}
+            disabled={disabled}
+            onValueChange={(v) => {
+              if (v === "normal") setField({ fontWeightBody: "" });
+              else if (v === "medium") setField({ fontWeightBody: "500" });
+            }}
+          >
+            <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {presetOptions(weight, [
+                  { label: "Normal", value: "normal" },
+                  { label: "Medium", value: "medium" },
+                ]).map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectGroup>
             </SelectContent>
           </Select>

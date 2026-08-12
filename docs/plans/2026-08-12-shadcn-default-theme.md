@@ -92,14 +92,14 @@ except focus.
 
 ## Task 5 — Editor: Effects group + font catalog
 
-- [ ] `packages/engine/dashboard/src/components/theme-editor/controls.tsx`: new
+- [x] `packages/engine/dashboard/src/components/theme-editor/controls.tsx`: new
       **Effects** group — Elevation (Stock = fields absent / Flat = all
       `0 0 #0000` both plates), Easing (Stock = absent / Drift), Body weight
       (Normal = absent or 400 / Medium = 500). Diverged values display "Custom"
       (mirror the color-role "mixed" pattern); presets write exact values.
-- [ ] `FONT_CATALOG` += Geist (`Geist:wght@400;500;600`) and Geist Mono
+- [x] `FONT_CATALOG` += Geist (`Geist:wght@400;500;600`) and Geist Mono
       (`Geist+Mono:wght@400;500`).
-- [ ] Editor round-trip: opening and saving an unedited theme (incl. `lodekit`,
+- [x] Editor round-trip: opening and saving an unedited theme (incl. `lodekit`,
       `shadcn`) stays byte-identical.
 
 **Accept:** engine tests green; editor smoke — presets apply, "Custom" shows for
