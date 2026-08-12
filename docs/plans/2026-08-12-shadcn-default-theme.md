@@ -75,12 +75,12 @@ Welcome render neutral shadcn with Geist.
 
 ## Task 4 — `lodekit` and `greenhouse-green` carry their physics
 
-- [ ] `packages/engine/themes/lodekit.css`: add `--font-weight-body: 500`,
+- [x] `packages/engine/themes/lodekit.css`: add `--font-weight-body: 500`,
       `--default-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1)`;
       shadow set — light plate: 2xs/xs/sm/shadow `0 0 #0000`, md–2xl the ink
       overlay (`0 2px 4px rgba(37,27,37,.08), 0 22px 44px -20px rgba(37,27,37,.42)`);
       dark plate: all `0 0 #0000`.
-- [ ] `root/themes/greenhouse-green.css`: same physics block (showcase exercises
+- [x] `root/themes/greenhouse-green.css`: same physics block (showcase exercises
       the new fields — Definition of Done). `root/README.md` checklist gains the
       row.
 - [ ] Visual check (Playwright MCP or browser): switch global theme to `lodekit` —

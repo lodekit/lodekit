@@ -1,7 +1,9 @@
 /* Lodekit — the Cloud Captured identity (DESIGN.md): plum ink on aged parchment,
    persimmon accent by day; pale gold on deep indigo, gold accent by night. Canonical
    theme format: one @import block, :root (light) + .dark, full shadcn token set,
-   plus --font-ui/--font-display/--font-mono/--radius/--spacing/--icon-library. */
+   plus --font-ui/--font-display/--font-mono/--radius/--spacing/--icon-library and
+   the identity physics (--font-weight-body, the drift easing, the Flat Paper
+   shadow scale). */
 @import url("https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Spline+Sans+Mono:wght@400;500&display=swap");
 
 :root {
@@ -12,6 +14,8 @@
   --radius: 0.1875rem;
   --spacing: 0.25rem;
   --icon-library: lucide;
+  --font-weight-body: 500;
+  --default-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   --background: #f6f1e6;
   --foreground: #251b25;
   --card: #fcf9f0;
@@ -44,6 +48,15 @@
   --sidebar-accent-foreground: #251b25;
   --sidebar-border: #cdc4ae;
   --sidebar-ring: #a93510;
+  /* Flat Paper (DESIGN.md §4): nothing floats at rest; overlays are ink-tinted. */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 2px 4px rgba(37, 27, 37, 0.08), 0 22px 44px -20px rgba(37, 27, 37, 0.42);
+  --shadow-lg: 0 2px 4px rgba(37, 27, 37, 0.08), 0 22px 44px -20px rgba(37, 27, 37, 0.42);
+  --shadow-xl: 0 2px 4px rgba(37, 27, 37, 0.08), 0 22px 44px -20px rgba(37, 27, 37, 0.42);
+  --shadow-2xl: 0 2px 4px rgba(37, 27, 37, 0.08), 0 22px 44px -20px rgba(37, 27, 37, 0.42);
 }
 
 .dark {
@@ -80,4 +93,13 @@
   --sidebar-accent-foreground: #f3e0a5;
   --sidebar-border: rgba(243, 224, 165, 0.16);
   --sidebar-ring: #f0a73c;
+  /* Night has no shadows — elevation is the night-hi / night-lo lightness steps. */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
 }

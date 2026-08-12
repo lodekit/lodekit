@@ -284,7 +284,10 @@ describe("physics typed fields (font-weight-body, default-transition-timing-func
 });
 
 describe("per-plate shadow tokens", () => {
-  const base = fs.readFileSync(path.join(THEMES_DIR, "lodekit.css"), "utf8");
+  // shadcn.css is the shadow-free fixture by design (stock physics = absent
+  // fields); lodekit.css ships the Flat Paper set and is covered by the
+  // vendored round-trip loop above.
+  const base = fs.readFileSync(path.join(THEMES_DIR, "shadcn.css"), "utf8");
   const OVERLAY = "0 2px 4px rgba(37, 27, 37, 0.08), 0 22px 44px -20px rgba(37, 27, 37, 0.42)";
   // Append a divergent shadow set to each plate: flat rest + ink overlay in
   // light, everything flat in dark — the Flat Paper pattern.
