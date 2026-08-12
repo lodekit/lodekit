@@ -107,22 +107,22 @@ lodekit's overlay shadows, fonts show as matched selections.
 
 ## Task 6 — Documentation
 
-- [ ] `docs/DESIGN.md`: restructure §3 per spec §7 — product shell (theme-
+- [x] `docs/DESIGN.md`: restructure §3 per spec §7 — product shell (theme-
       independent truths) / the lodekit theme (Cloud Captured as a selectable
       product expression) / default ruling (`shadcn` default; `lodekit` optional,
       future default candidate after a toned-down revision). §1 scope sentence;
       Focus-Is-A-Border rescoped to Marketing; fix stale claims (§1 body-500 via
       theme-tokens, §3 focus bullet, Elevation register note). Keep ~90-col wrap.
-- [ ] `docs/DEFINITIONS.md`: Themes entry names `shadcn` as the default theme.
-- [ ] `docs/ARCHITECTURE.md`: audit theming claims; update any default-theme line.
-- [ ] `web/docs/src/content/docs/guide/theming.mdx`: rewrite to the current model
+- [x] `docs/DEFINITIONS.md`: Themes entry names `shadcn` as the default theme.
+- [x] `docs/ARCHITECTURE.md`: audit theming claims; update any default-theme line.
+- [x] `web/docs/src/content/docs/guide/theming.mdx`: rewrite to the current model
       (default theme, themes library + editor, `<root>/themes/*.css` +
       `config.json`, per-app selection, user themes; retired mechanism gone).
       Read `docs/PRODUCT.md` first (outward-facing prose).
-- [ ] `docs/CHANGELOG.md`: New — neutral `shadcn` default theme; themes carry
+- [x] `docs/CHANGELOG.md`: New — neutral `shadcn` default theme; themes carry
       elevation/easing/body weight. Changed — `lodekit` optional; stock focus and
       elevation by default (visible for roots with no theme selection).
-- [ ] `docs/TODO.md` append:
+- [x] `docs/TODO.md` append:
       `- [2026-08-12 · spec:shadcn-default-theme] Vendor the top ~10 theme fonts engine-served (Geist, Inter, FONT_CATALOG families); removes the Google request from themes; sharpens the self-hosted-fonts deferral.`
 
 **Accept:** docs check of AGENTS.md satisfied in-PR;

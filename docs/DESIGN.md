@@ -99,8 +99,11 @@ components:
 
 One identity, two systems. **Foundations** (§1) is the shared token base: palette,
 type, elevation, component character, the mark. **Marketing** (§2) is the register
-for web-main and outward-facing surfaces. **Product** (§3) is the register for
-everything inside the product: the dashboard, apps, web-docs, the manager.
+for web-main and outward-facing surfaces. **Product** (§3) covers everything inside
+the product: the dashboard, apps, web-docs, the manager. The product ships
+**neutral by default** (the stock-shadcn `shadcn` theme); the identity applies
+inside the product only through the selectable `lodekit` theme, so §1's rulings
+bind Marketing surfaces always and product surfaces when that theme is active.
 
 ## 1. Foundations
 
@@ -207,12 +210,12 @@ action and danger never blur); info #3E5380 (a text-safe derivative of print
 blue). Chart series, fixed order: print blue #4B5D91, ochre #DD9741, persimmon
 #A93510, cloud slate #8394A9, plum #251B25 (dark mode brightens each).
 
-**The One Accent Rule.** In the Product register, the accent (persimmon by day,
-gold by night) appears on at most ~10% of any screen and only ever means
-"interactive or active": the primary action, the selected state, the focus ring,
-the link. It never decorates. Marketing surfaces may exceed this deliberately — an
-ochre drench band, a committed CTA moment — but always as a chosen move, never as
-seasoning.
+**The One Accent Rule.** On identity-dressed product surfaces (the `lodekit`
+theme), the accent (persimmon by day, gold by night) appears on at most ~10% of
+any screen and only ever means "interactive or active": the primary action, the
+selected state, the focus ring, the link. It never decorates. Marketing surfaces
+may exceed this deliberately — an ochre drench band, a committed CTA moment — but
+always as a chosen move, never as seasoning.
 
 **The Sky-Is-Decoration Rule.** The tertiary family (print blue, cloud slate,
 clay rose) lives in illustrations, decorative geometry, and charts. None of it may
@@ -246,12 +249,13 @@ three families are SIL OFL (Google Fonts); load only the weights above,
 - **Title** (500 or 700, 1.125–1.375rem fixed, 1.3): product UI headings, card
   titles, dialog titles. Product type is a fixed rem scale (~1.2 ratio); fluid
   `clamp()` belongs to Marketing surfaces only.
-- **Body** (500, 1rem, 1.6): reading text, `max-width: 65ch`. 500 is the default
-  in both registers; `packages/ui/theme-tokens.css` sets it on `body`, so the
-  dashboard and every user app inherit it. **400 is the detailing weight**, used
-  sparingly where text should recede: notes, secondary captions, long-form demo
-  copy. Compact UI text (labels, table cells, meta) may drop to 0.875rem/1.45 —
-  never running paragraphs.
+- **Body** (500, 1rem, 1.6): reading text, `max-width: 65ch`. 500 is the
+  identity's body weight: Marketing surfaces set it in their own styles, and in
+  the product the `lodekit` theme carries it as `--font-weight-body: 500` (the
+  neutral default is stock 400). **400 is the detailing weight**, used sparingly
+  where text should recede: notes, secondary captions, long-form demo copy.
+  Compact UI text (labels, table cells, meta) may drop to 0.875rem/1.45 — never
+  running paragraphs.
 - **Label** (mono, 0.72–0.8125rem): two modes. *Kicker* (500): uppercase,
   letter-spacing 0.12em — section eyebrows, status chips. *Data* (400): normal
   case, letter-spacing 0.01em — app ids, paths, values, timestamps;
@@ -275,7 +279,9 @@ paper levels (page → page-hi → page-lo) and hairline rules. Shadows exist on
 popovers, menus) that genuinely float above the page. All shadows are ink-tinted
 (`rgba(37, 27, 37, …)`), soft and low-alpha, never pure black and never
 tight/dark. Dark mode has no shadows at all; elevation is night → night-hi →
-night-lo lightness.
+night-lo lightness. In the product this rides the theme format's `--shadow-*`
+fields — the `lodekit` theme carries the Flat Paper scale; the neutral default
+keeps stock shadcn shadows.
 
 Shadow vocabulary:
 
@@ -296,7 +302,9 @@ Motion is drift: a response that settles, never a bounce. The discipline is one
 curve, one duration ramp, and a short list of named moves; nothing else animates.
 The hover language is **fade**: hover states crossfade in place — nothing slides,
 nothing sweeps (chosen over the sheet-slide and the subtle wash in side-by-side
-exploration).
+exploration). In the product the curve rides the theme format
+(`--default-transition-timing-function`; the `lodekit` theme sets drift, the
+neutral default keeps stock easing); Marketing surfaces set it directly.
 
 - **One curve.** `--ease-drift: cubic-bezier(.22, 1, .36, 1)` is the only easing.
   CSS keyword easings (`ease`, `ease-in`, `ease-out`, `ease-in-out`) and
@@ -327,8 +335,11 @@ few pixels of travel, barely perceptible, gone under reduced motion. Clouds are
 the one thing in this world that genuinely moves; nothing else earns ambient
 motion.
 
-**The Focus-Is-A-Border Rule.** Focus is an edge *on* the element, never a ring
-*around* it, and the edge differs by what is focused. *Controls* (buttons,
+**The Focus-Is-A-Border Rule (Marketing surfaces only).** In the product, focus
+is the stock shadcn ring under every theme — including `lodekit` (ruling
+2026-08-12: one focus story beats a themed one; revisit if the stock ring grates).
+On Marketing surfaces, focus is an edge *on* the element, never a ring *around*
+it, and the edge differs by what is focused. *Controls* (buttons,
 inputs, tabs) wear the accent edge: `outline: none`, the border resolves to the
 accent, and a `box-shadow: inset 0 0 0 2px` in the accent thickens that edge from
 the inside, fading in on the feedback ramp (~150ms). Controls with no border of
@@ -493,28 +504,51 @@ family can illustrate. One orchestrated entrance is welcome.
 
 ## 3. Product
 
-The register for everything inside the product: the dashboard, apps built on the
-platform, web-docs, and the manager. Strictly restrained: parchment surfaces, plum
-ink text, the accent reserved for interaction. Identity comes through in
-temperature, type, and the mono metadata layer, never through decoration.
+Everything inside the product: the dashboard, apps built on the platform,
+web-docs, and the manager. The product ships **neutral by default**: the default
+theme is `shadcn` — stock shadcn/ui, neutral base, Geist — so a fresh Lodekit
+reads as the ecosystem standard, not as a brand statement. Cloud Captured lives on
+inside the product as the **`lodekit` theme**, one selection away in Themes, and
+becomes the default candidate again once a toned-down revision exists. The only
+identity always present in the product is the chrome above the theme format: the
+mark, the wordmark, the favicons.
+
+### The product shell (true under every theme)
 
 - **Tokens only:** components are stock shadcn/`@lodekit/ui` internals expressing
-  identity through tokens — never fork or restyle component internals. The
-  product register keeps its stock lucide iconography for the same reason.
+  the active theme through tokens — never fork or restyle component internals.
+- **Physics are the theme's:** elevation, easing, and body weight resolve from
+  the format's physics fields (`--shadow-*`,
+  `--default-transition-timing-function`, `--font-weight-body`); themes that set
+  nothing get stock shadcn physics.
+- **Focus is the stock shadcn ring**, under every theme (ruling 2026-08-12 — see
+  *The Focus-Is-A-Border Rule*, now Marketing-only).
 - **Type and density:** the fixed rem scale (Foundations › Typography); no fluid
   `clamp()`. Product surfaces never run entrance choreography (the person is
   mid-task), and overlays sit on the shorter end of the duration ramp
   (200–300ms).
-- **Focus:** the Focus-Is-A-Border split has not yet been adopted here;
-  `packages/ui/theme-tokens.css` still ships the earlier single-rule 1px edge
-  (adoption tracked in the backlog).
-- **Sidebar/nav:** ink on page, active item = page-lo wash + accent text or
-  leading indicator ≤2px tall (an underline or dot — never a left border stripe
-  >1px).
+- **Icons:** the theme's `--icon-library` set, via `@lodekit/ui/icons`; lucide
+  when a theme doesn't choose.
 - **web-docs:** currently opts out of theming. The docs site runs stock
   Starlight styling, and the header lockup is the single piece of identity it
   carries. Reading calm beats brand presence there; don't retheme it ad hoc.
-  A deliberate docs skin is future Product-register work.
+  A deliberate docs skin is future Product work.
 
-The full Product register — its own component treatments and density system beyond
-these rulings — is not yet designed; tracked in `docs/TODO.md`.
+### The lodekit theme (Cloud Captured as a product expression)
+
+Carried entirely by the theme file (`packages/engine/themes/lodekit.css`):
+parchment surfaces, plum ink, the persimmon/gold accent, Zen Kaku Gothic New +
+Spline Sans Mono, near-sharp radius, and the identity physics — body 500, drift
+easing, Flat Paper elevation (flat at rest, ink-tinted overlays, no night
+shadows). When it is active, §1's product rulings apply:
+
+- **The One Accent Rule** (≤10%, interactive-only).
+- **Sidebar/nav:** ink on page, active item = page-lo wash + accent text or
+  leading indicator ≤2px tall (an underline or dot — never a left border stripe
+  >1px).
+- **The mono metadata layer:** kickers and data set in the mono voice
+  (`Kicker`/`Meta`).
+
+The full treatment system beyond these rulings — and the toned-down revision that
+could make `lodekit` the default again — is not yet designed; tracked in
+`docs/TODO.md`.

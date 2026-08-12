@@ -1,64 +1,57 @@
 ---
 title: Theming
-description: "Customize the look of your apps and dashboard with Lodekit's theming system."
+description: "Pick, assign, and edit themes for your apps and dashboard."
 ---
 
-Every Lodekit app is styled from one shared theme, so everything feels like
-one product. That theme is built from **tokens** — named values like the
-primary color or the corner radius — and you can override them in a plain CSS
-file. No app code changes, no rebuilding by hand.
+Every Lodekit app is styled from one shared theme, so everything feels like one
+product. Out of the box that theme is **shadcn** — the familiar neutral look of
+stock shadcn/ui — and it applies to the dashboard and every app with zero
+configuration. Prefer something with more character? The **lodekit** theme (warm
+parchment and ink) and a handful of popular ports (Dracula, Catppuccin, Nord,
+Rosé Pine) ship alongside it.
 
-## Two files, two scopes
+## The Themes page
 
-- `theme.css` at the root of your Lodekit folder restyles **everything** —
-  every app and the dashboard.
-- `apps/<app-id>/theme.css` restyles **one app**. It layers on top of the
-  global file, so an app can differ in just one or two tokens and inherit the
-  rest.
+Open **Themes** in the dashboard for the gallery: every theme with light and dark
+previews. From a theme's card you can:
 
-Neither file exists until you create it. Save one, and Lodekit rebuilds the
-affected apps automatically — cards on the dashboard flip through *building…*
-and the new look is live moments later.
+- **Use everywhere** — the whole platform switches, live. No reloads.
+- **Assign to app…** — one app gets its own look; everything else keeps the
+  global choice.
+- **Duplicate** — copy any theme into an editable one of your own.
 
-## An example
+Every theme carries both a light and a dark palette. Which one you see is the
+**Appearance** setting (system, light, or dark) — switching themes never touches
+your mode.
 
-```css title="~/Documents/Lodekit/theme.css"
-:root {
-  --primary: oklch(0.55 0.15 150);
-  --radius: 0.5rem;
-}
+## The editor
+
+Open a theme to edit it. Vendored themes are read-only — duplicate one to make it
+yours. Colors are grouped into roles (brand, background, surface, muted, border),
+with every underlying token one click deeper. Below them: fonts, the icon set,
+radius and density, and **Effects** — elevation, easing, and body weight, so a
+theme can be flat and calm or stock and shadowed. The preview shows every
+component live, or a real app in an iframe, before you save.
+
+## Files, if you want them
+
+Themes are plain CSS files in your Lodekit folder — `themes/<name>.css` — and the
+selection lives next to them in `themes/config.json`:
+
+```json title="~/Documents/Lodekit/themes/config.json"
+{ "global": "dracula", "apps": { "garden": "lodekit" } }
 ```
 
-That turns every button, link, and highlight green and softens the corners —
-across all your apps at once. Dark mode has its own values; override those
-under `.dark`:
+A theme file redefines **tokens**: colors like `--primary` and `--background`,
+shape like `--radius`, fonts, the icon set, and the physics fields
+(`--font-weight-body`, `--default-transition-timing-function`, the `--shadow-*`
+scale). Tokens are the stable, supported surface — you *can* write any CSS in a
+theme, but only tokens are promised to keep working as Lodekit's components
+evolve. Save a file and the new look applies everywhere within a beat.
 
-```css title="~/Documents/Lodekit/theme.css"
-.dark {
-  --primary: oklch(0.7 0.13 150);
-}
-```
-
-## Tokens are the contract
-
-The token names are the stable, supported surface: colors like `--primary`,
-`--background`, and `--foreground`, plus shape values like `--radius`. You
-*can* write any CSS you like in these files, but only token overrides are
-promised to keep working as Lodekit's components evolve — anything more
-specific may break with an update.
-
-You don't have to hand-pick values yourself. Your agent knows the full token
-list — ask it to "make everything warmer and rounder" or "give the garden app
-a green theme" and it writes the file for you.
-
-## See the whole palette
-
-Open **Themes** in the dashboard to see every installed theme as a card —
-palette swatches with a light/dark preview — and to switch one on everywhere
-or for a single app. Opening a theme gets you the editor: colors, typography,
-corner radius, and density, with a components canvas that restyles as you
-tweak and a real-app tab that renders one of your apps under your unsaved
-edits. Saving applies the theme everywhere, live.
+You don't have to hand-pick values yourself. Your agent knows the format — ask it
+to "make everything warmer and rounder" or "give the garden app a green theme"
+and it writes the theme for you.
 
 That's the tour of using Lodekit day to day. Next, meet the services your
 apps build on — storage, tasks, events, and more — in the

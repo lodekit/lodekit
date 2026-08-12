@@ -369,9 +369,12 @@ _Avoid_: design system, component kit, shadcn (the upstream, not the package)
 The person's styling surface: self-contained theme files in `<root>/themes/`
 (canonical theme format: token redefinitions the engine parses and serves live),
 applied globally or per app via `themes/config.json` or the dashboard's theme
-library and editor. Tokens are the contract. The earlier per-file override
-mechanism (`theme.css` at the root / `apps/<app-id>/theme.css`) is retired; the
-engine warns and ignores those files.
+library and editor. Tokens are the contract, including the optional physics
+fields (body weight, easing, the shadow scale). The vendored `shadcn` theme
+(stock shadcn/ui, neutral) is the default; `lodekit` carries the Cloud Captured
+identity as a selectable option. The earlier per-file override mechanism
+(`theme.css` at the root / `apps/<app-id>/theme.css`) is retired; the engine
+warns and ignores those files.
 _Avoid_: skins, custom CSS, theme overrides (the retired mechanism)
 
 **UI catalog** (retired):

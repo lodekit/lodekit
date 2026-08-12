@@ -102,6 +102,19 @@ Rules:
   Prefer to keep port 80 for other tools? Start the engine with
   `LODEKIT_PORT_FREE=0` to turn the door off.
 
+- **A neutral default theme: shadcn** — a fresh Lodekit now looks like stock
+  shadcn/ui (neutral palette, Geist), so your apps start from the ecosystem
+  standard. The Cloud Captured look is still one pick away: choose the
+  **lodekit** theme in Themes to bring it back — its flat elevation, drift
+  easing, and heavier body text now travel with the theme itself. Focus rings
+  are the stock shadcn treatment everywhere ([#208]).
+
+- **Themes can shape physics, not just color** — the theme format gains optional
+  fields for body weight, easing, and the full shadow scale
+  (`--font-weight-body`, `--default-transition-timing-function`, `--shadow-*`),
+  and the theme editor grows an **Effects** section with Elevation, Easing, and
+  Body weight presets. Geist and Geist Mono join the font catalog ([#208]).
+
 ### Bug Fixes
 
 - **kv-store error statuses** — internal faults in the kv API now return 500

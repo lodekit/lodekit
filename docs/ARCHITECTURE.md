@@ -44,8 +44,9 @@ pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `root/` is
 - **`packages/sdk`** (`@lodekit/sdk`) — the app-facing library: how an app
   reaches every platform service, server- and client-side.
 - **`packages/ui`** (`@lodekit/ui`) — the component library (shadcn-lineage)
-  used by apps and the dashboard; carries the identity tokens
-  (`theme-tokens.css`, `theme.css`).
+  used by apps and the dashboard; carries the stock-neutral base tokens
+  (`theme-tokens.css`, `theme.css`), in lockstep with the vendored default
+  `shadcn` theme. Identity lives in the vendored `lodekit` theme.
 - **`packages/mcp`** (`@lodekit/mcp`) — the Claude-facing MCP server. Reaches the
   engine **over HTTP only**; no import-time dependency on the engine. The
   dependency-free HTTP helpers live in `client.ts`, the MCP-SDK wiring in
