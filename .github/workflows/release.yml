@@ -30,7 +30,7 @@ jobs:
           else
             echo "release=false" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.guard.outputs.release == 'true'
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
@@ -76,17 +76,17 @@ jobs:
             arch: x64
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: "24.12.0"   # prepare-bundle.mjs hard-asserts this version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @lodekit/manager make
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mac-${{ matrix.arch }}
           path: manager/dist/Lodekit-darwin-${{ matrix.arch }}-*.zip
@@ -97,10 +97,10 @@ jobs:
     if: needs.check.outputs.release == 'true' && needs.build.result == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
           merge-multiple: true
