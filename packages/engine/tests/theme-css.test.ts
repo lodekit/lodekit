@@ -6,6 +6,7 @@ import {
   parseTheme,
   serializeTheme,
   COLOR_TOKENS,
+  SHADOW_TOKENS,
   ROLES,
   roleValue,
   applyRole,
@@ -228,5 +229,102 @@ describe("font-mono typed field", () => {
     expect(out).toContain('  --font-mono: "IBM Plex Mono", ui-monospace, monospace;\n');
     expect(out.indexOf("--font-display")).toBeLessThan(out.indexOf("--font-mono"));
     expect(out.indexOf("--font-mono")).toBeLessThan(out.indexOf("--radius:"));
+  });
+});
+
+describe("physics typed fields (font-weight-body, default-transition-timing-function)", () => {
+  const base = fs.readFileSync(path.join(THEMES_DIR, "lodekit.css"), "utf8");
+  const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+  // Strip any lines the vendored file may ship, then insert both after
+  // --icon-library (their canonical position).
+  const stripped = base
+    .replace(/^ {2}--font-weight-body: .*\n/m, "")
+    .replace(/^ {2}--default-transition-timing-function: .*\n/m, "");
+  const withPhysics = stripped.replace(
+    /^( {2}--icon-library: .*\n)/m,
+    `$1  --font-weight-body: 500;\n  --default-transition-timing-function: ${EASE};\n`,
+  );
+
+  it("parses both fields into the model, not the color maps", () => {
+    const model = parseTheme(withPhysics);
+    expect(model.fontWeightBody).toBe("500");
+    expect(model.easeDefault).toBe(EASE);
+    expect(model.light["font-weight-body"]).toBeUndefined();
+    expect(model.light["default-transition-timing-function"]).toBeUndefined();
+  });
+
+  it("round-trips a theme WITH physics fields byte-identical", () => {
+    expect(serializeTheme(parseTheme(withPhysics))).toBe(withPhysics);
+  });
+
+  it("round-trips a theme WITHOUT them untouched (no empty lines emitted)", () => {
+    const model = parseTheme(stripped);
+    expect(model.fontWeightBody).toBe("");
+    expect(model.easeDefault).toBe("");
+    expect(serializeTheme(model)).toBe(stripped);
+    expect(serializeTheme(model)).not.toContain("--font-weight-body:");
+    expect(serializeTheme(model)).not.toContain("--default-transition-timing-function:");
+  });
+
+  it("serializes edited-in fields after icon-library, before the color tokens", () => {
+    const model = { ...parseTheme(stripped), fontWeightBody: "500", easeDefault: EASE };
+    const out = serializeTheme(model);
+    expect(out.indexOf("--icon-library")).toBeLessThan(out.indexOf("--font-weight-body"));
+    expect(out.indexOf("--font-weight-body")).toBeLessThan(out.indexOf("--default-transition-timing-function"));
+    expect(out.indexOf("--default-transition-timing-function")).toBeLessThan(out.indexOf("--background:"));
+  });
+
+  it("preserves a comment before a physics field", () => {
+    const css = withPhysics.replace(
+      "  --font-weight-body: 500;",
+      "  /* identity physics */\n  --font-weight-body: 500;",
+    );
+    expect(serializeTheme(parseTheme(css))).toBe(css);
+  });
+});
+
+describe("per-plate shadow tokens", () => {
+  // shadcn.css is the shadow-free fixture by design (stock physics = absent
+  // fields); lodekit.css ships the Flat Paper set and is covered by the
+  // vendored round-trip loop above.
+  const base = fs.readFileSync(path.join(THEMES_DIR, "shadcn.css"), "utf8");
+  const OVERLAY = "0 2px 4px rgba(37, 27, 37, 0.08), 0 22px 44px -20px rgba(37, 27, 37, 0.42)";
+  // Append a divergent shadow set to each plate: flat rest + ink overlay in
+  // light, everything flat in dark — the Flat Paper pattern.
+  const lightShadows = SHADOW_TOKENS
+    .map((t) => `  --${t}: ${["shadow-md", "shadow-lg", "shadow-xl", "shadow-2xl"].includes(t) ? OVERLAY : "0 0 #0000"};`)
+    .join("\n");
+  const darkShadows = SHADOW_TOKENS.map((t) => `  --${t}: 0 0 #0000;`).join("\n");
+  const withShadows = base
+    .replace(/\n\}\n\n\.dark \{/, `\n${lightShadows}\n}\n\n.dark {`)
+    .replace(/\n\}\n*$/, `\n${darkShadows}\n}\n`);
+
+  it("flows shadows through the plate maps, per plate", () => {
+    const model = parseTheme(withShadows);
+    expect(model.light["shadow-md"]).toBe(OVERLAY);
+    expect(model.light["shadow-sm"]).toBe("0 0 #0000");
+    expect(model.dark["shadow-md"]).toBe("0 0 #0000");
+    // not lifted into typed fields, not confused with color tokens
+    expect(COLOR_TOKENS).not.toContain("shadow-md");
+  });
+
+  it("round-trips a theme with per-plate shadows byte-identical", () => {
+    expect(serializeTheme(parseTheme(withShadows))).toBe(withShadows);
+  });
+
+  it("round-trips shadows with an inline comment", () => {
+    const css = withShadows.replace(
+      "  --shadow-2xs: 0 0 #0000;",
+      "  --shadow-2xs: 0 0 #0000; /* Flat Paper */",
+    );
+    expect(serializeTheme(parseTheme(css))).toBe(css);
+  });
+
+  it("leaves a shadow-free theme's plates without shadow entries", () => {
+    const model = parseTheme(base);
+    for (const t of SHADOW_TOKENS) {
+      expect(model.light[t]).toBeUndefined();
+      expect(model.dark[t]).toBeUndefined();
+    }
   });
 });

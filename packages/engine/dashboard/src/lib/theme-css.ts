@@ -1,8 +1,12 @@
 // Parses and serializes the canonical Lodekit theme CSS format (docs/specs theme
 // editor §4): a leading /* … */ header comment, optional @import lines, a :root
-// block (color-scheme + typed --font-*/--radius/--spacing/--icon-library fields +
-// the shadcn color-token set) and a .dark block (color-scheme + color tokens),
-// with any unrecognized trailing CSS preserved verbatim. serializeTheme is the
+// block (color-scheme + typed --font-*/--radius/--spacing/--icon-library fields,
+// optional physics fields --font-weight-body/--default-transition-timing-function,
+// + the shadcn color-token set) and a .dark block (color-scheme + color tokens),
+// with any unrecognized trailing CSS preserved verbatim. The elevation scale
+// (SHADOW_TOKENS) is deliberately NOT typed: like color tokens the shadows may
+// appear per-plate in :root and .dark independently, so they flow through the
+// plate maps — typed fields re-emit only in :root and would drop a .dark value. serializeTheme is the
 // exact inverse of parseTheme for the vendored themes: the round-trip is
 // byte-identical. Fidelity beats normalization — inline comments and the exact
 // whitespace before them are stored as per-token "trivia" and re-emitted verbatim.
@@ -32,6 +36,10 @@ export interface ThemeModel {
   radius: string;
   spacing: string;
   iconLibrary: string;
+  // Optional physics fields ("" = absent = stock): body font weight, and the
+  // default transition timing function (Tailwind's stock-named easing token).
+  fontWeightBody: string;
+  easeDefault: string;
   light: Record<string, string>; // token → value (no leading --), insertion-ordered
   dark: Record<string, string>;
   // Round-trip metadata, keyed by property name — color tokens, the six typed
@@ -94,7 +102,23 @@ const TYPED_FIELDS: Record<string, keyof ThemeModel> = {
   radius: "radius",
   spacing: "spacing",
   "icon-library": "iconLibrary",
+  "font-weight-body": "fontWeightBody",
+  "default-transition-timing-function": "easeDefault",
 };
+
+// The per-plate elevation scale (Tailwind's shadow tokens, shadcn/tweakcn export
+// convention). Untyped on purpose (see header); exported for the editor's
+// Effects controls, which read/write them through the plate maps.
+export const SHADOW_TOKENS: readonly string[] = [
+  "shadow-2xs",
+  "shadow-xs",
+  "shadow-sm",
+  "shadow",
+  "shadow-md",
+  "shadow-lg",
+  "shadow-xl",
+  "shadow-2xl",
+];
 
 export interface Role {
   key: string;
@@ -218,6 +242,8 @@ export function parseTheme(css: string): ThemeModel {
     radius: root.block.typed["radius"] ?? "",
     spacing: root.block.typed["spacing"] ?? "",
     iconLibrary: root.block.typed["icon-library"] ?? "",
+    fontWeightBody: root.block.typed["font-weight-body"] ?? "",
+    easeDefault: root.block.typed["default-transition-timing-function"] ?? "",
     light: root.block.colors,
     dark: dark.block.colors,
     lightTrivia: root.block.trivia,
@@ -240,6 +266,8 @@ function degraded(css: string): ThemeModel {
     radius: "",
     spacing: "",
     iconLibrary: "",
+    fontWeightBody: "",
+    easeDefault: "",
     light: {},
     dark: {},
     lightTrivia: {},
@@ -324,6 +352,8 @@ export function serializeTheme(model: ThemeModel): string {
   out += line(model.lightTrivia, "radius", `  --radius: ${model.radius};`);
   out += line(model.lightTrivia, "spacing", `  --spacing: ${model.spacing};`);
   out += line(model.lightTrivia, "icon-library", `  --icon-library: ${model.iconLibrary};`);
+  if (model.fontWeightBody) out += line(model.lightTrivia, "font-weight-body", `  --font-weight-body: ${model.fontWeightBody};`);
+  if (model.easeDefault) out += line(model.lightTrivia, "default-transition-timing-function", `  --default-transition-timing-function: ${model.easeDefault};`);
   out += renderTokens(model.light, model.lightTrivia);
   out += model.lightTrailing;
   out += "}\n";

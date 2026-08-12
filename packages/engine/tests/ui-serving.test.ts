@@ -67,7 +67,7 @@ describe("/_ui/theme.css", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/css");
     expect(res.headers.get("cache-control")).toBe("no-store");
-    expect(await res.text()).toContain("--icon-library"); // the vendored lodekit default
+    expect(await res.text()).toContain("--icon-library"); // the vendored shadcn default
   });
 
   it("resolves a configured per-app theme", async () => {

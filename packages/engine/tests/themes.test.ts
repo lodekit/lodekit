@@ -22,18 +22,20 @@ beforeEach(() => {
 afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
 describe("theme service", () => {
-  it("lists vendored themes including lodekit", () => {
+  it("lists vendored themes including the shadcn default and lodekit", () => {
     const names = listThemes(cfg).map((t) => t.name);
+    expect(names).toContain("shadcn");
     expect(names).toContain("lodekit");
+    expect(listThemes(cfg).find((t) => t.name === "shadcn")?.vendored).toBe(true);
     expect(listThemes(cfg).find((t) => t.name === "lodekit")?.vendored).toBe(true);
   });
-  it("ships all five vendored theme ports", () => {
+  it("ships all six vendored themes", () => {
     const names = listThemes(cfg).map((t) => t.name).sort();
-    expect(names).toEqual(["catppuccin", "dracula", "lodekit", "nord", "rose-pine"]);
+    expect(names).toEqual(["catppuccin", "dracula", "lodekit", "nord", "rose-pine", "shadcn"]);
     for (const t of listThemes(cfg)) expect(t.vendored).toBe(true);
   });
-  it("every vendored port carries the full token structure both modes", () => {
-    for (const name of ["catppuccin", "dracula", "lodekit", "nord", "rose-pine"]) {
+  it("every vendored theme carries the full token structure both modes", () => {
+    for (const name of ["catppuccin", "dracula", "lodekit", "nord", "rose-pine", "shadcn"]) {
       const css = readThemeCss(cfg, name)!;
       expect(css, name).toContain(":root");
       expect(css, name).toContain(".dark");
@@ -57,7 +59,7 @@ describe("theme service", () => {
     fs.rmSync(path.join(themesDir(), "mine.css"));      // selected theme vanishes on disk
     expect(resolveThemeName(cfg)).toBe(DEFAULT_THEME);  // falls back, no throw
   });
-  it("resolveThemeCss never throws and always returns lodekit content at worst", () => {
+  it("resolveThemeCss never throws and always returns the vendored default at worst", () => {
     const css = resolveThemeCss(cfg);
     expect(css).toContain("--icon-library");
   });

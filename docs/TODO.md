@@ -43,4 +43,4 @@ PR as the work that parked it. Format and drain flow are in AGENTS.md §Track.
 - [2026-08-11 · spec:dev-flow-v3] Decide whether to re-wire an automated per-PR security review (policy if so: once per PR, at ready-for-review)
 - [2026-08-11 · spec:dev-flow-v3] DESIGN.md Product register: design the actual token/component treatments (the section exists, the system doesn't)
 - [2026-08-11 · PR #204] Dashboard Tasks page: per-app schedule/last-run/Run-now surface (the revamp removed the inline panel; /tasks is a stub, no tracking issue found)
-- [2026-08-12 · session] P1 guide/theming.mdx teaches the removed root/app theme.css overrides; rewrite around themes/ + the dashboard Themes view
+- [2026-08-12 · spec:shadcn-default-theme] Vendor the top ~10 theme fonts engine-served (Geist, Inter, FONT_CATALOG families); removes the Google request from themes; sharpens the self-hosted-fonts deferral

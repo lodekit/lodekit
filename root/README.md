@@ -59,6 +59,7 @@ is the living checklist — extend it with every new surface.
 | `@lodekit/ui`, themes | throughout |
 | themes: per-app selection + `@lodekit/ui/icons` | `greenhouse-green` assignment in `themes/config.json`; nav icons |
 | themes: `--font-mono` typed field | `greenhouse-green` sets the mono voice |
+| themes: physics fields (`--font-weight-body`, easing, `--shadow-*` scale) | `greenhouse-green` carries the Flat Paper block |
 | `@lodekit/ui` `Kicker` / `Meta` | almanac: page eyebrow; run duration + payload metadata |
 | `@lodekit/ui` chart (`ChartContainer` + `--chart-*` tokens) | Sky Journal temperature lines |
 | `@lodekit/ui` `useDataTable` + `DataTable` (client mode, header sort, pagination) | Almanac care history |
