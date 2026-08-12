@@ -16,7 +16,6 @@ PR as the work that parked it. Format and drain flow are in AGENTS.md §Track.
 - [2026-08-11 · bead] Reconcile THEME_MAX_BYTES (512KB) with /api bodyLimit (100KB) — advertised limit should be the enforced one (was lk-5q4)
 - [2026-08-11 · bead] Retune tw-animate entrance micro-motions to the drift register (was lk-6b7)
 - [2026-08-11 · bead] Windows support (was lk-7u5)
-- [2026-08-11 · bead] DEFINITIONS.md UI-catalog entry is stale (was lk-9et)
 - [2026-08-11 · bead] Extend 400-vs-500 onError split to db-store, file-store, tasks routers (was lk-9sb)
 - [2026-08-11 · bead] Preview-vars escape: Base UI portals (Select popup, any portal) render outside the theme-editor preview subtree (was lk-a31)
 - [2026-08-11 · bead] explorer stats window: custom until-only range — header count covers [now-30d, until) while rows are unbounded-below (was lk-avj)
