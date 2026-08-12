@@ -27,24 +27,24 @@ Context: `packages/ui/theme-tokens.css` is the build-time base (standalone compi
 vitest render tests) plus the `@theme inline` bridge. It currently carries Cloud
 Captured values and identity physics. Spec §2.
 
-- [ ] Flip the `@layer lodekit-tokens` token values (both plates) to the stock
+- [x] Flip the `@layer lodekit-tokens` token values (both plates) to the stock
       shadcn neutral hex set (same values Task 3 puts in `shadcn.css`); fonts to
       the Geist stacks; `--radius: 0.625rem`. Rewrite the header comment; keep the
       layer name.
-- [ ] Delete: `--lk-ease-drift` + the `--ease-drift` /
+- [x] Delete: `--lk-ease-drift` + the `--ease-drift` /
       `--default-transition-timing-function` aliases; `--lk-shadow-*` slots and the
       `@theme inline` shadow alias block; the entire focus rule set (single rule,
       pointer focus, `aria-invalid`, input-group delegation, forced-colors);
       `body { font-weight: 500 }` → `font-weight: var(--font-weight-body, 400)`.
       Keep `color-scheme`, `border-border outline-ring/50`, `h1–h4`, the mono-400
       rule (comment updated: load-bearing only under themes that raise body weight).
-- [ ] Runtime resolution: ensure served theme CSS can override the shadow scale and
+- [x] Runtime resolution: ensure served theme CSS can override the shadow scale and
       default easing at runtime — verify Tailwind v4 emits `var()` references; where
       it inlines (likely the easing token), add a thin passthrough in
       `theme-tokens.css` with the stock value as fallback. Add a test asserting the
       built CSS references the vars (extend an existing engine build test or a
       `@lodekit/ui` test that compiles `theme.css`).
-- [ ] Sweep every `ease-drift` utility and `--lk-*` consumer in `packages/ui/src`,
+- [x] Sweep every `ease-drift` utility and `--lk-*` consumer in `packages/ui/src`,
       `packages/engine/dashboard/src`, `root/apps` — migrate to stock equivalents
       (usually delete the class). `--lk-font-wordmark` in `dashboard/src/index.css`
       stays (chrome above the theme format). Delete `--lk-shadow-lift` unless the

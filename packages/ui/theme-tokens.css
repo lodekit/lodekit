@@ -1,88 +1,87 @@
-/* Cloud Captured — the Lodekit identity tokens (DESIGN.md): plum ink on aged
-   parchment, persimmon accent by day; pale gold on deep indigo, gold by night.
-   Build-time base for @lodekit/ui consumers; the served theme (/_ui/theme.css)
-   overrides these same tokens at runtime and carries the font @import. The brand
-   accent maps to shadcn's --primary (buttons, fills, active states); shadcn's own
-   --accent stays a neutral hover wash and must not carry persimmon/gold. */
+/* Stock shadcn/ui defaults (neutral base) — the platform's neutral baseline.
+   Build-time base for @lodekit/ui consumers, in lockstep with the vendored
+   default theme (packages/engine/themes/shadcn.css); the served theme
+   (/_ui/theme.css) overrides these same tokens at runtime and carries any font
+   @import. Values are the stock shadcn neutral palette, oklch→hex. The brand
+   accent maps to shadcn's --primary (buttons, fills, active states); shadcn's
+   own --accent stays a neutral hover wash. */
 @layer lodekit-tokens {
 :root {
   /* Native scrollbars and form controls follow the theme; without this the
      browser paints them light-scheme even under .dark. */
   color-scheme: light;
-  --font-ui: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-display: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-mono: "Spline Sans Mono", ui-monospace, monospace;
-  --radius: 0.1875rem;
+  --font-ui: "Geist", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-display: "Geist", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --radius: 0.625rem;
   --spacing: 0.25rem;
   --icon-library: lucide;
-  --background: #f6f1e6;
-  --foreground: #251b25;
-  --card: #fcf9f0;
-  --card-foreground: #251b25;
-  --popover: #fcf9f0;
-  --popover-foreground: #251b25;
-  --primary: #a93510;
-  --primary-foreground: #fcf9f0;
-  --secondary: #dcd3be;
-  --secondary-foreground: #251b25;
-  --muted: #dcd3be;
-  --muted-foreground: #4f4f59;
-  --accent: #dcd3be;
-  --accent-foreground: #251b25;
-  --destructive: #a61e33;
-  --border: #cdc4ae;
-  --input: #cdc4ae;
-  --ring: #a93510;
-  /* Chart series — DESIGN.md fixed order; the sky family is charts-only. */
-  --chart-1: #4b5d91;
-  --chart-2: #dd9741;
-  --chart-3: #a93510;
-  --chart-4: #8394a9;
-  --chart-5: #251b25;
-  --sidebar: #f6f1e6;
-  --sidebar-foreground: #251b25;
-  --sidebar-primary: #a93510;
-  --sidebar-primary-foreground: #fcf9f0;
-  --sidebar-accent: #dcd3be;
-  --sidebar-accent-foreground: #251b25;
-  --sidebar-border: #cdc4ae;
-  --sidebar-ring: #a93510;
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #171717;
+  --primary-foreground: #fafafa;
+  --secondary: #f5f5f5;
+  --secondary-foreground: #171717;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;
+  --accent: #f5f5f5;
+  --accent-foreground: #171717;
+  --destructive: #e7000b;
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+  --ring: #a1a1a1;
+  --chart-1: #f54900;
+  --chart-2: #009689;
+  --chart-3: #104e64;
+  --chart-4: #ffb900;
+  --chart-5: #fe9a00;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #171717;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #f5f5f5;
+  --sidebar-accent-foreground: #171717;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #a1a1a1;
 }
 
 .dark {
   color-scheme: dark;
-  --background: #121a44;
-  --foreground: #f3e0a5;
-  --card: #1b2452;
-  --card-foreground: #f3e0a5;
-  --popover: #1b2452;
-  --popover-foreground: #f3e0a5;
-  --primary: #f0a73c;
-  --primary-foreground: #121a44;
-  --secondary: #242e63;
-  --secondary-foreground: #f3e0a5;
-  --muted: #242e63;
-  --muted-foreground: #c6bba8;
-  --accent: #242e63;
-  --accent-foreground: #f3e0a5;
-  --destructive: #e06a7d; /* derived (L): crimson brightened for AA on the night surfaces */
-  --border: rgba(243, 224, 165, 0.16); /* derived (L): gold-tinted hairline on the night plate */
-  --input: rgba(243, 224, 165, 0.22);
-  --ring: #f0a73c;
-  /* derived (L): the light series brightened for the night plate (plum → pale plum). */
-  --chart-1: #7285bd;
-  --chart-2: #e5a85c;
-  --chart-3: #d9714a;
-  --chart-4: #9daec2;
-  --chart-5: #a893a8;
-  --sidebar: #121a44;
-  --sidebar-foreground: #f3e0a5;
-  --sidebar-primary: #f0a73c;
-  --sidebar-primary-foreground: #121a44;
-  --sidebar-accent: #242e63;
-  --sidebar-accent-foreground: #f3e0a5;
-  --sidebar-border: rgba(243, 224, 165, 0.16);
-  --sidebar-ring: #f0a73c;
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #171717;
+  --card-foreground: #fafafa;
+  --popover: #171717;
+  --popover-foreground: #fafafa;
+  --primary: #e5e5e5;
+  --primary-foreground: #171717;
+  --secondary: #262626;
+  --secondary-foreground: #fafafa;
+  --muted: #262626;
+  --muted-foreground: #a1a1a1;
+  --accent: #262626;
+  --accent-foreground: #fafafa;
+  --destructive: #ff6467;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #737373;
+  --chart-1: #1447e6;
+  --chart-2: #00bc7d;
+  --chart-3: #fe9a00;
+  --chart-4: #ad46ff;
+  --chart-5: #ff2056;
+  --sidebar: #171717;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #1447e6;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #262626;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #737373;
 }
 }
 
@@ -90,8 +89,6 @@
   --font-sans: var(--font-ui);
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
-  --ease-drift: var(--lk-ease-drift);
-  --default-transition-timing-function: var(--lk-ease-drift);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -127,35 +124,28 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --shadow-2xs: var(--lk-shadow-rest);
-  --shadow-xs: var(--lk-shadow-rest);
-  --shadow-sm: var(--lk-shadow-rest);
-  --shadow-md: var(--lk-shadow-overlay);
-  --shadow-lg: var(--lk-shadow-overlay);
-  --shadow-xl: var(--lk-shadow-overlay);
-  --shadow-2xl: var(--lk-shadow-overlay);
+  /* Physics passthroughs: `inline` makes utilities carry these var() chains
+     verbatim, so a served theme that sets the same-named property on :root/.dark
+     wins at runtime; the fallback is the stock Tailwind value. Themes that set
+     nothing get exactly stock physics. */
+  --default-transition-timing-function: var(--default-transition-timing-function, cubic-bezier(0.4, 0, 0.2, 1));
+  --shadow-2xs: var(--shadow-2xs, 0 1px rgb(0 0 0 / 0.05));
+  --shadow-xs: var(--shadow-xs, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+  --shadow-sm: var(--shadow-sm, 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1));
+  --shadow-md: var(--shadow-md, 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1));
+  --shadow-lg: var(--shadow-lg, 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1));
+  --shadow-xl: var(--shadow-xl, 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1));
+  --shadow-2xl: var(--shadow-2xl, 0 25px 50px -12px rgb(0 0 0 / 0.25));
 }
 
 @layer base {
-  :root {
-    /* Identity physics (DESIGN.md §4–5) — ui-owned, above the theme format:
-       themes recolor tokens; these carry the print register. */
-    --lk-ease-drift: cubic-bezier(0.22, 1, 0.36, 1);
-    --lk-shadow-rest: 0 0 #0000; /* Flat Paper: nothing floats at rest */
-    --lk-shadow-lift: 0 1px 2px rgba(37, 27, 37, 0.08), 0 14px 34px -22px rgba(37, 27, 37, 0.4);
-    --lk-shadow-overlay: 0 2px 4px rgba(37, 27, 37, 0.08), 0 22px 44px -20px rgba(37, 27, 37, 0.42);
-  }
-  .dark {
-    /* Night has no shadows — elevation is the night-hi / night-lo steps. */
-    --lk-shadow-lift: 0 0 #0000;
-    --lk-shadow-overlay: 0 0 #0000;
-  }
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
-    font-weight: 500;
+    /* Theme-settable physics (canonical format --font-weight-body); stock 400. */
+    font-weight: var(--font-weight-body, 400);
   }
   h1, h2, h3, h4 {
     font-family: var(--font-display);
@@ -163,61 +153,8 @@
   }
   code, kbd, samp, pre {
     font-family: var(--font-mono);
-    /* Body defaults to 500; the mono voice sets at 400 (DESIGN.md §3). */
+    /* Pinned so themes that raise --font-weight-body (e.g. lodekit's 500) don't
+       embolden the mono voice with it. */
     font-weight: 400;
-  }
-  /* Focus is a BORDER, never a ring outside the element (DESIGN.md §5).
-     `outline` and Tailwind's `ring-*` both paint outside the box, so the accent
-     ended up drawn twice on anything that also tinted its own border. This is
-     the single rule that owns focus: kill the outline, resolve the border to the
-     accent, and thicken that edge with a 1px INSET shadow — which stays inside
-     the element, so nothing floats and nothing needs an exemption. Borderless
-     controls still read, because the inset shadow draws against their own edge.
-     !important outranks component internals' outline-none and ring utilities.
-     [tabindex="-1"] is excluded: those are containers (sidebar, overlay panels)
-     focused programmatically, not controls the user tabbed to. */
-  :focus-visible:not([tabindex="-1"]) {
-    outline: none !important;
-    border-color: var(--ring) !important;
-    box-shadow: inset 0 0 0 1px var(--ring) !important;
-  }
-  /* Pointer focus tints the border but withholds the ring. The transparent inset
-     shadow keeps the painted box identical to the keyboard state, so clicking a
-     field never shifts it. */
-  :focus:not(:focus-visible):not([tabindex="-1"]) {
-    outline: none !important;
-    border-color: var(--ring) !important;
-    box-shadow: inset 0 0 0 1px transparent !important;
-  }
-  /* Invalid outranks focused: a field in error must not read as merely active. */
-  [aria-invalid="true"]:focus-visible,
-  [aria-invalid="true"]:focus {
-    border-color: var(--destructive) !important;
-    box-shadow: inset 0 0 0 1px var(--destructive) !important;
-  }
-  /* A control inside a bordered group has no border of its own — its edge is the
-     group's. Left alone it would draw the focus ring around just the bare input,
-     cutting across the icons and buttons sharing that box, so the group wears it
-     instead. This is delegation, not an exemption: the edge still appears. */
-  [data-slot="input-group"]
-    :where([data-slot="input-group-control"], [data-slot="command-input"]):focus-visible {
-    border-color: transparent !important;
-    box-shadow: none !important;
-  }
-  [data-slot="input-group"]:has(
-      :where([data-slot="input-group-control"], [data-slot="command-input"]):focus-visible
-    ) {
-    border-color: var(--ring) !important;
-    box-shadow: inset 0 0 0 1px var(--ring) !important;
-  }
-  /* Forced-colors mode discards box-shadow and repaints borders from the system
-     palette, so the inset edge above would leave nothing visible. Hand focus back
-     to a real outline there — the one context where the ring is correct, because
-     the OS is drawing the UI, not us. */
-  @media (forced-colors: active) {
-    :focus-visible:not([tabindex="-1"]) {
-      outline: 2px solid CanvasText !important;
-      outline-offset: 2px !important;
-    }
   }
 }

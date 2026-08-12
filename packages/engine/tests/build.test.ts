@@ -114,6 +114,11 @@ describe("buildApp", () => {
     expect(css).toContain("--primary");
     // inline-flex comes from Button's classes in @lodekit/ui source — proves @source scanning worked
     expect(css).toContain("inline-flex");
+    // Physics stay runtime-themeable: utilities must reference the shadow scale
+    // and default easing via var() (theme-tokens.css passthroughs), so a served
+    // theme that sets --shadow-*/--default-transition-timing-function wins.
+    expect(css).toContain("var(--shadow-xs,");
+    expect(css).toContain("var(--default-transition-timing-function,");
   }, 60000);
 });
 
