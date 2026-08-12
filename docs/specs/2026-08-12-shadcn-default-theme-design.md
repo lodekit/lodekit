@@ -28,7 +28,14 @@ docs-site theming guide is rewritten.
 - No change to the marketing site (`web/main`) — Cloud Captured remains its register,
   including its own focus treatment.
 - No redesign of the `lodekit` theme (the toned-down revision is future work).
-- No icon-system changes; no new vendored ports beyond `shadcn`.
+- No icon-system changes: the `@lodekit/ui/icons` facade and its vendored sets
+  (lucide, phosphor, tabler) stay as they are; `shadcn` selects `lucide`, which is
+  stock shadcn's icon set anyway.
+- No new vendored *theme* ports beyond `shadcn` (the Dracula/Catppuccin/Nord/
+  Rosé Pine set is unchanged).
+- No font self-hosting: theme fonts keep loading via the Google css2 `@import`
+  mechanism. Vendoring the popular theme fonts engine-served is recorded in
+  `docs/TODO.md` (this PR), joining the existing self-hosted-fonts deferral.
 - Editor support for physics is preset-level only; free-form shadow editing stays in
   the preserved-custom-CSS lane.
 - `web/docs` skin unchanged (still opts out of theming; guide *content* is in scope).
@@ -50,28 +57,33 @@ docs-site theming guide is rewritten.
 - **DESIGN.md §3 restructured** (not a one-line ruling). (Person, this session.)
 - **Theming guide rewritten in this slice** — it still documents the retired
   `<root>/theme.css` mechanism and is wrong today. (Person, this session.)
+- **Geist as the theme's face** — the canonical shadcn.com typeface, loaded via the
+  standard Google css2 `@import` like every other themed font; system stacks were
+  the plainer option but miss the recognizable stock look. (Person, this session.)
 
 ## 1. The `shadcn` theme
 
 `packages/engine/themes/shadcn.css`, canonical format, header comment naming the
 source (`ui.shadcn.com`, MIT) like the other ports:
 
-- **No font `@import`.** System stacks: `--font-ui` / `--font-display` =
-  `ui-sans-serif, system-ui, sans-serif` (+ emoji fallbacks), `--font-mono` =
-  `ui-monospace, SFMono-Regular, monospace`.
+- **Fonts: Geist.** One css2 `@import` (Geist 400/500/600 + Geist Mono 400/500);
+  `--font-ui` / `--font-display` = `"Geist", ui-sans-serif, system-ui, sans-serif`
+  (+ emoji fallbacks), `--font-mono` = `"Geist Mono", ui-monospace, monospace`.
 - `--radius: 0.625rem`, `--spacing: 0.25rem`, `--icon-library: lucide`.
 - The 31 color tokens in both plates: stock shadcn **neutral** values, oklch→hex
   converted verbatim at implementation time.
 - **No physics fields** — absent means stock, which is the point.
 - Joins the AA contrast gate (not `AA_EXEMPT`), per the decision above.
-- The editor's `FONT_CATALOG` gains a "System UI" entry (no import) so the theme's
-  fonts display as matched selections rather than unmatched labels.
+- The editor's `FONT_CATALOG` gains Geist and Geist Mono entries (Inter and the
+  system stacks are already present), so the theme's fonts display as matched
+  selections rather than unmatched labels.
 
 ## 2. The base layer goes stock
 
-`packages/ui/theme-tokens.css` (the no-engine fallback for Storybook, tests, and any
-consumer without the served theme) moves its lockstep partner from `lodekit.css` to
-`shadcn.css`:
+`packages/ui/theme-tokens.css` — the build-time base that lets `@lodekit/ui` compile
+and render standalone (vitest render tests, any consumer without a running engine)
+and carries the `@theme inline` bridge — moves its lockstep partner from
+`lodekit.css` to `shadcn.css`:
 
 - Token values in `@layer lodekit-tokens` flip to the same neutral hex set; the
   header comment is rewritten. The layer name stays (internal, not worth the churn).
@@ -177,6 +189,9 @@ including themes that set none, some, or non-preset values of the new fields.
   elevation, easing, and body weight. Changed: `lodekit` becomes an optional theme;
   focus and elevation are stock by default (visible change for existing roots that
   never picked a theme, and for themes that relied on the old base physics).
+- **TODO.md** — append (same PR): vendor the top ~10 theme fonts engine-served
+  (Geist, Inter, and the `FONT_CATALOG` families), removing the Google request from
+  themes; sharpens the existing self-hosted-fonts deferral.
 - **Backlog:** the issue tracking Focus-Is-A-Border product adoption is closed with
   a comment linking this PR (the rule no longer applies to the product register).
 
