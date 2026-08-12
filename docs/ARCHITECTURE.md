@@ -55,8 +55,9 @@ pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `root/` is
   integration tests (engine↔MCP); imports the siblings by package specifier,
   never by relative reach-in.
 - **`web/main`** (`@lodekit/web-main`) — Astro landing site.
-- **`web/docs`** (`@lodekit/web-docs`) — Starlight docs site (placeholder
-  scaffold).
+- **`web/docs`** (`@lodekit/web-docs`) — Starlight docs site: ~44 pages, custom
+  diagram components, build-time link validation. Deployed to `docs.lodekit.com`
+  by `deploy-web-docs.yml` (manual dispatch).
 - **`manager`** (`@lodekit/manager`) — the menubar app (Electron, electron-builder
   `make`). Spawns the engine outside Electron so `better-sqlite3` loads without an
   ABI rebuild.
