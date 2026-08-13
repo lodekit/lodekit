@@ -33,7 +33,7 @@ import { createLogger } from "./logger.js";
 import { initTaskExecutor, registerManifest, recoverInterruptedRuns, dispatchTasks } from "./taskExecutor.js";
 import { sweepAllTaskRuns } from "./services/tasks.js";
 import { resolveThemeCss, extractIconLibrary, getPreviewCss, warnLegacyThemeFiles } from "./services/themes.js";
-import { markFaviconSvg, emojiFaviconSvg } from "@lodekit/ui/marks";
+import { markFaviconSvg, emojiFaviconSvg, isMarkStyle } from "@lodekit/ui/marks";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
@@ -144,6 +144,24 @@ export function createApp(cfg: Config): Hono {
       const appId = app !== undefined && isValidAppId(app) ? app : undefined;
       const css = preview ?? resolveThemeCss(cfg, appId);
       return c.json({ theme: effectiveString("appearance.theme"), iconLibrary: extractIconLibrary(css) });
+    })
+    // Shell chrome data (app-shell spec §5): the app inventory + mark style the
+    // @lodekit/ui AppShell fetches when its data props are absent. Chrome
+    // namespace by decision — interim until a proper app-registry API exists
+    // (TODO.md); the dashboard's own pages keep using /api.
+    .get("/_ui/shell.json", (c) => {
+      c.header("Cache-Control", "no-store");
+      const style = effectiveString("appearance.icon_style");
+      return c.json({
+        // scanApps doesn't validate icon's type — omit anything but a
+        // non-empty string so the client's 📦 fallback applies.
+        apps: scanApps(cfg.appsDir).map(({ appId, name, icon }) => ({
+          appId,
+          name,
+          ...(typeof icon === "string" && icon ? { icon } : {}),
+        })),
+        iconStyle: isMarkStyle(style) ? style : "b",
+      });
     })
     // Favicons (spec: docs/specs/2026-07-17-per-app-favicon-design.md). All
     // serve-time and never cached, like theme delivery. /favicon.ico serves
