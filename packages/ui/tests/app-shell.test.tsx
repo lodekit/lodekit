@@ -98,6 +98,19 @@ describe("AppShell", () => {
     expect(document.querySelector("[data-shell-dots]")).toBeNull();
   });
 
+  it("does not fetch shell.json when the consumer supplies a data prop", async () => {
+    const f = vi.fn();
+    vi.stubGlobal("fetch", f);
+    await mount(
+      <AppShell apps={undefined} iconStyle="b">
+        <p>page</p>
+      </AppShell>
+    );
+    expect(f).not.toHaveBeenCalled();
+    // Loading dots until the consumer's live data arrives.
+    expect(document.querySelector("[data-shell-dots]")).toBeTruthy();
+  });
+
   it("empty apps: dots stay as the tooltip-bearing empty state", async () => {
     await mount(
       <AppShell apps={[]} iconStyle="b">

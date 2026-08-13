@@ -68,9 +68,12 @@ export function AppShell({
   activeHref,
   children,
 }: AppShellProps) {
-  // Chrome data: fetch-once fallback for surfaces (apps) that don't pass live
-  // props. `apps === undefined` is the loading state the rail renders as dots.
-  const needsFetch = appsProp === undefined || iconStyleProp === undefined
+  // Chrome data: fetch-once fallback for surfaces (apps) that pass no data
+  // props at all. A consumer that supplies either prop owns the data — the
+  // dashboard passes both from its live queries, and its `apps` may be
+  // momentarily undefined while loading (rendered as the rail dots) without
+  // triggering a redundant shell.json fetch.
+  const needsFetch = appsProp === undefined && iconStyleProp === undefined
   const [fetched, setFetched] = React.useState<{ apps?: ShellApp[]; iconStyle?: string } | null>(null)
   React.useEffect(() => {
     if (!needsFetch) return

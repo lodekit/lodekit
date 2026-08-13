@@ -7,7 +7,9 @@ test("dashboard renders clean", async ({ page }) => {
   // finishes, and that page does not self-refresh — poll with fresh gotos.
   await expect(async () => {
     await page.goto("/_dashboard/");
-    await expect(page.getByRole("link", { name: "Lodekit home" })).toBeVisible({
+    // Two home links since the app shell: the rail badge and the header
+    // wordmark — assert the first visible one.
+    await expect(page.getByRole("link", { name: "Lodekit home" }).first()).toBeVisible({
       timeout: 5_000,
     });
   }).toPass({ timeout: 120_000 });
