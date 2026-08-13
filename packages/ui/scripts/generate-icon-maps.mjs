@@ -120,8 +120,11 @@ function walk(path, out) {
 // Collect the raw named specifiers imported from the icon modules.
 function scanRawNames() {
   const files = SCAN_TARGETS.flatMap((t) => walk(t, []))
+  // Also match the ui package's own relative imports ("../icons") so the
+  // library's internal consumers (sidebar, pagination, app-shell, …) keep
+  // their icons — and their `XIcon` alias spellings — in the generated maps.
   const importRe =
-    /import\s+(type\s+)?\{([^}]*)\}\s*from\s*["'](?:lucide-react|@lodekit\/ui\/icons)["']/g
+    /import\s+(type\s+)?\{([^}]*)\}\s*from\s*["'](?:lucide-react|@lodekit\/ui\/icons|\.{1,2}\/icons)["']/g
   const names = new Set()
   for (const file of files) {
     const src = readFileSync(file, "utf8")

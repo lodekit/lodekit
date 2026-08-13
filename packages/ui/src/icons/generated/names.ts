@@ -5,6 +5,7 @@ import {
   ArrowUp as LucideArrowUp,
   ArrowUpDown as LucideArrowUpDown,
   ArrowUpRight as LucideArrowUpRight,
+  Bell as LucideBell,
   Check as LucideCheck,
   ChevronDown as LucideChevronDown,
   ChevronLeft as LucideChevronLeft,
@@ -64,6 +65,7 @@ export const CANONICAL_NAMES = [
   "ArrowUp",
   "ArrowUpDown",
   "ArrowUpRight",
+  "Bell",
   "Check",
   "ChevronDown",
   "ChevronLeft",
@@ -124,6 +126,7 @@ export const ArrowDown = createIcon("ArrowDown", LucideArrowDown)
 export const ArrowUp = createIcon("ArrowUp", LucideArrowUp)
 export const ArrowUpDown = createIcon("ArrowUpDown", LucideArrowUpDown)
 export const ArrowUpRight = createIcon("ArrowUpRight", LucideArrowUpRight)
+export const Bell = createIcon("Bell", LucideBell)
 export const Check = createIcon("Check", LucideCheck)
 export const ChevronDown = createIcon("ChevronDown", LucideChevronDown)
 export const ChevronLeft = createIcon("ChevronLeft", LucideChevronLeft)
