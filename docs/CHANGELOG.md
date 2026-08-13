@@ -115,6 +115,14 @@ Rules:
   and the theme editor grows an **Effects** section with Elevation, Easing, and
   Body weight presets. Geist and Geist Mono join the font catalog ([#208]).
 
+- **The app shell** — the dashboard and every app now share one platform chrome:
+  a header with search (⌘K works everywhere) and a left rail with your apps as
+  icons, an expandable Services section (the rail remembers your choice), and
+  Settings. Inside an app the header shows that app's icon and name, and the
+  whole shell wears the app's theme. The old services popover is gone; new apps
+  are scaffolded with the shell; and moving between the dashboard and apps
+  crossfades in browsers with cross-document view transitions ([#210]).
+
 ### Bug Fixes
 
 - **kv-store error statuses** — internal faults in the kv API now return 500

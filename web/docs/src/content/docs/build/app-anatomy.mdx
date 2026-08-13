@@ -54,7 +54,9 @@ dashboard card. The **app id** is the app's identity everywhere at once: it must
 Pages live under `src/routes/` as file-based routes: `index.tsx` is `/`,
 `almanac.tsx` is `/almanac`, `plants.$plantId.tsx` is `/plants/:plantId`. The root
 route `__root.tsx` is the document shell — it renders the `<html>` element, loads
-`index.css`, and holds shared chrome like the nav.
+`index.css`, and wraps every page in the platform shell (`AppShell` from
+`@lodekit/ui`): the header and app rail all Lodekit surfaces share, wearing this
+app's theme. The app's own navigation lives inside the shell's content area.
 
 `src/router.tsx` is the wiring, and it's nearly identical in every app:
 
