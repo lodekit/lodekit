@@ -1,6 +1,1 @@
-{
-  "apps": {
-    "greenhouse": "greenhouse-green"
-  },
-  "global": "shadcn"
-}
+{ "apps": { "greenhouse": "greenhouse-green" } }
