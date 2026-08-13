@@ -23,8 +23,13 @@ declare module "@tanstack/react-router" {
 }
 `;
 
-const rootTsx = (name: string, appId: string) => `import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+const rootTsx = (name: string, appId: string, icon: string) => `import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { AppShell } from "@lodekit/ui";
 import appCss from "../styles.css?url";
+
+// The platform chrome around every page (app-shell spec §7). The shell picks
+// up this app's designated theme through the theme.css?app= link below.
+const shellApp = { appId: ${JSON.stringify(appId)}, name: ${JSON.stringify(name)}, icon: ${JSON.stringify(icon)} };
 
 export const Route = createRootRoute({
   head: () => ({
@@ -51,7 +56,9 @@ export const Route = createRootRoute({
         <script src="/_ui/theme.js" />
       </head>
       <body>
-        <Outlet />
+        <AppShell app={shellApp}>
+          <Outlet />
+        </AppShell>
         <Scripts />
       </body>
     </html>
@@ -125,7 +132,7 @@ export function scaffoldApp(cfg: Config, input: ScaffoldInput) {
   };
   fs.writeFileSync(path.join(appDir, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
   writeIfAbsent(path.join(srcDir, "router.tsx"), routerTsx);
-  writeIfAbsent(path.join(routesDir, "__root.tsx"), rootTsx(manifest.name, input.appId));
+  writeIfAbsent(path.join(routesDir, "__root.tsx"), rootTsx(manifest.name, input.appId, manifest.icon));
   writeIfAbsent(path.join(routesDir, "index.tsx"), indexTsx(manifest.name));
   writeIfAbsent(path.join(srcDir, "styles.css"), stylesCss);
   return {
