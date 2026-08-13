@@ -1,7 +1,7 @@
 # App shell — design
 
 **Date:** 2026-08-13
-**Status:** draft — revised per PR review, pending approval
+**Status:** approved (2026-08-13, in session, after one revision round)
 **Scope:** The dashboard's header-only chrome becomes a full app shell — a header row
 plus a left icon rail, laid out as a bordered grid (reference: shadcn-ui-blocks
 "card-grid-shell", whose proportions we adopt). The shell is extracted into
