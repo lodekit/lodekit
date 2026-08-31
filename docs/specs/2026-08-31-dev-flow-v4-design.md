@@ -1,7 +1,7 @@
 # Dev Flow v4 — on-demand process skills (design)
 
 **Date:** 2026-08-31 · **Updated:** 2026-08-31 (lk- naming, release and drain extracted)
-**Status:** draft-for-review
+**Status:** approved (2026-08-31, in session, after one revision round)
 **Scope:** the development *process* of this repo — AGENTS.md §Develop, §Track (drain),
 §Release, a small set of process skills, and their wiring. No product code changes.
 **Evidence base:** `docs/research/2026-08-06-dev-process-audit-and-v3-proposal.md`
@@ -297,7 +297,8 @@ the plan; the rules are the point, not the sentences.
 > with the person), the changelog drain, the steering audit — and the person merges
 > it; never merge a release PR yourself.
 
-**Conventions, two additions:**
+**Conventions, three additions** (the third added 2026-08-31 after the plan for this
+spec leaked a home-directory path; v2's SOURCES.md carried the same rule):
 
 > **Process skills:** canonical files in `.agents/skills/lk-<name>/`, committed
 > `.claude/skills/lk-<name>` symlinks; provenance, the upstream map, and every
@@ -307,6 +308,10 @@ the plan; the rules are the point, not the sentences.
 > **PR review threads:** reply to inline review comments in their thread
 > (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), never as a
 > top-level comment.
+>
+> **Portable paths:** committed files and PR bodies carry no machine-local paths —
+> repo-relative paths, or `<worktree>` / `$SCRATCHPAD` placeholders for machine-local
+> inputs. A home-directory path leaks who wrote it and breaks on every other machine.
 
 Budget: AGENTS.md is 222 lines today; the Release and Drain text leaving (~25 lines)
 pays for the Develop additions (~25 lines). After this work: ≤ 225 lines.
@@ -350,7 +355,9 @@ finishing); worktree and namespace references.
 Adds: **Decisions already made** in the header and the never-re-ask rule (D2); the
 `**Review:** required — <reason>` line (D8); house plan lifecycle (branch-only,
 checkboxes ticked and pushed as tasks land, deleted before merge — pointer to
-`docs/plans/README.md`); the plan-document-reviewer prompt kept alongside for D13.
+`docs/plans/README.md`); the portable-paths rule (no machine-local paths in a plan;
+placeholders for machine-local inputs); the plan-document-reviewer prompt kept
+alongside for D13.
 
 ### lk-implement (≤ 2,200 words; upstream `subagent-driven-development`, 4,825)
 
