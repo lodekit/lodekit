@@ -1,7 +1,8 @@
 # Research: Engine runtime under the north star — Node vs Bun vs Deno vs Go
 
 > **Date:** 2026-08-12
-> **Status:** Direction decided 2026-08-31 (Go, direct port) — see "Next steps"; ADR pending
+> **Status:** Direction decided 2026-08-31 (Go, direct port) — see "Next steps", which is
+> the decision record
 > **Issue:** lodekit/lodekit#153 (engine stack track)
 > **Prior work:** `.agents/internal/research/2026-07-20-core-stack-improvements-post-go-research.md`,
 > `.agents/internal/research/2026-08-06-deno-vs-bun-engine-runtime.md`,
@@ -228,7 +229,7 @@ arrives incrementally and the first slice pays for itself standalone.**
 ## Recommendation (ordered ladder)
 
 > Superseded 2026-08-31 where it differs from the "Next steps" section below: direct port
-> instead of strangler; #143 dropped; #142 closed with its revisit trigger on the issue.
+> instead of strangler; #143 dropped; #142 closed (Bun path closed for good — no revisit).
 
 1. **Decide + record.** Approve the direction; write the Runtime & Packaging ADR
    (`docs/decisions/`, the #153 close-out) naming: Go strangler, Node engine maintained
@@ -263,19 +264,22 @@ carry forward, adapted to the new contract.
 
 ### Priorities
 
-1. **Lock the engine decision: Go.** Write the runtime & packaging ADR closing #153's
-   fork: Go direct port; Bun closed (revisit trigger: a stable 1.4 tag holding through
-   2–3 patch releases plus an LTS commitment); Deno closed; the north star and "learning
-   value" recorded as explicit criteria.
+1. **Lock the engine decision: Go.** Close #153's fork: Go direct port; Bun closed for
+   good (no revisit); Deno closed; the north star and "learning value" recorded as
+   explicit criteria. This document is the decision record — the dev flow no longer
+   keeps ADRs.
 2. **Lock the SDK shape** — APIs and how agents build apps. Two spikes gate the spec
    (see Ordered actions). Priority 3 folds in here: the SDK API *is* the layering
    interface.
-3. **Layered architecture, sync-enabled from day 1.** Concretely: synced stores write
-   through an op-log with HLC timestamps and state tables are projections (log-first,
-   broker-less — NATS/JetStream was evaluated and rejected as the vehicle: it doesn't
-   solve reconciliation, breaks the one-copyable-data-tree property, loses
-   same-transaction enqueue, and its semantics reduce to ~4 SQLite tables at this
-   scale); plus the invariant that all writes to synced stores flow through the SDK API.
+3. **Layered architecture that keeps sync reachable.** Sync is not built from day 1 —
+   the stack starts local-only and expands later — but no decision may block reaching
+   multi-writer sync. The candidate mechanism, to be locked in the individual store
+   specs rather than here: synced stores write through an op-log with HLC timestamps
+   and state tables are projections (log-first, broker-less — NATS/JetStream was
+   evaluated and rejected as the vehicle: it doesn't solve reconciliation, breaks the
+   one-copyable-data-tree property, loses same-transaction enqueue, and its semantics
+   reduce to ~4 SQLite tables at this scale). Locked now: the invariant that all writes
+   to synced stores flow through the SDK API.
 4. **A functional Go stack able to power and run apps** — including the macOS tray.
 5. *(sequenced later)* Multi-gateway auth + sync.
 
@@ -290,25 +294,30 @@ One shipped Go binary, `lodekit`, zero Node in the product:
     gateways) that the SPA's SDK client calls from the browser. The scope key is a
     **namespace** from day 1, with "one app = one namespace (namespace defaults to app
     id)" as the current semantics.
-  - **Stores**: SQLite via modernc.org/sqlite under the data tree; op-log write-through
-    per priority 3.
+  - **Stores**: SQLite via modernc.org/sqlite under the data tree; whether writes go
+    through the priority-3 op-log is locked in the stores spec.
   - **Task runner**: goja pool executing agent-bundled single-file tasks from the apps
     tree; cron host-side; capabilities only via bridged host functions.
-  - **Dashboard**: embedded via `embed.FS`, built at release time by CI's Node
-    toolchain.
+  - **Dashboard**: a built-in app, so pre-building makes sense — which keeps Node
+    tooling in the monorepo. The mechanism (e.g. `embed.FS`, built at release time) is
+    decided in its spec.
 - **`lodekit mcp`** — stdio MCP subcommand on the official Go MCP SDK, reaching the
   daemon over localhost HTTP only (today's invariant, preserved). Absorbs
   `packages/mcp`.
 - **CLI subcommands** (`status`, `logs`, `doctor`, `open`,
   `service install|start|stop`) — thin HTTP clients of the daemon; kardianos/service
-  for launchd/systemd/SCM. No separate internal API: an admin-scoped route group on the
-  same server serves CLI and tray.
-- **Tray (macOS, in priority 4)**: fyne.io/systray compiled into the binary on darwin
-  (cgo on darwin only; release builds run on macOS runners anyway). Menu: open
+  for launchd/systemd/SCM. No separate internal API: the daemon's control-plane
+  endpoints (status, health, log tail, start/stop-class operations) live as a route
+  group — routes mounted under one path prefix with admin-scope auth middleware — on
+  the same server and port as the app host and SDK API; CLI and tray call those
+  routes. Auth mechanics are decided in the daemon/CLI spec.
+- **Tray (macOS, in priority 4)**: implementation decided in its spec, between
+  fyne.io/systray compiled into the binary on darwin (cgo on darwin only; release
+  builds run on macOS runners anyway) and a SwiftUI MenuBarExtra helper. Menu: open
   dashboard, status, start/stop, quit. There is no engine child to supervise; first-run
   app install becomes first-boot logic in `serve`. Signing/notarization ports from the
-  Electron scripts. Deferred: SwiftUI MenuBarExtra alternative, Windows tray (separate
-  exe — PE-header constraint), Linux tray (AppIndicator fragmentation).
+  Electron scripts. Deferred: Windows tray (separate exe — PE-header constraint),
+  Linux tray (AppIndicator fragmentation).
 
 TypeScript remains the language of everything app-facing: apps, shadcn/`@lodekit/ui`,
 dashboard sources, and the SDK (now client-side + task typings; its server half dies with
@@ -350,7 +359,7 @@ possible without Node:
 
 ### Ordered actions
 
-1. **Runtime & packaging ADR** (`docs/decisions/`) — the #153 close-out, per priority 1.
+1. **Close #153** per priority 1, pointing at this document as the decision record.
 2. **Spike A — Node-free build pipeline** (~2–3 days): esbuild bundling against the
    curated universe; the TanStack Router file-based-route codegen question (fallback:
    code-based routing in the app contract); Tailwind-v4-core-under-goja. Verified by
@@ -407,7 +416,8 @@ possible without Node:
    affects when the seam's fallback can be removed, not the direction. *(Moot as of
    2026-08-31: #143 dropped — no transitional work.)*
 4. goja vs sobek vs modernc.org/quickjs at task-runner time (1-day spike each, re-check then).
-5. The Connect six-tool chain end-to-end (spike before the contract ADR).
+5. The Connect six-tool chain end-to-end (spike before the contract decision in the SDK
+   spec).
 6. Turso beta-exit timeline and self-hosted sync-server production posture (the "buy" option
    if our hand-rolled sync ever needs replacing).
 7. Azure Trusted Signing pricing/eligibility for individuals (Windows signing tier, unverified
