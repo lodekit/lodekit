@@ -374,9 +374,10 @@ test helpers.
 `.agents/SOURCES.md` returns in its v2 shape: a Sources table (source, pinned commit,
 vendored date, provides), an Adaptation rules section (D6 verbatim, so a resync applies
 the same trim), and a Divergences section with one bullet per file naming what
-changed and why. Pin: `github.com/obra/superpowers` `b36e0829c6d0140e93cfef2ca599b1b07d4a7797`
-(v6.3.0). The two D2 cherry-picks cite `github.com/pcvelz/superpowers` by commit in
-the writing-plans and SDD divergence bullets.
+changed and why. Pin: `github.com/obra/superpowers` at
+`b36e0829c6d0140e93cfef2ca599b1b07d4a7797` (v6.3.0). The two D2 cherry-picks cite
+`github.com/pcvelz/superpowers` by commit in the writing-plans and SDD divergence
+bullets.
 
 REUSE.toml: one annotation, `path = ".agents/skills/**"`, `precedence = "aggregate"`,
 `SPDX-FileCopyrightText = ["2025 Jesse Vincent", "2026 The Lodekit Authors"]`,
