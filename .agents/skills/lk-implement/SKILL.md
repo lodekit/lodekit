@@ -213,7 +213,7 @@ is the only place decisions you took on the person's behalf reach them, and a ru
 that dies with the workspace was made in secret.
 
 Then delete the workspace (`rm -rf <workspace>`) — git history is the record now, and
-sibling directories belong to other plans. Hand the branch to AGENTS.md §Review:
-`/code-review` over the whole branch, and `/security-review` as well when any task
-carried the risk flag. §End owns what follows — plan deletion, the PR body, ready for
-review. This skill stops here.
+sibling directories belong to other plans. Hand the branch to AGENTS.md §Review — the
+whole-branch review pass, with the security pass when any task carried the risk
+flag — and §End, which owns plan deletion, the PR body, and ready for review. This
+skill stops here.

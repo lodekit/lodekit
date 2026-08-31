@@ -1,6 +1,9 @@
 # Dev Flow v4 — on-demand process skills (design)
 
-**Date:** 2026-08-31 · **Updated:** 2026-08-31 (lk- naming, release and drain extracted)
+**Date:** 2026-08-31 · **Updated:** 2026-08-31 (lk- naming, release and drain
+extracted; PR review: §Review stated harness-neutrally — the Claude Code built-ins as
+mechanism, the task-reviewer-brief subagent as fallback — and the PR-threads
+convention removed)
 **Status:** approved (2026-08-31, in session, after one revision round)
 **Scope:** the development *process* of this repo — AGENTS.md §Develop, §Track (drain),
 §Release, a small set of process skills, and their wiring. No product code changes.
@@ -101,8 +104,8 @@ Two harness facts found while researching this, both load-bearing:
   (AGENTS.md is the router; the 1%-rule over-triggers), `verification-before-completion`
   (harness/model absorbed; the system prompt already mandates faithful reporting),
   `test-driven-development` (its iron law contradicts v3 D12; 0 invocations after
-  vendoring), `receiving-code-review` (one line survives into Conventions: reply in
-  the GitHub thread), `finishing-a-development-branch` (its "merge locally" option
+  vendoring), `receiving-code-review` (anti-sycophancy is a trained default now;
+  nothing survives), `finishing-a-development-branch` (its "merge locally" option
   contradicts PR-only; §End owns finishing), `using-git-worktrees` (the person's and
   the harness's tooling), `executing-plans` (its own text says use SDD; inline
   execution is AGENTS.md's default), `dispatching-parallel-agents` (~150 words fold
@@ -297,17 +300,14 @@ the plan; the rules are the point, not the sentences.
 > with the person), the changelog drain, the steering audit — and the person merges
 > it; never merge a release PR yourself.
 
-**Conventions, three additions** (the third added 2026-08-31 after the plan for this
-spec leaked a home-directory path; v2's SOURCES.md carried the same rule):
+**Conventions, two additions** (the second added 2026-08-31 after the plan for this
+spec leaked a home-directory path; v2's SOURCES.md carried the same rule. A third —
+reply to PR review comments in their thread — was added and then removed in review):
 
 > **Process skills:** canonical files in `.agents/skills/lk-<name>/`, committed
 > `.claude/skills/lk-<name>` symlinks; provenance, the upstream map, and every
 > divergence in `.agents/SOURCES.md`; resyncs are deliberate, one PR each;
 > adaptation rules are in SOURCES.md.
->
-> **PR review threads:** reply to inline review comments in their thread
-> (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), never as a
-> top-level comment.
 >
 > **Portable paths:** committed files and PR bodies carry no machine-local paths —
 > repo-relative paths, or `<worktree>` / `$SCRATCHPAD` placeholders for machine-local

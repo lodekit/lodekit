@@ -162,10 +162,12 @@ Single-sitting tasks need no plan.
 
 Before a PR leaves draft:
 
-- Read the whole branch diff for correctness and security, then run `/code-review`
-  over it — and `/security-review` too when any task was risk-flagged. Flagged tasks
-  already had a fresh-context review briefed to disprove them (`lk-implement`'s task
-  reviewer); the rest rely on the implementer's self-review and this pass.
+- Read the whole branch diff for correctness and security, then give it a
+  fresh-context review: the harness's review skills where it has them (Claude Code's
+  built-in `/code-review`, plus `/security-review` when any task was risk-flagged),
+  or a subagent given `lk-implement`'s task-reviewer brief over a whole-branch
+  review package. Flagged tasks already had a review briefed to disprove them; the
+  rest rely on the implementer's self-review and this pass.
 - Run the docs check, all in the same PR: structure changed → ARCHITECTURE.md; term
   coined or changed → DEFINITIONS.md; loggable change → CHANGELOG.md; scope fell
   out → TODO.md.
@@ -219,7 +221,5 @@ person, changelog drain, steering audit); the person reviews, edits notes, and m
 - **Process skills:** `.agents/skills/lk-<name>/` is canonical, `.claude/skills/lk-<name>`
   a committed symlink; provenance and divergences in `.agents/SOURCES.md`; resyncs are
   deliberate, one PR each.
-- **PR review threads:** reply in the comment's thread, never as a top-level comment
-  (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`).
 - **Portable paths:** no machine-local paths in committed files or PR bodies —
   repo-relative, or `<worktree>` / `$SCRATCHPAD` placeholders; a home path names its author.
