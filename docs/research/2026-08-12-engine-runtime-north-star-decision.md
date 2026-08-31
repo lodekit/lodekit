@@ -310,7 +310,10 @@ One shipped Go binary, `lodekit`, zero Node in the product:
   endpoints (status, health, log tail, start/stop-class operations) live as a route
   group — routes mounted under one path prefix with admin-scope auth middleware — on
   the same server and port as the app host and SDK API; CLI and tray call those
-  routes. Auth mechanics are decided in the daemon/CLI spec.
+  routes. The alternative stays open as context for the future: a separate internal
+  listener (Unix socket / named pipe, or a second localhost port — the Tailscale
+  pattern), buying process-level isolation at the cost of a second server and
+  lifecycle. The choice and the auth mechanics are decided in the daemon/CLI spec.
 - **Tray (macOS, in priority 4)**: implementation decided in its spec, between
   fyne.io/systray compiled into the binary on darwin (cgo on darwin only; release
   builds run on macOS runners anyway) and a SwiftUI MenuBarExtra helper. Menu: open
