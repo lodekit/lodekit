@@ -125,7 +125,72 @@ Scripts (`scripts/sdd-workspace`, `task-brief`, `review-package`):
   CLI-contract change; verified in a scratch worktree (workspace path, Task-N-only
   brief, two-commit review package, clean `git status`, shellcheck clean).
 
+SKILL.md and templates:
+
+- Dropped both `dot` digraphs (the fix loop is a four-step numbered list), the Common
+  Rationalizations table, the Example Workflow transcript, the "When to Use"
+  comparison, and the "Announce" / "your human partner" phrasings (D6).
+- Dropped the using-git-worktrees and finishing hand-offs and the Final Review
+  section's reviewer dispatch, including every requesting-code-review /
+  `code-reviewer.md` reference: the whole-branch pass is the harness's `/code-review`
+  plus `/security-review` when a task was flagged (D7, D16).
+- Dropped the bounded-wait/polling paragraph — the harness notifies the controller when
+  a subagent completes; live implementers are resumed with `SendMessage`, dispatched
+  with `Agent`.
+- Paths: workspace `.agents/internal/sdd/<plan-basename>/`; scripts invoked from
+  `.agents/skills/lk-implement/scripts/` (D10). Plans at `docs/plans/YYYY-MM-DD-<slug>.md`
+  with the spec as binding authority.
+- Added risk-scaled review: the task reviewer is dispatched only for tasks carrying
+  `**Review:** required — <reason>`, framed to disprove the change; unflagged tasks
+  close on the implementer's report plus self-review with a ledger line; the
+  controller may escalate on DONE_WITH_CONCERNS or an over-reaching diff, ledgered as
+  a ruling. Reason in-file: uniform per-task review found nothing ~98% of the time
+  here; the catches were security- and parser-shaped (D7/D8).
+- Added bounded parallel dispatch: at most three implementers in flight, only on
+  disjoint file sets with no dependency, plus ~150 words folded in from upstream's
+  dispatching-parallel-agents (one focused brief per independent domain, constraints,
+  a named report shape, conflict check and full suite after integration). Idea from
+  github.com/pcvelz/superpowers @ `a98ceff` (2026-06-10) (D2/D11).
+- Added the finish hand-off: rulings listed exhaustively, workspace deleted, then
+  AGENTS.md §Review and §End; the skill never finishes a branch (D16).
+- Model Selection rewritten as harness tiers with current names (`haiku` for
+  transcription-grade briefs, `sonnet` floor for reviewers and prose-brief
+  implementers, the session model for design judgment), keeping "turn count beats
+  token price" and "always pass `model`" (D11).
+- Templates trimmed of process rules SKILL.md states; kept the no-subagents contract,
+  the under-15-line report contract, the reviewer read-only rule, "do not trust the
+  report", the ⚠️ cannot-verify channel, severity calibration, output formats. The
+  implementer's TDD lines → "test-first when the failing test cheaply expresses the
+  change; either way `lk-implement-test` says what a test must prove"; tests via
+  `pnpm --filter <pkg> test`; "TDD Evidence" → "Test evidence" (D15). The task reviewer
+  gained the disprove-the-change paragraph and keeps upstream's "illegible evidence is
+  not missing evidence" guard; re-review changed in paths and register only.
+- Word trim: SKILL.md 4,825 → 2,069; implementer 960 → 575; task-reviewer 1,331 →
+  933; re-review 709 → 484.
+
 ### lk-debug
+
+- Dropped per D6: the iron law block and its "violating the letter" line, the Red Flags
+  list, the "human partner's signals" section, the Common Rationalizations and Quick
+  Reference tables, all MUST/gate phrasing, and the `dot` digraphs in both reference
+  files. The four phases read as goals with their reasons, not gated steps.
+- Dropped the `defense-in-depth.md` pointer (not vendored); its one rule — validate at
+  the boundary you fixed, not at every layer the value crossed — folds into "Implement
+  the fix". Dropped the TDD and verification skill references (D3) and the
+  `find-polluter.sh` / `condition-based-waiting-example.ts` companions (not vendored).
+- Added the house bug lane in one paragraph: reproduce before fixing; the regression
+  test lands with the fix in the same PR at the lowest ladder rung; adjacent
+  pre-existing issues → one `docs/TODO.md` line, not scope; branch + PR.
+- Frontmatter renamed to `lk-debug` (D5) with a two-sentence description.
+- `root-cause-tracing.md`: technique kept (trace the bad value backward to its origin,
+  fix at the source, one guard at the boundary where it entered); one example; the
+  four-layer defense list → the single-guard rule; `npm test` → `pnpm test`.
+- `condition-based-waiting.md`: technique kept (poll for the condition under a bounded
+  deadline) with one TypeScript/vitest example and the `waitFor` implementation; the
+  quick-patterns table, mistakes list, and "real-world impact" stats dropped.
+- Word trim: SKILL.md 1,440 → 734 (ruling: 34 over the 700 target, under the 800 cap —
+  further cuts remove a rule's reason); root-cause-tracing 739 → 430;
+  condition-based-waiting 498 → 316.
 
 ### lk-implement-test
 
