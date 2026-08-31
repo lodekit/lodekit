@@ -222,4 +222,4 @@ person, changelog drain, steering audit); the person reviews, edits notes, and m
 - **PR review threads:** reply in the comment's thread, never as a top-level comment
   (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`).
 - **Portable paths:** no machine-local paths in committed files or PR bodies —
-  repo-relative, or `<worktree>` / `$SCRATCHPAD` placeholders; a home path leaks who wrote it.
+  repo-relative, or `<worktree>` / `$SCRATCHPAD` placeholders; a home path names its author.
