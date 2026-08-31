@@ -129,6 +129,21 @@ Scripts (`scripts/sdd-workspace`, `task-brief`, `review-package`):
 
 ### lk-implement-test
 
+- Promoted from a reference file to a process skill: frontmatter added (`name` and a
+  description carrying the load trigger — writing or changing a test, adding a mock or
+  a test helper), replacing upstream's "Load this reference when" line.
+- D15: the "strict TDD produces both naturally" sentence and the "the TDD cycle is what
+  complete means" opener rewritten to the repo's ladder rule — test-first when a
+  failing test cheaply expresses the change, otherwise the lowest rung that exercises
+  it, the test landing beside the code; a slice ships the tests its behavior needs and
+  only those.
+- D6: `superpowers:writing-skills` cross-reference dropped; the two "your human
+  partner's correction/question" attributions became plain statements; "human prose" →
+  "prose for people".
+- Word trim 1,310 → 1,300. Ruling (2026-08-31): the plan's 1,250 target was unreachable
+  without cutting kept content (the Gate Function blocks or the Warning Signs list);
+  the spec's 1,300 cap governs and the tree budget holds.
+
 ## Ours
 
 - `lk-release`, `lk-drain` — house-owned, no upstream; extracted from AGENTS.md

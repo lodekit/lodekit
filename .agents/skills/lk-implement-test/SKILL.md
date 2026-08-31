@@ -1,7 +1,9 @@
-# Writing Good Tests
+---
+name: lk-implement-test
+description: Every test names the break it catches and exercises the real thing. Load when writing or changing a test, adding a mock, or a test helper.
+---
 
-**Load this reference when:** writing or changing tests, adding mocks, or
-adding cleanup/helper methods for tests.
+# Writing Good Tests
 
 ## Overview
 
@@ -13,9 +15,9 @@ here:
 2. Every test exercises the real thing
 ```
 
-Strict TDD produces both naturally: a test written first and watched
-failing against real code has already proven it can fail, and only earns
-a mock when the real dependency proves slow or external.
+Write the test first when a failing test cheaply expresses the change
+(bug regressions, pure logic); otherwise take the lowest rung that
+exercises it. The test lands beside the code.
 
 ## Principle 1: Name the Break
 
@@ -48,8 +50,7 @@ retried 5 times and the 6th attempt never happens."
 contains an exact line proves only that the source is the source. Run
 scripts against controlled inputs and assert outputs, side effects, or
 exit codes. Documents that instruct agents are tested by the consuming
-agent's behavior (superpowers:writing-skills); prose for humans earns no
-test at all.
+agent's behavior; prose for people earns no test.
 
 **Your code, not the framework.** Test the contract your code makes at
 its boundaries — the route you register, the query you emit, the payload
@@ -93,8 +94,7 @@ expect(screen.getByRole('navigation')).toBeInTheDocument();
 expect(screen.getByTestId('sidebar-mock')).toBeInTheDocument();
 ```
 
-**your human partner's correction:** "Are we testing the behavior of a
-mock?"
+The question to ask: are we testing a mock's behavior?
 
 **Mock at the right level.** Learn every side effect of the real method
 before replacing it; mock the slow or external operation and keep what
@@ -129,8 +129,7 @@ class own this resource's lifecycle? Wrong answers → test utility.
 **Prefer real components over complex mocks.** When mock setup outgrows
 the test logic, mocks miss methods the real components have, or tests
 break when the mock changes, switch to an integration test with real
-components. **your human partner's question:** "Do we need to be using a
-mock here?"
+components. The question to ask: do we need this mock?
 
 ### Gate Function
 
@@ -149,10 +148,9 @@ BEFORE adding a mock or test helper:
 
 ## Tests Ship With the Implementation
 
-The TDD cycle — failing test, minimal implementation, refactor — is what
-"complete" means. Ship the tests the behavior needs and only those:
-trivial code and human prose earn none, and a test written to satisfy
-process costs maintenance forever.
+A slice ships the tests its behavior needs and only those: trivial code
+and prose for people earn none; a test written to satisfy process costs
+maintenance forever.
 
 ## The Mutation Check
 
