@@ -63,7 +63,55 @@ what was added and why, path and register changes.
 
 ### lk-specify
 
+- Dropped the three-path router (spike / bounded / architectural), its Red-Flags
+  table, the per-path checklist variants, the process digraph, the HARD-GATE block,
+  and the "Too Simple To Need Approval" section: lanes are chosen in AGENTS.md §Start,
+  not in a skill (D12); gates and flowcharts for judgment work are out of register (D6).
+- Dropped the Visual Companion section and every reference to its browser server
+  (spec Non-goals: Artifacts and the Playwright MCP cover visual questions).
+- Dropped the `elements-of-style` and writing-plans hand-offs and all "announce the
+  path/skill" lines: AGENTS.md sequences the phases (D6, D12).
+- Re-pathed `docs/superpowers/specs/` → `docs/specs/`; upstream's generic "design doc"
+  became the house spec shape (Goals / Non-goals / Decision record / numbered sections
+  / Rollout / Verification, ~90-column prose).
+- Added: the Decision record rule (one entry per choice the person made, naming the
+  alternative it foreclosed); scope that falls out → one `docs/TODO.md` line in the
+  §Track format; the hand-off (commit, push, draft PR; approved before planning).
+- Register: "your human partner" → "the person"; every rule carries its reason; the
+  question protocol names the harness's structured question tool (AskUserQuestion).
+- Kept in substance: explore first, decomposition check before detailed questions,
+  purpose / constraints / success criteria, 2–3 approaches with YAGNI and a
+  recommendation, sectioned design with approval per section, "design for isolation
+  and clarity", "working in existing codebases", the four-item inline self-review.
+- Word trim: SKILL.md 2,324 → 799. Reviewer prompt 235 → 220: content kept, re-pathed,
+  prefaced as dispatch-on-request only (D13), redundant "Reviewer returns" trailer cut.
+
 ### lk-plan
+
+- Dropped the "Bite-Sized Task Granularity" 2–5-minute step rule: tasks are sized for
+  a subagent brief, not timed steps (spec §3; v3 D12 asks for context / files /
+  acceptance / verify).
+- Dropped the Execution Handoff section and its two-option menu, the
+  using-git-worktrees reference, and the "REQUIRED SUB-SKILL" header line: AGENTS.md
+  §Implement decides inline vs `lk-implement`, §End owns finishing (D3, D16). The
+  header now reads "Executed inline or with `lk-implement` per AGENTS.md §Implement".
+- Added the **Decisions already made** header block and the never-re-ask /
+  never-recommend-against rule, cherry-picked from github.com/pcvelz/superpowers @
+  `a98ceff` (2026-06-10) (D2).
+- Added the per-task `**Review:** required — <reason>` line, present only for trust
+  boundary / parser / auth / network egress / data loss tasks, with the reason it is
+  not universal (D7/D8).
+- Added the house plan lifecycle (`docs/plans/YYYY-MM-DD-<slug>.md`, spec named in the
+  header, commit-push-tick, deleted before merge, pointer to `docs/plans/README.md`)
+  and the portable-paths rule (`<worktree>` / `$SCRATCHPAD`, no machine-local paths).
+- Paths and tools rehoused: `docs/superpowers/plans|specs/` → `docs/plans/`,
+  `docs/specs/`; the pytest example → a `pnpm --filter @lodekit/engine test` /
+  TypeScript one.
+- Register per D6: plain statements each carrying its reason; no announce line, no
+  MUST walls, no "your human partner", no `superpowers:` namespace.
+- Reviewer prompt kept in substance, re-pathed, prefaced as dispatch-on-request only
+  for a large plan (D13); 235 → 219 words.
+- Word trim: SKILL.md 1,059 → 848.
 
 ### lk-implement
 

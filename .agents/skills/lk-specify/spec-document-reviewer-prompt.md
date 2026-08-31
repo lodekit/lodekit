@@ -1,10 +1,7 @@
-# Spec Document Reviewer Prompt Template
+# Spec Document Reviewer Prompt
 
-Use this template when dispatching a spec document reviewer subagent.
-
-**Purpose:** Verify the spec is complete, consistent, and ready for implementation planning.
-
-**Dispatch after:** Spec document is written to docs/superpowers/specs/
+Dispatched only when the person asks for a fresh-context read of a large spec in
+`docs/specs/`; the skill's inline self-review is the default.
 
 ```
 Subagent (general-purpose):
@@ -45,5 +42,3 @@ Subagent (general-purpose):
     **Recommendations (advisory, do not block approval):**
     - [suggestions for improvement]
 ```
-
-**Reviewer returns:** Status, Issues (if any), Recommendations

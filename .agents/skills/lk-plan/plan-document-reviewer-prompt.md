@@ -1,49 +1,47 @@
-# Plan Document Reviewer Prompt Template
+# Plan Document Reviewer Prompt
 
-Use this template when dispatching a plan document reviewer subagent.
-
-**Purpose:** Verify the plan is complete, matches the spec, and has proper task decomposition.
-
-**Dispatch after:** The complete plan is written.
+Dispatched only when the person asks for a fresh-context read of a large, finished
+plan; otherwise plan self-review is the inline checklist in `SKILL.md`.
 
 ```
 Subagent (general-purpose):
   description: "Review plan document"
   prompt: |
-    You are a plan document reviewer. Verify this plan is complete and ready for implementation.
+    You are a plan document reviewer. Verify this plan is complete and ready for
+    implementation.
 
-    **Plan to review:** [PLAN_FILE_PATH]
-    **Spec for reference:** [SPEC_FILE_PATH]
+    **Plan to review:** docs/plans/[PLAN_FILE]
+    **Spec for reference:** docs/specs/[SPEC_FILE]
 
-    ## What to Check
+    ## What to check
 
-    | Category | What to Look For |
+    | Category | What to look for |
     |----------|------------------|
     | Completeness | TODOs, placeholders, incomplete tasks, missing steps |
-    | Spec Alignment | Plan covers spec requirements, no major scope creep |
-    | Task Decomposition | Tasks have clear boundaries, steps are actionable |
+    | Spec alignment | Plan covers spec requirements, no major scope creep |
+    | Task decomposition | Tasks have clear boundaries, steps are actionable |
     | Buildability | Could an engineer follow this plan without getting stuck? |
 
     ## Calibration
 
-    **Only flag issues that would cause real problems during implementation.**
-    An implementer building the wrong thing or getting stuck is an issue.
-    Minor wording, stylistic preferences, and "nice to have" suggestions are not.
+    Flag only issues that would cause real problems during implementation. An
+    implementer building the wrong thing or getting stuck is an issue; wording,
+    stylistic preferences, and nice-to-haves are not.
 
-    Approve unless there are serious gaps — missing requirements from the spec,
-    contradictory steps, placeholder content, or tasks so vague they can't be acted on.
+    Approve unless there are serious gaps — missing spec requirements,
+    contradictory steps, placeholder content, or tasks too vague to act on.
 
-    ## Output Format
+    ## Output format
 
-    ## Plan Review
+    ## Plan review
 
-    **Status:** Approved | Issues Found
+    **Status:** Approved | Issues found
 
     **Issues (if any):**
-    - [Task X, Step Y]: [specific issue] - [why it matters for implementation]
+    - [Task X, Step Y]: [specific issue] — [why it matters for implementation]
 
     **Recommendations (advisory, do not block approval):**
     - [suggestions for improvement]
 ```
 
-**Reviewer returns:** Status, Issues (if any), Recommendations
+The reviewer returns status, issues, and recommendations.
