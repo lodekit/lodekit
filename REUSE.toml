@@ -48,6 +48,21 @@ precedence = "aggregate"
 SPDX-FileCopyrightText = ["2023 shadcn", "2026 The Lodekit Authors"]
 SPDX-License-Identifier = "MIT"
 
+# Process skills adapted from obra/superpowers (MIT, © 2025 Jesse Vincent); the pinned
+# commit and every divergence are in .agents/SOURCES.md. lk-release and lk-drain are
+# ours and fall under the root annotation.
+[[annotations]]
+path = [
+  ".agents/skills/lk-specify/**",
+  ".agents/skills/lk-plan/**",
+  ".agents/skills/lk-implement/**",
+  ".agents/skills/lk-debug/**",
+  ".agents/skills/lk-implement-test/**",
+]
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2025 Jesse Vincent", "2026 The Lodekit Authors"]
+SPDX-License-Identifier = "MIT"
+
 [[annotations]]
 path = "web/main/src/components/demo/prompt-kit/**"
 precedence = "aggregate"

@@ -451,8 +451,10 @@ _Avoid_: the endpoints, the REST API
 - **Docs vs Skill** — both teach how to use Lodekit, to different readers. **Docs**
   are the public site for people; the **Skill** is the instruction pack for agents.
   Content may overlap; the audiences never do.
-- **Skill** — `@lodekit/skill` is the Lodekit skill package (content an agent loads
-  to use Lodekit), not to be confused with agent skills in general.
+- **Skill vs process skill** — the **Skill** is `@lodekit/skill`, the pack an agent
+  loads to build on Lodekit. A **process skill** is an `lk-*` directory under
+  `.agents/skills/` that carries the method for one phase or procedure of this repo's
+  development flow. Never shorten the latter to "skill" in steering docs.
 - **Integration vs Gateway** — "integration" names an outcome, deliberately without
   an artifact: what a person or agent sets out to build ("integrate Greenhouse with
   the weather"). **You build an integration by using a gateway to the provider —

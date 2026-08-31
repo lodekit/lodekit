@@ -19,6 +19,7 @@ and `docs/DESIGN.md` before any styling work.
 | `docs/TODO.md` | parked work: deferred, descoped, postponed | scope falls out, same PR |
 | `docs/TRACK.md` | GitHub backlog mechanics: types, fields, node IDs | the backlog schema changes |
 | `docs/research/` | committed research outputs | a research doc is asked for |
+| `.agents/skills/` | how a phase or procedure is carried out: on-demand process skills (`lk-*`); provenance in `.agents/SOURCES.md` | a skill is added, adapted, or resynced |
 
 How the records relate: specs record what we proposed and why; they are point-in-time
 and may drift once shipped. ARCHITECTURE.md and DEFINITIONS.md hold present truth and
@@ -86,11 +87,10 @@ Engine and MCP are **buildless**: `tsx`, no build step.
   `- [YYYY-MM-DD · <provenance>] description`. Provenance is where it fell out
   (`spec:slug`, `PR #N`, `session`); an optional leading `P0`/`P1` marks urgency.
   Keep entries to single lines so parallel-worktree merges stay trivial.
-- **Drain** — periodically, when the person asks: group TODO lines into themes, file
-  gh issues or tracks per `docs/TRACK.md`, delete the drained lines, and open a PR
-  linking every issue created.
-- **In-session steps** — use the harness's own todo tracker, nothing else. Never a
-  tracking file.
+- **Drain** — periodically, when the person asks, run `lk-drain`: it turns TODO.md
+  lines into backlog issues and tracks and opens the PR that deletes them.
+- **In-session steps** — the plan's checkboxes when a plan exists; otherwise none.
+  Never a tracking file; the harness's task tools stay off.
 
 ## Develop
 
@@ -99,7 +99,8 @@ answer, no artifacts. **Research** gets findings, committed to `docs/research/` 
 if a doc was asked for — no branch, no records. A **small change** gets a branch, the
 change, and a PR. A **bug** gets reproduced before it gets fixed, and lands with a
 regression test. A **feature** gets a spec first; if the ask looks like a feature and
-no spec exists, propose one before building.
+no spec exists, propose one before building. Process skills (`.agents/skills/lk-*`)
+carry each phase's method; load one when its phase begins, not at session start.
 
 ### Start
 
@@ -111,7 +112,9 @@ branch is stale or already merged, reset to a fresh branch off `origin/master`.
 ### Specify
 
 A spec is needed for a new user-visible capability, a cross-cutting change, or
-anything that touches a security boundary. Write
+anything that touches a security boundary. Run `lk-specify` first — decompose before
+refining, one question at a time, two or three approaches with a recommendation, the
+design approved section by section — then write
 `docs/specs/YYYY-MM-DD-<slug>-design.md` in the house format (Goals / Non-goals /
 Decision record / numbered design sections / Rollout / Verification). Commit it,
 push, and open the draft PR, so the spec is reviewable on GitHub as soon as it
@@ -123,10 +126,13 @@ worktree. The spec must be approved before planning.
 For multi-task work, plans live in `docs/plans/` on the branch, never on master
 (lifecycle in `docs/plans/README.md`):
 
-- Write `docs/plans/YYYY-MM-DD-<slug>.md` as ordered tasks. Make each task
-  self-contained (context, files touched, acceptance criteria, how to verify) so it
-  can be handed to a subagent as-is. Name the spec the plan implements in a header
-  line; split a spec into two or more plans when the work comes in slices.
+- Write `docs/plans/YYYY-MM-DD-<slug>.md` with `lk-plan`: a header naming the spec,
+  global constraints, and decisions already made (never re-asked); tasks sized so a
+  reviewer could reject one and approve its neighbor, each self-contained (context,
+  files, acceptance criteria, how to verify, exact values) so a subagent can take it
+  as-is; `**Review:** required — <reason>` on tasks touching a trust boundary,
+  parser, auth, network egress, or data loss. Split a spec into several plans when
+  the work comes in slices.
 - Commit and push; open the draft PR if Specify didn't. Ask for approval in session.
   The person may defer ("proceed, I'll review on GitHub"); review then arrives as PR
   comments or file edits to reconcile.
@@ -137,13 +143,17 @@ Single-sitting tasks need no plan.
 
 ### Implement
 
-- Execute the plan inline by default; delegate to subagents when the work genuinely
-  fans out.
+- Execute inline when the work fits in a handful of tool calls or the tasks are
+  tightly coupled; otherwise run the plan with `lk-implement` — a fresh subagent per
+  task on the cheapest model that can do it (always pass `model`), rulings recorded
+  instead of questions parked, at most three in flight and only on disjoint files.
+- Bugs: `lk-debug` — root cause before any fix; three failed fixes mean the design is
+  wrong, so stop and say so.
 - Tests: write the failing test first when it cheaply expresses the change (bug
   regressions, pure logic). Otherwise pick the lowest rung that exercises the change
   and land the test with it: pure logic → the owning package's vitest; component
   render → `@lodekit/ui` render tests; cross-frontend health → `pnpm e2e`; visual
-  judgment → Playwright MCP in-session.
+  judgment → Playwright MCP in-session. `lk-implement-test` says what a test must prove.
 - A new SDK or engine capability is not done until the Greenhouse showcase exercises
   it (`root/README.md` checklist; part of the Definition of Done).
 - If a simpler path exists than the one requested, say so before building it.
@@ -152,10 +162,12 @@ Single-sitting tasks need no plan.
 
 Before a PR leaves draft:
 
-- Self-review the whole branch diff for correctness and security.
-- Risk-flagged work (trust boundaries, parsers, auth, network egress) also gets a
-  fresh-context adversarial review: a subagent briefed to disprove the change, not
-  confirm it.
+- Read the whole branch diff for correctness and security, then give it a
+  fresh-context review: the harness's review skills where it has them (Claude Code's
+  built-in `/code-review`, plus `/security-review` when any task was risk-flagged),
+  or a subagent given `lk-implement`'s task-reviewer brief over a whole-branch
+  review package. Flagged tasks already had a review briefed to disprove them; the
+  rest rely on the implementer's self-review and this pass.
 - Run the docs check, all in the same PR: structure changed → ARCHITECTURE.md; term
   coined or changed → DEFINITIONS.md; loggable change → CHANGELOG.md; scope fell
   out → TODO.md.
@@ -184,23 +196,9 @@ ready-for-review; drafts and intermediate pushes are exempt.
 Merging a `release: vX.Y.Z` PR triggers `.github/workflows/release.yml`, which builds
 the mac zips, tags `vX.Y.Z`, and publishes the GitHub Release with the PR body as
 notes. The workflow is the only creator of `v*` tags; never tag manually.
-
-- Pre-flight (all must pass; on failure stop and report): on `master` with a clean,
-  up-to-date tree; `pnpm test` passes; the same version in all 10 package.json files
-  (root, `packages/{engine,mcp,sdk,skill,ui,integration-tests}`, `web/{main,docs}`,
-  `manager`); `gh auth status` works; no release PR already open;
-  `docs/CHANGELOG.md` has at least one entry.
-- Bump all 10 versions together: features → minor, fixes only → patch. Confirm the
-  bump with the person.
-- Drain the buffer verbatim into `web/docs/src/content/docs/changelog.md` under a
-  prepended `## [X.Y.Z](compare-url) (YYYY-MM-DD)` heading. Cross-check merged PRs
-  (`gh pr list --state merged`) for loggable work missing an entry and report gaps;
-  never add entries silently. Reset the buffer to its rules header.
-- Branch `release/vX.Y.Z`, single commit `release: vX.Y.Z`, PR title the same. The
-  person reviews, edits notes, and merges; never merge a release PR yourself.
-- The release also runs the **steering audit**: check ARCHITECTURE.md and
-  DEFINITIONS.md claims against the code, and report each as verified, stale, or
-  missing.
+`lk-release` assembles the release PR (pre-flight, lockstep bump confirmed with the
+person, changelog drain, steering audit); the person reviews, edits notes, and merges
+— never merge a release PR yourself.
 
 ## Conventions
 
@@ -220,3 +218,8 @@ notes. The workflow is the only creator of `v*` tags; never tag manually.
   frontmatter, and TODO.md's single-line entries are exempt.
 - **docs/CHANGELOG.md** is append-only for agents (category and entry rules in its
   header); **docs/TODO.md** appends are single lines; plan files never reach master.
+- **Process skills:** `.agents/skills/lk-<name>/` is canonical, `.claude/skills/lk-<name>`
+  a committed symlink; provenance and divergences in `.agents/SOURCES.md`; resyncs are
+  deliberate, one PR each.
+- **Portable paths:** no machine-local paths in committed files or PR bodies —
+  repo-relative, or `<worktree>` / `$SCRATCHPAD` placeholders; a home path names its author.

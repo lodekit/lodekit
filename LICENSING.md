@@ -32,6 +32,12 @@ vendored third-party code.
 
 Vendored code keeps its own license and copyright notice.
 
+The process skills that guide the coding agents — `lk-specify`, `lk-plan`,
+`lk-implement`, `lk-debug`, and `lk-implement-test` under `.agents/skills/` — are
+adapted from [obra/superpowers](https://github.com/obra/superpowers) (`MIT`,
+© 2025 Jesse Vincent). `.agents/SOURCES.md` records the pinned commit and every
+divergence; `lk-release` and `lk-drain` are our own.
+
 Dependencies keep their own licenses, which travel with them inside
 `node_modules` in the packaged app.
 
