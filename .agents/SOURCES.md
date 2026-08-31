@@ -211,5 +211,12 @@ SKILL.md and templates:
 
 ## Ours
 
-- `lk-release`, `lk-drain` — house-owned, no upstream; extracted from AGENTS.md
-  §Release and §Track (Drain) on 2026-08-31 (spec D16).
+- `lk-release/SKILL.md` — house-owned, no upstream. Carries the previous AGENTS.md
+  §Release verbatim in substance (pre-flight, the 10-file bump, the buffer drain, the
+  steering audit, the release branch and PR), extracted 2026-08-31 per spec D16; adds
+  the exact bump command, the ten-file agreement check, and the compare-url heading
+  (v3 D14 — the 0.1.0 entry predates it and keeps its heading).
+- `lk-drain/SKILL.md` — house-owned, no upstream. Carries the previous AGENTS.md
+  §Track Drain procedure (group with the person, file, delete, PR), extracted
+  2026-08-31 per spec D16, and points at `docs/TRACK.md` for the backlog mechanics
+  rather than restating them.
