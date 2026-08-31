@@ -48,3 +48,5 @@ PR as the work that parked it. Format and drain flow are in AGENTS.md §Track.
 - [2026-08-13 · PR #210] Skill: teach that an app's __root.tsx renders AppShell by default (the scaffold already does)
 - [2026-08-13 · PR #210] Shell notification bell is inert — wire it up when notifications exist
 - [2026-08-13 · PR #210] Theme-editor live preview iframe now shows the app's shell — revisit if it reads noisy
+- [2026-08-31 · spec:dev-flow-v4] Re-evaluate native task tools (and the pcvelz fork's task-metadata format) if Claude Code re-enables TaskCreate by default; today they stay off and the plan's checkboxes are the in-session tracker (D9)
+- [2026-08-31 · spec:dev-flow-v4] Verify Codex reads `.agents/skills/lk-*` and the adapted skills as-is, if Codex is still in use
