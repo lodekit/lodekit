@@ -44,3 +44,7 @@ PR as the work that parked it. Format and drain flow are in AGENTS.md §Track.
 - [2026-08-11 · spec:dev-flow-v3] DESIGN.md Product register: design the actual token/component treatments (the section exists, the system doesn't)
 - [2026-08-11 · PR #204] Dashboard Tasks page: per-app schedule/last-run/Run-now surface (the revamp removed the inline panel; /tasks is a stub, no tracking issue found)
 - [2026-08-12 · spec:shadcn-default-theme] Vendor the top ~10 theme fonts engine-served (Geist, Inter, FONT_CATALOG families); removes the Google request from themes; sharpens the self-hosted-fonts deferral
+- [2026-08-13 · PR #210] App-registry API: one designed surface powering dashboard, MCP, future CLI; subsumes /_ui/shell.json; revisit the apps-reach-services-only-through-the-SDK invariant there
+- [2026-08-13 · PR #210] Skill: teach that an app's __root.tsx renders AppShell by default (the scaffold already does)
+- [2026-08-13 · PR #210] Shell notification bell is inert — wire it up when notifications exist
+- [2026-08-13 · PR #210] Theme-editor live preview iframe now shows the app's shell — revisit if it reads noisy

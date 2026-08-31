@@ -1,6 +1,30 @@
+/* M PLUS 1 Code 700 — the wordmark typeface, chrome above the theme format.
+   Lives here (not in any theme's managed @import) because families named in a
+   theme's font line are subject to the theme editor's isManaged()/importsFor()
+   rewrite, which would silently drop this one on the first font edit. Every
+   surface renders the wordmark now that AppShell's nav sheet shows the lockup,
+   so the font ships with the shared stylesheet.
+
+   Must stay ABOVE the other imports: they are inlined at build time and expand
+   into rules, and an @import may not follow a rule — Lightning CSS drops this
+   line if it comes second, taking the wordmark face with it. */
+@import url("https://fonts.googleapis.com/css2?family=M+PLUS+1+Code:wght@700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./shadcn-tailwind.css"; /* vendored — see its header */
 @import "./theme-tokens.css";
 
 @source "./src";
+
+@layer base {
+  :root {
+    --lk-font-wordmark: "M PLUS 1 Code", ui-monospace, monospace;
+  }
+}
+
+/* Same-origin MPA navigations (dashboard ↔ apps) crossfade instead of blanking
+   in browsers with cross-document view transitions; others keep the plain swap
+   (app-shell spec §3). */
+@view-transition {
+  navigation: auto;
+}

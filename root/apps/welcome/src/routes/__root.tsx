@@ -1,5 +1,10 @@
 import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { AppShell } from "@lodekit/ui";
 import appCss from "../index.css?url";
+
+// The platform chrome around every page (app-shell spec §7). The shell picks
+// up this app's designated theme through the theme.css?app= link below.
+const shellApp = { appId: "welcome", name: "Welcome to Lodekit", icon: "👋" };
 
 export const Route = createRootRoute({
   head: () => ({
@@ -26,7 +31,9 @@ export const Route = createRootRoute({
         <script src="/_ui/theme.js" />
       </head>
       <body>
-        <Outlet />
+        <AppShell app={shellApp}>
+          <Outlet />
+        </AppShell>
         <Scripts />
       </body>
     </html>

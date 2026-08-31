@@ -8,10 +8,10 @@ import {
   Field as FieldRoot, FieldContent, FieldDescription, FieldError, FieldLabel,
   Input, Kicker, Label,
   Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, Skeleton, Switch,
+  SERVICE_ICONS,
   Tabs, TabsContent, TabsList, TabsTrigger,
 } from "@lodekit/ui";
 import { ChevronDown, Monitor, Moon, RotateCcw, Sun } from "@lodekit/ui/icons";
-import { SERVICE_ICONS } from "../components/nav";
 import { MARKS } from "../components/logo";
 
 export const Route = createFileRoute("/settings")({
@@ -272,7 +272,7 @@ function ServiceTabs({ tabs, initial, children }: { tabs: ServiceTab[]; initial?
           narrow screens without chrome, as upstream tab strips do. */}
       <TabsList variant="line" className="no-scrollbar max-w-full justify-start overflow-x-auto pb-[5px]">
         {tabs.map((t) => {
-          const Icon = SERVICE_ICONS[t.name]; // canonical service → icon map (components/nav.ts)
+          const Icon = SERVICE_ICONS[t.name]; // canonical service → icon map (@lodekit/ui shell-nav)
           return (
             <TabsTrigger key={t.name} value={t.name}>
               {Icon && <Icon aria-hidden="true" />}

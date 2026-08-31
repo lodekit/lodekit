@@ -424,15 +424,20 @@ register's own moves live in §2 and §3.
   theme format**: it is deliberately not one of the theme-editable font fields,
   so switching theme never changes the wordmark. It is therefore loaded per
   surface — `@fontsource` on the landing, the Google Fonts `@import` on the docs
-  site, and `dashboard/src/index.css` (which also defines `--lk-font-wordmark`)
-  in product. Zen Kaku Gothic New 700 still sets headings and page titles
+  site, and the shared `@lodekit/ui` stylesheet (`theme.css`, which also defines
+  `--lk-font-wordmark`) in product, where every shell surface renders the
+  lockup. Zen Kaku Gothic New 700 still sets headings and page titles
   everywhere; only the wordmark uses M PLUS 1 Code. The docs site carries the
   lockup in its header via a `SiteTitle` component override, and nothing else of
   the brand (§3).
 - **The lockup:** mark beside wordmark, gap ≈0.6em, mark 1.5rem, optically
   aligned to cap height; both in the same single color at 80% opacity, header
   and footer alike. Clear space around the lockup ≥ the width of the jar's lid;
-  minimum mark size 16px.
+  minimum mark size 16px. In the product shell's header the lockup may split
+  across the grid seam — mark centered in the rail's badge cell, wordmark
+  opening the header cell — reading as a unit with the same gap and opacity
+  (ruling 2026-08-13); the shell's nav sheet and marketing surfaces keep the
+  joined lockup.
 - **Favicons:** the mark in plum ink, flipping to **paper** via
   `prefers-color-scheme` — one pair everywhere, brand sites and platform alike; a
   neutral cream reads better than a tint against dark browser chrome. This is
@@ -515,6 +520,12 @@ mark, the wordmark, the favicons.
 
 ### The product shell (true under every theme)
 
+- **One shell:** every product surface — the dashboard and each app — renders
+  `@lodekit/ui`'s `AppShell` from its own document root: an `h-14` header row
+  and a fixed `w-16` app icon rail on the `--sidebar-*` token family, content
+  on `--background`, cells separated by hairline borders. Small screens get the
+  Sidebar primitive's canonical sheet. The chrome wears whichever theme the
+  surface resolves, so it is composition, never identity.
 - **Tokens only:** components are stock shadcn/`@lodekit/ui` internals expressing
   the active theme through tokens — never fork or restyle component internals.
 - **Physics are the theme's:** elevation, easing, and body weight resolve from

@@ -40,13 +40,19 @@ pnpm-workspace monorepo. Members: `packages/*`, `web/*`, `manager`. `root/` is
 
 - **`packages/engine`** (`@lodekit/engine`) — the product. The engine process
   described above; buildless, run via `tsx`. Storage is per-app `better-sqlite3`.
-  Also home of the dashboard sources and the vendored themes.
+  Also home of the dashboard sources and the vendored themes. Serve-time chrome
+  endpoints live under `/_ui/*`: theme delivery (`theme.css`/`theme.js`/
+  `theme.json`), favicons, and `shell.json` (app inventory + mark style for the
+  `AppShell` chrome).
 - **`packages/sdk`** (`@lodekit/sdk`) — the app-facing library: how an app
   reaches every platform service, server- and client-side.
 - **`packages/ui`** (`@lodekit/ui`) — the component library (shadcn-lineage)
   used by apps and the dashboard; carries the stock-neutral base tokens
   (`theme-tokens.css`, `theme.css`), in lockstep with the vendored default
-  `shadcn` theme. Identity lives in the vendored `lodekit` theme.
+  `shadcn` theme. Identity lives in the vendored `lodekit` theme. Also home of
+  `AppShell`, the platform chrome (header + app icon rail) the dashboard and
+  every app render from their own document roots; it feeds itself from the
+  engine's `/_ui/shell.json` when a surface passes no live data.
 - **`packages/mcp`** (`@lodekit/mcp`) — the Claude-facing MCP server. Reaches the
   engine **over HTTP only**; no import-time dependency on the engine. The
   dependency-free HTTP helpers live in `client.ts`, the MCP-SDK wiring in

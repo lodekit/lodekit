@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import appCss from "../index.css?url";
 import { Meta, Toaster } from "@lodekit/ui";
 import { SSEProvider } from "../components/sse";
-import { Header } from "../components/header";
+import { DashboardShell } from "../components/shell";
 
 const queryClient = new QueryClient();
 
@@ -31,18 +31,23 @@ export const Route = createRootRoute({
             OS media query (settings spec §8). */}
         <script src="/_ui/theme.js" />
       </head>
-      <body className="flex min-h-screen flex-col">
+      <body>
         <QueryClientProvider client={queryClient}>
           <SSEProvider>
-            <Header />
-            <main className="mx-auto w-full min-w-80 max-w-[70rem] flex-1 px-4 py-6 md:px-8">
-              <Outlet />
-            </main>
+            <DashboardShell>
+              {/* Column so the footer sits at the bottom of short pages inside
+                  the shell's scroll cell. */}
+              <div className="flex min-h-full flex-col">
+                <main className="mx-auto w-full min-w-80 max-w-[70rem] flex-1 px-4 py-6 md:px-8">
+                  <Outlet />
+                </main>
+                <footer className="py-4 text-center">
+                  <Meta className="text-xs text-muted-foreground">{versionLine}</Meta>
+                </footer>
+              </div>
+            </DashboardShell>
           </SSEProvider>
         </QueryClientProvider>
-        <footer className="py-4 text-center">
-          <Meta className="text-xs text-muted-foreground">{versionLine}</Meta>
-        </footer>
         <Toaster />
         <Scripts />
       </body>

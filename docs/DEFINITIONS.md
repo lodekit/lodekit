@@ -365,6 +365,15 @@ The themed component library (`@lodekit/ui`): shadcn components carrying one sha
 theme, imported by every app so all apps look like one product.
 _Avoid_: design system, component kit, shadcn (the upstream, not the package)
 
+**Shell**:
+The platform chrome — the header row, the app icon rail, and the small-screen nav
+sheet — rendered by the UI library's `AppShell` component. The dashboard and every
+app render the same shell inside their own documents, so it wears each surface's
+active theme; inside an app the header identity swaps to that app's icon and name.
+Rendering it is convention (the scaffold includes it), not enforcement.
+_Avoid_: navbar, sidebar (that's one region of it), app shell (in prose; `AppShell`
+is the component name)
+
 **Themes**:
 The person's styling surface: self-contained theme files in `<root>/themes/`
 (canonical theme format: token redefinitions the engine parses and serves live),

@@ -99,13 +99,14 @@ describe("dashboard serving", () => {
     expect(sameOrigin.status).not.toBe(403);
   }, 60000);
 
-  it("renders the shell header with the services menu trigger", async () => {
+  it("renders the app shell chrome", async () => {
     await boot();
     await buildDashboard(cfg);
     const html = await (await fetch(base + "/_dashboard/")).text();
-    // The /_ui components link moved into the client-side services menu
-    // (UI revamp spec §2) — SSR carries the trigger, not the popover content.
-    expect(html).toContain('aria-label="Services"');
+    // AppShell SSR (app-shell spec §1): the rail's services toggle and the
+    // inert notification button are part of the served document.
+    expect(html).toContain('data-slot="shell-services-toggle"');
+    expect(html).toContain('aria-label="Notifications"');
   }, 60000);
 
   it("serves the logs view", async () => {
