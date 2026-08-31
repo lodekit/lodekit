@@ -67,6 +67,16 @@ what was added and why, path and register changes.
 
 ### lk-implement
 
+Scripts (`scripts/sdd-workspace`, `task-brief`, `review-package`):
+
+- The plan workspace resolves to `.agents/internal/sdd/<plan-basename>/`, not
+  upstream's `.superpowers/sdd/` (spec D10).
+- Dropped `sdd-workspace`'s self-ignoring `.gitignore` write: `.agents/internal/` is
+  git-ignored at the tree level, so the per-workspace file was redundant.
+- "superpowers" in comments → "lk-implement" or plain wording. No functional or
+  CLI-contract change; verified in a scratch worktree (workspace path, Task-N-only
+  brief, two-commit review package, clean `git status`, shellcheck clean).
+
 ### lk-debug
 
 ### lk-implement-test
