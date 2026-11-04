@@ -164,8 +164,9 @@ a terminal.
     interviews — the first primary research to commission.
   - `[hypothesis]` Distrust of agent-written code is an adoption barrier that
     visible guardrails answer.
-  - Business model: undefined. Nothing in this doc assumes one; pricing language is
-    banned from artifacts until decided.
+  - Business model: undefined. §9 records candidate directions (encrypted remote
+    backup, hosted instances, team and family sharing) for pitch use only; pricing
+    language stays banned from artifacts until decided.
   - macOS-only weakens "the computer you already own" — sequence for Windows/Linux
     is open.
   - OSS positioning is settled: AGPL-3.0-only product, Apache-2.0 for
@@ -306,6 +307,125 @@ narrative at full length, evidence-honest.
   resolution, why-now — with §2 evidence keeping it honest.
 - **`DESIGN.md`:** its brief is §7's attributes, §4's positioning, and §2.2's
   audience. Visual identity decisions happen there, not here.
+- **Pitches:** investor, grant, and professional-user conversations start from §9;
+  pick the angle, keep the honesty notes.
 - **Amending:** positioning, pillar, or narrative changes land here first, then
   flow outward — artifacts never fork the strategy locally. Resolve an open
   question in §3 by editing this doc in the same change.
+
+## 9. Audience pitches
+
+Elevator pitches and taglines by audience, derived 2026-11-04 from §1–§7. Each
+audience gets two or three angles on the same core: the person owns the apps and the
+data, and can leave with them any time. The angles are starting points for a
+conversation, not copy to ship; landing and docs prose still follow §8.
+
+Two framings appear here that the rest of the doc does not yet carry:
+
+- **Liquid software** `[desk]` — software made on demand, shaped to one person, and
+  expected to move with them between machines and hosts. Lodekit's unit of liquidity
+  is the Lodekit root: apps, data, and config in one folder that runs wherever an
+  engine runs.
+- **Candidate directions** `[hypothesis]` — encrypted remote backup, hosted instances,
+  and team or family sharing as paid layers on a free local core; continued
+  self-hosting with data sovereignty, local-AI compatibility, and agent-agnosticism as
+  the public-interest story. None is built or decided (§3). Pitches may name them as
+  a path; artifacts may not.
+
+### 9.1 Accelerator / investor
+
+**Angle A — the keeping layer.** Agents made software nearly free to make. Nobody
+owns where it lives. Today a person's agent-built app either rents a home on Lovable
+or Replit, or dies in a folder. Lodekit is the third path: a local platform that runs
+agent-built apps like real software — a database, storage, secrets, scheduling — on
+the computer the person already has. The wedge is free and local. The revenue is
+everything people want once they have apps worth keeping: encrypted remote backup,
+hosted instances, sharing with a team or family. Whoever owns the keeping layer
+becomes the default substrate for personal software.
+
+**Angle B — liquid software.** Software is becoming liquid: made on demand, shaped to
+one person, expected to move with them. The hosted AI builders still pin it to their
+servers. Lodekit makes the app plus its data a single portable unit, a folder, that
+runs on a laptop today, on a home server tomorrow, and on a hosted tier when the
+person wants it. We charge for the convenience of where it runs, never for the right
+to leave. That is a moat built on trust instead of lock-in, and trust is the scarce
+asset in the agent era.
+
+**Angle C — invert the stack.** Every AI app builder has the same shape: your idea,
+their server, your data in their silo, a meter on a thing you made. We invert it. The
+app lives with the person, the cloud is optional, and the agent is interchangeable.
+That inversion is where the next decade of personal software gets built, and the
+company that supplies the substrate gets the distribution.
+
+Taglines: *The home for agent-built software.* · *Own the keeping layer.* ·
+*Software that moves with you.* · *Personal software needs a place to live.* ·
+*Cloud batteries, locally. Then anywhere.*
+
+### 9.2 Open-source grant (NLnet / NGI)
+
+**Angle A — data sovereignty.** AI agents will soon write most of the small, personal
+software people use. The open question is who holds it. The current answer is hosted
+builders: account, subscription, data on a vendor's server. Lodekit is the open
+alternative. One AGPL platform runs a person's agent-built apps on their own hardware,
+stores their data as plain files, and works with any agent, including locally run
+models. Leaving is a folder copy. The goal is to make sure the agent era does not
+rebuild the platform silos the web just spent twenty years escaping.
+
+**Angle B — open standards and interoperability.** Lodekit is agent-agnostic by
+design: any agent that speaks MCP can drive it, and the platform never depends on one
+vendor's model. Apps are standard web software on a documented contract, data is
+SQLite and files on disk, and the whole instance is one directory that migrates
+between machines. Funding would go to the parts that matter most for a commons: Linux
+support, first-class local-model integration, and documented export and migration
+formats so no Lodekit user is ever stuck.
+
+**Angle C — public-interest infrastructure.** Personal computing is about to get a new
+layer, the one where agent-made tools live. If that layer is proprietary and hosted,
+every citizen's private tools become someone else's product. Lodekit is a small, open,
+self-hosted answer: the person's computer is the server, the person's folder is the
+database, and any agent is welcome.
+
+Taglines: *Personal software, owned by the person.* · *Your apps, your hardware, any
+agent.* · *An open home for agent-built software.* · *Leave any time. It's a folder.*
+· *Local by default. Open by license. Yours by design.*
+
+### 9.3 Professionals in law, medicine, finance
+
+Non-technical potential users whose work carries confidential records. They map to
+the spreadsheet outgrower and the data-private profiles (§2.2).
+
+**Angle A — confidential by construction.** You know the tool you wish you had. A
+matter tracker shaped like your practice. A follow-up list for patients that actually
+matches how you work. A client cashflow view your spreadsheet can't quite do. Ask your
+AI for it and it builds it. Lodekit runs it on your own computer, not on some
+company's server, and everything it stores stays in one folder on your machine.
+Nothing leaves your desk.
+
+**Angle B — the spreadsheet successor.** Somewhere you have a spreadsheet doing a job
+it was never built for. Lodekit turns that into a small app made exactly for you, in a
+few minutes, by describing it. It stays on your computer, it keeps working next year,
+and backing it up means copying a folder.
+
+**Angle C — no vendor to outlive.** Most tools you'd use for this are subscriptions.
+Stop paying and the tool, and often your records, go away. With Lodekit the app and
+its data are files you own. If you ever stop using Lodekit, the files are still there
+and still readable.
+
+Taglines: *Software made for you, kept by you.* · *The app you wish existed. On your
+computer.* · *Ask for it. Use it. Keep it.* · *No account. No subscription. Nobody
+else's computer.* · *Your files. Your computer. Your tool.*
+
+### 9.4 Honesty notes
+
+These audiences probe; say each of these before they ask.
+
+- **Roadmap vs shipped.** Backup, hosting, and team or family sharing are candidate
+  directions, not features. Adopting any of them means resolving the §3 open
+  questions in the same change.
+- **The agent is not local by default.** App data stays on the machine, but the
+  person's agent may be a cloud model that sees whatever they paste into the
+  conversation. Say "the app's data never leaves your computer", never "nothing you
+  type leaves your computer". Local-AI compatibility is what closes that gap.
+- **macOS only, for now.**
+- **No compliance claims.** "Stays on your computer" is checkable; "HIPAA-compliant"
+  or "privileged" is not something Lodekit can promise.
